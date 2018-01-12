@@ -27,13 +27,13 @@ Special versions:
 ## Update dev version
 
 ```
-mkdir build/dev
-cd build/dev
-git clone https://github.com/gammapy/gammapy.git # do this once
-cd gammapy
+cd build/dev/gammapy
+git clean -fdx
 git pull
 time python setup.py build_docs
-cp -r build/dev/gammapy/docs/_build/html/* docs/dev/
+cd ../../..
+rm -r docs/dev
+cp -r build/dev/gammapy/docs/_build/html docs/dev
 git add docs/dev
 git commit -m 'update docs/dev'
 git push
