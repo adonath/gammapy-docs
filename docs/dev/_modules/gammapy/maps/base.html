@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>gammapy.maps.base &#8212; gammapy v0.7.dev5391</title>
+    <title>gammapy.maps.base &#8212; gammapy v0.7.dev5405</title>
     <link rel="stylesheet" href="../../../_static/gammapy.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     '0.7.dev5391',
+        VERSION:     '0.7.dev5405',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -56,7 +56,7 @@
     <h3>Navigation</h3>
     <ul>
       <li>
-	<a href="../../../index.html">gammapy v0.7.dev5391</a>
+	<a href="../../../index.html">gammapy v0.7.dev5405</a>
 	 &#187;
       </li>
       <li><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
@@ -79,6 +79,7 @@
 <span class="kn">from</span> <span class="nn">..extern</span> <span class="k">import</span> <span class="n">six</span>
 <span class="kn">from</span> <span class="nn">astropy.utils.misc</span> <span class="k">import</span> <span class="n">InheritDocstrings</span>
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">find_hdu</span>
 <span class="kn">from</span> <span class="nn">.geom</span> <span class="k">import</span> <span class="n">pix_tuple_to_idx</span><span class="p">,</span> <span class="n">MapCoords</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
@@ -139,9 +140,9 @@
 <span class="sd">        coordsys : str</span>
 <span class="sd">            Coordinate system, either Galactic (&#39;GAL&#39;) or Equatorial</span>
 <span class="sd">            (&#39;CEL&#39;).</span>
-<span class="sd">        map_type : str</span>
-<span class="sd">            Internal map representation.  Valid types are `wcs`,</span>
-<span class="sd">            `wcs-sparse`, `hpx`, and `hpx-sparse`.</span>
+<span class="sd">        map_type : {&#39;wcs&#39;, &#39;wcs-sparse&#39;, &#39;hpx&#39;, &#39;hpx-sparse&#39;}</span>
+<span class="sd">            Map type.  Selects the class that will be used to</span>
+<span class="sd">            instantiate the map.</span>
 <span class="sd">        binsz : float or `~numpy.ndarray`</span>
 <span class="sd">            Pixel size in degrees.</span>
 <span class="sd">        skydir : `~astropy.coordinates.SkyCoord`</span>
@@ -158,6 +159,7 @@
 <span class="sd">        -------</span>
 <span class="sd">        map : `~MapBase`</span>
 <span class="sd">            Empty map object.</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">from</span> <span class="nn">.hpxmap</span> <span class="k">import</span> <span class="n">HpxMap</span>
         <span class="kn">from</span> <span class="nn">.wcsmap</span> <span class="k">import</span> <span class="n">WcsMap</span>
@@ -172,7 +174,7 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unrecognized map type: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">map_type</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="MapBase.read"><a class="viewcode-back" href="../../../api/gammapy.maps.MapBase.html#gammapy.maps.MapBase.read">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hdu_bands</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">map_type</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Read a map from a FITS file.</span>
 
 <span class="sd">        Parameters</span>
@@ -185,15 +187,70 @@
 <span class="sd">            Name or index of the HDU with the BANDS table.  If not</span>
 <span class="sd">            defined this will be inferred from the FITS header of the</span>
 <span class="sd">            map HDU.</span>
+<span class="sd">        map_type : {&#39;wcs&#39;, &#39;wcs-sparse&#39;, &#39;hpx&#39;, &#39;hpx-sparse&#39;, &#39;auto&#39;}</span>
+<span class="sd">            Map type.  Selects the class that will be used to</span>
+<span class="sd">            instantiate the map.  The map type should be consistent</span>
+<span class="sd">            with the format of the input file.  If map_type is &#39;auto&#39;</span>
+<span class="sd">            then an appropriate map type will be inferred from the</span>
+<span class="sd">            input file.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        map_out : `~MapBase`</span>
 <span class="sd">            Map object</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">with</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">hdulist</span><span class="p">:</span>
-            <span class="n">map_out</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">map_type</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
+                <span class="n">map_type</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_map_type</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="p">)</span>
+
+            <span class="n">cls_out</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_map_cls</span><span class="p">(</span><span class="n">map_type</span><span class="p">)</span>
+            <span class="n">map_out</span> <span class="o">=</span> <span class="n">cls_out</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="n">hdu</span><span class="p">,</span>
+                                           <span class="n">hdu_bands</span><span class="o">=</span><span class="n">hdu_bands</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">map_out</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_map_type</span><span class="p">(</span><span class="n">hdu_list</span><span class="p">,</span> <span class="n">hdu_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Infer map type from a FITS HDU.</span>
+
+<span class="sd">        Only read header, never data, to have good performance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">hdu_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Find the header of the first non-empty HDU</span>
+            <span class="n">header</span> <span class="o">=</span> <span class="n">hdu_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">header</span>
+            <span class="k">if</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;NAXIS&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">header</span> <span class="o">=</span> <span class="n">hdu_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">header</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">header</span> <span class="o">=</span> <span class="n">hdu_list</span><span class="p">[</span><span class="n">hdu_name</span><span class="p">]</span><span class="o">.</span><span class="n">header</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;PIXTYPE&#39;</span> <span class="ow">in</span> <span class="n">header</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;PIXTYPE&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;HEALPIX&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="s1">&#39;hpx&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;wcs&#39;</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_map_cls</span><span class="p">(</span><span class="n">map_type</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get map class for given `map_type` string.</span>
+
+<span class="sd">        This should probably be a registry dict so that users</span>
+<span class="sd">        can add supported map types to the `gammapy.maps` I/O</span>
+<span class="sd">        (see e.g. the Astropy table format I/O registry),</span>
+<span class="sd">        but that&#39;s non-trivial to implement without avoiding circular imports.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">map_type</span> <span class="o">==</span> <span class="s1">&#39;wcs&#39;</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">.wcsnd</span> <span class="k">import</span> <span class="n">WcsMapND</span>
+            <span class="k">return</span> <span class="n">WcsMapND</span>
+        <span class="k">elif</span> <span class="n">map_type</span> <span class="o">==</span> <span class="s1">&#39;wcs-sparse&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="n">map_type</span> <span class="o">==</span> <span class="s1">&#39;hpx&#39;</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">.hpxnd</span> <span class="k">import</span> <span class="n">HpxMapND</span>
+            <span class="k">return</span> <span class="n">HpxMapND</span>
+        <span class="k">elif</span> <span class="n">map_type</span> <span class="o">==</span> <span class="s1">&#39;hpx-sparse&#39;</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">.hpxsparse</span> <span class="k">import</span> <span class="n">HpxMapSparse</span>
+            <span class="k">return</span> <span class="n">HpxMapSparse</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unrecognized map type: </span><span class="si">{!r}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">map_type</span><span class="p">))</span>
 
 <div class="viewcode-block" id="MapBase.write"><a class="viewcode-back" href="../../../api/gammapy.maps.MapBase.html#gammapy.maps.MapBase.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Write to a FITS file.</span>
@@ -292,7 +349,7 @@
 <span class="sd">        ----------</span>
 <span class="sd">        geom : `~MapGeom`</span>
 <span class="sd">            Geometry of projection.</span>
-<span class="sd">        mode : str</span>
+<span class="sd">        mode : {&#39;interp&#39;, &#39;exact&#39;}</span>
 <span class="sd">            Method for reprojection.  &#39;interp&#39; method interpolates at pixel</span>
 <span class="sd">            centers.  &#39;exact&#39; method integrates over intersection of pixels.</span>
 <span class="sd">        order : int or str</span>
@@ -643,7 +700,7 @@
   <p>
     &copy; Copyright 2018, The Gammapy developers.<br/>
     Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.5. &nbsp;
-    Last built 08 Jan 2018. <br/>
+    Last built 12 Jan 2018. <br/>
   </p>
 </footer>
   </body>
