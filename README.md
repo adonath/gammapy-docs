@@ -47,27 +47,16 @@ Same as before, except check out the right tag
 git checkout v0.6
 ```
 
-## Download from RTD
+## Very old versions
 
-RTD doesn't support downloading the HTML page:
-https://github.com/rtfd/readthedocs.org/issues/3242
-
-However, one can use e.g. wget to do it
-https://www.guyrutenberg.com/2014/05/02/make-offline-mirror-of-a-site-using-wget/
-
-```
-
-wget -mkEpnp http://docs.gammapy.org/en/v0.6/
-mv docs.gammapy.org/en/v0.6/* docs/0.6
-rm -r docs.gammapy.org
-```
+An archive of very old versions of built Gammapy docs is available here:
+https://github.com/cdeil/gammapy-docs-rtd-archive
 
 ## TODO
 
 * How to fetch the right version of `gammapy-extra`?
 * How to set up a conda env for older versions?
 * How to avoid the repo from growing forever, i.e. discarding old committed versions in `docs/dev`?
-
 
 ## Notes
 
