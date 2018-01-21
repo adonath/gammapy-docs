@@ -13,10 +13,10 @@
 # 
 # We will mainly be using the following classes:
 #         
-# * [gammapy.data.DataStore](http://docs.gammapy.org/en/latest/api/gammapy.data.DataStore.html) to load the runs to use to build the bkg model.
-# * [gammapy.data.ObservationGroupAxis](http://docs.gammapy.org/en/latest/api/gammapy.data.ObservationGroupAxis.html) and [gammapy.data.ObservationGroups](http://docs.gammapy.org/en/latest/api/gammapy.data.ObservationGroups.html) to group the runs
-# * [gammapy.background.OffDataBackgroundMaker](http://docs.gammapy.org/en/latest/api/gammapy.background.OffDataBackgroundMaker.html) to compute the background model
-# * [gammapy.background.EnergyOffsetBackgroundModel](http://docs.gammapy.org/en/latest/api/gammapy.background.EnergyOffsetBackgroundModel.html) to represent and write the background model
+# * [gammapy.data.DataStore](http://docs.gammapy.org/dev/api/gammapy.data.DataStore.html) to load the runs to use to build the bkg model.
+# * [gammapy.data.ObservationGroupAxis](http://docs.gammapy.org/dev/api/gammapy.data.ObservationGroupAxis.html) and [gammapy.data.ObservationGroups](http://docs.gammapy.org/dev/api/gammapy.data.ObservationGroups.html) to group the runs
+# * [gammapy.background.OffDataBackgroundMaker](http://docs.gammapy.org/dev/api/gammapy.background.OffDataBackgroundMaker.html) to compute the background model
+# * [gammapy.background.EnergyOffsetBackgroundModel](http://docs.gammapy.org/dev/api/gammapy.background.EnergyOffsetBackgroundModel.html) to represent and write the background model
 # 
 # 
 

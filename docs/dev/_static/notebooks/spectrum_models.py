@@ -5,14 +5,14 @@
 
 # ## Introduction
 # 
-# This notebook explains how to use the functions and classes in [gammapy.spectrum.models](http://docs.gammapy.org/en/latest/spectrum/#module-gammapy.spectrum.models) in order to work with spectral models.
+# This notebook explains how to use the functions and classes in [gammapy.spectrum.models](http://docs.gammapy.org/dev/spectrum/#module-gammapy.spectrum.models) in order to work with spectral models.
 # 
 # The following clases will be used:
 # 
-# * [gammapy.spectrum.models.PowerLaw](http://docs.gammapy.org/en/latest/api/gammapy.spectrum.models.PowerLaw.html)
-# * [gammapy.utils.modelling.Parameter](http://docs.gammapy.org/en/latest/api/gammapy.utils.modeling.Parameter.html)
-# * [gammapy.utils.modelling.ParameterList](http://docs.gammapy.org/en/latest/api/gammapy.utils.modeling.ParameterList.html)
-# * [gammapy.spectrum.models.SpectralModel](http://docs.gammapy.org/en/latest/api/gammapy.spectrum.models.SpectralModel.html)
+# * [gammapy.spectrum.models.PowerLaw](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html)
+# * [gammapy.utils.modelling.Parameter](http://docs.gammapy.org/dev/api/gammapy.utils.modeling.Parameter.html)
+# * [gammapy.utils.modelling.ParameterList](http://docs.gammapy.org/dev/api/gammapy.utils.modeling.ParameterList.html)
+# * [gammapy.spectrum.models.SpectralModel](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.SpectralModel.html)
 
 # ## Setup
 # 
@@ -194,4 +194,4 @@ model.plot(ax=ax, energy_range=energy_range)
 
 # ## What's next?
 # 
-# In this tutorial we learnd how to work with spectral models. Go to [gammapy.spectrum](http://docs.gammapy.org/en/latest/spectrum/index.html) to see what else you can do with gammapy.spectrum.
+# In this tutorial we learnd how to work with spectral models. Go to [gammapy.spectrum](http://docs.gammapy.org/dev/spectrum/index.html) to see what else you can do with gammapy.spectrum.

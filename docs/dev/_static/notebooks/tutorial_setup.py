@@ -11,7 +11,7 @@
 # Caveat: Sherpa is not available on Windows.
 # 
 # This is just a short version of the commands to get set up using Anaconda.
-# More detailed information is available in the [Gammapy installation instructions](http://docs.gammapy.org/en/latest/install.html).
+# More detailed information is available in the [Gammapy installation instructions](http://docs.gammapy.org/dev/install.html).
 # 
 # ## Get Anaconda
 # 

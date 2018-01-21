@@ -6,7 +6,7 @@
 # ## Introduction
 # 
 # This notebook show how to do source detection with Gammapy.
-# using one of the methods available in [gammapy.detect](http://docs.gammapy.org/en/latest/detect/index.html).
+# using one of the methods available in [gammapy.detect](http://docs.gammapy.org/dev/detect/index.html).
 # 
 # We will do this:
 # 
@@ -21,9 +21,9 @@
 # We will work with the following functions and classes:
 # 
 # * [photutils](http://photutils.readthedocs.io/en/latest/) and specifically the [photutils.detection.find_peaks](http://photutils.readthedocs.io/en/latest/api/photutils.detection.find_peaks.html) function.
-# * [gammapy.image.SkyImage](http://docs.gammapy.org/en/latest/api/gammapy.image.SkyImage.html)
-# * [gammapy.image.SkyImageList](http://docs.gammapy.org/en/latest/api/gammapy.image.SkyImageList.html)
-# * [gammapy.detect.TSImageEstimator](http://docs.gammapy.org/en/latest/api/gammapy.detect.TSImageEstimator.html)
+# * [gammapy.image.SkyImage](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html)
+# * [gammapy.image.SkyImageList](http://docs.gammapy.org/dev/api/gammapy.image.SkyImageList.html)
+# * [gammapy.detect.TSImageEstimator](http://docs.gammapy.org/dev/api/gammapy.detect.TSImageEstimator.html)
 
 # ## Setup
 # 

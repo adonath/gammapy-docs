@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>astropy.units.quantity &#8212; gammapy v0.7.dev5412</title>
+    <title>astropy.units.quantity &#8212; gammapy v0.7.dev5423</title>
     <link rel="stylesheet" href="../../../_static/gammapy.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     '0.7.dev5412',
+        VERSION:     '0.7.dev5423',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -55,7 +55,7 @@
     <h3>Navigation</h3>
     <ul>
       <li>
-	<a href="../../../index.html">gammapy v0.7.dev5412</a>
+	<a href="../../../index.html">gammapy v0.7.dev5423</a>
 	 &#187;
       </li>
       <li><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
@@ -91,6 +91,7 @@
 <span class="c1"># AstroPy</span>
 <span class="kn">from</span> <span class="nn">.core</span> <span class="k">import</span> <span class="p">(</span><span class="n">Unit</span><span class="p">,</span> <span class="n">dimensionless_unscaled</span><span class="p">,</span> <span class="n">get_current_unit_registry</span><span class="p">,</span>
                    <span class="n">UnitBase</span><span class="p">,</span> <span class="n">UnitsError</span><span class="p">,</span> <span class="n">UnitTypeError</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">is_effectively_unity</span>
 <span class="kn">from</span> <span class="nn">.format.latex</span> <span class="k">import</span> <span class="n">Latex</span>
 <span class="kn">from</span> <span class="nn">..utils.compat</span> <span class="k">import</span> <span class="n">NUMPY_LT_1_13</span><span class="p">,</span> <span class="n">NUMPY_LT_1_14</span>
 <span class="kn">from</span> <span class="nn">..utils.compat.misc</span> <span class="k">import</span> <span class="n">override__dir__</span>
@@ -464,6 +465,10 @@
             <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__array_finalize__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+        <span class="c1"># If we&#39;re a new object or viewing an ndarray, nothing has to be done.</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__class__</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+            <span class="k">return</span>
+
         <span class="c1"># If our unit is not set and obj has a valid one, use it.</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">unit</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;_unit&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
@@ -472,9 +477,8 @@
 
         <span class="c1"># Copy info if the original had `info` defined.  Because of the way the</span>
         <span class="c1"># DataInfo works, `&#39;info&#39; in obj.__dict__` is False until the</span>
-        <span class="c1"># `info` attribute is accessed or set.  Note that `obj` can be an</span>
-        <span class="c1"># ndarray which doesn&#39;t have a `__dict__`.</span>
-        <span class="k">if</span> <span class="s1">&#39;info&#39;</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;__dict__&#39;</span><span class="p">,</span> <span class="p">()):</span>
+        <span class="c1"># `info` attribute is accessed or set.</span>
+        <span class="k">if</span> <span class="s1">&#39;info&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">info</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">info</span>
 
     <span class="k">def</span> <span class="nf">__array_prepare__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -700,9 +704,9 @@
             <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;out&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">out_array</span><span class="p">,)</span> <span class="k">if</span> <span class="n">function</span><span class="o">.</span><span class="n">nout</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">out_array</span>
 
         <span class="c1"># Same for inputs, but here also convert if necessary.</span>
-        <span class="n">arrays</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">((</span><span class="n">converter</span><span class="p">(</span><span class="n">input_</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="k">if</span> <span class="n">converter</span> <span class="k">else</span>
-                        <span class="nb">getattr</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">input_</span><span class="p">))</span>
-                       <span class="k">for</span> <span class="n">input_</span><span class="p">,</span> <span class="n">converter</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">converters</span><span class="p">))</span>
+        <span class="n">arrays</span> <span class="o">=</span> <span class="p">[(</span><span class="n">converter</span><span class="p">(</span><span class="n">input_</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="k">if</span> <span class="n">converter</span> <span class="k">else</span>
+                   <span class="nb">getattr</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">input_</span><span class="p">))</span>
+                  <span class="k">for</span> <span class="n">input_</span><span class="p">,</span> <span class="n">converter</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">converters</span><span class="p">)]</span>
 
         <span class="c1"># Call our superclass&#39;s __array_ufunc__</span>
         <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__array_ufunc__</span><span class="p">(</span><span class="n">function</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="o">*</span><span class="n">arrays</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -807,6 +811,9 @@
             <span class="n">unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit</span>
             <span class="n">quantity_subclass</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span>
         <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># In principle, could gain time by testing unit is self.unit</span>
+            <span class="c1"># as well, and then quantity_subclass = self.__class__, but</span>
+            <span class="c1"># Constant relies on going through `__quantity_subclass__`.</span>
             <span class="n">unit</span> <span class="o">=</span> <span class="n">Unit</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
             <span class="n">quantity_subclass</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="s1">&#39;_quantity_class&#39;</span><span class="p">,</span> <span class="n">Quantity</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantity_subclass</span><span class="p">):</span>
@@ -819,6 +826,8 @@
         <span class="c1"># convert python and numpy scalars, which cannot be viewed as arrays</span>
         <span class="c1"># and thus not as Quantity either, to zero-dimensional arrays.</span>
         <span class="c1"># (These are turned back into scalar in `.value`)</span>
+        <span class="c1"># Note that for an ndarray input, the np.array call takes only double</span>
+        <span class="c1"># ``obj.__class is np.ndarray``. So, not worth special-casing.</span>
         <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">obj</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -938,11 +947,24 @@
 <span class="sd">        --------</span>
 <span class="sd">        to : Get a new instance in a different unit.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">unit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">unit</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">unit</span> <span class="ow">is</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
             <span class="n">unit</span> <span class="o">=</span> <span class="n">Unit</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">unit</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="p">:</span>
+            <span class="c1"># We want a view if the unit does not change.  One could check</span>
+            <span class="c1"># with &quot;==&quot;, but that calculates the scale that we need anyway.</span>
+            <span class="c1"># TODO: would be better for `unit.to` to have an in-place flag.</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">_to</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="c1"># Short-cut failed; try default (maybe equivalencies help).</span>
                 <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_to_value</span><span class="p">(</span><span class="n">unit</span><span class="p">,</span> <span class="n">equivalencies</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">is_effectively_unity</span><span class="p">(</span><span class="n">scale</span><span class="p">):</span>
+                    <span class="c1"># not in-place!</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">value</span> <span class="o">*</span> <span class="n">scale</span>
+
         <span class="k">return</span> <span class="n">value</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="k">else</span> <span class="n">value</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
 
     <span class="n">value</span> <span class="o">=</span> <span class="nb">property</span><span class="p">(</span><span class="n">to_value</span><span class="p">,</span>
@@ -1459,10 +1481,16 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="n">_value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="c1"># We&#39;re not a Quantity, so let&#39;s try a more general conversion.</span>
+            <span class="c1"># Plain arrays will be converted to dimensionless in the process,</span>
+            <span class="c1"># but anything with a unit attribute will use that.</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">_value</span> <span class="o">=</span> <span class="n">dimensionless_unscaled</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+                <span class="n">_value</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
             <span class="k">except</span> <span class="n">UnitsError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">can_have_arbitrary_unit</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+                <span class="c1"># last chance: if this was not something with a unit</span>
+                <span class="c1"># and is all 0, inf, or nan, we treat it as arbitrary unit.</span>
+                <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;unit&#39;</span><span class="p">)</span> <span class="ow">and</span>
+                        <span class="n">can_have_arbitrary_unit</span><span class="p">(</span><span class="n">value</span><span class="p">)):</span>
                     <span class="n">_value</span> <span class="o">=</span> <span class="n">value</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="n">exc</span>
@@ -1785,8 +1813,8 @@
     <a href="#">Back to Top</a></p>
   <p>
     &copy; Copyright 2018, The Gammapy developers.<br/>
-    Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.5. &nbsp;
-    Last built 13 Jan 2018. <br/>
+    Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.6. &nbsp;
+    Last built 21 Jan 2018. <br/>
   </p>
 </footer>
   </body>

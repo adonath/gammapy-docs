@@ -8,12 +8,12 @@
 # 
 # TODO: use which example dataset? 2FHL / 3FGL and/or HESS DL3 DR1?
 # 
-# In this tutorial we'll learn how to use [gammapy.time](http://docs.gammapy.org/en/latest/time/index.html) to run time analyses with Gammapy.
+# In this tutorial we'll learn how to use [gammapy.time](http://docs.gammapy.org/dev/time/index.html) to run time analyses with Gammapy.
 # 
 # We will learn about:
 # 
-# * [gammapy.time.LightCurve](http://docs.gammapy.org/en/latest/api/gammapy.time.LightCurve.html)
-# * [gammapy.time.exptest](http://docs.gammapy.org/en/latest/api/gammapy.time.exptest.html)
+# * [gammapy.time.LightCurve](http://docs.gammapy.org/dev/api/gammapy.time.LightCurve.html)
+# * [gammapy.time.exptest](http://docs.gammapy.org/dev/api/gammapy.time.exptest.html)
 # 
 # **
 # Note: there isn't much functionality in gammapy.time at this point.

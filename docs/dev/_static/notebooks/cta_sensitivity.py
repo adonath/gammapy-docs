@@ -9,8 +9,8 @@
 # 
 # We will be using the following Gammapy classes:
 # 
-# * [gammapy.scripts.CTAIrf](http://docs.gammapy.org/en/latest/api/gammapy.scripts.CTAIrf.html)
-# * [gammapy.scripts.SensitivityEstimator](http://docs.gammapy.org/en/latest/api/gammapy.scripts.SensitivityEstimator.html)
+# * [gammapy.scripts.CTAIrf](http://docs.gammapy.org/dev/api/gammapy.scripts.CTAIrf.html)
+# * [gammapy.scripts.SensitivityEstimator](http://docs.gammapy.org/dev/api/gammapy.scripts.SensitivityEstimator.html)
 
 # ## Setup
 # As usual, we'll start with some setup ...

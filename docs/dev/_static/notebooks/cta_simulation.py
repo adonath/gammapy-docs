@@ -9,10 +9,10 @@
 # 
 # We will go through the following topics: 
 # 
-# - handling of Fermi/LAT 3FHL catalogue with [gammapy.catalog.SourceCatalog3FHL](http://docs.gammapy.org/en/latest/catalog/)
-# - handling of EBL tables with [gammapy.spectrum.TableModel](http://docs.gammapy.org/en/latest/api/gammapy.spectrum.models.TableModel.html#gammapy.spectrum.models.TableModel)
-# - handling of CTA responses with [gammapy.scripts.CTAPerf](http://docs.gammapy.org/en/latest/api/gammapy.scripts.CTAPerf.html?highlight=ctaperf)
-# - simulation of an observation for a given set of parameters with [gammapy.scripts.CTAObservationSimulation](http://docs.gammapy.org/en/latest/api/gammapy.scripts.CTAObservationSimulation.html#gammapy.scripts.CTAObservationSimulation)
+# - handling of Fermi/LAT 3FHL catalogue with [gammapy.catalog.SourceCatalog3FHL](http://docs.gammapy.org/dev/catalog/)
+# - handling of EBL tables with [gammapy.spectrum.TableModel](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.TableModel.html#gammapy.spectrum.models.TableModel)
+# - handling of CTA responses with [gammapy.scripts.CTAPerf](http://docs.gammapy.org/dev/api/gammapy.scripts.CTAPerf.html?highlight=ctaperf)
+# - simulation of an observation for a given set of parameters with [gammapy.scripts.CTAObservationSimulation](http://docs.gammapy.org/dev/api/gammapy.scripts.CTAObservationSimulation.html#gammapy.scripts.CTAObservationSimulation)
 # - Illustration of Sherpa power to fit an observation with a user model (coming soon)
 #  
 # ## Setup
@@ -230,7 +230,7 @@ print(simu)
 CTAObservationSimulation.plot_simu(simu, target)
 
 
-# We can access simulation parameters via the [gammapy.spectrum.SpectrumStats](http://docs.gammapy.org/en/latest/api/gammapy.spectrum.SpectrumStats.html#gammapy.spectrum.SpectrumStats) attribute of the [gammapy.spectrum.SpectrumObservation](http://docs.gammapy.org/en/latest/api/gammapy.spectrum.SpectrumObservation.html#gammapy.spectrum.SpectrumObservation) class:
+# We can access simulation parameters via the [gammapy.spectrum.SpectrumStats](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumStats.html#gammapy.spectrum.SpectrumStats) attribute of the [gammapy.spectrum.SpectrumObservation](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumObservation.html#gammapy.spectrum.SpectrumObservation) class:
 
 # In[15]:
 

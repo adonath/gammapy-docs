@@ -12,13 +12,13 @@
 # 
 # These are the inputs to the likelihood fitting step, where you assume a parameterised gamma-ray emission model and fit it to the stacked data.
 # 
-# This notebook is part 1 of 2 of a tutorial how to use [gammapy.cube](http://docs.gammapy.org/en/latest/cube/index.html) to do cube analysis of IACT data. Part 1 is about these pre-computations, part 2 will be about the likelihood fitting.
+# This notebook is part 1 of 2 of a tutorial how to use [gammapy.cube](http://docs.gammapy.org/dev/cube/index.html) to do cube analysis of IACT data. Part 1 is about these pre-computations, part 2 will be about the likelihood fitting.
 # 
 # We will be using the following classes:
-# * [gammapy.data.DataStore](http://docs.gammapy.org/en/latest/api/gammapy.data.DataStore.html) to load the data to stack in the cube
-# * [gammapy.image.SkyImage](http://docs.gammapy.org/en/latest/api/gammapy.image.SkyImage.html) to work with sky images
-# * [gammapy.cube.SkyCube](http://docs.gammapy.org/en/latest/api/gammapy.cube.SkyCube.html) and [gammapy.cube.StackedObsCubeMaker](http://docs.gammapy.org/en/latest/api/gammapy.cube.StackedObsCubeMaker.html) to stack the data in the Cube
-# * [gammapy.data.ObservationList](http://docs.gammapy.org/en/latest/api/gammapy.data.ObservationList.html) to make the computation of the mean PSF and mean RMF from a set of runs.
+# * [gammapy.data.DataStore](http://docs.gammapy.org/dev/api/gammapy.data.DataStore.html) to load the data to stack in the cube
+# * [gammapy.image.SkyImage](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html) to work with sky images
+# * [gammapy.cube.SkyCube](http://docs.gammapy.org/dev/api/gammapy.cube.SkyCube.html) and [gammapy.cube.StackedObsCubeMaker](http://docs.gammapy.org/dev/api/gammapy.cube.StackedObsCubeMaker.html) to stack the data in the Cube
+# * [gammapy.data.ObservationList](http://docs.gammapy.org/dev/api/gammapy.data.ObservationList.html) to make the computation of the mean PSF and mean RMF from a set of runs.
 # 
 # The data used in this tutorial is 4 Crab runs from H.E.S.S..
 

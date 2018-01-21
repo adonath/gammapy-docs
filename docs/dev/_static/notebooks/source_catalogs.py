@@ -5,7 +5,7 @@
 # 
 # ## Introduction
 
-# This notebook shows how to work with gamma-ray source catalogs using [gammapy.catalog](http://docs.gammapy.org/en/latest/catalog/index.html)
+# This notebook shows how to work with gamma-ray source catalogs using [gammapy.catalog](http://docs.gammapy.org/dev/catalog/index.html)
 # 
 # * Load GeV and TeV gamma-ray source catalogs
 # * Select a given source and plot it's spectral model and spectral points
@@ -18,9 +18,9 @@
 # References:
 # 
 # * [astropy.table](http://astropy.readthedocs.io/en/latest/table/index.html)
-# * [gammapy.catalog](http://docs.gammapy.org/en/latest/catalog/index.html)
-# * [gammapy.catalog.SourceCatalog3FGL](http://docs.gammapy.org/en/latest/api/gammapy.catalog.SourceCatalog3FGL.html) and [gammapy.catalog.SourceCatalogObject3FGL](http://docs.gammapy.org/en/latest/api/gammapy.catalog.SourceCatalogObject3FGL.html)
-# * [gammapy.catalog.SourceCatalogGammaCat](http://docs.gammapy.org/en/latest/api/gammapy.catalog.SourceCatalogGammaCat.html) and [gammapy.catalog.SourceCatalogObjectGammaCat](http://docs.gammapy.org/en/latest/api/gammapy.catalog.SourceCatalogObjectGammaCat.html)
+# * [gammapy.catalog](http://docs.gammapy.org/dev/catalog/index.html)
+# * [gammapy.catalog.SourceCatalog3FGL](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalog3FGL.html) and [gammapy.catalog.SourceCatalogObject3FGL](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogObject3FGL.html)
+# * [gammapy.catalog.SourceCatalogGammaCat](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogGammaCat.html) and [gammapy.catalog.SourceCatalogObjectGammaCat](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogObjectGammaCat.html)
 # 
 # 
 # ## Setup
@@ -99,7 +99,7 @@ type(gammacat_source.data)
 # 
 # Here's an example how to plot a TeV SED.
 # 
-# TODO: move content from this section and http://docs.gammapy.org/en/latest/spectrum/plotting_fermi_spectra.html to a separate notebook about SED access and plotting
+# TODO: move content from this section and http://docs.gammapy.org/dev/spectrum/plotting_fermi_spectra.html to a separate notebook about SED access and plotting
 
 # In[17]:
 
@@ -148,7 +148,7 @@ type(fermi_3fgl_source.data)
 
 # ## Loading catalogs
 
-# The [gammapy.datasets](https://gammapy.readthedocs.org/en/latest/datasets/index.html)
+# The [gammapy.datasets](http://docs.gammapy.org/dev/datasets/index.html)
 # module gives you quick access to the most important gamma-ray source catalogs
 # as [Astropy table objects](http://astropy.readthedocs.org/en/latest/table/index.html).
 # 

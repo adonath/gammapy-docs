@@ -7,17 +7,17 @@
 # 
 # This tutorial shows how to make a significance image of the Crab nebula with Gammapy.
 # 
-# * Use the [gammapy.data.DataStore](http://docs.gammapy.org/en/latest/api/gammapy.data.DataStore.html)
-#   to load [gammapy.data.EventList](http://docs.gammapy.org/en/latest/api/gammapy.data.EventList.html) data.
-# * Fill the events in a [gammapy.image.SkyImage](http://docs.gammapy.org/en/latest/api/gammapy.image.SkyImage.html)
+# * Use the [gammapy.data.DataStore](http://docs.gammapy.org/dev/api/gammapy.data.DataStore.html)
+#   to load [gammapy.data.EventList](http://docs.gammapy.org/dev/api/gammapy.data.EventList.html) data.
+# * Fill the events in a [gammapy.image.SkyImage](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html)
 # 
 # 
 # * We'll use the [astropy.convolution.Tophat2DKernel](http://docs.astropy.org/en/latest/api/astropy.convolution.Tophat2DKernel.html) and 
-#  [astropy.convolution.Ring2DKernel](http://docs.astropy.org/en/latest/api/astropy.convolution.Ring2DKernel.html) kernels and the [gammapy.detect.KernelBackgroundEstimator](http://docs.gammapy.org/en/latest/api/gammapy.detect.KernelBackgroundEstimator.html) to estimate the background.
-# * Run [gammapy.scripts.StackedObsImageMaker](http://docs.gammapy.org/en/latest/api/gammapy.scripts.StackedObsImageMaker.html) to get images and PSF.
+#  [astropy.convolution.Ring2DKernel](http://docs.astropy.org/en/latest/api/astropy.convolution.Ring2DKernel.html) kernels and the [gammapy.detect.KernelBackgroundEstimator](http://docs.gammapy.org/dev/api/gammapy.detect.KernelBackgroundEstimator.html) to estimate the background.
+# * Run [gammapy.scripts.StackedObsImageMaker](http://docs.gammapy.org/dev/api/gammapy.scripts.StackedObsImageMaker.html) to get images and PSF.
 # 
 # 
-# TODO: Refactor [gammapy.scripts.image_fit](http://docs.gammapy.org/en/latest/api/gammapy.scripts.image_fit.html) into a class (simiar to `gammapy.spectrum.SpectrumFit`) and run it here to fit a Gauss and get the position / extension.
+# TODO: Refactor [gammapy.scripts.image_fit](http://docs.gammapy.org/dev/api/gammapy.scripts.image_fit.html) into a class (simiar to `gammapy.spectrum.SpectrumFit`) and run it here to fit a Gauss and get the position / extension.
 
 # ## Setup
 # 
@@ -119,7 +119,7 @@ counts_image2.smooth(radius=0.1 * u.deg).plot(norm=norm, add_cbar=True)
 # 
 # In Gammapy a few different methods to estimate the background are available.
 # 
-# Here we'll use the [gammapy.detect.KernelBackgroundEstimator](http://docs.gammapy.org/en/latest/api/gammapy.detect.KernelBackgroundEstimator.html) to make a background image
+# Here we'll use the [gammapy.detect.KernelBackgroundEstimator](http://docs.gammapy.org/dev/api/gammapy.detect.KernelBackgroundEstimator.html) to make a background image
 # and the make a significance image.
 
 # In[10]:

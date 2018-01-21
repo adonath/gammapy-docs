@@ -11,8 +11,8 @@
 # 
 # The following parts of Gammapy are used:
 # 
-# * [gammapy.image.SkyImage](http://docs.gammapy.org/en/latest/api/gammapy.image.SkyImage.html)
-# * [gammapy.detect.KernelBackgroundEstimator](http://docs.gammapy.org/en/latest/api/gammapy.detect.KernelBackgroundEstimator.html)
+# * [gammapy.image.SkyImage](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html)
+# * [gammapy.detect.KernelBackgroundEstimator](http://docs.gammapy.org/dev/api/gammapy.detect.KernelBackgroundEstimator.html)
 # * TODO: code to simulate images from a source catalog is where?!?
 # 
 # 
