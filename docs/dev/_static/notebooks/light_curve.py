@@ -145,13 +145,13 @@ lc = lc_estimator.light_curve(
 # In[10]:
 
 
-print(lc.colnames)
+print(lc.table.colnames)
 
 
 # In[11]:
 
 
-lc['TIME_MIN', 'TIME_MAX', 'FLUX', 'FLUX_ERR', 'MEASURED_EXCESS', 'EXPECTED_EXCESS']
+lc.table['time_min', 'time_max', 'flux', 'flux_err', 'livetime', 'n_on', 'n_off', 'alpha', 'measured_excess', 'expected_excess']
 
 
 # In[12]:

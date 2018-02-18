@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>gammapy.image.basic &#8212; gammapy v0.7.dev5441</title>
+    <title>gammapy.image.basic &#8212; gammapy v0.7.dev5530</title>
     <link rel="stylesheet" href="../../../_static/gammapy.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     '0.7.dev5441',
+        VERSION:     '0.7.dev5530',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -55,7 +55,7 @@
     <h3>Navigation</h3>
     <ul>
       <li>
-	<a href="../../../index.html">gammapy v0.7.dev5441</a>
+	<a href="../../../index.html">gammapy v0.7.dev5530</a>
 	 &#187;
       </li>
       <li><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
@@ -80,6 +80,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">astropy</span> <span class="k">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="k">import</span> <span class="n">Angle</span>
+<span class="kn">from</span> <span class="nn">astropy.wcs</span> <span class="k">import</span> <span class="n">WCS</span>
 <span class="kn">from</span> <span class="nn">..utils.energy</span> <span class="k">import</span> <span class="n">Energy</span>
 <span class="kn">from</span> <span class="nn">.core</span> <span class="k">import</span> <span class="n">SkyImage</span>
 <span class="kn">from</span> <span class="nn">.lists</span> <span class="k">import</span> <span class="n">SkyImageList</span>
@@ -164,6 +165,7 @@
 
         <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">):</span>
             <span class="n">flux</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="n">excess</span> <span class="o">/</span> <span class="n">images</span><span class="p">[</span><span class="s1">&#39;exposure&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">flux</span><span class="o">.</span><span class="n">unit</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">images</span><span class="p">[</span><span class="s1">&#39;exposure&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span><span class="o">.</span><span class="n">unit</span>
 
         <span class="n">is_zero</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="s1">&#39;exposure&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="mi">0</span>
         <span class="n">flux</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">is_zero</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
@@ -265,16 +267,22 @@
         <span class="n">exposure</span> <span class="o">=</span> <span class="n">exposure_cube</span><span class="o">.</span><span class="n">sky_image_integral</span><span class="p">(</span><span class="n">emin</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;emin&#39;</span><span class="p">],</span> <span class="n">emax</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;emax&#39;</span><span class="p">])</span>
 
         <span class="n">exposure</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;exposure&#39;</span>
+        <span class="n">exposure</span><span class="o">.</span><span class="n">unit</span> <span class="o">=</span> <span class="n">exposure</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">unit</span>
         <span class="n">exposure</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">exposure</span>
 
-<div class="viewcode-block" id="IACTBasicImageEstimator.psf"><a class="viewcode-back" href="../../../api/gammapy.image.IACTBasicImageEstimator.html#gammapy.image.IACTBasicImageEstimator.psf">[docs]</a>    <span class="k">def</span> <span class="nf">psf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observations</span><span class="p">):</span>
+<div class="viewcode-block" id="IACTBasicImageEstimator.psf"><a class="viewcode-back" href="../../../api/gammapy.image.IACTBasicImageEstimator.html#gammapy.image.IACTBasicImageEstimator.psf">[docs]</a>    <span class="k">def</span> <span class="nf">psf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observations</span><span class="p">,</span> <span class="n">containment_fraction</span> <span class="o">=</span> <span class="mf">0.99</span><span class="p">,</span> <span class="n">rad_max</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Mean point spread function kernel image.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        observations : `~gammapy.data.ObservationList`</span>
 <span class="sd">            List of observations</span>
+<span class="sd">        containment_fraction : float (0.99)</span>
+<span class="sd">            Minimum PSF containment fraction included in kernel image.</span>
+<span class="sd">        rad_max : `~astropy.coordinates.Angle` (None)</span>
+<span class="sd">            If specified, passed to `~gammapy.irf.TablePSF.kernel`;</span>
+<span class="sd">            containment_fraction is then ignored.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -282,15 +290,30 @@
 <span class="sd">            PSF kernel as sky image.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
-        <span class="n">psf_image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_empty_skyimage</span><span class="p">(</span><span class="s1">&#39;psf&#39;</span><span class="p">)</span>
-        <span class="n">mean_psf</span> <span class="o">=</span> <span class="n">observations</span><span class="o">.</span><span class="n">make_mean_psf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reference</span><span class="o">.</span><span class="n">center</span><span class="p">)</span>
+
+        <span class="n">refskyim</span>  <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reference</span>
+        <span class="n">refskypos</span> <span class="o">=</span> <span class="n">refskyim</span><span class="o">.</span><span class="n">center</span>
+        <span class="n">mean_psf</span> <span class="o">=</span> <span class="n">observations</span><span class="o">.</span><span class="n">make_mean_psf</span><span class="p">(</span><span class="n">refskypos</span><span class="p">)</span>
+
         <span class="n">erange</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">((</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;emin&#39;</span><span class="p">],</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;emax&#39;</span><span class="p">]))</span>
         <span class="n">psf_mean</span> <span class="o">=</span> <span class="n">mean_psf</span><span class="o">.</span><span class="n">table_psf_in_energy_band</span><span class="p">(</span><span class="n">erange</span><span class="p">,</span> <span class="n">spectrum</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spectral_model</span><span class="p">)</span>
 
-        <span class="n">coordinates</span> <span class="o">=</span> <span class="n">psf_image</span><span class="o">.</span><span class="n">coordinates</span><span class="p">()</span>
-        <span class="n">offset</span> <span class="o">=</span> <span class="n">coordinates</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">psf_image</span><span class="o">.</span><span class="n">center</span><span class="p">)</span>
-        <span class="n">psf_image</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">psf_mean</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>
-        <span class="n">psf_image</span><span class="o">.</span><span class="n">data</span> <span class="o">/=</span> <span class="n">psf_image</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">rad_max</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">rad_max</span> <span class="o">=</span> <span class="n">psf_mean</span><span class="o">.</span><span class="n">containment_radius</span><span class="p">(</span><span class="n">containment_fraction</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rad_max</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">rad_max</span><span class="p">)</span>
+
+        <span class="n">psfkern</span> <span class="o">=</span> <span class="n">psf_mean</span><span class="o">.</span><span class="n">kernel</span><span class="p">(</span><span class="n">refskyim</span><span class="p">,</span> <span class="n">rad_max</span><span class="p">)</span>
+        <span class="n">psfunit</span> <span class="o">=</span> <span class="n">psfkern</span><span class="o">.</span><span class="n">unit</span>
+        <span class="n">psfdata</span> <span class="o">=</span> <span class="n">psfkern</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="n">psfhead</span> <span class="o">=</span> <span class="n">refskyim</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">to_header</span><span class="p">()</span>
+        <span class="n">radnpix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">psfdata</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">psfhead</span><span class="p">[</span><span class="s1">&#39;CRPIX1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">radnpix</span> <span class="o">+</span> <span class="mf">1.0</span>
+        <span class="n">psfhead</span><span class="p">[</span><span class="s1">&#39;CRPIX2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">radnpix</span> <span class="o">+</span> <span class="mf">1.0</span>
+        <span class="n">psfwcs</span> <span class="o">=</span> <span class="n">WCS</span><span class="p">(</span><span class="n">psfhead</span><span class="p">)</span>
+
+        <span class="n">psf_image</span> <span class="o">=</span> <span class="n">SkyImage</span><span class="p">(</span><span class="s1">&#39;psf&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">psfdata</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="n">psfwcs</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">psfunit</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">psf_image</span></div>
 
     <span class="k">def</span> <span class="nf">_counts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observation</span><span class="p">):</span>
@@ -357,6 +380,9 @@
             <span class="k">if</span> <span class="s1">&#39;exposure&#39;</span> <span class="ow">in</span> <span class="n">which</span><span class="p">:</span>
                 <span class="n">exposure</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exposure</span><span class="p">(</span><span class="n">observation</span><span class="p">)</span>
                 <span class="n">result</span><span class="p">[</span><span class="s1">&#39;exposure&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">paste</span><span class="p">(</span><span class="n">exposure</span><span class="p">)</span>
+                <span class="c1"># TODO: improve SkyImage.paste() so that it enforces compatibility</span>
+                <span class="c1"># of units when doing the sum. The fix below can then be removed.</span>
+                <span class="n">result</span><span class="p">[</span><span class="s1">&#39;exposure&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span> <span class="o">=</span> <span class="n">exposure</span><span class="o">.</span><span class="n">unit</span>
 
             <span class="k">if</span> <span class="s1">&#39;counts&#39;</span> <span class="ow">in</span> <span class="n">which</span><span class="p">:</span>
                 <span class="n">counts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_counts</span><span class="p">(</span><span class="n">observation</span><span class="p">)</span>
@@ -380,6 +406,9 @@
             <span class="k">if</span> <span class="s1">&#39;flux&#39;</span> <span class="ow">in</span> <span class="n">which</span><span class="p">:</span>
                 <span class="n">flux</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="p">(</span><span class="n">SkyImageList</span><span class="p">([</span><span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">exposure</span><span class="p">]))</span>
                 <span class="n">result</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">paste</span><span class="p">(</span><span class="n">flux</span><span class="p">)</span>
+                <span class="c1"># TODO: improve SkyImage.paste() so that it enforces compatibility</span>
+                <span class="c1"># of units when doing the sum. The fix below can then be removed.</span>
+                <span class="n">result</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">unit</span>
 
         <span class="k">if</span> <span class="s1">&#39;psf&#39;</span> <span class="ow">in</span> <span class="n">which</span><span class="p">:</span>
             <span class="n">result</span><span class="p">[</span><span class="s1">&#39;psf&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="p">(</span><span class="n">observations</span><span class="p">)</span>
@@ -710,8 +739,8 @@
     <a href="#">Back to Top</a></p>
   <p>
     &copy; Copyright 2018, The Gammapy developers.<br/>
-    Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.6. &nbsp;
-    Last built 02 Feb 2018. <br/>
+    Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.7. &nbsp;
+    Last built 18 Feb 2018. <br/>
   </p>
 </footer>
   </body>

@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>gammapy.maps.base &#8212; gammapy v0.7.dev5441</title>
+    <title>gammapy.maps.base &#8212; gammapy v0.7.dev5530</title>
     <link rel="stylesheet" href="../../../_static/gammapy.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     '0.7.dev5441',
+        VERSION:     '0.7.dev5530',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -55,7 +55,7 @@
     <h3>Navigation</h3>
     <ul>
       <li>
-	<a href="../../../index.html">gammapy v0.7.dev5441</a>
+	<a href="../../../index.html">gammapy v0.7.dev5530</a>
 	 &#187;
       </li>
       <li><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
@@ -74,7 +74,9 @@
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
 <span class="kn">import</span> <span class="nn">abc</span>
+<span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
 <span class="kn">from</span> <span class="nn">..extern</span> <span class="k">import</span> <span class="n">six</span>
 <span class="kn">from</span> <span class="nn">astropy.utils.misc</span> <span class="k">import</span> <span class="n">InheritDocstrings</span>
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
@@ -102,11 +104,17 @@
 <span class="sd">        Geometry</span>
 <span class="sd">    data : `~numpy.ndarray`</span>
 <span class="sd">        Data array</span>
+<span class="sd">    meta : `~collections.OrderedDict`</span>
+<span class="sd">        Dictionary to store meta data.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_geom</span> <span class="o">=</span> <span class="n">geom</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="k">if</span> <span class="n">meta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -152,6 +160,8 @@
 <span class="sd">            Data type, default is ``float32``</span>
 <span class="sd">        unit : str or `~astropy.units.Unit`</span>
 <span class="sd">            Data unit.</span>
+<span class="sd">        meta : `~collections.OrderedDict`</span>
+<span class="sd">            Dictionary to store meta data.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -162,7 +172,6 @@
         <span class="kn">from</span> <span class="nn">.wcsmap</span> <span class="k">import</span> <span class="n">WcsMap</span>
 
         <span class="n">map_type</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;map_type&#39;</span><span class="p">,</span> <span class="s1">&#39;wcs&#39;</span><span class="p">)</span>
-
         <span class="k">if</span> <span class="s1">&#39;wcs&#39;</span> <span class="ow">in</span> <span class="n">map_type</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
             <span class="k">return</span> <span class="n">WcsMap</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">elif</span> <span class="s1">&#39;hpx&#39;</span> <span class="ow">in</span> <span class="n">map_type</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
@@ -197,14 +206,66 @@
 <span class="sd">            Map object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">with</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">hdulist</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">map_type</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
-                <span class="n">map_type</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_map_type</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="p">)</span>
-
-            <span class="n">cls_out</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_map_cls</span><span class="p">(</span><span class="n">map_type</span><span class="p">)</span>
-            <span class="n">map_out</span> <span class="o">=</span> <span class="n">cls_out</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="n">hdu</span><span class="p">,</span>
-                                           <span class="n">hdu_bands</span><span class="o">=</span><span class="n">hdu_bands</span><span class="p">)</span>
+            <span class="n">map_out</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_hdu_list</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="p">,</span> <span class="n">hdu_bands</span><span class="p">,</span> <span class="n">map_type</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">map_out</span></div>
+
+<div class="viewcode-block" id="Map.from_geom"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.from_geom">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_geom</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">map_type</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generate an empty map from a `~Geom` instance.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        geom : `~MapGeom`</span>
+<span class="sd">            Map geometry.</span>
+
+<span class="sd">        meta : `~collections.OrderedDict`</span>
+<span class="sd">            Dictionary to store meta data.</span>
+
+<span class="sd">        map_type : {&#39;wcs&#39;, &#39;wcs-sparse&#39;, &#39;hpx&#39;, &#39;hpx-sparse&#39;, &#39;auto&#39;}        </span>
+<span class="sd">            Map type.  Selects the class that will be used to</span>
+<span class="sd">            instantiate the map.  The map type should be consistent</span>
+<span class="sd">            with the geometry.  If map_type is &#39;auto&#39; then an</span>
+<span class="sd">            appropriate map type will be inferred from type of</span>
+<span class="sd">            ``geom``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        map_out : `~Map`</span>
+<span class="sd">            Map object</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">map_type</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
+
+            <span class="kn">from</span> <span class="nn">.hpx</span> <span class="k">import</span> <span class="n">HpxGeom</span>
+            <span class="kn">from</span> <span class="nn">.wcs</span> <span class="k">import</span> <span class="n">WcsGeom</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">HpxGeom</span><span class="p">):</span>
+                <span class="n">map_type</span> <span class="o">=</span> <span class="s1">&#39;hpx&#39;</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">WcsGeom</span><span class="p">):</span>
+                <span class="n">map_type</span> <span class="o">=</span> <span class="s1">&#39;wcs&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unrecognized geom type.&#39;</span><span class="p">)</span>
+
+        <span class="n">cls_out</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_map_cls</span><span class="p">(</span><span class="n">map_type</span><span class="p">)</span>
+        <span class="n">map_out</span> <span class="o">=</span> <span class="n">cls_out</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">map_out</span></div>
+
+<div class="viewcode-block" id="Map.from_hdu_list"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.from_hdu_list">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_hdu_list</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hdu_bands</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">map_type</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">map_type</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
+            <span class="n">map_type</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_map_type</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="p">)</span>
+        <span class="n">cls_out</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_map_cls</span><span class="p">(</span><span class="n">map_type</span><span class="p">)</span>
+        <span class="n">map_out</span> <span class="o">=</span> <span class="n">cls_out</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="n">hdu</span><span class="p">,</span> <span class="n">hdu_bands</span><span class="o">=</span><span class="n">hdu_bands</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">map_out</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_meta_from_header</span><span class="p">(</span><span class="n">header</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Load meta data from a FITS header.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s1">&#39;META&#39;</span> <span class="ow">in</span> <span class="n">header</span><span class="p">:</span>
+            <span class="n">meta</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;META&#39;</span><span class="p">],</span> <span class="n">object_pairs_hook</span><span class="o">=</span><span class="n">OrderedDict</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">meta</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="n">meta</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_get_map_type</span><span class="p">(</span><span class="n">hdu_list</span><span class="p">,</span> <span class="n">hdu_name</span><span class="p">):</span>
@@ -338,6 +399,24 @@
         <span class="sd">&quot;&quot;&quot;Reduce to a 2D image by summing over non-spatial dimensions.&quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
+<div class="viewcode-block" id="Map.coadd"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.coadd">[docs]</a>    <span class="k">def</span> <span class="nf">coadd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">map_in</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add the contents of ``map_in`` to this map.  This method can be</span>
+<span class="sd">        used to combine maps containing integral quantities (e.g. counts)</span>
+<span class="sd">        or differential quantities if the maps have the same binning.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        map_in : `~Map`</span>
+<span class="sd">            Input map.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: Check whether geometries are aligned and if so sum the</span>
+        <span class="c1"># data vectors directly</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">map_in</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_idx</span><span class="p">()</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">map_in</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_coords</span><span class="p">()</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="n">map_in</span><span class="o">.</span><span class="n">get_by_idx</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fill_by_coords</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="Map.reproject"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.reproject">[docs]</a>    <span class="k">def</span> <span class="nf">reproject</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;interp&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Reproject this map to a different geometry.</span>
 
@@ -369,47 +448,63 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reproject_wcs</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Map.pad"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.pad">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
-    <span class="k">def</span> <span class="nf">pad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pad_width</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">pad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pad_width</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;constant&#39;</span><span class="p">,</span> <span class="n">cval</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Pad the spatial dimension of the map by extending the edge of the</span>
 <span class="sd">        map by the given number of pixels.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        pad_width : {sequence, array_like, int}</span>
-<span class="sd">            Number of values padded to the edges of each axis, passed to `numpy.pad`</span>
+<span class="sd">            Number of pixels padded to the edges of each axis.</span>
+<span class="sd">        mode : {&#39;edge&#39;, &#39;constant&#39;, &#39;interp&#39;}</span>
+<span class="sd">            Padding mode.  &#39;edge&#39; pads with the closest edge value.</span>
+<span class="sd">            &#39;constant&#39; pads with a constant value. &#39;interp&#39; pads with</span>
+<span class="sd">            an extrapolated value.</span>
+<span class="sd">        cval : float</span>
+<span class="sd">            Padding value when mode=&#39;consant&#39;.</span>
+<span class="sd">        order : int</span>
+<span class="sd">            Order of interpolation when mode=&#39;constant&#39; (0 =</span>
+<span class="sd">            nearest-neighbor, 1 = linear, 2 = quadratic, 3 = cubic).</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        map : `~Map`</span>
 <span class="sd">            Padded map.</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
 <div class="viewcode-block" id="Map.crop"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.crop">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
     <span class="k">def</span> <span class="nf">crop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">crop_width</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Crop the spatial dimension of the map.</span>
+        <span class="sd">&quot;&quot;&quot;Crop the spatial dimension of the map by removing a number of</span>
+<span class="sd">        pixels from the edge of the map.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        crop_width : {sequence, array_like, int}</span>
-<span class="sd">            Number of values cropped from the edges of each axis.</span>
+<span class="sd">            Number of pixels cropped from the edges of each axis.</span>
 <span class="sd">            Defined analogously to `pad_with` from `~numpy.pad`.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        map : `~Map`</span>
 <span class="sd">            Cropped map.</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
 <div class="viewcode-block" id="Map.downsample"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.downsample">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
-    <span class="k">def</span> <span class="nf">downsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">downsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">preserve_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Downsample the spatial dimension of the map by a given factor. </span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        factor : int</span>
 <span class="sd">            Downsampling factor.</span>
+<span class="sd">        preserve_counts : bool</span>
+<span class="sd">            Preserve the integral over each bin.  This should be true</span>
+<span class="sd">            if the map is an integral quantity (e.g. counts) and false if</span>
+<span class="sd">            the map is a differential quantity (e.g. intensity).</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -419,18 +514,25 @@
         <span class="k">pass</span></div>
 
 <div class="viewcode-block" id="Map.upsample"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.upsample">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
-    <span class="k">def</span> <span class="nf">upsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">upsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">preserve_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Upsample the spatial dimension of the map by a given factor. </span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        factor : int</span>
 <span class="sd">            Upsampling factor.</span>
+<span class="sd">        order : int</span>
+<span class="sd">            Order of the interpolation used for upsampling.</span>
+<span class="sd">        preserve_counts : bool</span>
+<span class="sd">            Preserve the integral over each bin.  This should be true</span>
+<span class="sd">            if the map is an integral quantity (e.g. counts) and false if</span>
+<span class="sd">            the map is a differential quantity (e.g. intensity).</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        map : `~Map`</span>
 <span class="sd">            Upsampled map.</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
@@ -695,8 +797,8 @@
     <a href="#">Back to Top</a></p>
   <p>
     &copy; Copyright 2018, The Gammapy developers.<br/>
-    Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.6. &nbsp;
-    Last built 02 Feb 2018. <br/>
+    Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.7. &nbsp;
+    Last built 18 Feb 2018. <br/>
   </p>
 </footer>
   </body>

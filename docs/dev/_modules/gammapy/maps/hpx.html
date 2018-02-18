@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>gammapy.maps.hpx &#8212; gammapy v0.7.dev5441</title>
+    <title>gammapy.maps.hpx &#8212; gammapy v0.7.dev5530</title>
     <link rel="stylesheet" href="../../../_static/gammapy.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     '0.7.dev5441',
+        VERSION:     '0.7.dev5530',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -55,7 +55,7 @@
     <h3>Navigation</h3>
     <ul>
       <li>
-	<a href="../../../index.html">gammapy v0.7.dev5441</a>
+	<a href="../../../index.html">gammapy v0.7.dev5530</a>
 	 &#187;
       </li>
       <li><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
@@ -403,6 +403,58 @@
         <span class="k">return</span> <span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)]</span> <span class="o">+</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
 
 
+<span class="k">def</span> <span class="nf">get_hpxregion_dir</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="n">coordsys</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get the reference direction for a HEALPIX region string.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    region : str</span>
+<span class="sd">        A string describing a HEALPIX region</span>
+<span class="sd">    coordsys : {&#39;CEL&#39;, &#39;GAL&#39;}</span>
+<span class="sd">        Coordinate system</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">frame</span> <span class="o">=</span> <span class="n">coordsys_to_frame</span><span class="p">(</span><span class="n">coordsys</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">region</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span>
+
+    <span class="n">tokens</span> <span class="o">=</span> <span class="n">parse_hpxregion</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;DISK&#39;</span><span class="p">,</span> <span class="s1">&#39;DISK_INC&#39;</span><span class="p">]:</span>
+        <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;HPX_PIXEL&#39;</span><span class="p">:</span>
+        <span class="n">nside_pix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">ipix_pix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;NESTED&#39;</span><span class="p">:</span>
+            <span class="n">nest_pix</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;RING&#39;</span><span class="p">:</span>
+            <span class="n">nest_pix</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;Did not recognize ordering scheme: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="n">theta</span><span class="p">,</span> <span class="n">phi</span> <span class="o">=</span> <span class="n">hp</span><span class="o">.</span><span class="n">pix2ang</span><span class="p">(</span><span class="n">nside_pix</span><span class="p">,</span> <span class="n">ipix_pix</span><span class="p">,</span> <span class="n">nest_pix</span><span class="p">)</span>
+        <span class="n">lat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">theta</span><span class="p">)</span>
+        <span class="n">lon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s1">&#39;HPX.get_ref_dir did not recognize region type: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+    <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span> <span class="nf">get_hpxregion_size</span><span class="p">(</span><span class="n">region</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get the approximate size of region (in degrees) from a HEALPIX region string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tokens</span> <span class="o">=</span> <span class="n">parse_hpxregion</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;DISK&#39;</span><span class="p">,</span> <span class="s1">&#39;DISK_INC&#39;</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;HPX_PIXEL&#39;</span><span class="p">:</span>
+        <span class="n">pix_size</span> <span class="o">=</span> <span class="n">get_pix_size_from_nside</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">pix_size</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Did not recognize region type: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+
+
 <span class="k">def</span> <span class="nf">is_power2</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Check if an integer is a power of 2.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">((</span><span class="n">n</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
@@ -430,6 +482,119 @@
 <span class="k">def</span> <span class="nf">pix_to_upix</span><span class="p">(</span><span class="n">pix</span><span class="p">,</span> <span class="n">nside</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Compute the unique pixel number from the pixel number and nside.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="n">pix</span> <span class="o">+</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">nside</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_superpixels</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">nside_subpix</span><span class="p">,</span> <span class="n">nside_superpix</span><span class="p">,</span> <span class="n">nest</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute the indices of superpixels that contain a subpixel.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    idx : `~numpy.ndarray`</span>
+<span class="sd">        Array of HEALPix pixel indices for subpixels of NSIDE</span>
+<span class="sd">        ``nside_subpix``.</span>
+
+<span class="sd">    nside_subpix  : int or `~numpy.ndarray`</span>
+<span class="sd">        NSIDE of subpixel.</span>
+
+<span class="sd">    nside_superpix : int or `~numpy.ndarray`</span>
+<span class="sd">        NSIDE of superpixel.</span>
+
+<span class="sd">    nest : bool</span>
+<span class="sd">        If True, assume NESTED pixel ordering, otherwise, RING pixel</span>
+<span class="sd">        ordering.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    idx_super : `~numpy.ndarray`</span>
+<span class="sd">        Indices of HEALpix pixels of nside ``nside_superpix`` that</span>
+<span class="sd">        contain pixel indices ``idx`` of nside ``nside_subpix``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
+
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+    <span class="n">nside_superpix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">nside_superpix</span><span class="p">)</span>
+    <span class="n">nside_subpix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">nside_subpix</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">nest</span><span class="p">:</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">hp</span><span class="o">.</span><span class="n">ring2nest</span><span class="p">(</span><span class="n">nside_subpix</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="o">~</span><span class="n">is_power2</span><span class="p">(</span><span class="n">nside_superpix</span><span class="p">))</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="o">~</span><span class="n">is_power2</span><span class="p">(</span><span class="n">nside_subpix</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;NSIDE must be a power of 2.&#39;</span><span class="p">)</span>
+
+    <span class="n">ratio</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">nside_subpix</span> <span class="o">//</span> <span class="n">nside_superpix</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">ndmin</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">idx</span> <span class="o">//=</span> <span class="n">ratio</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">nest</span><span class="p">:</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">idx</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">hp</span><span class="o">.</span><span class="n">nest2ring</span><span class="p">(</span><span class="n">nside_superpix</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+        <span class="n">idx</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+    <span class="k">return</span> <span class="n">idx</span>
+
+
+<span class="k">def</span> <span class="nf">get_subpixels</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">nside_superpix</span><span class="p">,</span> <span class="n">nside_subpix</span><span class="p">,</span> <span class="n">nest</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute the indices of subpixels contained within superpixels.</span>
+<span class="sd">    This function returns an output array with one additional</span>
+<span class="sd">    dimension of size N for subpixel indices where N is the maximum</span>
+<span class="sd">    number of subpixels for any pair of ``nside_superpix`` and</span>
+<span class="sd">    ``nside_subpix``.  If the number of subpixels is less than N the</span>
+<span class="sd">    remaining subpixel indices will be set to -1.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    idx : `~numpy.ndarray`</span>
+<span class="sd">        Array of HEALPix pixel indices for superpixels of NSIDE</span>
+<span class="sd">        ``nside_superpix``.</span>
+
+<span class="sd">    nside_superpix : int or `~numpy.ndarray`</span>
+<span class="sd">        NSIDE of superpixel.</span>
+
+<span class="sd">    nside_subpix  : int or `~numpy.ndarray`</span>
+<span class="sd">        NSIDE of subpixel.</span>
+
+<span class="sd">    nest : bool</span>
+<span class="sd">        If True, assume NESTED pixel ordering, otherwise, RING pixel</span>
+<span class="sd">        ordering.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    idx_sub : `~numpy.ndarray`</span>
+<span class="sd">        Indices of HEALpix pixels of nside ``nside_subpix`` contained</span>
+<span class="sd">        within pixel indices ``idx`` of nside ``nside_superpix``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">nest</span><span class="p">:</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">hp</span><span class="o">.</span><span class="n">ring2nest</span><span class="p">(</span><span class="n">nside_superpix</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+    <span class="n">nside_superpix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">nside_superpix</span><span class="p">)</span>
+    <span class="n">nside_subpix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">nside_subpix</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="o">~</span><span class="n">is_power2</span><span class="p">(</span><span class="n">nside_superpix</span><span class="p">))</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="o">~</span><span class="n">is_power2</span><span class="p">(</span><span class="n">nside_subpix</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;NSIDE must be a power of 2.&#39;</span><span class="p">)</span>
+
+    <span class="c1"># number of subpixels in each superpixel</span>
+    <span class="n">npix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">nside_subpix</span> <span class="o">//</span> <span class="n">nside_superpix</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">ndmin</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">npix</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">*</span> <span class="n">npix</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">npix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">npix</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">idx</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">idx</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">+</span> <span class="n">x</span>
+        <span class="n">idx</span><span class="p">[</span><span class="n">x</span> <span class="o">&gt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">npix</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">idx</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">+</span> <span class="n">x</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">nest</span><span class="p">:</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">idx</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">hp</span><span class="o">.</span><span class="n">nest2ring</span><span class="p">(</span><span class="n">nside_subpix</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">idx</span><span class="p">)</span>
+        <span class="n">idx</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+    <span class="k">return</span> <span class="n">idx</span>
 
 
 <div class="viewcode-block" id="HpxGeom"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom">[docs]</a><span class="k">class</span> <span class="nc">HpxGeom</span><span class="p">(</span><span class="n">MapGeom</span><span class="p">):</span>
@@ -505,7 +670,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_npix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_npix</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_conv</span> <span class="o">=</span> <span class="n">conv</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_center_skydir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_ref_dir</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">coordsys</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_center_skydir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_ref_dir</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_center_coord</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">skydir_to_lonlat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_center_skydir</span><span class="p">))</span> <span class="o">+</span>
                                    <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">pix_to_coord</span><span class="p">((</span><span class="nb">float</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">nbin</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">)</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_center_pix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coord_to_pix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_center_coord</span><span class="p">)</span>
@@ -530,10 +695,13 @@
 
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
 
-            <span class="c1"># FIXME: How to determine reference direction for explicit</span>
-            <span class="c1"># geom?</span>
+            <span class="n">region</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">region</span><span class="p">]</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">t</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">region</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">region</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">region</span><span class="p">]</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_ipix</span> <span class="o">=</span> <span class="n">ravel_hpx_index</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maxpix</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ipix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ipix</span><span class="p">)</span>
+            <span class="n">region</span> <span class="o">=</span> <span class="n">unravel_hpx_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ipix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maxpix</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_region</span> <span class="o">=</span> <span class="s1">&#39;explicit&#39;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_indxschm</span> <span class="o">=</span> <span class="s1">&#39;EXPLICIT&#39;</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">region</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
@@ -578,7 +746,7 @@
         <span class="n">idx_global</span> <span class="o">=</span> <span class="n">unravel_hpx_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ipix</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maxpix</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">idx_global</span><span class="p">[:</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">idx_local</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span></div>
 
-<div class="viewcode-block" id="HpxGeom.global_to_local"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.global_to_local">[docs]</a>    <span class="k">def</span> <span class="nf">global_to_local</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx_global</span><span class="p">):</span>
+<div class="viewcode-block" id="HpxGeom.global_to_local"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.global_to_local">[docs]</a>    <span class="k">def</span> <span class="nf">global_to_local</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx_global</span><span class="p">,</span> <span class="n">ravel</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compute a global (all-sky) index from a local (partial-sky)</span>
 <span class="sd">        index.</span>
 
@@ -587,6 +755,9 @@
 <span class="sd">        idx_global : tuple</span>
 <span class="sd">            A tuple of pixel indices with global HEALPix pixel</span>
 <span class="sd">            indices.</span>
+
+<span class="sd">        ravel : bool</span>
+<span class="sd">            Return a raveled index.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -617,7 +788,10 @@
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">idx_local</span><span class="p">):</span>
             <span class="n">idx_local</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
 
-        <span class="k">return</span> <span class="n">idx_local</span></div>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ravel</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">idx_local</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ravel_hpx_index</span><span class="p">(</span><span class="n">idx_local</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx_global</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;This implements the global-to-local index lookup.</span>
@@ -650,25 +824,7 @@
             <span class="n">idx_global</span> <span class="o">=</span> <span class="n">unravel_hpx_index</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">idx_global</span><span class="p">,</span> <span class="n">ndmin</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
                                            <span class="bp">self</span><span class="o">.</span><span class="n">_maxpix</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">idx_global</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ndmin</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="n">ravel_hpx_index</span><span class="p">(</span><span class="n">idx_global</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maxpix</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rmap</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">retval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">idx</span><span class="o">.</span><span class="n">size</span><span class="p">),</span> <span class="s1">&#39;i&#39;</span><span class="p">)</span>
-            <span class="n">retval</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">m</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">in1d</span><span class="p">(</span><span class="n">idx</span><span class="o">.</span><span class="n">flat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ipix</span><span class="p">)</span>
-            <span class="n">retval</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ipix</span><span class="p">,</span> <span class="n">idx</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="n">m</span><span class="p">])</span>
-            <span class="n">retval</span> <span class="o">=</span> <span class="n">retval</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">idx</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">retval</span> <span class="o">=</span> <span class="n">idx</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">retval</span> <span class="o">=</span> <span class="n">ravel_hpx_index</span><span class="p">([</span><span class="n">retval</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">idx_global</span><span class="p">[</span><span class="mi">1</span><span class="p">:]),</span>
-                                     <span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">retval</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_to_local</span><span class="p">(</span><span class="n">idx_global</span><span class="p">,</span> <span class="n">ravel</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <div class="viewcode-block" id="HpxGeom.coord_to_pix"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.coord_to_pix">[docs]</a>    <span class="k">def</span> <span class="nf">coord_to_pix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">):</span>
         <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
@@ -691,8 +847,15 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">nside</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nside</span>
 
+            <span class="n">m</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+            <span class="n">theta</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">phi</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
             <span class="n">pix</span> <span class="o">=</span> <span class="n">hp</span><span class="o">.</span><span class="n">ang2pix</span><span class="p">(</span><span class="n">nside</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">nest</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nest</span><span class="p">)</span>
             <span class="n">pix</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">pix</span><span class="p">]</span> <span class="o">+</span> <span class="n">bins</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">m</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pix</span><span class="p">:</span>
+                    <span class="n">p</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
         <span class="k">else</span><span class="p">:</span>
             <span class="n">pix</span> <span class="o">=</span> <span class="n">hp</span><span class="o">.</span><span class="n">ang2pix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">phi</span><span class="p">,</span> <span class="n">nest</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nest</span><span class="p">),</span>
 
@@ -907,23 +1070,23 @@
         <span class="sd">&quot;&quot;&quot;HEALPIX pixel and band indices for every pixel in the map.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_idx</span><span class="p">()</span>
 
-<div class="viewcode-block" id="HpxGeom.ud_graded_hpx"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.ud_graded_hpx">[docs]</a>    <span class="k">def</span> <span class="nf">ud_graded_hpx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">):</span>
+<div class="viewcode-block" id="HpxGeom.to_ud_graded"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.to_ud_graded">[docs]</a>    <span class="k">def</span> <span class="nf">to_ud_graded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Upgrade or downgrade the resolution of this geometry to the given</span>
-<span class="sd">        order.</span>
+<span class="sd">        order.  This method does not preserve the geometry footprint.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        geom : `~HpxGeom`</span>
 <span class="sd">            A HEALPix geometry object.</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="s1">&#39;Upgrade and degrade only implemented for standard maps&#39;</span><span class="p">)</span>
 
-        <span class="c1"># FIXME: Pass ipix as argument</span>
-
+        <span class="n">axes</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="mi">2</span> <span class="o">**</span> <span class="n">order</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nest</span><span class="p">,</span> <span class="n">coordsys</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsys</span><span class="p">,</span>
-                              <span class="n">region</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="n">conv</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">)</span></div>
+                              <span class="n">region</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">,</span> <span class="n">conv</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="HpxGeom.to_swapped"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.to_swapped">[docs]</a>    <span class="k">def</span> <span class="nf">to_swapped</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Make a copy of this geometry with a swapped ORDERING.  (NEST-&gt;RING</span>
@@ -934,10 +1097,9 @@
 <span class="sd">        geom : `~HpxGeom`</span>
 <span class="sd">            A HEALPix geometry object.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># FIXME: Pass ipix as argument</span>
-
+        <span class="n">axes</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="p">,</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">nest</span><span class="p">,</span> <span class="n">coordsys</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsys</span><span class="p">,</span>
-                              <span class="n">region</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="n">conv</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">)</span></div>
+                              <span class="n">region</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">,</span> <span class="n">conv</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="HpxGeom.to_image"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.to_image">[docs]</a>    <span class="k">def</span> <span class="nf">to_image</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">nest</span><span class="p">,</span> <span class="n">coordsys</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsys</span><span class="p">,</span>
@@ -947,6 +1109,111 @@
         <span class="n">axes</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span> <span class="o">+</span> <span class="n">axes</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">nest</span><span class="p">,</span> <span class="n">coordsys</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsys</span><span class="p">,</span>
                               <span class="n">region</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">,</span> <span class="n">conv</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_neighbors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+
+        <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
+
+        <span class="n">nside</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_nside</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+        <span class="n">idx_nb</span> <span class="o">=</span> <span class="p">(</span><span class="n">hp</span><span class="o">.</span><span class="n">get_all_neighbours</span><span class="p">(</span><span class="n">nside</span><span class="p">,</span> <span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">nest</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nest</span><span class="p">),)</span>
+        <span class="n">idx_nb</span> <span class="o">+=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">t</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">idx_nb</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                         <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">idx</span><span class="p">[</span><span class="mi">1</span><span class="p">:]])</span>
+
+        <span class="k">return</span> <span class="n">idx_nb</span>
+
+<div class="viewcode-block" id="HpxGeom.pad"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.pad">[docs]</a>    <span class="k">def</span> <span class="nf">pad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pad_width</span><span class="p">):</span>
+
+        <span class="c1"># FIXME: Should this return an exception?</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_allsky</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_idx</span><span class="p">(</span><span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">idx_r</span> <span class="o">=</span> <span class="n">ravel_hpx_index</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maxpix</span><span class="p">)</span>
+
+        <span class="c1"># TODO: Pre-filter indices to find those close to the edge</span>
+        <span class="n">idx_nb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_neighbors</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+        <span class="n">idx_nb</span> <span class="o">=</span> <span class="n">ravel_hpx_index</span><span class="p">(</span><span class="n">idx_nb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maxpix</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pad_width</span><span class="p">):</span>
+            <span class="c1"># Mask of neighbors that are not contained in the geometry</span>
+            <span class="n">edge_msk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">idx_nb</span><span class="p">,</span> <span class="n">idx_r</span><span class="p">,</span> <span class="n">invert</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">edge_idx</span> <span class="o">=</span> <span class="n">idx_nb</span><span class="p">[</span><span class="n">edge_msk</span><span class="p">]</span>
+            <span class="n">edge_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">edge_idx</span><span class="p">)</span>
+            <span class="n">idx_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">idx_r</span><span class="p">,</span> <span class="n">edge_idx</span><span class="p">)))</span>
+            <span class="n">idx_nb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_neighbors</span><span class="p">(</span>
+                <span class="n">unravel_hpx_index</span><span class="p">(</span><span class="n">edge_idx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maxpix</span><span class="p">))</span>
+            <span class="n">idx_nb</span> <span class="o">=</span> <span class="n">ravel_hpx_index</span><span class="p">(</span><span class="n">idx_nb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maxpix</span><span class="p">)</span>
+
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">unravel_hpx_index</span><span class="p">(</span><span class="n">idx_r</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maxpix</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">nest</span><span class="p">,</span> <span class="n">coordsys</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsys</span><span class="p">,</span>
+                              <span class="n">region</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span> <span class="n">conv</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">,</span>
+                              <span class="n">axes</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="HpxGeom.crop"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.crop">[docs]</a>    <span class="k">def</span> <span class="nf">crop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">crop_width</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_allsky</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Cannot crop an all-sky map.&#39;</span><span class="p">)</span>
+
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_idx</span><span class="p">(</span><span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">idx_r</span> <span class="o">=</span> <span class="n">ravel_hpx_index</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maxpix</span><span class="p">)</span>
+
+        <span class="c1"># TODO: Pre-filter indices to find those close to the edge</span>
+        <span class="n">idx_nb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_neighbors</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+        <span class="n">idx_nb</span> <span class="o">=</span> <span class="n">ravel_hpx_index</span><span class="p">(</span><span class="n">idx_nb</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maxpix</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">crop_width</span><span class="p">):</span>
+
+            <span class="c1"># Mask of pixels that have at least one neighbor not</span>
+            <span class="c1"># contained in the geometry</span>
+            <span class="n">edge_msk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">idx_nb</span><span class="p">,</span> <span class="n">idx_r</span><span class="p">,</span> <span class="n">invert</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">idx_r</span> <span class="o">=</span> <span class="n">idx_r</span><span class="p">[</span><span class="o">~</span><span class="n">edge_msk</span><span class="p">]</span>
+            <span class="n">idx_nb</span> <span class="o">=</span> <span class="n">idx_nb</span><span class="p">[:,</span> <span class="o">~</span><span class="n">edge_msk</span><span class="p">]</span>
+
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">unravel_hpx_index</span><span class="p">(</span><span class="n">idx_r</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maxpix</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">nest</span><span class="p">,</span> <span class="n">coordsys</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsys</span><span class="p">,</span>
+                              <span class="n">region</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span> <span class="n">conv</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">,</span>
+                              <span class="n">axes</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="HpxGeom.upsample"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.upsample">[docs]</a>    <span class="k">def</span> <span class="nf">upsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_power2</span><span class="p">(</span><span class="n">factor</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Upsample factor must be a power of 2.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_allsky</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span> <span class="o">*</span> <span class="n">factor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nest</span><span class="p">,</span> <span class="n">coordsys</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsys</span><span class="p">,</span>
+                                  <span class="n">region</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">,</span> <span class="n">conv</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">,</span>
+                                  <span class="n">axes</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">))</span>
+
+        <span class="n">idx</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_idx</span><span class="p">(</span><span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="n">nside</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_nside</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+
+        <span class="n">idx_new</span> <span class="o">=</span> <span class="n">get_subpixels</span><span class="p">(</span><span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">nside</span><span class="p">,</span> <span class="n">nside</span> <span class="o">*</span> <span class="n">factor</span><span class="p">,</span> <span class="n">nest</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nest</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)):</span>
+            <span class="n">idx</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">idx_new</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx_new</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span> <span class="o">*</span> <span class="n">factor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nest</span><span class="p">,</span> <span class="n">coordsys</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsys</span><span class="p">,</span>
+                              <span class="n">region</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">idx</span><span class="p">),</span> <span class="n">conv</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">,</span>
+                              <span class="n">axes</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="HpxGeom.downsample"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.downsample">[docs]</a>    <span class="k">def</span> <span class="nf">downsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_power2</span><span class="p">(</span><span class="n">factor</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Downsample factor must be a power of 2.&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_allsky</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span> <span class="o">//</span> <span class="n">factor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nest</span><span class="p">,</span> <span class="n">coordsys</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsys</span><span class="p">,</span>
+                                  <span class="n">region</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">,</span> <span class="n">conv</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">,</span>
+                                  <span class="n">axes</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">))</span>
+
+        <span class="n">idx</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_idx</span><span class="p">(</span><span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="n">nside</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_nside</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+        <span class="n">idx_new</span> <span class="o">=</span> <span class="n">get_superpixels</span><span class="p">(</span>
+            <span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">nside</span><span class="p">,</span> <span class="n">nside</span> <span class="o">//</span> <span class="n">factor</span><span class="p">,</span> <span class="n">nest</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nest</span><span class="p">)</span>
+        <span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">idx_new</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span> <span class="o">//</span> <span class="n">factor</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nest</span><span class="p">,</span> <span class="n">coordsys</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsys</span><span class="p">,</span>
+                              <span class="n">region</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">idx</span><span class="p">),</span> <span class="n">conv</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conv</span><span class="p">,</span>
+                              <span class="n">axes</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="HpxGeom.create"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.create">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">nside</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">binsz</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nest</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">coordsys</span><span class="o">=</span><span class="s1">&#39;CEL&#39;</span><span class="p">,</span> <span class="n">region</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -1231,7 +1498,7 @@
             <span class="n">cols</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_header</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="n">extname</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">hdu</span></div>
 
-<div class="viewcode-block" id="HpxGeom.write"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">extname</span><span class="o">=</span><span class="s1">&#39;SKYMAP&#39;</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="HpxGeom.write"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">extname</span><span class="o">=</span><span class="s1">&#39;SKYMAP&#39;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Write input data to a FITS file.</span>
 
 <span class="sd">        Parameters</span>
@@ -1242,7 +1509,7 @@
 <span class="sd">            The name of the output file</span>
 <span class="sd">        extname :</span>
 <span class="sd">            The HDU extension name</span>
-<span class="sd">        clobber : bool</span>
+<span class="sd">        overwrite : bool</span>
 <span class="sd">            True -&gt; overwrite existing files</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">hdu_prim</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">()</span>
@@ -1258,7 +1525,7 @@
             <span class="n">hl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hdu_energy</span><span class="p">)</span>
 
         <span class="n">hdulist</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">(</span><span class="n">hl</span><span class="p">)</span>
-        <span class="n">hdulist</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="n">clobber</span><span class="p">)</span></div>
+        <span class="n">hdulist</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">outfile</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="HpxGeom.get_index_list"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.get_index_list">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">get_index_list</span><span class="p">(</span><span class="n">nside</span><span class="p">,</span> <span class="n">nest</span><span class="p">,</span> <span class="n">region</span><span class="p">):</span>
@@ -1306,62 +1573,44 @@
 
         <span class="k">return</span> <span class="n">ilist</span></div>
 
-<div class="viewcode-block" id="HpxGeom.get_ref_dir"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.get_ref_dir">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">get_ref_dir</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="n">coordsys</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Get the reference direction for a given  HEALPIX region string.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        region : str</span>
-<span class="sd">            A string describing a HEALPIX region</span>
-<span class="sd">        coordsys : {&#39;CEL&#39;, &#39;GAL&#39;}</span>
-<span class="sd">            Coordinate system</span>
+    <span class="k">def</span> <span class="nf">_get_ref_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute the reference direction for this geometry.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
-        <span class="n">frame</span> <span class="o">=</span> <span class="n">coordsys_to_frame</span><span class="p">(</span><span class="n">coordsys</span><span class="p">)</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="n">coordsys_to_frame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsys</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">region</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;deg&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;explicit&#39;</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">unravel_hpx_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ipix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maxpix</span><span class="p">)</span>
+            <span class="n">nside</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_nside</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+            <span class="n">vec</span> <span class="o">=</span> <span class="n">hp</span><span class="o">.</span><span class="n">pix2vec</span><span class="p">(</span><span class="n">nside</span><span class="p">,</span> <span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">nest</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nest</span><span class="p">)</span>
+            <span class="n">vec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">vec</span><span class="p">])</span>
+            <span class="n">lonlat</span> <span class="o">=</span> <span class="n">hp</span><span class="o">.</span><span class="n">vec2ang</span><span class="p">(</span><span class="n">vec</span><span class="p">,</span> <span class="n">lonlat</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">lonlat</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">lonlat</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span>
 
-        <span class="n">tokens</span> <span class="o">=</span> <span class="n">parse_hpxregion</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;DISK&#39;</span><span class="p">,</span> <span class="s1">&#39;DISK_INC&#39;</span><span class="p">]:</span>
-            <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
-            <span class="k">return</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;HPX_PIXEL&#39;</span><span class="p">:</span>
-            <span class="n">nside_pix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
-            <span class="n">ipix_pix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
-            <span class="k">if</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;NESTED&#39;</span><span class="p">:</span>
-                <span class="n">nest_pix</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="k">elif</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;RING&#39;</span><span class="p">:</span>
-                <span class="n">nest_pix</span> <span class="o">=</span> <span class="kc">False</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s1">&#39;Did not recognize ordering scheme: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
-            <span class="n">theta</span><span class="p">,</span> <span class="n">phi</span> <span class="o">=</span> <span class="n">hp</span><span class="o">.</span><span class="n">pix2ang</span><span class="p">(</span><span class="n">nside_pix</span><span class="p">,</span> <span class="n">ipix_pix</span><span class="p">,</span> <span class="n">nest_pix</span><span class="p">)</span>
-            <span class="n">lat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">theta</span><span class="p">)</span>
-            <span class="n">lon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">phi</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s1">&#39;HPX.get_ref_dir did not recognize region type: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">get_hpxregion_dir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">coordsys</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="kc">None</span></div>
+    <span class="k">def</span> <span class="nf">_get_region_size</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
-<div class="viewcode-block" id="HpxGeom.get_region_size"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.get_region_size">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">get_region_size</span><span class="p">(</span><span class="n">region</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Get the approximate size of region (in degrees) from a HEALPIX region string.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">region</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="mf">180.</span>
-        <span class="n">tokens</span> <span class="o">=</span> <span class="n">parse_hpxregion</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;DISK&#39;</span><span class="p">,</span> <span class="s1">&#39;DISK_INC&#39;</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
-        <span class="k">elif</span> <span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;HPX_PIXEL&#39;</span><span class="p">:</span>
-            <span class="n">pix_size</span> <span class="o">=</span> <span class="n">get_pix_size_from_nside</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
-            <span class="k">return</span> <span class="mf">2.</span> <span class="o">*</span> <span class="n">pix_size</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="o">==</span> <span class="s1">&#39;explicit&#39;</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">unravel_hpx_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ipix</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_maxpix</span><span class="p">)</span>
+            <span class="n">nside</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_nside</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+            <span class="n">ang</span> <span class="o">=</span> <span class="n">hp</span><span class="o">.</span><span class="n">pix2ang</span><span class="p">(</span><span class="n">nside</span><span class="p">,</span> <span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">nest</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nest</span><span class="p">,</span> <span class="n">lonlat</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">dirs</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">ang</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ang</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span>
+                            <span class="n">frame</span><span class="o">=</span><span class="n">coordsys_to_frame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coordsys</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">dirs</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">center_skydir</span><span class="p">)</span><span class="o">.</span><span class="n">deg</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">get_hpxregion_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_nside</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="mi">1</span><span class="p">:]]</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
-                <span class="s1">&#39;Did not recognize region type: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span></div>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nside</span>
 
 <div class="viewcode-block" id="HpxGeom.make_wcs"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.make_wcs">[docs]</a>    <span class="k">def</span> <span class="nf">make_wcs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proj</span><span class="o">=</span><span class="s1">&#39;AIT&#39;</span><span class="p">,</span> <span class="n">oversample</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">drop_axes</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Make a WCS projection appropriate for this HPX pixelization.</span>
@@ -1383,9 +1632,9 @@
 <span class="sd">        wcs : `~gammapy.maps.WcsGeom`</span>
 <span class="sd">            WCS geometry</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">skydir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_ref_dir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_region</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">coordsys</span><span class="p">)</span>
+        <span class="n">skydir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">center_skydir</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">binsz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">get_pix_size_from_nside</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="p">))</span> <span class="o">/</span> <span class="n">oversample</span>
-        <span class="n">width</span> <span class="o">=</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_region_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_region</span><span class="p">)</span> <span class="o">+</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_region_size</span><span class="p">()</span> <span class="o">+</span>
                  <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">get_pix_size_from_nside</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nside</span><span class="p">)))</span>
 
         <span class="k">if</span> <span class="n">width</span> <span class="o">&gt;</span> <span class="mf">90.</span><span class="p">:</span>
@@ -1580,7 +1829,7 @@
 <span class="sd">        HEALPIX region&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid</span>
 
-    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fitsfile</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fitsfile</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Write this mapping to a FITS file, to avoid having to recompute it</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">from</span> <span class="nn">.wcsnd</span> <span class="k">import</span> <span class="n">WcsNDMap</span>
@@ -1599,7 +1848,7 @@
         <span class="c1">#    mult_hdu.header[key] = hpx_header[key]</span>
 
         <span class="n">hdulist</span> <span class="o">=</span> <span class="n">index_map</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">()</span>
-        <span class="n">hdulist</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">fitsfile</span><span class="p">,</span> <span class="n">clobber</span><span class="o">=</span><span class="n">clobber</span><span class="p">)</span>
+        <span class="n">hdulist</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">fitsfile</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hpx</span><span class="p">,</span> <span class="n">wcs</span><span class="p">):</span>
@@ -1692,8 +1941,8 @@
     <a href="#">Back to Top</a></p>
   <p>
     &copy; Copyright 2018, The Gammapy developers.<br/>
-    Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.6. &nbsp;
-    Last built 02 Feb 2018. <br/>
+    Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.7. &nbsp;
+    Last built 18 Feb 2018. <br/>
   </p>
 </footer>
   </body>

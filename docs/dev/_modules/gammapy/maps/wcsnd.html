@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>gammapy.maps.wcsnd &#8212; gammapy v0.7.dev5441</title>
+    <title>gammapy.maps.wcsnd &#8212; gammapy v0.7.dev5530</title>
     <link rel="stylesheet" href="../../../_static/gammapy.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     '0.7.dev5441',
+        VERSION:     '0.7.dev5530',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -55,7 +55,7 @@
     <h3>Navigation</h3>
     <ul>
       <li>
-	<a href="../../../index.html">gammapy v0.7.dev5441</a>
+	<a href="../../../index.html">gammapy v0.7.dev5530</a>
 	 &#187;
       </li>
       <li><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
@@ -76,6 +76,7 @@
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">unpack_seq</span>
 <span class="kn">from</span> <span class="nn">.geom</span> <span class="k">import</span> <span class="n">pix_tuple_to_idx</span><span class="p">,</span> <span class="n">axes_pix_to_coord</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">interp_to_order</span>
@@ -104,9 +105,11 @@
 <span class="sd">        Data array. If none then an empty array will be allocated.</span>
 <span class="sd">    dtype : str, optional</span>
 <span class="sd">        Data type, default is float32</span>
+<span class="sd">    meta : `~collections.OrderedDict`</span>
+<span class="sd">        Dictionary to store meta data.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="c1"># TODO: Figure out how to mask pixels for integer data types</span>
 
         <span class="n">shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span> <span class="o">+</span>
@@ -117,7 +120,7 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Wrong shape for input data array. Expected </span><span class="si">{}</span><span class="s1"> &#39;</span>
                              <span class="s1">&#39;but got </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
 
-        <span class="nb">super</span><span class="p">(</span><span class="n">WcsNDMap</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">WcsNDMap</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meta</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_init_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
         <span class="c1"># Check whether corners of each image plane are valid</span>
@@ -171,7 +174,8 @@
         <span class="n">shape_wcs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
                            <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">1</span><span class="p">])])</span>
         <span class="n">shape_data</span> <span class="o">=</span> <span class="n">shape_wcs</span> <span class="o">+</span> <span class="n">shape</span>
-        <span class="n">map_out</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span>
+        <span class="n">meta</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_meta_from_header</span><span class="p">(</span><span class="n">hdu</span><span class="o">.</span><span class="n">header</span><span class="p">)</span>
+        <span class="n">map_out</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">)</span>
 
         <span class="c1"># TODO: Should we support extracting slices?</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">hdu</span><span class="p">,</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="p">):</span>
@@ -304,11 +308,11 @@
         <span class="n">msk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">t</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">idx</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="n">idx</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="n">msk</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">idx</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">weights</span><span class="p">)</span>
+            <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">weights</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
             <span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span><span class="p">[</span><span class="n">msk</span><span class="p">]</span>
         <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel_multi_index</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
         <span class="n">idx</span><span class="p">,</span> <span class="n">idx_inv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">return_inverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">idx_inv</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">bincount</span><span class="p">(</span><span class="n">idx_inv</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">flat</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">+=</span> <span class="n">weights</span></div>
 
 <div class="viewcode-block" id="WcsNDMap.set_by_idx"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.set_by_idx">[docs]</a>    <span class="k">def</span> <span class="nf">set_by_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">vals</span><span class="p">):</span>
@@ -338,7 +342,7 @@
             <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="n">map_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">to_image</span><span class="p">())</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">is_regular</span><span class="p">:</span>
             <span class="n">vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_by_idx</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_idx</span><span class="p">())</span>
             <span class="n">map_out</span><span class="o">.</span><span class="n">fill_by_coords</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_coords</span><span class="p">()[:</span><span class="mi">2</span><span class="p">],</span> <span class="n">vals</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -428,17 +432,96 @@
 
         <span class="k">return</span> <span class="n">map_out</span>
 
-<div class="viewcode-block" id="WcsNDMap.pad"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.pad">[docs]</a>    <span class="k">def</span> <span class="nf">pad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pad_width</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+<div class="viewcode-block" id="WcsNDMap.pad"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.pad">[docs]</a>    <span class="k">def</span> <span class="nf">pad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pad_width</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;constant&#39;</span><span class="p">,</span> <span class="n">cval</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">pad_width</span><span class="p">):</span>
+            <span class="n">pad_width</span> <span class="o">=</span> <span class="p">(</span><span class="n">pad_width</span><span class="p">,</span> <span class="n">pad_width</span><span class="p">)</span>
+            <span class="n">pad_width</span> <span class="o">+=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">geom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">pad_width</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">is_regular</span> <span class="ow">and</span> <span class="n">mode</span> <span class="o">!=</span> <span class="s1">&#39;interp&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pad_np</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">pad_width</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">cval</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pad_coadd</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">pad_width</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">cval</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_pad_np</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">pad_width</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">cval</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pad a map with `~np.pad`.  This method only works for regular</span>
+<span class="sd">        geometries but should be more efficient when working with</span>
+<span class="sd">        large maps.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kw</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;constant&#39;</span><span class="p">:</span>
+            <span class="n">kw</span><span class="p">[</span><span class="s1">&#39;constant_values&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cval</span>
+
+        <span class="n">pad_width</span> <span class="o">=</span> <span class="p">[(</span><span class="n">t</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">pad_width</span><span class="p">]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">pad_width</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">mode</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="n">map_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">map_out</span>
+
+    <span class="k">def</span> <span class="nf">_pad_coadd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">pad_width</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">cval</span><span class="p">,</span> <span class="n">order</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pad a map manually by coadding the original map with the new</span>
+<span class="sd">        map.&quot;&quot;&quot;</span>
+        <span class="n">idx_in</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_idx</span><span class="p">(</span><span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">idx_in</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">t</span> <span class="o">+</span> <span class="n">w</span> <span class="k">for</span> <span class="n">t</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">idx_in</span><span class="p">,</span> <span class="n">pad_width</span><span class="p">)])[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">idx_out</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">get_idx</span><span class="p">(</span><span class="n">flat</span><span class="o">=</span><span class="kc">True</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">map_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">))</span>
+        <span class="n">map_out</span><span class="o">.</span><span class="n">coadd</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;constant&#39;</span><span class="p">:</span>
+            <span class="n">pad_msk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">map_out</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+            <span class="n">pad_msk</span><span class="p">[</span><span class="n">idx_out</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">pad_msk</span><span class="p">[</span><span class="n">idx_in</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">map_out</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">pad_msk</span><span class="p">]</span> <span class="o">=</span> <span class="n">cval</span>
+        <span class="k">elif</span> <span class="n">mode</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;edge&#39;</span><span class="p">,</span> <span class="s1">&#39;interp&#39;</span><span class="p">]:</span>
+            <span class="n">coords</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">pix_to_coord</span><span class="p">(</span><span class="n">idx_out</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+            <span class="n">coords</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">c</span><span class="p">[</span><span class="o">~</span><span class="n">m</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coords</span><span class="p">])</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interp_by_coords</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="mi">0</span> <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s1">&#39;edge&#39;</span>
+                                         <span class="k">else</span> <span class="n">order</span><span class="p">)</span>
+            <span class="n">map_out</span><span class="o">.</span><span class="n">set_by_coords</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unrecognized pad mode: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mode</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">map_out</span>
 
 <div class="viewcode-block" id="WcsNDMap.crop"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.crop">[docs]</a>    <span class="k">def</span> <span class="nf">crop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">crop_width</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
-<div class="viewcode-block" id="WcsNDMap.upsample"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.upsample">[docs]</a>    <span class="k">def</span> <span class="nf">upsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">crop_width</span><span class="p">):</span>
+            <span class="n">crop_width</span> <span class="o">=</span> <span class="p">(</span><span class="n">crop_width</span><span class="p">,</span> <span class="n">crop_width</span><span class="p">)</span>
+        <span class="n">geom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">crop</span><span class="p">(</span><span class="n">crop_width</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">is_regular</span><span class="p">:</span>
+            <span class="n">slices</span> <span class="o">=</span> <span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="n">crop_width</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">crop_width</span><span class="p">[</span><span class="mi">0</span><span class="p">])),</span>
+                      <span class="nb">slice</span><span class="p">(</span><span class="n">crop_width</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">crop_width</span><span class="p">[</span><span class="mi">1</span><span class="p">]))]</span>
+            <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
+                <span class="n">slices</span> <span class="o">+=</span> <span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)]</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">slices</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="n">map_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># FIXME: This could be done more efficiently by</span>
+            <span class="c1"># constructing the appropriate slices for each image plane</span>
+            <span class="n">map_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">))</span>
+            <span class="n">map_out</span><span class="o">.</span><span class="n">coadd</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
-<div class="viewcode-block" id="WcsNDMap.downsample"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.downsample">[docs]</a>    <span class="k">def</span> <span class="nf">downsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+        <span class="k">return</span> <span class="n">map_out</span></div>
+
+<div class="viewcode-block" id="WcsNDMap.upsample"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.upsample">[docs]</a>    <span class="k">def</span> <span class="nf">upsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">preserve_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">scipy.ndimage</span> <span class="k">import</span> <span class="n">map_coordinates</span>
+        <span class="n">geom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">upsample</span><span class="p">(</span><span class="n">factor</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">get_idx</span><span class="p">()</span>
+        <span class="n">pix</span> <span class="o">=</span> <span class="p">((</span><span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">factor</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="n">factor</span><span class="p">,</span>
+               <span class="p">(</span><span class="n">idx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">factor</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="n">factor</span><span class="p">,)</span> <span class="o">+</span> <span class="n">idx</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">map_coordinates</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">pix</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">preserve_counts</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">/=</span> <span class="n">factor</span><span class="o">**</span><span class="mi">2</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="WcsNDMap.downsample"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.downsample">[docs]</a>    <span class="k">def</span> <span class="nf">downsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">preserve_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">skimage.measure</span> <span class="k">import</span> <span class="n">block_reduce</span>
+        <span class="n">geom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">factor</span><span class="p">)</span>
+        <span class="n">block_size</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">factor</span><span class="p">,</span> <span class="n">factor</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">ndim</span> <span class="o">-</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">block_reduce</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">block_size</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">preserve_counts</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">/=</span> <span class="n">factor</span><span class="o">**</span><span class="mi">2</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="WcsNDMap.plot"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Quickplot method.</span>
@@ -503,8 +586,8 @@
     <a href="#">Back to Top</a></p>
   <p>
     &copy; Copyright 2018, The Gammapy developers.<br/>
-    Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.6. &nbsp;
-    Last built 02 Feb 2018. <br/>
+    Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.7. &nbsp;
+    Last built 18 Feb 2018. <br/>
   </p>
 </footer>
   </body>
