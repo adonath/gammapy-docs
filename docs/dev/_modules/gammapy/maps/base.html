@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>gammapy.maps.base &#8212; gammapy v0.7.dev5536</title>
+    <title>gammapy.maps.base &#8212; gammapy v0.7.dev5616</title>
     <link rel="stylesheet" href="../../../_static/gammapy.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../../',
-        VERSION:     '0.7.dev5536',
+        VERSION:     '0.7.dev5616',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -55,7 +55,7 @@
     <h3>Navigation</h3>
     <ul>
       <li>
-	<a href="../../../index.html">gammapy v0.7.dev5536</a>
+	<a href="../../../index.html">gammapy v0.7.dev5616</a>
 	 &#187;
       </li>
       <li><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
@@ -80,7 +80,7 @@
 <span class="kn">from</span> <span class="nn">..extern</span> <span class="k">import</span> <span class="n">six</span>
 <span class="kn">from</span> <span class="nn">astropy.utils.misc</span> <span class="k">import</span> <span class="n">InheritDocstrings</span>
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
-<span class="kn">from</span> <span class="nn">.geom</span> <span class="k">import</span> <span class="n">pix_tuple_to_idx</span><span class="p">,</span> <span class="n">MapCoords</span>
+<span class="kn">from</span> <span class="nn">.geom</span> <span class="k">import</span> <span class="n">pix_tuple_to_idx</span><span class="p">,</span> <span class="n">MapCoord</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s1">&#39;Map&#39;</span><span class="p">,</span>
@@ -124,7 +124,7 @@
     <span class="nd">@data</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">val</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Wrong shape.&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Wrong shape.&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">val</span>
 
     <span class="nd">@property</span>
@@ -316,11 +316,11 @@
 <span class="sd">        ----------</span>
 <span class="sd">        filename : str</span>
 <span class="sd">            Output file name.</span>
-<span class="sd">        extname : str</span>
+<span class="sd">        hdu : str</span>
 <span class="sd">            Set the name of the image extension.  By default this will</span>
 <span class="sd">            be set to SKYMAP (for BINTABLE HDU) or PRIMARY (for IMAGE</span>
 <span class="sd">            HDU).</span>
-<span class="sd">        extname_bands : str</span>
+<span class="sd">        hdu_bands : str</span>
 <span class="sd">            Set the name of the bands table extension.  By default this will</span>
 <span class="sd">            be set to BANDS.</span>
 <span class="sd">        conv : str        </span>
@@ -374,8 +374,8 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
-<div class="viewcode-block" id="Map.iter_by_coords"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.iter_by_coords">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
-    <span class="k">def</span> <span class="nf">iter_by_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buffersize</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="Map.iter_by_coord"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.iter_by_coord">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">iter_by_coord</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">buffersize</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Iterate over elements of the map returning a tuple with values and</span>
 <span class="sd">        map coordinates.</span>
 
@@ -413,9 +413,9 @@
         <span class="c1"># TODO: Check whether geometries are aligned and if so sum the</span>
         <span class="c1"># data vectors directly</span>
         <span class="n">idx</span> <span class="o">=</span> <span class="n">map_in</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_idx</span><span class="p">()</span>
-        <span class="n">coords</span> <span class="o">=</span> <span class="n">map_in</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_coords</span><span class="p">()</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">map_in</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span>
         <span class="n">vals</span> <span class="o">=</span> <span class="n">map_in</span><span class="o">.</span><span class="n">get_by_idx</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fill_by_coords</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fill_by_coord</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Map.reproject"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.reproject">[docs]</a>    <span class="k">def</span> <span class="nf">reproject</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;interp&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Reproject this map to a different geometry.</span>
@@ -536,26 +536,16 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
-<div class="viewcode-block" id="Map.get_by_coords"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.get_by_coords">[docs]</a>    <span class="k">def</span> <span class="nf">get_by_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Map.get_by_coord"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.get_by_coord">[docs]</a>    <span class="k">def</span> <span class="nf">get_by_coord</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return map values at the given map coordinates.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        coords : tuple or `~gammapy.maps.MapCoords`</span>
-<span class="sd">            `~gammapy.maps.MapCoords` object or tuple of</span>
+<span class="sd">        coords : tuple or `~gammapy.maps.MapCoord`</span>
+<span class="sd">            `~gammapy.maps.MapCoord` object or tuple of</span>
 <span class="sd">            coordinate arrays for each dimension of the map.  Tuple</span>
 <span class="sd">            should be ordered as (lon, lat, x_0, ..., x_n) where x_i</span>
 <span class="sd">            are coordinates for non-spatial dimensions of the map.</span>
-
-<span class="sd">        interp : {None, &#39;nearest&#39;, &#39;linear&#39;, &#39;cubic&#39;, 0, 1, 2, 3}</span>
-<span class="sd">            Method to interpolate data values.  By default no</span>
-<span class="sd">            interpolation is performed and the return value will be</span>
-<span class="sd">            the amplitude of the pixel encompassing the given</span>
-<span class="sd">            coordinate.  Integer values can be used in lieu of strings</span>
-<span class="sd">            to choose the interpolation method of the given order</span>
-<span class="sd">            (0=&#39;nearest&#39;, 1=&#39;linear&#39;, 2=&#39;quadratic&#39;, 3=&#39;cubic&#39;).  Note</span>
-<span class="sd">            that only &#39;nearest&#39; and &#39;linear&#39; methods are supported for</span>
-<span class="sd">            all map types.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -563,20 +553,16 @@
 <span class="sd">           Values of pixels in the map.  np.nan used to flag coords</span>
 <span class="sd">           outside of map.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">interp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">coords</span> <span class="o">=</span> <span class="n">MapCoords</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
-            <span class="n">msk</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
-            <span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">coords</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-            <span class="n">coords</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">c</span><span class="p">[</span><span class="n">msk</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coords</span><span class="p">])</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">coord_to_pix</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
-            <span class="n">vals</span><span class="p">[</span><span class="n">msk</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_by_idx</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
-            <span class="n">vals</span><span class="p">[</span><span class="o">~</span><span class="n">msk</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interp_by_coords</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="n">interp</span><span class="p">)</span>
-
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">MapCoord</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">coordsys</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">coordsys</span><span class="p">)</span>
+        <span class="n">msk</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">coords</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">coords</span><span class="o">.</span><span class="n">apply_mask</span><span class="p">(</span><span class="n">msk</span><span class="p">)</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">coord_to_idx</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+        <span class="n">vals</span><span class="p">[</span><span class="n">msk</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_by_idx</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+        <span class="n">vals</span><span class="p">[</span><span class="o">~</span><span class="n">msk</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
         <span class="k">return</span> <span class="n">vals</span></div>
 
-<div class="viewcode-block" id="Map.get_by_pix"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.get_by_pix">[docs]</a>    <span class="k">def</span> <span class="nf">get_by_pix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pix</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Map.get_by_pix"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.get_by_pix">[docs]</a>    <span class="k">def</span> <span class="nf">get_by_pix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pix</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return map values at the given pixel coordinates.</span>
 
 <span class="sd">        Parameters</span>
@@ -587,16 +573,6 @@
 <span class="sd">            for WCS maps and (I_hpx, I_0, ..., I_n) for HEALPix maps.</span>
 <span class="sd">            Pixel indices can be either float or integer type. </span>
 
-<span class="sd">        interp : {None, &#39;nearest&#39;, &#39;linear&#39;, &#39;cubic&#39;, 0, 1, 2, 3}</span>
-<span class="sd">            Method to interpolate data values.  By default no</span>
-<span class="sd">            interpolation is performed and the return value will be</span>
-<span class="sd">            the amplitude of the pixel encompassing the given</span>
-<span class="sd">            coordinate.  Integer values can be used in lieu of strings</span>
-<span class="sd">            to choose the interpolation method of the given order</span>
-<span class="sd">            (0=&#39;nearest&#39;, 1=&#39;linear&#39;, 2=&#39;quadratic&#39;, 3=&#39;cubic&#39;).  Note</span>
-<span class="sd">            that only &#39;nearest&#39; and &#39;linear&#39; methods are supported for</span>
-<span class="sd">            all map types.</span>
-
 <span class="sd">        Returns</span>
 <span class="sd">        ----------</span>
 <span class="sd">        vals : `~numpy.ndarray`</span>
@@ -605,19 +581,14 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># FIXME: Support local indexing here?</span>
         <span class="c1"># FIXME: Support slicing?</span>
-
-        <span class="k">if</span> <span class="n">interp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">pix</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ndmin</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pix</span><span class="p">]</span>
-            <span class="n">pix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_arrays</span><span class="p">(</span><span class="o">*</span><span class="n">pix</span><span class="p">)</span>
-            <span class="n">msk</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">contains_pix</span><span class="p">(</span><span class="n">pix</span><span class="p">)</span>
-            <span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">pix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
-            <span class="n">pix</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">p</span><span class="p">[</span><span class="n">msk</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pix</span><span class="p">])</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">pix_to_idx</span><span class="p">(</span><span class="n">pix</span><span class="p">)</span>
-            <span class="n">vals</span><span class="p">[</span><span class="n">msk</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_by_idx</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
-            <span class="n">vals</span><span class="p">[</span><span class="o">~</span><span class="n">msk</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interp_by_pix</span><span class="p">(</span><span class="n">pix</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="n">interp</span><span class="p">)</span>
-
+        <span class="n">pix</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ndmin</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pix</span><span class="p">]</span>
+        <span class="n">pix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_arrays</span><span class="p">(</span><span class="o">*</span><span class="n">pix</span><span class="p">)</span>
+        <span class="n">msk</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">contains_pix</span><span class="p">(</span><span class="n">pix</span><span class="p">)</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">pix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">pix</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">p</span><span class="p">[</span><span class="n">msk</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pix</span><span class="p">])</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">pix_to_idx</span><span class="p">(</span><span class="n">pix</span><span class="p">)</span>
+        <span class="n">vals</span><span class="p">[</span><span class="n">msk</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_by_idx</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+        <span class="n">vals</span><span class="p">[</span><span class="o">~</span><span class="n">msk</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
         <span class="k">return</span> <span class="n">vals</span></div>
 
 <div class="viewcode-block" id="Map.get_by_idx"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.get_by_idx">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
@@ -639,14 +610,14 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
-<div class="viewcode-block" id="Map.interp_by_coords"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.interp_by_coords">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
-    <span class="k">def</span> <span class="nf">interp_by_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Map.interp_by_coord"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.interp_by_coord">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">interp_by_coord</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Interpolate map values at the given map coordinates.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        coords : tuple or `~gammapy.maps.MapCoords`</span>
-<span class="sd">            `~gammapy.maps.MapCoords` object or tuple of</span>
+<span class="sd">        coords : tuple or `~gammapy.maps.MapCoord`</span>
+<span class="sd">            `~gammapy.maps.MapCoord` object or tuple of</span>
 <span class="sd">            coordinate arrays for each dimension of the map.  Tuple</span>
 <span class="sd">            should be ordered as (lon, lat, x_0, ..., x_n) where x_i</span>
 <span class="sd">            are coordinates for non-spatial dimensions of the map.</span>
@@ -664,19 +635,47 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        vals : `~numpy.ndarray`</span>
-<span class="sd">           Values of pixels in the flattened map.</span>
-<span class="sd">           np.nan used to flag coords outside of map</span>
+<span class="sd">            Interpolated pixel values.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
-<div class="viewcode-block" id="Map.fill_by_coords"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.fill_by_coords">[docs]</a>    <span class="k">def</span> <span class="nf">fill_by_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Map.interp_by_pix"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.interp_by_pix">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">interp_by_pix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pix</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Interpolate map values at the given pixel coordinates.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        pix : tuple</span>
+<span class="sd">            Tuple of pixel coordinate arrays for each dimension of the</span>
+<span class="sd">            map.  Tuple should be ordered as (p_lon, p_lat, p_0, ...,</span>
+<span class="sd">            p_n) where p_i are pixel coordinates for non-spatial</span>
+<span class="sd">            dimensions of the map.</span>
+
+<span class="sd">        interp : {None, &#39;nearest&#39;, &#39;linear&#39;, &#39;cubic&#39;, 0, 1, 2, 3}</span>
+<span class="sd">            Method to interpolate data values.  By default no</span>
+<span class="sd">            interpolation is performed and the return value will be</span>
+<span class="sd">            the amplitude of the pixel encompassing the given</span>
+<span class="sd">            coordinate.  Integer values can be used in lieu of strings</span>
+<span class="sd">            to choose the interpolation method of the given order</span>
+<span class="sd">            (0=&#39;nearest&#39;, 1=&#39;linear&#39;, 2=&#39;quadratic&#39;, 3=&#39;cubic&#39;).  Note</span>
+<span class="sd">            that only &#39;nearest&#39; and &#39;linear&#39; methods are supported for</span>
+<span class="sd">            all map types.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        vals : `~numpy.ndarray`</span>
+<span class="sd">            Interpolated pixel values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Map.fill_by_coord"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.fill_by_coord">[docs]</a>    <span class="k">def</span> <span class="nf">fill_by_coord</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Fill pixels at the given map coordinates with values in `weights`</span>
 <span class="sd">        vector.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        coords : tuple or `~gammapy.maps.MapCoords`</span>
-<span class="sd">            `~gammapy.maps.MapCoords` object or tuple of</span>
+<span class="sd">        coords : tuple or `~gammapy.maps.MapCoord`</span>
+<span class="sd">            `~gammapy.maps.MapCoord` object or tuple of</span>
 <span class="sd">            coordinate arrays for each dimension of the map.  Tuple</span>
 <span class="sd">            should be ordered as (lon, lat, x_0, ..., x_n) where x_i</span>
 <span class="sd">            are coordinates for non-spatial dimensions of the map.</span>
@@ -726,14 +725,14 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
-<div class="viewcode-block" id="Map.set_by_coords"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.set_by_coords">[docs]</a>    <span class="k">def</span> <span class="nf">set_by_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">vals</span><span class="p">):</span>
+<div class="viewcode-block" id="Map.set_by_coord"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.set_by_coord">[docs]</a>    <span class="k">def</span> <span class="nf">set_by_coord</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">vals</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set pixels at the given map coordinates to the values in `vals`</span>
 <span class="sd">        vector.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        coords : tuple or `~gammapy.maps.MapCoords`</span>
-<span class="sd">            `~gammapy.maps.MapCoords` object or tuple of</span>
+<span class="sd">        coords : tuple or `~gammapy.maps.MapCoord`</span>
+<span class="sd">            `~gammapy.maps.MapCoord` object or tuple of</span>
 <span class="sd">            coordinate arrays for each dimension of the map.  Tuple</span>
 <span class="sd">            should be ordered as (lon, lat, x_0, ..., x_n) where x_i</span>
 <span class="sd">            are coordinates for non-spatial dimensions of the map.</span>
@@ -798,7 +797,7 @@
   <p>
     &copy; Copyright 2018, The Gammapy developers.<br/>
     Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.7. &nbsp;
-    Last built 21 Feb 2018. <br/>
+    Last built 28 Feb 2018. <br/>
   </p>
 </footer>
   </body>
