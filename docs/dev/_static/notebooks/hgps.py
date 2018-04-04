@@ -75,7 +75,7 @@ import matplotlib.pyplot as plt
 # If you haven't already, you can use the following commands to download the files to your local working directory.
 # 
 # You don't have to read the code in the next cell; that's just how to downlaod files from Python.
-# You could also download the files with your web browser, or from the command line e.g. with curl::
+# You could also download the files with your web browser, or from the command line e.g. with curl:
 # 
 #     mkdir hgps_data
 #     cd hgps_data
@@ -265,7 +265,14 @@ survey_map.get_by_coord((0, 0))
 # In[20]:
 
 
-# TODO: make cutouts
+# TODO: show how to make a cutout and plot it
+image = survey_map.crop(10)
+image.plot()
+
+
+# In[21]:
+
+
 # TODO: make model image and compare with data
 
 
