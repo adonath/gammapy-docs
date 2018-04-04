@@ -1,12 +1,12 @@
 
 # coding: utf-8
 
-# # HGPS Jupyter notebook
+# # HGPS
 # 
 # 
 # ## HGPS
 # 
-# The H.E.S.S. Galactic Plane Survey (HGPS) is the first deep and wide survey of the Milky Way in TeV gamma-rays.
+# The **H.E.S.S. Galactic Plane Survey (HGPS)** is the first deep and wide survey of the Milky Way in TeV gamma-rays.
 # 
 # The release data consistes of 10 survey maps and several tables that contain a source catalog and other information.
 # 
@@ -28,13 +28,13 @@
 # 
 # We will be using the following Python packages and features:
 # 
-# * **[astropy](http://docs.astropy.org/)**, specifically [astropy.io.fits](http://docs.astropy.org/en/stable/io/fits/index.html) to read the FITS data, [astropy.table.Table](http://docs.astropy.org/en/stable/table/index.html) to work with the tables, but also [astropy.coordinates.SkyCoord](http://docs.astropy.org/en/stable/coordinates/index.html) and [astropy.wcs.WCS](http://docs.astropy.org/en/stable/wcs/index.html) to work with sky and pixel coordinates and [astropy.units.Quantity](http://docs.astropy.org/en/stable/units/index.html) to work with quantities.
+# * [astropy](http://docs.astropy.org/), specifically [astropy.io.fits](http://docs.astropy.org/en/stable/io/fits/index.html) to read the FITS data, [astropy.table.Table](http://docs.astropy.org/en/stable/table/index.html) to work with the tables, but also [astropy.coordinates.SkyCoord](http://docs.astropy.org/en/stable/coordinates/index.html) and [astropy.wcs.WCS](http://docs.astropy.org/en/stable/wcs/index.html) to work with sky and pixel coordinates and [astropy.units.Quantity](http://docs.astropy.org/en/stable/units/index.html) to work with quantities.
 # 
-# * **[regions](https://astropy-regions.readthedocs.io/)** to show HGPS source spectral extraction circular regions and create corresponding DS9 regions.
+# * [regions](https://astropy-regions.readthedocs.io/) to show HGPS source spectral extraction circular regions and create corresponding DS9 regions.
 # 
-# * **[gammapy](http://docs.gammapy.org/)**, specifically [gammapy.maps](http://docs.gammapy.org/dev/maps/index.html) to work with the HGPS sky maps, and [gammapy.catalog.SourceCatalogHGPS](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogHGPS.html) and [gammapy.catalog.SourceCatalogObjectHGPS](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogObjectHGPS.html) to work with the HGPS catalog data, especially the HGPS spectral data using [gammapy.spectrum.models.SpectralModel](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.SpectralModel.html) and [gammapy.spectrum.FluxPoints](http://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html) objects.
+# * [gammapy](http://docs.gammapy.org/), specifically [gammapy.maps](http://docs.gammapy.org/dev/maps/index.html) to work with the HGPS sky maps, and [gammapy.catalog.SourceCatalogHGPS](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogHGPS.html) and [gammapy.catalog.SourceCatalogObjectHGPS](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogObjectHGPS.html) to work with the HGPS catalog data, especially the HGPS spectral data using [gammapy.spectrum.models.SpectralModel](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.SpectralModel.html) and [gammapy.spectrum.FluxPoints](http://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html) objects.
 # 
-# * **[matplotlib](https://matplotlib.org/)** for plotting, used via [astropy.visualization](http://docs.astropy.org/en/stable/visualization/index.html) and [gammapy.maps.WcsNDMap.plot](http://docs.gammapy.org/dev/api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.plot)
+# * [matplotlib](https://matplotlib.org/) for plotting, used via [astropy.visualization](http://docs.astropy.org/en/stable/visualization/index.html) and [gammapy.maps.WcsNDMap.plot](http://docs.gammapy.org/dev/api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.plot)
 # for sky map plotting.
 # 
 # If you're not familiar with Python, Numpy, Astropy, Gammapy or matplotlib yet, you can learn about them using the links to the documentation that we just mentioned, or using the tutorial introductions as explained [here](http://docs.gammapy.org/dev/tutorials.html).
@@ -190,6 +190,17 @@ pos = SkyCoord(0, 0, unit='deg', frame='galactic')
 pos.to_pixel(wcs)
 
 
+# ## Convert catalog format
+# 
+# The HGPS catalog is only released in FITS format.
+# 
+# This section shows you how you can convert part of the information to the following commonly used formats:
+# 
+# * CSV
+# * DS9 regions
+# 
+# tbd
+
 # ## Catalog with Gammapy
 # 
 # tbd
@@ -216,7 +227,7 @@ print(source)
 # In[15]:
 
 
-print(source.spectral_model)
+print(source.spectral_model())
 
 
 # In[16]:
@@ -225,16 +236,37 @@ print(source.spectral_model)
 source.flux_points.table
 
 
+# In[17]:
+
+
+source.spectral_model().plot(source.energy_range)
+source.spectral_model().plot_error(source.energy_range)
+source.flux_points.plot()
+
+
+# In[18]:
+
+
+source.components
+
+
 # ## Maps with Gammapy
 # 
 # This section shows you how to ... <TODO>
 
-# In[17]:
+# In[19]:
 
 
 filename = os.path.join(hgps_data_path, 'hgps_map_significance_0.1deg_v1.fits.gz')
 survey_map = Map.read(filename)
 survey_map.get_by_coord((0, 0))
+
+
+# In[20]:
+
+
+# TODO: make cutouts
+# TODO: make model image and compare with data
 
 
 # ## Conclusions
