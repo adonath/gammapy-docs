@@ -4,20 +4,12 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>gammapy.astro.population.simulate &#8212; gammapy v0.8.dev5620</title>
+    <title>gammapy.astro.population.simulate &#8212; gammapy v0.8.dev5696</title>
     <link rel="stylesheet" href="../../../../_static/gammapy.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../../../../',
-        VERSION:     '0.8.dev5620',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
+    <script type="text/javascript" src="../../../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../../_static/doctools.js"></script>
@@ -30,8 +22,7 @@
 <script type="text/javascript" src="../../../../_static/copybutton.js"></script>
 
 
-  </head>
-  <body>
+  </head><body>
 <div class="topbar">
   <a class="brand" title="Documentation Home" href="../../../../index.html"><span id="logotext1">gamma</span><span id="logotext2">py</span><span id="logotext3">:docs</span></a>
   <ul>
@@ -55,7 +46,7 @@
     <h3>Navigation</h3>
     <ul>
       <li>
-	<a href="../../../../index.html">gammapy v0.8.dev5620</a>
+	<a href="../../../../index.html">gammapy v0.8.dev5696</a>
 	 &#187;
       </li>
       <li><a href="../../../index.html" accesskey="U">Module code</a> &#187;</li>
@@ -400,23 +391,35 @@
 <div class="viewcode-block" id="add_pwn_parameters"><a class="viewcode-back" href="../../../../api/gammapy.astro.population.add_pwn_parameters.html#gammapy.astro.population.add_pwn_parameters">[docs]</a><span class="k">def</span> <span class="nf">add_pwn_parameters</span><span class="p">(</span><span class="n">table</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Add PWN parameters to the table.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Read relevant columns</span>
-    <span class="n">age</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s1">&#39;age&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
-    <span class="n">E_SN</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s1">&#39;E_SN&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
-    <span class="n">n_ISM</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s1">&#39;n_ISM&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
-    <span class="n">P0_birth</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s1">&#39;P0_birth&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
-    <span class="n">logB</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s1">&#39;logB&#39;</span><span class="p">]</span>
+    <span class="c1"># Some of the computations (specifically `pwn.radius`) aren&#39;t vectorised</span>
+    <span class="c1"># across all parameters; so here we loop over source parameters explicitly</span>
 
-    <span class="c1"># Compute properties</span>
-    <span class="n">pulsar</span> <span class="o">=</span> <span class="n">Pulsar</span><span class="p">(</span><span class="n">P0_birth</span><span class="p">,</span> <span class="n">logB</span><span class="p">)</span>
-    <span class="n">snr</span> <span class="o">=</span> <span class="n">SNRTrueloveMcKee</span><span class="p">(</span><span class="n">e_sn</span><span class="o">=</span><span class="n">E_SN</span><span class="p">,</span> <span class="n">n_ISM</span><span class="o">=</span><span class="n">n_ISM</span><span class="p">)</span>
-    <span class="n">pwn</span> <span class="o">=</span> <span class="n">PWN</span><span class="p">(</span><span class="n">pulsar</span><span class="p">,</span> <span class="n">snr</span><span class="p">)</span>
-    <span class="n">r_out_pwn</span> <span class="o">=</span> <span class="n">pwn</span><span class="o">.</span><span class="n">radius</span><span class="p">(</span><span class="n">age</span><span class="p">)</span>
-    <span class="n">L_PWN</span> <span class="o">=</span> <span class="n">pwn</span><span class="o">.</span><span class="n">luminosity_tev</span><span class="p">(</span><span class="n">age</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">table</span><span class="p">)):</span>
+        <span class="n">age</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s1">&#39;age&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">E_SN</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s1">&#39;E_SN&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">n_ISM</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s1">&#39;n_ISM&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">P0_birth</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s1">&#39;P0_birth&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">logB</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s1">&#39;logB&#39;</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span>
+
+        <span class="c1"># Compute properties</span>
+        <span class="n">pulsar</span> <span class="o">=</span> <span class="n">Pulsar</span><span class="p">(</span><span class="n">P0_birth</span><span class="p">,</span> <span class="n">logB</span><span class="p">)</span>
+        <span class="n">snr</span> <span class="o">=</span> <span class="n">SNRTrueloveMcKee</span><span class="p">(</span><span class="n">e_sn</span><span class="o">=</span><span class="n">E_SN</span><span class="p">,</span> <span class="n">n_ISM</span><span class="o">=</span><span class="n">n_ISM</span><span class="p">)</span>
+        <span class="n">pwn</span> <span class="o">=</span> <span class="n">PWN</span><span class="p">(</span><span class="n">pulsar</span><span class="p">,</span> <span class="n">snr</span><span class="p">)</span>
+        <span class="n">r_out_pwn</span> <span class="o">=</span> <span class="n">pwn</span><span class="o">.</span><span class="n">radius</span><span class="p">(</span><span class="n">age</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;pc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">L_PWN</span> <span class="o">=</span> <span class="n">pwn</span><span class="o">.</span><span class="n">luminosity_tev</span><span class="p">(</span><span class="n">age</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;erg&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">r_out_pwn</span><span class="o">=</span><span class="n">r_out_pwn</span><span class="p">,</span> <span class="n">L_PWN</span><span class="o">=</span><span class="n">L_PWN</span><span class="p">))</span>
 
     <span class="c1"># Add columns to table</span>
-    <span class="n">table</span><span class="p">[</span><span class="s1">&#39;r_out_PWN&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">r_out_pwn</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;pc&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;PWN outer radius&#39;</span><span class="p">)</span>
-    <span class="n">table</span><span class="p">[</span><span class="s1">&#39;L_PWN&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">L_PWN</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;erg&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;PWN luminosity above 1 TeV&#39;</span><span class="p">)</span>
+    <span class="n">table</span><span class="p">[</span><span class="s1">&#39;r_out_PWN&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">_</span><span class="p">[</span><span class="s1">&#39;r_out_pwn&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">results</span><span class="p">],</span>
+        <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;pc&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;PWN outer radius&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">table</span><span class="p">[</span><span class="s1">&#39;L_PWN&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">_</span><span class="p">[</span><span class="s1">&#39;L_PWN&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">results</span><span class="p">],</span>
+        <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;erg&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;PWN luminosity above 1 TeV&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="k">return</span> <span class="n">table</span></div>
 
 
@@ -540,8 +543,8 @@
     <a href="#">Back to Top</a></p>
   <p>
     &copy; Copyright 2018, The Gammapy developers.<br/>
-    Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.7. &nbsp;
-    Last built 01 Mar 2018. <br/>
+    Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.7.2. &nbsp;
+    Last built 04 Apr 2018. <br/>
   </p>
 </footer>
   </body>

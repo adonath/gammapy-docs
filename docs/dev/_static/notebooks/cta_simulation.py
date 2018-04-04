@@ -256,3 +256,10 @@ table[['energy_min', 'energy_max', 'excess', 'background', 'sigma']][:10]
 # - do the same thing for the source 1ES 2322-40.9 (faint BL Lac object)
 # - repeat the procedure 10 times and average detection results (excess and significance)
 # - estimate the time needed to have a 5-sigma detection for Cen A (core)
+
+# ## What next?
+# 
+# In this tutorial we learned how to simulate the expected counts of a Fermi/LAT source in the CTA energy range. 
+# Here's some suggestions where to go next:
+# 
+# * in order to fit a model to the simulted spectra, have a look at the last section of [this tutorial](http://docs.gammapy.org/dev/notebooks/spectrum_analysis.html) or [this tutorial](http://docs.gammapy.org/dev/notebooks/spectrum_fitting_with_sherpa.html)

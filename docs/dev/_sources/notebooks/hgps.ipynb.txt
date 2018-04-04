@@ -1,0 +1,729 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "\n",
+    "<script type=\"text/javascript\" src=\"../_static/linksdl.js\"></script>\n",
+    "<div class='alert alert-info'>\n",
+    "**This is a fixed-text formatted version of a Jupyter notebook.**\n",
+    "\n",
+    "Try online on Binder\n",
+    "\n",
+    "[![Binder](https://mybinder.org/badge.svg)](https://beta.mybinder.org/v2/gh/gammapy/gammapy-extra/master?filepath=hgps.ipynb)\n",
+    "\n",
+    " You can also contribute with your own notebooks in this\n",
+    " [GitHub repository](https://github.com/gammapy/gammapy-extra/tree/master/notebooks).\n",
+    "\n",
+    "**Source files:**\n",
+    "[hgps.ipynb](../_static/notebooks/hgps.ipynb) |\n",
+    "[hgps.py](../_static/notebooks/hgps.py)\n",
+    "</div>\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# HGPS Jupyter notebook\n",
+    "\n",
+    "\n",
+    "## HGPS\n",
+    "\n",
+    "The H.E.S.S. Galactic Plane Survey (HGPS) is the first deep and wide survey of the Milky Way in TeV gamma-rays.\n",
+    "\n",
+    "The release data consistes of 10 survey maps and several tables that contain a source catalog and other information.\n",
+    "\n",
+    "The data is available here for download, in FITS format:\n",
+    "https://www.mpi-hd.mpg.de/hfm/HESS/hgps\n",
+    "\n",
+    "**Please read the Appendix A of the paper to learn about the caveats to using the HGPS data. Especially note that the HGPS survey maps are correlated and thus no detailed source morphology analysis is possible, and also note the caveats concerning spectral models and spectral flux points.**\n",
+    "\n",
+    "## Topics\n",
+    "\n",
+    "This is a Jupyter notebook that illustrates how to work with the HGPS data from Python. You will learn how to access the HGPS images as well as the HGPS catalog and other tabular data using Astropy and Gammapy.\n",
+    "\n",
+    "* In the first part we will only use Astropy to do some basic things.\n",
+    "* Then in the second part we'll use Gammapy to do some things that are a little more advanced.\n",
+    "\n",
+    "Note that there are other tools to work with FITS data that we don't explain here. Specifically [DS9](http://ds9.si.edu/) and [Aladin](http://aladin.u-strasbg.fr/) are good FITS image viewers, and [TOPCAT](http://www.star.bris.ac.uk/~mbt/topcat/) is great for FITS tables. Astropy and Gammapy are just one way to work with the HGPS data; any tool that can access FITS data can be used.\n",
+    "\n",
+    "## Packages\n",
+    "\n",
+    "We will be using the following Python packages and features:\n",
+    "\n",
+    "* **[astropy](http://docs.astropy.org/)**, specifically [astropy.io.fits](http://docs.astropy.org/en/stable/io/fits/index.html) to read the FITS data, [astropy.table.Table](http://docs.astropy.org/en/stable/table/index.html) to work with the tables, but also [astropy.coordinates.SkyCoord](http://docs.astropy.org/en/stable/coordinates/index.html) and [astropy.wcs.WCS](http://docs.astropy.org/en/stable/wcs/index.html) to work with sky and pixel coordinates and [astropy.units.Quantity](http://docs.astropy.org/en/stable/units/index.html) to work with quantities.\n",
+    "\n",
+    "* **[regions](https://astropy-regions.readthedocs.io/)** to show HGPS source spectral extraction circular regions and create corresponding DS9 regions.\n",
+    "\n",
+    "* **[gammapy](http://docs.gammapy.org/)**, specifically [gammapy.maps](http://docs.gammapy.org/dev/maps/index.html) to work with the HGPS sky maps, and [gammapy.catalog.SourceCatalogHGPS](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogHGPS.html) and [gammapy.catalog.SourceCatalogObjectHGPS](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogObjectHGPS.html) to work with the HGPS catalog data, especially the HGPS spectral data using [gammapy.spectrum.models.SpectralModel](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.SpectralModel.html) and [gammapy.spectrum.FluxPoints](http://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html) objects.\n",
+    "\n",
+    "* **[matplotlib](https://matplotlib.org/)** for plotting, used via [astropy.visualization](http://docs.astropy.org/en/stable/visualization/index.html) and [gammapy.maps.WcsNDMap.plot](http://docs.gammapy.org/dev/api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.plot)\n",
+    "for sky map plotting.\n",
+    "\n",
+    "If you're not familiar with Python, Numpy, Astropy, Gammapy or matplotlib yet, you can learn about them using the links to the documentation that we just mentioned, or using the tutorial introductions as explained [here](http://docs.gammapy.org/dev/tutorials.html).\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Setup\n",
+    "\n",
+    "We start by importing everything we will use in this notebook, and configuring the notebook to show plots inline.\n",
+    "If you get an error here, you probably have to install the missing package and re-start the notebook."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import os\n",
+    "\n",
+    "import astropy.units as u\n",
+    "from astropy.coordinates import SkyCoord\n",
+    "from astropy.io import fits\n",
+    "from astropy.table import Table\n",
+    "from astropy.wcs import WCS\n",
+    "import regions\n",
+    "\n",
+    "from gammapy.maps import Map\n",
+    "from gammapy.catalog import SourceCatalogHGPS"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "%matplotlib inline\n",
+    "import matplotlib.pyplot as plt"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Data\n",
+    "\n",
+    "First, you need to download the HGPS FITS data from https://www.mpi-hd.mpg.de/hfm/HESS/hgps .\n",
+    "\n",
+    "If you haven't already, you can use the following commands to download the files to your local working directory.\n",
+    "\n",
+    "You don't have to read the code in the next cell; that's just how to downlaod files from Python.\n",
+    "You could also download the files with your web browser, or from the command line e.g. with curl::\n",
+    "\n",
+    "    mkdir hgps_data\n",
+    "    cd hgps_data\n",
+    "    curl -O https://www.mpi-hd.mpg.de/hfm/HESS/hgps/data/hgps_catalog_v1.fits.gz\n",
+    "    curl -O https://www.mpi-hd.mpg.de/hfm/HESS/hgps/data/hgps_map_significance_0.1deg_v1.fits.gz\n",
+    "\n",
+    "The rest of this notebook assumes that you have the data files at ``hgps_data_path``."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Already downloaded: hgps_data/hgps_catalog_v1.fits.gz\n",
+      "Already downloaded: hgps_data/hgps_map_significance_0.1deg_v1.fits.gz\n",
+      "\n",
+      "\n",
+      "Files at /Users/deil/code/gammapy-extra/notebooks/hgps_data :\n",
+      "\n",
+      "hgps_map_significance_0.1deg_v1.fits.gz\n",
+      "hgps_catalog_v1.fits.gz\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Download HGPS data used in this tutorial to a folder of your choice\n",
+    "# The default `hgps_data` used here is a sub-folder in your current\n",
+    "# working directory (where you started the notebook)\n",
+    "hgps_data_path = 'hgps_data'    \n",
+    "\n",
+    "# The Python standard library has a function to retrieve file\n",
+    "# from a given URL; it's just located in a different place\n",
+    "# in Python 3 and Python 2, so while Python 2 is still in use\n",
+    "# we put this to make it work in both versions\n",
+    "try:\n",
+    "    from urllib.request import urlretrieve\n",
+    "except:\n",
+    "    from urllib import urlretrieve\n",
+    "\n",
+    "def hgps_data_download():\n",
+    "    base_url = 'https://www.mpi-hd.mpg.de/hfm/HESS/hgps/data/'\n",
+    "    filenames = [\n",
+    "        'hgps_catalog_v1.fits.gz',\n",
+    "        'hgps_map_significance_0.1deg_v1.fits.gz',\n",
+    "    ]\n",
+    "    \n",
+    "    if not os.path.exists(hgps_data_path):\n",
+    "        os.makedirs(hgps_data_path)\n",
+    "    \n",
+    "    for filename in filenames:\n",
+    "        url = base_url + filename\n",
+    "        path = os.path.join(hgps_data_path, filename)\n",
+    "        if os.path.exists(path):\n",
+    "            print('Already downloaded: {}'.format(path))\n",
+    "        else:\n",
+    "            print('Downloading {} to {}'.format(url, path))\n",
+    "            urlretrieve(url, path)\n",
+    "\n",
+    "hgps_data_download()\n",
+    "\n",
+    "print('\\n\\nFiles at {} :\\n'.format(os.path.abspath(hgps_data_path)))\n",
+    "for filename in os.listdir(hgps_data_path):\n",
+    "    print(filename)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Catalog with Astropy\n",
+    "\n",
+    "tbd"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Filename: hgps_data/hgps_catalog_v1.fits.gz\n",
+      "No.    Name      Ver    Type      Cards   Dimensions   Format\n",
+      "  0  PRIMARY       1 PrimaryHDU      15   ()      \n",
+      "  1  HGPS_SOURCES    1 BinTableHDU    327   78R x 78C   [16A, 6A, 10A, 20A, 7A, E, E, E, E, E, E, E, E, K, 18A, 103A, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, 4A, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, E, K, 40E, 40E, 40E, 40E, 40E, 40E, 40E, 40B]   \n",
+      "  2  HGPS_GAUSS_COMPONENTS    1 BinTableHDU     87   98R x 13C   [9A, 16A, 15A, E, E, E, E, E, E, E, E, E, E]   \n",
+      "  3  HGPS_ASSOCIATIONS    1 BinTableHDU     39   223R x 4C   [16A, 5A, 21A, E]   \n",
+      "  4  HGPS_IDENTIFICATIONS    1 BinTableHDU     53   31R x 9C   [16A, 17A, 9A, 11A, 21A, 21A, E, E, E]   \n",
+      "  5  HGPS_LARGE_SCALE_COMPONENT    1 BinTableHDU     55   50R x 7C   [E, E, E, E, E, E, E]   \n",
+      "  6  SNRCAT        1 BinTableHDU     56   282R x 7C   [11A, E, E, 29A, E, E, E]   \n"
+     ]
+    }
+   ],
+   "source": [
+    "filename = os.path.join(hgps_data_path, 'hgps_catalog_v1.fits.gz')\n",
+    "hdu_list = fits.open(filename)\n",
+    "hdu_list.info()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Maps with Astropy\n",
+    "\n",
+    "tbd"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Filename: hgps_data/hgps_map_significance_0.1deg_v1.fits.gz\n",
+      "No.    Name      Ver    Type      Cards   Dimensions   Format\n",
+      "  0  Significance    1 PrimaryHDU      30   (9400, 500)   float32   \n"
+     ]
+    }
+   ],
+   "source": [
+    "filename = os.path.join(hgps_data_path, 'hgps_map_significance_0.1deg_v1.fits.gz')\n",
+    "hdu_list = fits.open(filename)\n",
+    "hdu_list.info()\n",
+    "hdu = hdu_list[0]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "numpy.ndarray"
+      ]
+     },
+     "execution_count": 6,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "type(hdu.data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "(500, 9400)"
+      ]
+     },
+     "execution_count": 7,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "hdu.data.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "89.49691"
+      ]
+     },
+     "execution_count": 8,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "hdu.data.max()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "SIMPLE  =                    T / conforms to FITS standard                      \n",
+       "BITPIX  =                  -32 / array data type                                \n",
+       "NAXIS   =                    2 / number of array dimensions                     \n",
+       "NAXIS1  =                 9400                                                  \n",
+       "NAXIS2  =                  500                                                  \n",
+       "EXTNAME = 'Significance'                                                        \n",
+       "HDUNAME = 'Significance'                                                        \n",
+       "CTYPE1  = 'GLON-CAR'           / Type of co-ordinate on axis 1                  \n",
+       "CTYPE2  = 'GLAT-CAR'           / Type of co-ordinate on axis 2                  \n",
+       "EQUINOX =                2000. / [yr] Epoch of reference equinox                \n",
+       "CRPIX1  =               4700.5 / Reference pixel on axis 1                      \n",
+       "CRPIX2  =                250.5 / Reference pixel on axis 2                      \n",
+       "CRVAL1  =                  341 / Value at ref. pixel on axis 1                  \n",
+       "CRVAL2  =                    0 / Value at ref. pixel on axis 2                  \n",
+       "CDELT1  =                -0.02 / Pixel size on axis 1                           \n",
+       "CDELT2  =                 0.02 / Pixel size on axis 2                           \n",
+       "CUNIT1  = 'deg     '           / units of  CRVAL1 and  CDELT1                   \n",
+       "CUNIT2  = 'deg     '           / units of  CRVAL2 and  CDELT2                   \n",
+       "TELESCOP= 'H.E.S.S.'           / name of telescope                              \n",
+       "ORIGIN  = 'The H.E.S.S. Collaboration' / organization responsible for the data  \n",
+       "COMMENT This is part of the HESS Galactic plane survey (HGPS) data.             \n",
+       "COMMENT                                                                         \n",
+       "COMMENT     Paper: https://doi.org/10.1051/0004-6361/201732098                  \n",
+       "COMMENT     Webpage: https://www.mpi-hd.mpg.de/hfm/HESS/hgps                    \n",
+       "COMMENT     Contact: contact@hess-experiment.eu                                 \n",
+       "COMMENT                                                                         \n",
+       "COMMENT The HGPS observations were taken from 2004 to 2013.                     \n",
+       "COMMENT The paper was published and this data was released in April 2018.       \n",
+       "COMMENT                                                                         \n",
+       "COMMENT A detailed description is available in the paper.                       "
+      ]
+     },
+     "execution_count": 9,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "hdu.header"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "WCS Keywords\n",
+       "\n",
+       "Number of WCS axes: 2\n",
+       "CTYPE : 'GLON-CAR'  'GLAT-CAR'  \n",
+       "CRVAL : 341.0  0.0  \n",
+       "CRPIX : 4700.5  250.5  \n",
+       "PC1_1 PC1_2  : 1.0  0.0  \n",
+       "PC2_1 PC2_2  : 0.0  1.0  \n",
+       "CDELT : -0.02  0.02  \n",
+       "NAXIS : 9400  500"
+      ]
+     },
+     "execution_count": 10,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "wcs = WCS(hdu.header)\n",
+    "wcs"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "(array(3749.5), array(249.5))"
+      ]
+     },
+     "execution_count": 11,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "pos = SkyCoord(0, 0, unit='deg', frame='galactic')\n",
+    "pos.to_pixel(wcs)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Catalog with Gammapy\n",
+    "\n",
+    "tbd"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "filename = os.path.join(hgps_data_path, 'hgps_catalog_v1.fits.gz')\n",
+    "cat = SourceCatalogHGPS(filename)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "source = cat[0]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\n",
+      "*** Basic info ***\n",
+      "\n",
+      "Catalog row index (zero-based) : 0\n",
+      "Source name          : HESS J0835-455\n",
+      "Analysis reference   : HGPS\n",
+      "Source class         : PWN\n",
+      "Identified object    : Vela X\n",
+      "Gamma-Cat id         : 37\n",
+      "\n",
+      "\n",
+      "*** Info from map analysis ***\n",
+      "\n",
+      "RA                   :  128.887 deg = 8h35m33s\n",
+      "DEC                  :  -45.659 deg = -45d39m32s\n",
+      "GLON                 :  263.960 +/- 0.025 deg\n",
+      "GLAT                 :   -3.048 +/- 0.027 deg\n",
+      "Position Error (68%) : 0.057 deg\n",
+      "Position Error (95%) : 0.093 deg\n",
+      "ROI number           : 18\n",
+      "Spatial model        : 3-Gaussian\n",
+      "Spatial components   : HGPSC 001, HGPSC 002, HGPSC 003\n",
+      "TS                   : 1553.2\n",
+      "sqrt(TS)             : 39.4\n",
+      "Size                 : 0.585 +/- 0.052 (UL: nan) deg\n",
+      "R70                  : 0.887 deg\n",
+      "RSpec                : 0.500 deg\n",
+      "Total model excess   : 8781.6\n",
+      "Excess in RSpec      : 3580.1\n",
+      "Model Excess in RSpec : 3637.4\n",
+      "Background in RSpec  : 5936.9\n",
+      "Livetime             : 64.9 hours\n",
+      "Energy threshold     : 0.47 TeV\n",
+      "Source flux (>1 TeV) : (15.362 +/- 0.534) x 10^-12 cm^-2 s^-1 = (67.97 +/- 2.36) % Crab\n",
+      "\n",
+      "Fluxes in RSpec (> 1 TeV):\n",
+      "Map measurement                : 5.571 x 10^-12 cm^-2 s^-1 = 24.65 % Crab\n",
+      "Source model                   : 5.659 x 10^-12 cm^-2 s^-1 = 25.04 % Crab\n",
+      "Other component model          : 0.000 x 10^-12 cm^-2 s^-1 =  0.00 % Crab\n",
+      "Large scale component model    : 0.000 x 10^-12 cm^-2 s^-1 =  0.00 % Crab\n",
+      "Total model                    : 5.659 x 10^-12 cm^-2 s^-1 = 25.04 % Crab\n",
+      "Containment in RSpec                :  36.8 %\n",
+      "Contamination in RSpec              :   0.0 %\n",
+      "Flux correction (RSpec -> Total)    : 271.4 %\n",
+      "Flux correction (Total -> RSpec)    :  36.8 %\n",
+      "\n",
+      "*** Info from spectral analysis ***\n",
+      "\n",
+      "Livetime             : 18.8 hours\n",
+      "Energy range:        : 0.29 to 61.90 TeV\n",
+      "Background           : 9993.6\n",
+      "Excess               : 2584.4\n",
+      "Spectral model       : ECPL\n",
+      "TS ECPL over PL      : 43.0\n",
+      "Best-fit model flux(> 1 TeV) : (17.433 +/- 1.404) x 10^-12 cm^-2 s^-1  = (77.14 +/- 6.21) % Crab\n",
+      "Best-fit model energy flux(1 to 10 TeV) : (76.057 +/- 7.100) x 10^-12 erg cm^-2 s^-1\n",
+      "Pivot energy         : 3.02 TeV\n",
+      "Flux at pivot energy : (1.833 +/- 0.070) x 10^-12 cm^-2 s^-1 TeV^-1  = (8.11 +/- 0.20) % Crab\n",
+      "PL   Flux(> 1 TeV)   : (16.574 +/- 0.632) x 10^-12 cm^-2 s^-1  = (73.34 +/- 2.80) % Crab\n",
+      "PL   Flux(@ 1 TeV)   : (14.805 +/- 0.737) x 10^-12 cm^-2 s^-1 TeV^-1  = (65.51 +/- 2.10) % Crab\n",
+      "PL   Index           : 1.89 +/- 0.03\n",
+      "ECPL   Flux(@ 1 TeV) : (12.089 +/- 0.869) x 10^-12 cm^-2 s^-1 TeV^-1  = (53.49 +/- 2.48) % Crab\n",
+      "ECPL   Flux(> 1 TeV) : (17.433 +/- 1.404) x 10^-12 cm^-2 s^-1  = (77.14 +/- 6.21) % Crab\n",
+      "ECPL Index           : 1.35 +/- 0.08\n",
+      "ECPL Lambda          : 0.082 +/- 0.012 TeV^-1\n",
+      "ECPL E_cut           : 12.27 +/- 1.74 TeV\n",
+      "\n",
+      "*** Flux points info ***\n",
+      "\n",
+      "Number of flux points: 6\n",
+      "Flux points table: \n",
+      "\n",
+      "e_ref  e_min  e_max        dnde         dnde_errn       dnde_errp        dnde_ul     is_ul\n",
+      " TeV    TeV    TeV   1 / (cm2 s TeV) 1 / (cm2 s TeV) 1 / (cm2 s TeV) 1 / (cm2 s TeV)      \n",
+      "------ ------ ------ --------------- --------------- --------------- --------------- -----\n",
+      " 0.422  0.287  0.619       6.554e-11       1.050e-11       1.038e-11       8.637e-11 False\n",
+      " 0.953  0.619  1.468       1.199e-11       1.292e-12       1.289e-12       1.453e-11 False\n",
+      " 2.260  1.468  3.481       3.526e-12       2.358e-13       2.408e-13       4.018e-12 False\n",
+      " 5.360  3.481  8.254       8.324e-13       5.496e-14       5.620e-14       9.496e-13 False\n",
+      "12.711  8.254 19.573       1.596e-13       1.323e-14       1.349e-14       1.870e-13 False\n",
+      "30.142 19.573 46.416       1.116e-14       2.189e-15       2.323e-15       1.599e-14 False\n",
+      "\n",
+      "*** Gaussian component info ***\n",
+      "\n",
+      "Number of components: 3\n",
+      "Spatial components   : HGPSC 001, HGPSC 002, HGPSC 003\n",
+      "\n",
+      "Component HGPSC 001:\n",
+      "GLON                 :  263.969 +/- 0.023 deg\n",
+      "GLAT                 :   -3.344 +/- 0.027 deg\n",
+      "Size                 : 0.237 +/- 0.023 deg\n",
+      "Flux (>1 TeV)        : (2.76 +/- 0.52) x 10^-12 cm^-2 s^-1 = (12.2 +/- 2.3) % Crab\n",
+      "\n",
+      "Component HGPSC 002:\n",
+      "GLON                 :  263.699 +/- 0.021 deg\n",
+      "GLAT                 :   -2.827 +/- 0.037 deg\n",
+      "Size                 : 0.156 +/- 0.018 deg\n",
+      "Flux (>1 TeV)        : (1.08 +/- 0.21) x 10^-12 cm^-2 s^-1 = (4.8 +/- 0.9) % Crab\n",
+      "\n",
+      "Component HGPSC 003:\n",
+      "GLON                 :  263.983 +/- 0.033 deg\n",
+      "GLAT                 :   -2.997 +/- 0.046 deg\n",
+      "Size                 : 0.650 +/- 0.027 deg\n",
+      "Flux (>1 TeV)        : (11.52 +/- 0.73) x 10^-12 cm^-2 s^-1 = (51.0 +/- 3.2) % Crab\n",
+      "\n",
+      "\n",
+      "*** Source associations info ***\n",
+      "\n",
+      " Source_Name   Association_Catalog  Association_Name Separation\n",
+      "                                                        deg    \n",
+      "-------------- ------------------- ----------------- ----------\n",
+      "HESS J0835-455                2FHL 2FHL J0835.3-4511  0.4737829\n",
+      "HESS J0835-455                3FGL 3FGL J0835.3-4510 0.48186883\n",
+      "HESS J0835-455                COMP        G263.9-3.3 0.32130364\n",
+      "HESS J0835-455                 PSR          B0833-45 0.48390508\n",
+      "\n",
+      "*** Source identification info ***\n",
+      "\n",
+      "Source_Name: HESS J0835-455\n",
+      "Identified_Object: Vela X\n",
+      "Class: PWN\n",
+      "Evidence: Morphology\n",
+      "Reference: 2006A%26A...448L..43A\n",
+      "Distance_Reference: SNRCat\n",
+      "Distance: 0.2750000059604645 kpc\n",
+      "Distance_Min: 0.25 kpc\n",
+      "Distance_Max: 0.30000001192092896 kpc\n",
+      "\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(source)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<bound method SourceCatalogObjectHGPS.spectral_model of SourceCatalogObjectHGPS('HESS J0835-455')>\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(source.spectral_model)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<i>Table length=6</i>\n",
+       "<table id=\"table4648481400\" class=\"table-striped table-bordered table-condensed\">\n",
+       "<thead><tr><th>e_ref</th><th>e_min</th><th>e_max</th><th>dnde</th><th>dnde_errn</th><th>dnde_errp</th><th>dnde_ul</th><th>is_ul</th></tr></thead>\n",
+       "<thead><tr><th>TeV</th><th>TeV</th><th>TeV</th><th>1 / (cm2 s TeV)</th><th>1 / (cm2 s TeV)</th><th>1 / (cm2 s TeV)</th><th>1 / (cm2 s TeV)</th><th></th></tr></thead>\n",
+       "<thead><tr><th>float32</th><th>float32</th><th>float32</th><th>float32</th><th>float32</th><th>float32</th><th>float32</th><th>bool</th></tr></thead>\n",
+       "<tr><td>0.4216965</td><td>0.28729847</td><td>0.6189658</td><td>6.5541766e-11</td><td>1.0499469e-11</td><td>1.037914e-11</td><td>8.636929e-11</td><td>False</td></tr>\n",
+       "<tr><td>0.9531619</td><td>0.6189658</td><td>1.4677993</td><td>1.1986031e-11</td><td>1.2919824e-12</td><td>1.2886871e-12</td><td>1.4526381e-11</td><td>False</td></tr>\n",
+       "<tr><td>2.260303</td><td>1.4677993</td><td>3.4807005</td><td>3.52555e-12</td><td>2.3576906e-13</td><td>2.4082174e-13</td><td>4.0178963e-12</td><td>False</td></tr>\n",
+       "<tr><td>5.360023</td><td>3.4807005</td><td>8.254042</td><td>8.324112e-13</td><td>5.495922e-14</td><td>5.6203943e-14</td><td>9.495746e-13</td><td>False</td></tr>\n",
+       "<tr><td>12.710618</td><td>8.254042</td><td>19.573418</td><td>1.5962396e-13</td><td>1.3232291e-14</td><td>1.3493189e-14</td><td>1.8696622e-13</td><td>False</td></tr>\n",
+       "<tr><td>30.141624</td><td>19.573418</td><td>46.41589</td><td>1.11618885e-14</td><td>2.1889015e-15</td><td>2.3228553e-15</td><td>1.5994852e-14</td><td>False</td></tr>\n",
+       "</table>"
+      ],
+      "text/plain": [
+       "<Table length=6>\n",
+       "  e_ref     e_min      e_max   ...    dnde_errp        dnde_ul     is_ul\n",
+       "   TeV       TeV        TeV    ... 1 / (cm2 s TeV) 1 / (cm2 s TeV)      \n",
+       " float32   float32    float32  ...     float32         float32      bool\n",
+       "--------- ---------- --------- ... --------------- --------------- -----\n",
+       "0.4216965 0.28729847 0.6189658 ...    1.037914e-11    8.636929e-11 False\n",
+       "0.9531619  0.6189658 1.4677993 ...   1.2886871e-12   1.4526381e-11 False\n",
+       " 2.260303  1.4677993 3.4807005 ...   2.4082174e-13   4.0178963e-12 False\n",
+       " 5.360023  3.4807005  8.254042 ...   5.6203943e-14    9.495746e-13 False\n",
+       "12.710618   8.254042 19.573418 ...   1.3493189e-14   1.8696622e-13 False\n",
+       "30.141624  19.573418  46.41589 ...   2.3228553e-15   1.5994852e-14 False"
+      ]
+     },
+     "execution_count": 16,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "source.flux_points.table"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Maps with Gammapy\n",
+    "\n",
+    "This section shows you how to ... <TODO>"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([73.72828], dtype=float32)"
+      ]
+     },
+     "execution_count": 17,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "filename = os.path.join(hgps_data_path, 'hgps_map_significance_0.1deg_v1.fits.gz')\n",
+    "survey_map = Map.read(filename)\n",
+    "survey_map.get_by_coord((0, 0))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Conclusions\n",
+    "\n",
+    "This concludes this tutorial how to access and work with the HGPS data from Python, using Astropy and Gammapy.\n",
+    "\n",
+    "There are many things we didn't cover here. For example the [spectrum_models](http://docs.gammapy.org/dev/notebooks/spectrum_models.html) tutorial explains how to define a user-defined spectral model, e.g. you could call one of the astrophysical emission models from [Naima](http://naima.readthedocs.io/). The [sed_fitting_gammacat_fermi](http://docs.gammapy.org/dev/notebooks/sed_fitting_gammacat_fermi.html) tutorial shows how to access other catalog data (e.g. from Fermi-LAT or gamma-cat) and fit models to spectral points.\n",
+    "\n",
+    "\n",
+    "* If you have any questions about the HGPS data, please use the contact given at https://www.mpi-hd.mpg.de/hfm/HESS/hgps/ .\n",
+    "* If you have any questions or issues about Astropy or Gammapy, please use the Gammapy mailing list (see http://gammapy.org/contact.html).\n",
+    "\n",
+    "**Please read the Appendix A of the paper to learn about the caveats to using the HGPS data. Especially note that the HGPS survey maps are correlated and thus no detailed source morphology analysis is possible, and also note the caveats concerning spectral models and spectral flux points.**"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.6.5"
+  },
+  "nbsphinx": {
+   "orphan": true
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}

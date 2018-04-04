@@ -4,20 +4,12 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>gammapy.spectrum.extract &#8212; gammapy v0.8.dev5620</title>
+    <title>gammapy.spectrum.extract &#8212; gammapy v0.8.dev5696</title>
     <link rel="stylesheet" href="../../../_static/gammapy.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../../../',
-        VERSION:     '0.8.dev5620',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
+    <script type="text/javascript" src="../../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../../_static/doctools.js"></script>
@@ -30,8 +22,7 @@
 <script type="text/javascript" src="../../../_static/copybutton.js"></script>
 
 
-  </head>
-  <body>
+  </head><body>
 <div class="topbar">
   <a class="brand" title="Documentation Home" href="../../../index.html"><span id="logotext1">gamma</span><span id="logotext2">py</span><span id="logotext3">:docs</span></a>
   <ul>
@@ -55,7 +46,7 @@
     <h3>Navigation</h3>
     <ul>
       <li>
-	<a href="../../../index.html">gammapy v0.8.dev5620</a>
+	<a href="../../../index.html">gammapy v0.8.dev5696</a>
 	 &#187;
       </li>
       <li><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
@@ -142,6 +133,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">use_recommended_erange</span> <span class="o">=</span> <span class="n">use_recommended_erange</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">observations</span> <span class="o">=</span> <span class="n">SpectrumObservationList</span><span class="p">()</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">containment</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_on_vector</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_off_vector</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_aeff</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_edisp</span> <span class="o">=</span> <span class="kc">None</span>
+
 <div class="viewcode-block" id="SpectrumExtraction.run"><a class="viewcode-back" href="../../../api/gammapy.spectrum.SpectrumExtraction.html#gammapy.spectrum.SpectrumExtraction.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outdir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">use_sherpa</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Run all steps.</span>
 
@@ -192,6 +189,8 @@
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">containment_correction</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">apply_containment_correction</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">bkg</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">containment</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_aeff</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">nbins</span><span class="p">)</span>
 
         <span class="n">spectrum_observation</span> <span class="o">=</span> <span class="n">SpectrumObservation</span><span class="p">(</span>
             <span class="n">on_vector</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_vector</span><span class="p">,</span>
@@ -291,22 +290,20 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">psf</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">psf</span><span class="o">.</span><span class="n">to_energy_dependent_table_psf</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span> <span class="n">angles</span><span class="p">)</span>
 
-        <span class="n">center_energies</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_on_vector</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">nodes</span>
-        <span class="n">areascal</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">center_energies</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_aeff</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">nodes</span>
+        <span class="n">containment</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">energy</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">center_energies</span><span class="p">):</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">correction</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">integral</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span>
-                                          <span class="mf">0.</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
-                                          <span class="n">bkg</span><span class="o">.</span><span class="n">on_region</span><span class="o">.</span><span class="n">radius</span><span class="p">)</span>
+                <span class="n">cont_</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">integral</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="mf">0.</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span> <span class="n">bkg</span><span class="o">.</span><span class="n">on_region</span><span class="o">.</span><span class="n">radius</span><span class="p">)</span>
             <span class="k">except</span><span class="p">:</span>
                 <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Containment correction failed for bin </span><span class="si">{}</span><span class="s1">, energy </span><span class="si">{}</span><span class="s1">.&#39;</span>
                 <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">energy</span><span class="p">))</span>
-                <span class="n">correction</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">cont_</span> <span class="o">=</span> <span class="mi">1</span>
             <span class="k">finally</span><span class="p">:</span>
-                <span class="n">areascal</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">correction</span><span class="p">)</span>
+                <span class="n">containment</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cont_</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_on_vector</span><span class="o">.</span><span class="n">areascal</span> <span class="o">=</span> <span class="n">areascal</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_off_vector</span><span class="o">.</span><span class="n">areascal</span> <span class="o">=</span> <span class="n">areascal</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">containment</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">containment</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_aeff</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">containment</span></div>
 
 <div class="viewcode-block" id="SpectrumExtraction.compute_energy_threshold"><a class="viewcode-back" href="../../../api/gammapy.spectrum.SpectrumExtraction.html#gammapy.spectrum.SpectrumExtraction.compute_energy_threshold">[docs]</a>    <span class="k">def</span> <span class="nf">compute_energy_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compute and set the safe energy threshold for all observations.</span>
@@ -354,8 +351,8 @@
     <a href="#">Back to Top</a></p>
   <p>
     &copy; Copyright 2018, The Gammapy developers.<br/>
-    Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.6.7. &nbsp;
-    Last built 01 Mar 2018. <br/>
+    Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.7.2. &nbsp;
+    Last built 04 Apr 2018. <br/>
   </p>
 </footer>
   </body>
