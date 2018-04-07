@@ -301,7 +301,6 @@ print('Softest source: ',max_index_row['Source_Name'],
                          max_index_row['CLASS1'],max_index_row['Spectral_Index'])
 
 
-
 # ### Quantities and SkyCoords from a Table
 
 # In[23]:
