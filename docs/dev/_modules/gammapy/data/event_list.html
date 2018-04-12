@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>gammapy.data.event_list &#8212; gammapy v0.8.dev5700</title>
+    <title>gammapy.data.event_list &#8212; gammapy v0.8.dev5746</title>
     <link rel="stylesheet" href="../../../_static/gammapy.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" src="../../../_static/documentation_options.js"></script>
@@ -46,7 +46,7 @@
     <h3>Navigation</h3>
     <ul>
       <li>
-	<a href="../../../index.html">gammapy v0.8.dev5700</a>
+	<a href="../../../index.html">gammapy v0.8.dev5746</a>
 	 &#187;
       </li>
       <li><a href="../../index.html" >Module code</a> &#187;</li>
@@ -84,7 +84,9 @@
 <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">InvalidDataError</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;EventListBase&#39;</span><span class="p">,</span>
     <span class="s1">&#39;EventList&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;EventListLAT&#39;</span><span class="p">,</span>
     <span class="s1">&#39;EventListDataset&#39;</span><span class="p">,</span>
     <span class="s1">&#39;EventListDatasetChecker&#39;</span><span class="p">,</span>
 <span class="p">]</span>
@@ -92,10 +94,12 @@
 <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="EventList"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList">[docs]</a><span class="k">class</span> <span class="nc">EventList</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="EventListBase"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase">[docs]</a><span class="k">class</span> <span class="nc">EventListBase</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Event list.</span>
 
-<span class="sd">    Data format specification: :ref:`gadf:iact-events`</span>
+<span class="sd">    This class represents the base for two different event lists:</span>
+<span class="sd">    - EventList: targeted for IACT event lists</span>
+<span class="sd">    - EventListLAT: targeted for Fermi-LAT event lists</span>
 
 <span class="sd">    Event list data is stored in ``table`` (`~astropy.table.Table`) data member.</span>
 
@@ -126,19 +130,6 @@
 <span class="sd">    ----------</span>
 <span class="sd">    table : `~astropy.table.Table`</span>
 <span class="sd">        Event list table</span>
-
-<span class="sd">    Examples</span>
-<span class="sd">    --------</span>
-<span class="sd">    To load an example H.E.S.S. event list:</span>
-
-<span class="sd">    &gt;&gt;&gt; from gammapy.data import EventList</span>
-<span class="sd">    &gt;&gt;&gt; filename = &#39;$GAMMAPY_EXTRA/test_datasets/unbundled/hess/run_0023037_hard_eventlist.fits.gz&#39;</span>
-<span class="sd">    &gt;&gt;&gt; events = EventList.read(filename)</span>
-
-<span class="sd">    To load an example Fermi-LAT event list (the one corresponding to the 2FHL catalog dataset):</span>
-
-<span class="sd">    &gt;&gt;&gt; filename = &#39;$GAMMAPY_EXTRA/datasets/fermi_2fhl/2fhl_events.fits.gz&#39;</span>
-<span class="sd">    &gt;&gt;&gt; events = EventList.read(filename)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table</span><span class="p">):</span>
@@ -153,7 +144,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="n">table</span>
 
-<div class="viewcode-block" id="EventList.read"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.read">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="EventListBase.read"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.read">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Read from FITS file.</span>
 
@@ -171,7 +162,7 @@
         <span class="n">table</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">filename</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">table</span><span class="o">=</span><span class="n">table</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="EventList.stack"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.stack">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="EventListBase.stack"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.stack">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">stack</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">event_lists</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Stack (concatenate) list of event lists.</span>
 
@@ -241,7 +232,7 @@
         <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;GLON&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;GLAT&#39;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s1">&#39;galactic&#39;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="EventList.add_galactic_columns"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.add_galactic_columns">[docs]</a>    <span class="k">def</span> <span class="nf">add_galactic_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="EventListBase.add_galactic_columns"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.add_galactic_columns">[docs]</a>    <span class="k">def</span> <span class="nf">add_galactic_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Add Galactic coordinate columns to the table.</span>
 
 <span class="sd">        Adds the following columns to the table if not already present:</span>
@@ -255,29 +246,15 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;GLON&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">galactic</span><span class="o">.</span><span class="n">l</span><span class="o">.</span><span class="n">degree</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;GLAT&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">galactic</span><span class="o">.</span><span class="n">b</span><span class="o">.</span><span class="n">degree</span></div>
 
-    <span class="c1"># TODO: the following properties are also present on the `DataStoreObservation` class.</span>
-    <span class="c1"># This duplication should be removed.</span>
-    <span class="c1"># Maybe the EventList or EventListDataset should have an `observation` object member?</span>
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">observatory_earth_location</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Observatory location (`~astropy.coordinates.EarthLocation`).&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">_earth_location_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">meta</span><span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">observation_time_duration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Observation time duration in seconds (`~astropy.units.Quantity`).</span>
-
-<span class="sd">        The wall time, including dead-time.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">Quantity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s1">&#39;ONTIME&#39;</span><span class="p">],</span> <span class="s1">&#39;second&#39;</span><span class="p">)</span>
-
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">observation_live_time_duration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Live-time duration in seconds (`~astropy.units.Quantity`).</span>
 
 <span class="sd">        The dead-time-corrected observation time.</span>
 
-<span class="sd">        Computed as ``t_live = t_observation * (1 - f_dead)``</span>
+<span class="sd">        - In Fermi-LAT it is automatically provided in the header of the event list.</span>
+<span class="sd">        - In IACTs is computed as ``t_live = t_observation * (1 - f_dead)``</span>
+
 <span class="sd">        where ``f_dead`` is the dead-time fraction.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">Quantity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s1">&#39;LIVETIME&#39;</span><span class="p">],</span> <span class="s1">&#39;second&#39;</span><span class="p">)</span>
@@ -328,7 +305,7 @@
         <span class="sd">&quot;&quot;&quot;Event energies (`~astropy.units.Quantity`).&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;ENERGY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
 
-<div class="viewcode-block" id="EventList.select_row_subset"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.select_row_subset">[docs]</a>    <span class="k">def</span> <span class="nf">select_row_subset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row_specifier</span><span class="p">):</span>
+<div class="viewcode-block" id="EventListBase.select_row_subset"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.select_row_subset">[docs]</a>    <span class="k">def</span> <span class="nf">select_row_subset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row_specifier</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Select table row subset.</span>
 
 <span class="sd">        Parameters</span>
@@ -357,7 +334,7 @@
         <span class="n">table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="n">row_specifier</span><span class="p">]</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">table</span><span class="o">=</span><span class="n">table</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="EventList.select_energy"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.select_energy">[docs]</a>    <span class="k">def</span> <span class="nf">select_energy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">energy_band</span><span class="p">):</span>
+<div class="viewcode-block" id="EventListBase.select_energy"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.select_energy">[docs]</a>    <span class="k">def</span> <span class="nf">select_energy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">energy_band</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Select events in energy band.</span>
 
 <span class="sd">        Parameters</span>
@@ -383,25 +360,7 @@
         <span class="n">mask</span> <span class="o">&amp;=</span> <span class="p">(</span><span class="n">energy</span> <span class="o">&lt;</span> <span class="n">energy_band</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">select_row_subset</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="EventList.select_offset"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.select_offset">[docs]</a>    <span class="k">def</span> <span class="nf">select_offset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">offset_band</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Select events in offset band.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        offset_band : `~astropy.coordinates.Angle`</span>
-<span class="sd">            offset band ``[offset_min, offset_max)``</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        event_list : `EventList`</span>
-<span class="sd">            Copy of event list with selection applied.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">offset_band</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">offset</span><span class="p">)</span>
-        <span class="n">mask</span> <span class="o">&amp;=</span> <span class="p">(</span><span class="n">offset</span> <span class="o">&lt;</span> <span class="n">offset_band</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">select_row_subset</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="EventList.select_time"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.select_time">[docs]</a>    <span class="k">def</span> <span class="nf">select_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_interval</span><span class="p">):</span>
+<div class="viewcode-block" id="EventListBase.select_time"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.select_time">[docs]</a>    <span class="k">def</span> <span class="nf">select_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_interval</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Select events in time interval.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span>
@@ -409,7 +368,7 @@
         <span class="n">mask</span> <span class="o">&amp;=</span> <span class="p">(</span><span class="n">time</span> <span class="o">&lt;</span> <span class="n">time_interval</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">select_row_subset</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="EventList.select_sky_cone"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.select_sky_cone">[docs]</a>    <span class="k">def</span> <span class="nf">select_sky_cone</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
+<div class="viewcode-block" id="EventListBase.select_sky_cone"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.select_sky_cone">[docs]</a>    <span class="k">def</span> <span class="nf">select_sky_cone</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Select events in sky circle.</span>
 
 <span class="sd">        Parameters</span>
@@ -429,7 +388,7 @@
         <span class="n">mask</span> <span class="o">=</span> <span class="n">separation</span> <span class="o">&lt;</span> <span class="n">radius</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">select_row_subset</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="EventList.select_sky_ring"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.select_sky_ring">[docs]</a>    <span class="k">def</span> <span class="nf">select_sky_ring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">inner_radius</span><span class="p">,</span> <span class="n">outer_radius</span><span class="p">):</span>
+<div class="viewcode-block" id="EventListBase.select_sky_ring"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.select_sky_ring">[docs]</a>    <span class="k">def</span> <span class="nf">select_sky_ring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">inner_radius</span><span class="p">,</span> <span class="n">outer_radius</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Select events in ring region on the sky.</span>
 
 <span class="sd">        Parameters</span>
@@ -451,7 +410,7 @@
         <span class="n">mask</span> <span class="o">=</span> <span class="n">mask1</span> <span class="o">*</span> <span class="n">mask2</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">select_row_subset</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="EventList.select_sky_box"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.select_sky_box">[docs]</a>    <span class="k">def</span> <span class="nf">select_sky_box</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lon_lim</span><span class="p">,</span> <span class="n">lat_lim</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s1">&#39;icrs&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="EventListBase.select_sky_box"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.select_sky_box">[docs]</a>    <span class="k">def</span> <span class="nf">select_sky_box</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lon_lim</span><span class="p">,</span> <span class="n">lat_lim</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s1">&#39;icrs&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Select events in sky box.</span>
 
 <span class="sd">        TODO: move `gammapy.catalog.select_sky_box` to gammapy.utils.</span>
@@ -460,7 +419,7 @@
         <span class="n">selected</span> <span class="o">=</span> <span class="n">select_sky_box</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">,</span> <span class="n">lon_lim</span><span class="p">,</span> <span class="n">lat_lim</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="EventList.select_circular_region"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.select_circular_region">[docs]</a>    <span class="k">def</span> <span class="nf">select_circular_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">region</span><span class="p">):</span>
+<div class="viewcode-block" id="EventListBase.select_circular_region"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.select_circular_region">[docs]</a>    <span class="k">def</span> <span class="nf">select_circular_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">region</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Select events in circular regions.</span>
 
 <span class="sd">        TODO: Extend to support generic regions</span>
@@ -480,7 +439,7 @@
         <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_circular_region</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">select_row_subset</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="EventList.filter_circular_region"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.filter_circular_region">[docs]</a>    <span class="k">def</span> <span class="nf">filter_circular_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">region</span><span class="p">):</span>
+<div class="viewcode-block" id="EventListBase.filter_circular_region"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.filter_circular_region">[docs]</a>    <span class="k">def</span> <span class="nf">filter_circular_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">region</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Create selection mask for event in given circular regions.</span>
 
 <span class="sd">        TODO: Extend to support generic regions</span>
@@ -502,6 +461,293 @@
             <span class="n">temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">separation</span> <span class="o">&lt;</span> <span class="n">reg</span><span class="o">.</span><span class="n">radius</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">union1d</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">temp</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">mask</span></div>
+
+<div class="viewcode-block" id="EventListBase.plot_energy_hist"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.plot_energy_hist">[docs]</a>    <span class="k">def</span> <span class="nf">plot_energy_hist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ebounds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plot counts as a function of energy.&quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">..spectrum</span> <span class="k">import</span> <span class="n">CountsSpectrum</span>
+
+        <span class="k">if</span> <span class="n">ebounds</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">emin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;ENERGY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">)</span>
+            <span class="n">emax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;ENERGY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">)</span>
+            <span class="n">ebounds</span> <span class="o">=</span> <span class="n">EnergyBounds</span><span class="o">.</span><span class="n">equal_log_spacing</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+
+        <span class="n">spec</span> <span class="o">=</span> <span class="n">CountsSpectrum</span><span class="p">(</span><span class="n">energy_lo</span> <span class="o">=</span> <span class="n">ebounds</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">energy_hi</span> <span class="o">=</span> <span class="n">ebounds</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="n">spec</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="p">)</span> <span class="c1"># leaving spec.fill(self) was triggering an issue for the LAT event list</span>
+        <span class="n">spec</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+<div class="viewcode-block" id="EventListBase.plot_time"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.plot_time">[docs]</a>    <span class="k">def</span> <span class="nf">plot_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plots an event rate time curve.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ax : `~matplotlib.axes.Axes` or None</span>
+<span class="sd">            Axes</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ax : `~matplotlib.axes.Axes`</span>
+<span class="sd">            Axes</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Plot the rate of the events:</span>
+
+<span class="sd">        .. plot::</span>
+<span class="sd">            :include-source:</span>
+
+<span class="sd">            import matplotlib.pyplot as plt</span>
+<span class="sd">            from gammapy.data import DataStore</span>
+
+<span class="sd">            ds = DataStore.from_dir(&#39;$GAMMAPY_EXTRA/datasets/hess-crab4-hd-hap-prod2&#39;)</span>
+<span class="sd">            events = ds.obs(obs_id=23523).events</span>
+<span class="sd">            events.plot_time_map()</span>
+<span class="sd">            plt.show()</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
+
+        <span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;TIME&#39;</span><span class="p">]</span>
+        <span class="n">first_event_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+        <span class="c1"># Note the events are not necessarily in time order</span>
+        <span class="n">relative_event_times</span> <span class="o">=</span> <span class="n">time</span> <span class="o">-</span> <span class="n">first_event_time</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Event rate &#39;</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;seconds&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Events / s&#39;</span><span class="p">)</span>
+        <span class="n">rate</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">relative_event_times</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+        <span class="n">t_center</span> <span class="o">=</span> <span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">t</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_center</span><span class="p">,</span> <span class="n">rate</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+<div class="viewcode-block" id="EventListBase.plot_time_map"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.plot_time_map">[docs]</a>    <span class="k">def</span> <span class="nf">plot_time_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A time map showing for each event the time between the previous and following event.</span>
+
+<span class="sd">        The use and implementation are described here:</span>
+<span class="sd">        https://districtdatalabs.silvrback.com/time-maps-visualizing-discrete-events-across-many-timescales</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ax : `~matplotlib.axes.Axes` or None</span>
+<span class="sd">            Axes</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ax : `~matplotlib.axes.Axes`</span>
+<span class="sd">            Axes</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Plot a time map of the events:</span>
+
+<span class="sd">        .. plot::</span>
+<span class="sd">            :include-source:</span>
+
+<span class="sd">            import matplotlib.pyplot as plt</span>
+<span class="sd">            from gammapy.data import DataStore</span>
+
+<span class="sd">            ds = DataStore.from_dir(&#39;$GAMMAPY_EXTRA/datasets/hess-crab4-hd-hap-prod2&#39;)</span>
+<span class="sd">            events = ds.obs(obs_id=23523).events</span>
+<span class="sd">            events.plot_time_map()</span>
+<span class="sd">            plt.show()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
+
+        <span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;TIME&#39;</span><span class="p">]</span>
+        <span class="n">first_event_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+
+        <span class="c1"># Note the events are not necessarily in time order</span>
+        <span class="n">relative_event_times</span> <span class="o">=</span> <span class="n">time</span> <span class="o">-</span> <span class="n">first_event_time</span>
+
+        <span class="n">diffs</span> <span class="o">=</span> <span class="n">relative_event_times</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">relative_event_times</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">xcoords</span> <span class="o">=</span> <span class="n">diffs</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># all differences except the last</span>
+        <span class="n">ycoords</span> <span class="o">=</span> <span class="n">diffs</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>  <span class="c1"># all differences except the first</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Time Map&#39;</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;time before event / s&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;time after event / s&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">xcoords</span><span class="p">,</span> <span class="n">ycoords</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ax</span></div>
+
+<div class="viewcode-block" id="EventListBase.plot_offset2_distribution"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.plot_offset2_distribution">[docs]</a>    <span class="k">def</span> <span class="nf">plot_offset2_distribution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plot offset^2 distribution of the events.</span>
+
+<span class="sd">        The distribution shown in this plot is for this quantity::</span>
+
+<span class="sd">            offset = center.separation(events.radec).deg</span>
+<span class="sd">            offset2 = offset ** 2</span>
+
+<span class="sd">        Note that this method is just for a quicklook plot.</span>
+
+<span class="sd">        If you want to do computations with the offset or offset^2 values, you can</span>
+<span class="sd">        use the line above. As an example, here&#39;s how to compute the 68% event</span>
+<span class="sd">        containment radius using `numpy.percentile`::</span>
+
+<span class="sd">            import numpy as np</span>
+<span class="sd">            r68 = np.percentile(offset, q=68)</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ax : `~matplotlib.axes.Axes` (optional)</span>
+<span class="sd">            Axes</span>
+<span class="sd">        center : `astropy.coordinates.SkyCoord`</span>
+<span class="sd">            Center position for the offset^2 distribution.</span>
+<span class="sd">            Default is the observation pointing position.</span>
+<span class="sd">        **kwargs :</span>
+<span class="sd">            Extra keyword arguments are passed to `matplotlib.pyplot.hist`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ax : `~matplotlib.axes.Axes`</span>
+<span class="sd">            Axes</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Load an example event list:</span>
+
+<span class="sd">        &gt;&gt;&gt; from gammapy.data import EventList</span>
+<span class="sd">        &gt;&gt;&gt; filename = &#39;$GAMMAPY_EXTRA/test_datasets/unbundled/hess/run_0023037_hard_eventlist.fits.gz&#39;</span>
+<span class="sd">        &gt;&gt;&gt; events = EventList.read(filename)</span>
+
+<span class="sd">        Plot the offset^2 distribution wrt. the observation pointing position</span>
+<span class="sd">        (this is a commonly used plot to check the background spatial distribution):</span>
+
+<span class="sd">        &gt;&gt;&gt; events.plot_offset2_distribution()</span>
+
+<span class="sd">        Plot the offset^2 distribution wrt. the Crab pulsar position</span>
+<span class="sd">        (this is commonly used to check both the gamma-ray signal and the background spatial distribution):</span>
+
+<span class="sd">        &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">        &gt;&gt;&gt; from astropy.coordinates import SkyCoord</span>
+<span class="sd">        &gt;&gt;&gt; center = SkyCoord(83.63307, 22.01449, unit=&#39;deg&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; bins = np.linspace(start=0, stop=0.3 ** 2, num=30)</span>
+<span class="sd">        &gt;&gt;&gt; events.plot_offset2_distribution(center=center, bins=bins)</span>
+
+<span class="sd">        Note how we passed the ``bins`` option of `matplotlib.pyplot.hist` to control the histogram binning,</span>
+<span class="sd">        in this case 30 bins ranging from 0 to (0.3 deg)^2.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
+
+        <span class="k">if</span> <span class="n">center</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">center</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointing_radec</span>
+
+        <span class="n">offset2</span> <span class="o">=</span> <span class="n">center</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radec</span><span class="p">)</span><span class="o">.</span><span class="n">deg</span> <span class="o">**</span> <span class="mi">2</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">offset2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Offset^2 (deg^2)&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Counts&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ax</span></div></div>
+
+
+<div class="viewcode-block" id="EventList"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList">[docs]</a><span class="k">class</span> <span class="nc">EventList</span><span class="p">(</span><span class="n">EventListBase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Event list for IACT dataset</span>
+
+<span class="sd">    Data format specification: :ref:`gadf:iact-events`</span>
+
+<span class="sd">    For further information, see the base class: `~gammapy.data.EventListBase`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    table : `~astropy.table.Table`</span>
+<span class="sd">        Event list table</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    To load an example H.E.S.S. event list:</span>
+
+<span class="sd">    &gt;&gt;&gt; from gammapy.data import EventList</span>
+<span class="sd">    &gt;&gt;&gt; filename = &#39;$GAMMAPY_EXTRA/test_datasets/unbundled/hess/run_0023037_hard_eventlist.fits.gz&#39;</span>
+<span class="sd">    &gt;&gt;&gt; events = EventList.read(filename)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># TODO: the following properties are also present on the `DataStoreObservation` class.</span>
+    <span class="c1"># This duplication should be removed.</span>
+    <span class="c1"># Maybe the EventList or EventListDataset should have an `observation` object member?</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">observatory_earth_location</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Observatory location (`~astropy.coordinates.EarthLocation`).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">_earth_location_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">meta</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">observation_time_duration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Observation time duration in seconds (`~astropy.units.Quantity`).</span>
+<span class="sd">        This is a keyword related to IACTs</span>
+<span class="sd">        The wall time, including dead-time.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Quantity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s1">&#39;ONTIME&#39;</span><span class="p">],</span> <span class="s1">&#39;second&#39;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">observation_dead_time_fraction</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Dead-time fraction (float).</span>
+<span class="sd">        This is a keyword related to IACTs</span>
+<span class="sd">        Defined as dead-time over observation time.</span>
+
+<span class="sd">        Dead-time is defined as the time during the observation</span>
+<span class="sd">        where the detector didn&#39;t record events:</span>
+<span class="sd">        http://en.wikipedia.org/wiki/Dead_time</span>
+<span class="sd">        http://adsabs.harvard.edu/abs/2004APh....22..285F</span>
+
+<span class="sd">        The dead-time fraction is used in the live-time computation,</span>
+<span class="sd">        which in turn is used in the exposure and flux computation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s1">&#39;DEADC&#39;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">altaz</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Event horizontal sky coordinates (`~astropy.coordinates.SkyCoord`).&quot;&quot;&quot;</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span>
+        <span class="n">location</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">observatory_earth_location</span>
+        <span class="n">altaz_frame</span> <span class="o">=</span> <span class="n">AltAz</span><span class="p">(</span><span class="n">obstime</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="n">location</span><span class="p">)</span>
+
+        <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;AZ&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;ALT&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">altaz_frame</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">pointing_radec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Pointing RA / DEC sky coordinates (`~astropy.coordinates.SkyCoord`).&quot;&quot;&quot;</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">meta</span>
+        <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;RA_PNT&#39;</span><span class="p">],</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;DEC_PNT&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s1">&#39;icrs&#39;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">offset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Event offset from the array pointing position (`~astropy.coordinates.Angle`).&quot;&quot;&quot;</span>
+        <span class="n">position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">radec</span>
+        <span class="n">center</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointing_radec</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="n">center</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">position</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Angle</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="EventList.select_offset"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.select_offset">[docs]</a>    <span class="k">def</span> <span class="nf">select_offset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">offset_band</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Select events in offset band.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        offset_band : `~astropy.coordinates.Angle`</span>
+<span class="sd">            offset band ``[offset_min, offset_max)``</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        event_list : `EventList`</span>
+<span class="sd">            Copy of event list with selection applied.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">offset_band</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">offset</span><span class="p">)</span>
+        <span class="n">mask</span> <span class="o">&amp;=</span> <span class="p">(</span><span class="n">offset</span> <span class="o">&lt;</span> <span class="n">offset_band</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">select_row_subset</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span></div>
+
 
 <div class="viewcode-block" id="EventList.peek"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.peek">[docs]</a>    <span class="k">def</span> <span class="nf">peek</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Summary plots.&quot;&quot;&quot;</span>
@@ -595,203 +841,69 @@
         <span class="n">ax</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">count_image</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="s1">&#39;low&#39;</span><span class="p">,</span>
                   <span class="n">extent</span><span class="o">=</span><span class="p">[</span><span class="n">x_edges</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x_edges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">y_edges</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y_edges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span></div>
 
-<div class="viewcode-block" id="EventList.plot_energy_hist"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.plot_energy_hist">[docs]</a>    <span class="k">def</span> <span class="nf">plot_energy_hist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ebounds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Plot counts as a function of energy.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">..spectrum</span> <span class="k">import</span> <span class="n">CountsSpectrum</span>
-
-        <span class="k">if</span> <span class="n">ebounds</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">emin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;ENERGY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">)</span>
-            <span class="n">emax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="s1">&#39;ENERGY&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">)</span>
-            <span class="n">ebounds</span> <span class="o">=</span> <span class="n">EnergyBounds</span><span class="o">.</span><span class="n">equal_log_spacing</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
-
-        <span class="n">spec</span> <span class="o">=</span> <span class="n">CountsSpectrum</span><span class="p">(</span><span class="n">energy</span><span class="o">=</span><span class="n">ebounds</span><span class="p">)</span>
-        <span class="n">spec</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="n">spec</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">ax</span></div>
-
 <div class="viewcode-block" id="EventList.plot_offset_hist"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.plot_offset_hist">[docs]</a>    <span class="k">def</span> <span class="nf">plot_offset_hist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Plot counts as a function of camera offset.&quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
 <div class="viewcode-block" id="EventList.plot_energy_offset"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.plot_energy_offset">[docs]</a>    <span class="k">def</span> <span class="nf">plot_energy_offset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Plot energy dependence as a function of camera offset.&quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div></div>
 
-<div class="viewcode-block" id="EventList.plot_time"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.plot_time">[docs]</a>    <span class="k">def</span> <span class="nf">plot_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Plots an event rate time curve.</span>
 
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        ax : `~matplotlib.axes.Axes` or None</span>
-<span class="sd">            Axes</span>
+<div class="viewcode-block" id="EventListLAT"><a class="viewcode-back" href="../../../api/gammapy.data.EventListLAT.html#gammapy.data.EventListLAT">[docs]</a><span class="k">class</span> <span class="nc">EventListLAT</span><span class="p">(</span><span class="n">EventListBase</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Event list for Fermi-LAT dataset</span>
 
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        ax : `~matplotlib.axes.Axes`</span>
-<span class="sd">            Axes</span>
+<span class="sd">    Fermi-LAT data products</span>
+<span class="sd">    https://fermi.gsfc.nasa.gov/ssc/data/analysis/documentation/Cicerone/Cicerone_Data/LAT_DP.html</span>
+<span class="sd">    Data format specification (columns)</span>
+<span class="sd">    https://fermi.gsfc.nasa.gov/ssc/data/analysis/documentation/Cicerone/Cicerone_Data/LAT_Data_Columns.html</span>
 
-<span class="sd">        Examples</span>
-<span class="sd">        --------</span>
-<span class="sd">        Plot the rate of the events:</span>
+<span class="sd">    For further information, see the base class: `~gammapy.data.EventListBase`.</span>
 
-<span class="sd">        .. plot::</span>
-<span class="sd">            :include-source:</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    table : `~astropy.table.Table`</span>
+<span class="sd">        Event list table</span>
 
-<span class="sd">            import matplotlib.pyplot as plt</span>
-<span class="sd">            from gammapy.data import DataStore</span>
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    To load an example Fermi-LAT event list (the one corresponding to the 2FHL catalog dataset):</span>
 
-<span class="sd">            ds = DataStore.from_dir(&#39;$GAMMAPY_EXTRA/datasets/hess-crab4-hd-hap-prod2&#39;)</span>
-<span class="sd">            events = ds.obs(obs_id=23523).events</span>
-<span class="sd">            events.plot_time_map()</span>
-<span class="sd">            plt.show()</span>
+<span class="sd">    &gt;&gt;&gt; from gammapy.data import EventListLAT</span>
+<span class="sd">    &gt;&gt;&gt; filename = &#39;$GAMMAPY_EXTRA/datasets/fermi_2fhl/2fhl_events.fits.gz&#39;</span>
+<span class="sd">    &gt;&gt;&gt; events = EventListLAT.read(filename)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<div class="viewcode-block" id="EventListLAT.plot_image"><a class="viewcode-back" href="../../../api/gammapy.data.EventListLAT.html#gammapy.data.EventListLAT.plot_image">[docs]</a>    <span class="k">def</span> <span class="nf">plot_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A quick look function to generate a count skymap with all the photons</span>
+<span class="sd">        within a certain square (rectangle).</span>
 
-        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
+<span class="sd">        Fermi-LAT eventlist could encompass large fraction of the sky,</span>
+<span class="sd">        this way we can restirct the skymap to a squared (rectangular)</span>
+<span class="sd">        region of interest (ROI)</span>
 
-        <span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;TIME&#39;</span><span class="p">]</span>
-        <span class="n">first_event_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
-
-        <span class="c1"># Note the events are not necessarily in time order</span>
-        <span class="n">relative_event_times</span> <span class="o">=</span> <span class="n">time</span> <span class="o">-</span> <span class="n">first_event_time</span>
-
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Event rate &#39;</span><span class="p">)</span>
-
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;seconds&#39;</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Events / s&#39;</span><span class="p">)</span>
-        <span class="n">rate</span><span class="p">,</span> <span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">relative_event_times</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
-        <span class="n">t_center</span> <span class="o">=</span> <span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">t</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
-
-        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t_center</span><span class="p">,</span> <span class="n">rate</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">ax</span></div>
-
-<div class="viewcode-block" id="EventList.plot_time_map"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.plot_time_map">[docs]</a>    <span class="k">def</span> <span class="nf">plot_time_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;A time map showing for each event the time between the previous and following event.</span>
-
-<span class="sd">        The use and implementation are described here:</span>
-<span class="sd">        https://districtdatalabs.silvrback.com/time-maps-visualizing-discrete-events-across-many-timescales</span>
+<span class="sd">        We evaluate the number of pixel of the skymap such that we have a</span>
+<span class="sd">        bin size 0.1 deg, this is what is suggested by default in fermipy</span>
+<span class="sd">        http://fermipy.readthedocs.io/en/latest/config.html</span>
 
 <span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        ax : `~matplotlib.axes.Axes` or None</span>
-<span class="sd">            Axes</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        ax : `~matplotlib.axes.Axes`</span>
-<span class="sd">            Axes</span>
-
-<span class="sd">        Examples</span>
-<span class="sd">        --------</span>
-<span class="sd">        Plot a time map of the events:</span>
-
-<span class="sd">        .. plot::</span>
-<span class="sd">            :include-source:</span>
-
-<span class="sd">            import matplotlib.pyplot as plt</span>
-<span class="sd">            from gammapy.data import DataStore</span>
-
-<span class="sd">            ds = DataStore.from_dir(&#39;$GAMMAPY_EXTRA/datasets/hess-crab4-hd-hap-prod2&#39;)</span>
-<span class="sd">            events = ds.obs(obs_id=23523).events</span>
-<span class="sd">            events.plot_time_map()</span>
-<span class="sd">            plt.show()</span>
+<span class="sd">        -----------</span>
+<span class="sd">        center : `~astropy.coordinates.SkyCoord`</span>
+<span class="sd">            Sky circle center</span>
+<span class="sd">        size : `~astropy.coordinates.Quantity`</span>
+<span class="sd">            size of the square defining our ROI</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-
-        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
-
-        <span class="n">time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;TIME&#39;</span><span class="p">]</span>
-        <span class="n">first_event_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
-
-        <span class="c1"># Note the events are not necessarily in time order</span>
-        <span class="n">relative_event_times</span> <span class="o">=</span> <span class="n">time</span> <span class="o">-</span> <span class="n">first_event_time</span>
-
-        <span class="n">diffs</span> <span class="o">=</span> <span class="n">relative_event_times</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">relative_event_times</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-
-        <span class="n">xcoords</span> <span class="o">=</span> <span class="n">diffs</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># all differences except the last</span>
-        <span class="n">ycoords</span> <span class="o">=</span> <span class="n">diffs</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>  <span class="c1"># all differences except the first</span>
-
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Time Map&#39;</span><span class="p">)</span>
-
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;time before event / s&#39;</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;time after event / s&#39;</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">xcoords</span><span class="p">,</span> <span class="n">ycoords</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">ax</span></div>
-
-<div class="viewcode-block" id="EventList.plot_offset2_distribution"><a class="viewcode-back" href="../../../api/gammapy.data.EventList.html#gammapy.data.EventList.plot_offset2_distribution">[docs]</a>    <span class="k">def</span> <span class="nf">plot_offset2_distribution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Plot offset^2 distribution of the events.</span>
-
-<span class="sd">        The distribution shown in this plot is for this quantity::</span>
-
-<span class="sd">            offset = center.separation(events.radec).deg</span>
-<span class="sd">            offset2 = offset ** 2</span>
-
-<span class="sd">        Note that this method is just for a quicklook plot.</span>
-
-<span class="sd">        If you want to do computations with the offset or offset^2 values, you can</span>
-<span class="sd">        use the line above. As an example, here&#39;s how to compute the 68% event</span>
-<span class="sd">        containment radius using `numpy.percentile`::</span>
-
-<span class="sd">            import numpy as np</span>
-<span class="sd">            r68 = np.percentile(offset, q=68)</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        ax : `~matplotlib.axes.Axes` (optional)</span>
-<span class="sd">            Axes</span>
-<span class="sd">        center : `astropy.coordinates.SkyCoord`</span>
-<span class="sd">            Center position for the offset^2 distribution.</span>
-<span class="sd">            Default is the observation pointing position.</span>
-<span class="sd">        **kwargs :</span>
-<span class="sd">            Extra keyword arguments are passed to `matplotlib.pyplot.hist`.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        ax : `~matplotlib.axes.Axes`</span>
-<span class="sd">            Axes</span>
-
-<span class="sd">        Examples</span>
-<span class="sd">        --------</span>
-<span class="sd">        Load an example event list:</span>
-
-<span class="sd">        &gt;&gt;&gt; from gammapy.data import EventList</span>
-<span class="sd">        &gt;&gt;&gt; filename = &#39;$GAMMAPY_EXTRA/test_datasets/unbundled/hess/run_0023037_hard_eventlist.fits.gz&#39;</span>
-<span class="sd">        &gt;&gt;&gt; events = EventList.read(filename)</span>
-
-<span class="sd">        Plot the offset^2 distribution wrt. the observation pointing position</span>
-<span class="sd">        (this is a commonly used plot to check the background spatial distribution):</span>
-
-<span class="sd">        &gt;&gt;&gt; events.plot_offset2_distribution()</span>
-
-<span class="sd">        Plot the offset^2 distribution wrt. the Crab pulsar position</span>
-<span class="sd">        (this is commonly used to check both the gamma-ray signal and the background spatial distribution):</span>
-
-<span class="sd">        &gt;&gt;&gt; import numpy as np</span>
-<span class="sd">        &gt;&gt;&gt; from astropy.coordinates import SkyCoord</span>
-<span class="sd">        &gt;&gt;&gt; center = SkyCoord(83.63307, 22.01449, unit=&#39;deg&#39;)</span>
-<span class="sd">        &gt;&gt;&gt; bins = np.linspace(start=0, stop=0.3 ** 2, num=30)</span>
-<span class="sd">        &gt;&gt;&gt; events.plot_offset2_distribution(center=center, bins=bins)</span>
-
-<span class="sd">        Note how we passed the ``bins`` option of `matplotlib.pyplot.hist` to control the histogram binning,</span>
-<span class="sd">        in this case 30 bins ranging from 0 to (0.3 deg)^2.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
-
-        <span class="k">if</span> <span class="n">center</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">center</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointing_radec</span>
-
-        <span class="n">offset2</span> <span class="o">=</span> <span class="n">center</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radec</span><span class="p">)</span><span class="o">.</span><span class="n">deg</span> <span class="o">**</span> <span class="mi">2</span>
-
-        <span class="n">ax</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">offset2</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s1">&#39;Offset^2 (deg^2)&#39;</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;Counts&#39;</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">ax</span></div></div>
-
+        <span class="kn">from</span> <span class="nn">..image</span> <span class="k">import</span> <span class="n">SkyImage</span>
+        <span class="n">binsz</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="s1">&#39;deg&#39;</span><span class="p">)</span>
+        <span class="n">nxpix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">binsz</span><span class="p">)</span>
+        <span class="n">nypix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">/</span><span class="n">binsz</span><span class="p">)</span>
+        <span class="n">counts_image</span> <span class="o">=</span> <span class="n">SkyImage</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span>
+            <span class="n">nxpix</span><span class="o">=</span><span class="n">nxpix</span><span class="p">,</span> <span class="n">nypix</span><span class="o">=</span><span class="n">nypix</span><span class="p">,</span> <span class="n">binsz</span><span class="o">=</span><span class="n">binsz</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">xref</span><span class="o">=</span><span class="n">center</span><span class="o">.</span><span class="n">icrs</span><span class="o">.</span><span class="n">ra</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span> <span class="n">yref</span><span class="o">=</span><span class="n">center</span><span class="o">.</span><span class="n">icrs</span><span class="o">.</span><span class="n">dec</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
+            <span class="n">coordsys</span><span class="o">=</span><span class="s1">&#39;CEL&#39;</span><span class="p">,</span> <span class="n">proj</span><span class="o">=</span><span class="s1">&#39;TAN&#39;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">counts_image</span><span class="o">.</span><span class="n">fill_events</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">counts_image</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div></div>
 
 <div class="viewcode-block" id="EventListDataset"><a class="viewcode-back" href="../../../api/gammapy.data.EventListDataset.html#gammapy.data.EventListDataset">[docs]</a><span class="k">class</span> <span class="nc">EventListDataset</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Event list dataset (event list plus some extra info).</span>
@@ -1224,7 +1336,7 @@
   <p>
     &copy; Copyright 2018, The Gammapy developers.<br/>
     Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.7.2. &nbsp;
-    Last built 07 Apr 2018. <br/>
+    Last built 12 Apr 2018. <br/>
   </p>
 </footer>
   </body>

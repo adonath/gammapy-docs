@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>gammapy.time.models &#8212; gammapy v0.8.dev5700</title>
+    <title>gammapy.time.models &#8212; gammapy v0.8.dev5746</title>
     <link rel="stylesheet" href="../../../_static/gammapy.css" type="text/css" />
     <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" src="../../../_static/documentation_options.js"></script>
@@ -46,7 +46,7 @@
     <h3>Navigation</h3>
     <ul>
       <li>
-	<a href="../../../index.html">gammapy v0.8.dev5700</a>
+	<a href="../../../index.html">gammapy v0.8.dev5746</a>
 	 &#187;
       </li>
       <li><a href="../../index.html" accesskey="U">Module code</a> &#187;</li>
@@ -65,11 +65,16 @@
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">astropy.utils</span> <span class="k">import</span> <span class="n">lazyproperty</span>
 <span class="kn">from</span> <span class="nn">astropy</span> <span class="k">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
+<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="k">import</span> <span class="n">Table</span>
+<span class="kn">from</span> <span class="nn">..utils.scripts</span> <span class="k">import</span> <span class="n">make_path</span>
+<span class="kn">from</span> <span class="nn">..utils.time</span> <span class="k">import</span> <span class="n">time_ref_from_dict</span>
 <span class="kn">from</span> <span class="nn">..utils.modeling</span> <span class="k">import</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">ParameterList</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s1">&#39;PhaseCurve&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;LightCurve&#39;</span><span class="p">,</span>
 <span class="p">]</span>
 
 
@@ -178,6 +183,132 @@
         <span class="n">xp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;PHASE&#39;</span><span class="p">]</span>
         <span class="n">fp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;NORM&#39;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">phase</span><span class="p">,</span> <span class="n">xp</span><span class="o">=</span><span class="n">xp</span><span class="p">,</span> <span class="n">fp</span><span class="o">=</span><span class="n">fp</span><span class="p">,</span> <span class="n">period</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="LightCurve"><a class="viewcode-back" href="../../../api/gammapy.time.models.LightCurve.html#gammapy.time.models.LightCurve">[docs]</a><span class="k">class</span> <span class="nc">LightCurve</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Temporal light curve model.</span>
+
+<span class="sd">    The lightcurve is given as a table with columns ``time`` and ``norm``.</span>
+
+<span class="sd">    The ``norm`` is supposed to be a unite-less multiplicative factor in the model,</span>
+<span class="sd">    to be multiplied with a spectral model.</span>
+
+<span class="sd">    The model does linear interpolation for times between the given ``(time, norm)`` values.</span>
+
+<span class="sd">    The implementation currently uses `scipy.interpolate.InterpolatedUnivariateSpline`,</span>
+<span class="sd">    using degree ``k=1`` to get linear interpolation.</span>
+<span class="sd">    This class also contains an ``integral`` method, making the computation of</span>
+<span class="sd">    mean fluxes for a given time interval a one-liner.</span>
+
+<span class="sd">    TODO: Improve this class!</span>
+<span class="sd">    This class is very preliminary / work in progress.</span>
+<span class="sd">    An obvious issue is that `gammapy.time.LightCurve` has the same name,</span>
+<span class="sd">    which has a good potential to confuse users.</span>
+<span class="sd">    Another poitn is the API for time, i.e. when to take floats or time objects.</span>
+<span class="sd">    We plan to discuss this `LightCurve` and the `PhaseCurve` model classes soon.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    table : `~astropy.table.Table`</span>
+<span class="sd">        A table with &#39;TIME&#39; vs &#39;NORM&#39;</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Read an example light curve object:</span>
+
+<span class="sd">    &gt;&gt;&gt; from gammapy.time.models import LightCurve</span>
+<span class="sd">    &gt;&gt;&gt; path = &#39;$GAMMAPY_EXTRA/test_datasets/models/light_curve/lightcrv_PKSB1222+216.fits&#39;</span>
+<span class="sd">    &gt;&gt;&gt; light_curve = LightCurve.read(path)</span>
+
+<span class="sd">    Show basic information about the lightcurve:</span>
+
+<span class="sd">    &gt;&gt;&gt; print(light_curve)</span>
+<span class="sd">    LightCurve model summary:</span>
+<span class="sd">    Start time: 59000.5 MJD</span>
+<span class="sd">    End time: 61862.5 MJD</span>
+<span class="sd">    Norm min: 0.01551196351647377</span>
+<span class="sd">    Norm max: 1.0</span>
+
+<span class="sd">    Compute ``norm`` at a given time:</span>
+
+<span class="sd">    &gt;&gt;&gt; light_curve.evaluate_norm_at_time(46300)</span>
+<span class="sd">    0.49059393580053845</span>
+
+<span class="sd">    Compute mean ``norm`` in a given time interval:</span>
+
+<span class="sd">    &gt;&gt;&gt; light_curve.mean_norm_in_time_interval(46300, 46301)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="n">table</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ss</span> <span class="o">=</span> <span class="s1">&#39;LightCurve model summary:</span><span class="se">\n</span><span class="s1">&#39;</span>
+        <span class="n">ss</span> <span class="o">+=</span> <span class="s1">&#39;Start time: </span><span class="si">{}</span><span class="s1"> MJD</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span>
+        <span class="n">ss</span> <span class="o">+=</span> <span class="s1">&#39;End time: </span><span class="si">{}</span><span class="s1"> MJD</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">mjd</span><span class="p">)</span>
+        <span class="n">ss</span> <span class="o">+=</span> <span class="s1">&#39;Norm min: </span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;NORM&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
+        <span class="n">ss</span> <span class="o">+=</span> <span class="s1">&#39;Norm max: </span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;NORM&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">ss</span>
+
+<div class="viewcode-block" id="LightCurve.read"><a class="viewcode-back" href="../../../api/gammapy.time.models.LightCurve.html#gammapy.time.models.LightCurve.read">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Read lightcurve model table from FITS file.</span>
+
+<span class="sd">        TODO: This doesn&#39;t read the XML part of the model yet.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">make_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">table</span><span class="p">)</span></div>
+
+    <span class="nd">@lazyproperty</span>
+    <span class="k">def</span> <span class="nf">_interpolator</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="k">import</span> <span class="n">InterpolatedUnivariateSpline</span>
+
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;TIME&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;NORM&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
+        <span class="k">return</span> <span class="n">InterpolatedUnivariateSpline</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="nd">@lazyproperty</span>
+    <span class="k">def</span> <span class="nf">_time_ref</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">time_ref_from_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">meta</span><span class="p">)</span>
+
+    <span class="nd">@lazyproperty</span>
+    <span class="k">def</span> <span class="nf">_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_ref</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;TIME&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">s</span>
+
+<div class="viewcode-block" id="LightCurve.evaluate_norm_at_time"><a class="viewcode-back" href="../../../api/gammapy.time.models.LightCurve.html#gammapy.time.models.LightCurve.evaluate_norm_at_time">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate_norm_at_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate for a given time.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        time : array_like</span>
+<span class="sd">            Time since the ``reference`` time.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        norm : array_like</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interpolator</span><span class="p">(</span><span class="n">time</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LightCurve.mean_norm_in_time_interval"><a class="viewcode-back" href="../../../api/gammapy.time.models.LightCurve.html#gammapy.time.models.LightCurve.mean_norm_in_time_interval">[docs]</a>    <span class="k">def</span> <span class="nf">mean_norm_in_time_interval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_min</span><span class="p">,</span> <span class="n">time_max</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute mean ``norm`` in a given time interval.</span>
+
+<span class="sd">        TODO: vectorise, i.e. allow arrays of time intervals in a single call.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        time_min, time_max : float</span>
+<span class="sd">            Time interval</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        norm : float</span>
+<span class="sd">            Mean norm</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">time_max</span> <span class="o">-</span> <span class="n">time_min</span>
+        <span class="n">integral</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interpolator</span><span class="o">.</span><span class="n">integral</span><span class="p">(</span><span class="n">time_min</span><span class="p">,</span> <span class="n">time_max</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">integral</span> <span class="o">/</span> <span class="n">dt</span></div></div>
 </pre></div>
 
           </div>
@@ -197,7 +328,7 @@
   <p>
     &copy; Copyright 2018, The Gammapy developers.<br/>
     Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.7.2. &nbsp;
-    Last built 07 Apr 2018. <br/>
+    Last built 12 Apr 2018. <br/>
   </p>
 </footer>
   </body>
