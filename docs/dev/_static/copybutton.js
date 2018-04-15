@@ -2,9 +2,10 @@ $(document).ready(function() {
     /* Add a [>>>] button on the top-right corner of code samples to hide
      * the >>> and ... prompts and the output and thus make the code
      * copyable. */
-    var div = $('.highlight-python .highlight,' +
-                '.highlight-python3 .highlight,' +
-                '.highlight-default .highlight')
+    var div = $('.highlight-default .highlight,' +
+                '.highlight-python .highlight,' +
+                '.highlight-python3 .highlight'
+                )
     var pre = div.find('pre');
 
     // get the styles from the current theme
@@ -60,4 +61,3 @@ $(document).ready(function() {
         }
     });
 });
-
