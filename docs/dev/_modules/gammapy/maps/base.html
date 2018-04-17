@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.maps.base &mdash; gammapy v0.8.dev5774</title>
+  <title>gammapy.maps.base &mdash; gammapy v0.8.dev5797</title>
   
 
   
@@ -41,7 +41,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="gammapy v0.8.dev5774" href="../../../index.html"/>
+    <link rel="top" title="gammapy v0.8.dev5797" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -71,7 +71,7 @@
             
             
               <div class="version">
-                0.8.dev5774
+                0.8.dev5797
               </div>
             
           
@@ -1121,6 +1121,7 @@
 <span class="kn">from</span> <span class="nn">..extern</span> <span class="k">import</span> <span class="n">six</span>
 <span class="kn">from</span> <span class="nn">astropy.utils.misc</span> <span class="k">import</span> <span class="n">InheritDocstrings</span>
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
+<span class="kn">from</span> <span class="nn">astropy.units</span> <span class="k">import</span> <span class="n">Quantity</span><span class="p">,</span> <span class="n">Unit</span>
 <span class="kn">from</span> <span class="nn">.geom</span> <span class="k">import</span> <span class="n">pix_tuple_to_idx</span><span class="p">,</span> <span class="n">MapCoord</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
@@ -1147,11 +1148,19 @@
 <span class="sd">        Data array</span>
 <span class="sd">    meta : `~collections.OrderedDict`</span>
 <span class="sd">        Dictionary to store meta data.</span>
+<span class="sd">    unit : str or `~astropy.units.Unit`</span>
+<span class="sd">        Data unit</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_geom</span> <span class="o">=</span> <span class="n">geom</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">Quantity</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">value</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_unit</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_unit</span> <span class="o">=</span> <span class="n">Unit</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span>
+
         <span class="k">if</span> <span class="n">meta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
@@ -1162,11 +1171,30 @@
         <span class="sd">&quot;&quot;&quot;Data array (`~numpy.ndarray`)&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">quantity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Map data times unit (`~astropy.units.Quantity`)&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">*</span> <span class="n">Unit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_unit</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">unit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Map unit (`~astropy.units.Unit`)&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">Unit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_unit</span><span class="p">)</span>
+
     <span class="nd">@data</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">val</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Wrong shape.&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">val</span>
+
+    <span class="nd">@quantity</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">quantity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">val</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Wrong shape.&#39;</span><span class="p">)</span>
+
+        <span class="n">val</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_data</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_unit</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">to_string</span><span class="p">()</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">geom</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1252,7 +1280,7 @@
         <span class="k">return</span> <span class="n">map_out</span></div>
 
 <div class="viewcode-block" id="Map.from_geom"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.from_geom">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_geom</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">map_type</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">from_geom</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">map_type</span><span class="o">=</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Generate an empty map from a `~Geom` instance.</span>
 
 <span class="sd">        Parameters</span>
@@ -1269,6 +1297,8 @@
 <span class="sd">            with the geometry.  If map_type is &#39;auto&#39; then an</span>
 <span class="sd">            appropriate map type will be inferred from type of</span>
 <span class="sd">            ``geom``.</span>
+<span class="sd">        unit : str or `~astropy.units.Unit`</span>
+<span class="sd">            Data unit.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1288,7 +1318,7 @@
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unrecognized geom type.&#39;</span><span class="p">)</span>
 
         <span class="n">cls_out</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_map_cls</span><span class="p">(</span><span class="n">map_type</span><span class="p">)</span>
-        <span class="n">map_out</span> <span class="o">=</span> <span class="n">cls_out</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">)</span>
+        <span class="n">map_out</span> <span class="o">=</span> <span class="n">cls_out</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">map_out</span></div>
 
 <div class="viewcode-block" id="Map.from_hdu_list"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.from_hdu_list">[docs]</a>    <span class="nd">@classmethod</span>
@@ -1449,13 +1479,15 @@
 <span class="sd">        ----------</span>
 <span class="sd">        map_in : `~Map`</span>
 <span class="sd">            Input map.</span>
-
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">is_equivalent</span><span class="p">(</span><span class="n">map_in</span><span class="o">.</span><span class="n">unit</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Incompatible units&quot;</span><span class="p">)</span>
+
         <span class="c1"># TODO: Check whether geometries are aligned and if so sum the</span>
         <span class="c1"># data vectors directly</span>
         <span class="n">idx</span> <span class="o">=</span> <span class="n">map_in</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_idx</span><span class="p">()</span>
         <span class="n">coords</span> <span class="o">=</span> <span class="n">map_in</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span>
-        <span class="n">vals</span> <span class="o">=</span> <span class="n">map_in</span><span class="o">.</span><span class="n">get_by_idx</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+        <span class="n">vals</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="n">map_in</span><span class="o">.</span><span class="n">get_by_idx</span><span class="p">(</span><span class="n">idx</span><span class="p">),</span> <span class="n">map_in</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fill_by_coord</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Map.reproject"><a class="viewcode-back" href="../../../api/gammapy.maps.Map.html#gammapy.maps.Map.reproject">[docs]</a>    <span class="k">def</span> <span class="nf">reproject</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;interp&#39;</span><span class="p">):</span>
@@ -1834,7 +1866,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 15 Apr 2018.
+      Last updated on 17 Apr 2018.
 
     </p>
   </div>
@@ -1856,7 +1888,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev5774',
+            VERSION:'0.8.dev5797',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

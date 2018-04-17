@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.cube.models &mdash; gammapy v0.8.dev5774</title>
+  <title>gammapy.cube.models &mdash; gammapy v0.8.dev5797</title>
   
 
   
@@ -41,7 +41,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="gammapy v0.8.dev5774" href="../../../index.html"/>
+    <link rel="top" title="gammapy v0.8.dev5797" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -71,7 +71,7 @@
             
             
               <div class="version">
-                0.8.dev5774
+                0.8.dev5797
               </div>
             
           
@@ -1116,30 +1116,20 @@
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
-<span class="kn">from</span> <span class="nn">.core</span> <span class="k">import</span> <span class="n">SkyCube</span>
+<span class="kn">from</span> <span class="nn">astropy.utils</span> <span class="k">import</span> <span class="n">lazyproperty</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s1">&#39;CombinedModel3D&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;SkyModel&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;SkyModelMapEvaluator&#39;</span><span class="p">,</span>
 <span class="p">]</span>
 
 
-<div class="viewcode-block" id="CombinedModel3D"><a class="viewcode-back" href="../../../api/gammapy.cube.CombinedModel3D.html#gammapy.cube.CombinedModel3D">[docs]</a><span class="k">class</span> <span class="nc">CombinedModel3D</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Combine spatial and spectral model into a 3D model.</span>
+<div class="viewcode-block" id="SkyModel"><a class="viewcode-back" href="../../../api/gammapy.cube.SkyModel.html#gammapy.cube.SkyModel">[docs]</a><span class="k">class</span> <span class="nc">SkyModel</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Sky model component.</span>
 
-<span class="sd">    TODO: give move infos and an example how spatial models</span>
-<span class="sd">    must be normalised to integrate to 1 and caveats about</span>
-<span class="sd">    binning effects, i.e. how too small bins or very small</span>
-<span class="sd">    sources will lead to incorrect spectral results!</span>
+<span class="sd">    This model represents a factorised sky model.</span>
 
-<span class="sd">    At the moment this model has no built-in integration.</span>
-<span class="sd">    I.e. it&#39;s left up to callers to:</span>
-
-<span class="sd">    * integrate over energy bins</span>
-<span class="sd">    * integrate over spatial pixels</span>
-
-<span class="sd">    TODO: This is a prototype, and the evaluation scheme might change!</span>
-<span class="sd">    Feedback on what you&#39;d like to do and whether this class is working</span>
-<span class="sd">    for you or not is highly welcome!!!</span>
+<span class="sd">    TODO: add possibility to have a temporal model component also.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1147,59 +1137,6 @@
 <span class="sd">        Spatial model (must be normalised to integrate to 1)</span>
 <span class="sd">    spectral_model : `~gammapy.spectrum.models.SpectralModel`</span>
 <span class="sd">        Spectral model</span>
-
-<span class="sd">    Examples</span>
-<span class="sd">    --------</span>
-<span class="sd">    Create a `CombinedModel3D`, i.e. one that factors into a spatial</span>
-<span class="sd">    and position-independent spectral part::</span>
-
-<span class="sd">        import astropy.units as u</span>
-<span class="sd">        from gammapy.image.models import Shell2D</span>
-<span class="sd">        from gammapy.spectrum.models import PowerLaw</span>
-<span class="sd">        from gammapy.cube.models import CombinedModel3D</span>
-
-<span class="sd">        spatial_model = Shell2D(</span>
-<span class="sd">            amplitude=1, x_0=3, y_0=4, r_in=5, width=6, normed=True,</span>
-<span class="sd">        )</span>
-<span class="sd">        spectral_model = PowerLaw(</span>
-<span class="sd">            index=2, amplitude=1 * u.Unit(&#39;cm-2 s-1 TeV-1&#39;), reference=1 * u.Unit(&#39;TeV&#39;),</span>
-<span class="sd">        )</span>
-<span class="sd">        model = CombinedModel3D(spatial_model, spectral_model)</span>
-
-<span class="sd">    Look at the model you created::</span>
-
-<span class="sd">        &gt;&gt;&gt; model</span>
-<span class="sd">        CombinedModel3D(spatial_model=&lt;Shell2D(amplitude=1.0, x_0=3.0, y_0=4.0, r_in=5.0, width=6.0)&gt;, spectral_model=PowerLaw())</span>
-<span class="sd">        &gt;&gt;&gt; print(model.spectral_model)</span>
-<span class="sd">        PowerLaw</span>
-
-<span class="sd">        Parameters:</span>
-
-<span class="sd">               name     value   error       unit      min  max  frozen</span>
-<span class="sd">            --------- --------- ----- --------------- ---- ---- ------</span>
-<span class="sd">                index 2.000e+00   nan                    0 None  False</span>
-<span class="sd">            amplitude 1.000e+00   nan 1 / (cm2 s TeV)    0 None  False</span>
-<span class="sd">            reference 1.000e+00   nan             TeV None None   True</span>
-
-<span class="sd">        &gt;&gt;&gt; print(model.spatial_model)</span>
-<span class="sd">        Model: Shell2D</span>
-<span class="sd">        Inputs: (&#39;x&#39;, &#39;y&#39;)</span>
-<span class="sd">        Outputs: (&#39;z&#39;,)</span>
-<span class="sd">        Model set size: 1</span>
-<span class="sd">        Parameters:</span>
-<span class="sd">            amplitude x_0 y_0 r_in width</span>
-<span class="sd">            --------- --- --- ---- -----</span>
-<span class="sd">                  1.0 3.0 4.0  5.0   6.0</span>
-
-<span class="sd">    Evaluate the model at a given point::</span>
-
-<span class="sd">        &gt;&gt;&gt; import astropy.units as u</span>
-<span class="sd">        &gt;&gt;&gt; model.evaluate(lon=0.1 * u.deg, lat=0.2 * u.deg, energy=&#39;1 TeV&#39;)</span>
-<span class="sd">        &lt;Quantity [[[ 0.00334177]]] 1 / (cm2 deg2 s TeV)&gt;</span>
-
-<span class="sd">    Evaluate the model on a sky cube::</span>
-
-<span class="sd">        &gt;&gt;&gt; # TODO: add example.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spatial_model</span><span class="p">,</span> <span class="n">spectral_model</span><span class="p">):</span>
@@ -1208,20 +1145,20 @@
 
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">(spatial_model=</span><span class="si">{!r}</span><span class="s1">, spectral_model=</span><span class="si">{!r}</span><span class="s1">)&#39;</span>
-        <span class="k">return</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectral_model</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectral_model</span><span class="p">)</span>
 
-    <span class="c1"># TODO: decide on coordinate order and make it uniform within Gammapy</span>
-    <span class="c1"># see SkyCube.lookup(skycoord, energy)</span>
-    <span class="c1"># see sherpy_.CombinedModel3D(e_lo, e_hi, x, y)</span>
-<div class="viewcode-block" id="CombinedModel3D.evaluate"><a class="viewcode-back" href="../../../api/gammapy.cube.CombinedModel3D.html#gammapy.cube.CombinedModel3D.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">energy</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ss</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+        <span class="n">ss</span> <span class="o">+=</span> <span class="s1">&#39;spatial_model = </span><span class="si">{}</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span><span class="p">)</span>
+        <span class="n">ss</span> <span class="o">+=</span> <span class="s1">&#39;spectral_model = </span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spectral_model</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ss</span>
+
+<div class="viewcode-block" id="SkyModel.evaluate"><a class="viewcode-back" href="../../../api/gammapy.cube.SkyModel.html#gammapy.cube.SkyModel.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">energy</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Evaluate the model at given points.</span>
 
 <span class="sd">        Return differential surface brightness cube.</span>
-<span class="sd">        At the moment in units: ``cm-2 s-1 TeV-1 sr-1``</span>
-
-<span class="sd">        TODO: currently spatial models don&#39;t support units,</span>
-<span class="sd">        and we have hard-coded in this evaluate the assumption</span>
-<span class="sd">        that they return their result in unit ``deg-2``</span>
+<span class="sd">        At the moment in units: ``cm-2 s-1 TeV-1 deg-2``</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1235,52 +1172,139 @@
 <span class="sd">        value : `~astropy.units.Quantity`</span>
 <span class="sd">            Model value at the given point.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Evaluate the spatial and spectral models</span>
-        <span class="c1"># TODO: change spatial models to work with quantities,</span>
-        <span class="c1"># so that these explicit unit conversions become unnecessary.</span>
-        <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span><span class="p">(</span><span class="n">lon</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">lat</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s1">&#39;deg-2&#39;</span><span class="p">)</span>
-        <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectral_model</span><span class="p">(</span><span class="n">energy</span><span class="p">)</span>
+        <span class="n">val_spatial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">)</span>
 
-        <span class="c1"># TODO: make this more general to support all possible use cases (in an efficient way).</span>
-        <span class="c1"># is this a good pattern?</span>
-        <span class="c1"># shape = SkyCube.compute_shape(lon, lat, energy)</span>
-        <span class="c1"># val = a.reshape(tuple(shape)) * b.reshape(tuple(shape))</span>
+        <span class="n">val_spectral</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectral_model</span><span class="p">(</span><span class="n">energy</span><span class="p">)</span>
+        <span class="n">val_spectral</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">val_spectral</span><span class="p">)[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
 
-        <span class="c1"># For now, we only support the case of scalar or 1-dim energy</span>
-        <span class="c1"># where the following broadcasting works:</span>
-        <span class="n">val</span> <span class="o">=</span> <span class="n">a</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">b</span><span class="p">)[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">val_spatial</span> <span class="o">*</span> <span class="n">val_spectral</span>
 
-        <span class="k">return</span> <span class="n">val</span></div>
+        <span class="k">return</span> <span class="n">val</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;cm-2 s-1 TeV-1 deg-2&#39;</span><span class="p">)</span></div></div>
 
-<div class="viewcode-block" id="CombinedModel3D.evaluate_cube"><a class="viewcode-back" href="../../../api/gammapy.cube.CombinedModel3D.html#gammapy.cube.CombinedModel3D.evaluate_cube">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate_cube</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref_cube</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Evaluate the model on coordinates given by a reference sky cube.</span>
 
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        ref_cube : `~gammapy.cube.SkyCube`</span>
-<span class="sd">            Reference sky cube</span>
+<div class="viewcode-block" id="SkyModelMapEvaluator"><a class="viewcode-back" href="../../../api/gammapy.cube.SkyModelMapEvaluator.html#gammapy.cube.SkyModelMapEvaluator">[docs]</a><span class="k">class</span> <span class="nc">SkyModelMapEvaluator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Sky model evaluation on maps.</span>
+
+<span class="sd">    This is a first attempt to compute flux as well as predicted counts maps.</span>
+
+<span class="sd">    The basic idea is that this evaluator is created once at the start</span>
+<span class="sd">    of the analysis, and pre-computes some things.</span>
+<span class="sd">    It it then evaluated many times during likelihood fit when model parameters</span>
+<span class="sd">    change, re-using pre-computed quantities each time.</span>
+<span class="sd">    At the moment it does some things, e.g. cache and re-use energy and coordinate grids,</span>
+<span class="sd">    but overall it is not an efficient implementation yet.</span>
+
+<span class="sd">    For now, we only make it work for 3D WCS maps with an energy axis.</span>
+<span class="sd">    No HPX, no other axes, those can be added later here or via new</span>
+<span class="sd">    separate model evaluator classes.</span>
+
+<span class="sd">    We should discuss how to organise the model and IRF evaluation code,</span>
+<span class="sd">    and things like integrations and convolutions in a good way.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sky_model : `~gammapy.cube.models.SkyModel`</span>
+<span class="sd">        Sky model</span>
+<span class="sd">    exposure : `~gammapy.maps.Map`</span>
+<span class="sd">        Exposure map</span>
+<span class="sd">    psf : TODO</span>
+<span class="sd">        PSF or PSF kernel</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sky_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psf</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sky_model</span> <span class="o">=</span> <span class="n">sky_model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">=</span> <span class="n">exposure</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">psf</span> <span class="o">=</span> <span class="n">psf</span>
+
+    <span class="nd">@lazyproperty</span>
+    <span class="k">def</span> <span class="nf">geom</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">geom</span>
+
+    <span class="nd">@lazyproperty</span>
+    <span class="k">def</span> <span class="nf">geom_image</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span>
+
+    <span class="nd">@lazyproperty</span>
+    <span class="k">def</span> <span class="nf">energy_center</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Energy axis bin centers (`~astropy.units.Quantity`)&quot;&quot;&quot;</span>
+        <span class="n">energy_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">energy</span> <span class="o">=</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">center</span> <span class="o">*</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">unit</span>
+        <span class="k">return</span> <span class="n">energy</span>
+
+    <span class="nd">@lazyproperty</span>
+    <span class="k">def</span> <span class="nf">energy_edges</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Energy axis bin edges (`~astropy.units.Quantity`)&quot;&quot;&quot;</span>
+        <span class="n">energy_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">energy</span> <span class="o">=</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span> <span class="o">*</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">unit</span>
+        <span class="k">return</span> <span class="n">energy</span>
+
+    <span class="nd">@lazyproperty</span>
+    <span class="k">def</span> <span class="nf">energy_bin_width</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Energy axis bin widths (`astropy.units.Quantity`)&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energy_edges</span><span class="p">)</span>
+
+    <span class="nd">@lazyproperty</span>
+    <span class="k">def</span> <span class="nf">lon_lat</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Spatial coordinate pixel centers.</span>
+
+<span class="sd">        Returns ``lon, lat`` tuple of `~astropy.units.Quantity`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom_image</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">lon</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span> <span class="n">lat</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span>
+
+    <span class="nd">@lazyproperty</span>
+    <span class="k">def</span> <span class="nf">lon</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lon_lat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@lazyproperty</span>
+    <span class="k">def</span> <span class="nf">lat</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lon_lat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="nd">@lazyproperty</span>
+    <span class="k">def</span> <span class="nf">solid_angle</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Solid angle per pixel&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">solid_angle</span><span class="p">()</span>
+
+    <span class="nd">@lazyproperty</span>
+    <span class="k">def</span> <span class="nf">bin_volume</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Map pixel bin volume (solid angle times energy bin width).&quot;&quot;&quot;</span>
+        <span class="n">omega</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solid_angle</span>
+        <span class="n">de</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_bin_width</span>
+        <span class="n">de</span> <span class="o">=</span> <span class="n">de</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">omega</span> <span class="o">*</span> <span class="n">de</span>
+
+<div class="viewcode-block" id="SkyModelMapEvaluator.compute_dnde"><a class="viewcode-back" href="../../../api/gammapy.cube.SkyModelMapEvaluator.html#gammapy.cube.SkyModelMapEvaluator.compute_dnde">[docs]</a>    <span class="k">def</span> <span class="nf">compute_dnde</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute model differential flux at map pixel centers.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        model_cube : `~gammapy.cube.SkyCube`</span>
+<span class="sd">        model_map : `~gammapy.map.Map`</span>
 <span class="sd">            Sky cube with data filled with evaluated model values.</span>
-<span class="sd">            Units: ``cm-2 s-1 TeV-1 sr-1``</span>
+<span class="sd">            Units: ``cm-2 s-1 TeV-1 deg-2``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Extract grid of coordinates (lon, lat, energy) from the cube</span>
-        <span class="n">coords</span> <span class="o">=</span> <span class="n">ref_cube</span><span class="o">.</span><span class="n">sky_image_ref</span><span class="o">.</span><span class="n">coordinates</span><span class="p">()</span>
-        <span class="n">lon</span> <span class="o">=</span> <span class="n">coords</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">lon</span>
-        <span class="n">lat</span> <span class="o">=</span> <span class="n">coords</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">lat</span>
-        <span class="n">energy</span> <span class="o">=</span> <span class="n">ref_cube</span><span class="o">.</span><span class="n">energies</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">)</span>
+        <span class="n">coord</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_center</span><span class="p">)</span>
+        <span class="n">dnde</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sky_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="o">*</span><span class="n">coord</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dnde</span></div>
 
-        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">energy</span><span class="p">)</span>
+<div class="viewcode-block" id="SkyModelMapEvaluator.compute_flux"><a class="viewcode-back" href="../../../api/gammapy.cube.SkyModelMapEvaluator.html#gammapy.cube.SkyModelMapEvaluator.compute_flux">[docs]</a>    <span class="k">def</span> <span class="nf">compute_flux</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute model integral flux over map pixel volumes.</span>
 
-        <span class="c1"># TODO: Fix this so that explicit unit conversion here become unnecessary</span>
-        <span class="c1"># The problem at the moment is that here we have quantities with</span>
-        <span class="c1"># a unit scale != 1, and `.write(&#39;cube.fits&#39;)` errors out for a SkyCube with such a Quantity.</span>
-        <span class="c1"># This is a temp quick fix:</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;cm-2 s-1 TeV-1 sr-1&#39;</span><span class="p">)</span>
+<span class="sd">        For now, we simply multiply dnde with bin volume.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dnde</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_dnde</span><span class="p">()</span>
+        <span class="n">volume</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_volume</span>
+        <span class="n">flux</span> <span class="o">=</span> <span class="n">dnde</span> <span class="o">*</span> <span class="n">volume</span>
+        <span class="k">return</span> <span class="n">flux</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;cm-2 s-1&#39;</span><span class="p">)</span></div>
 
-        <span class="k">return</span> <span class="n">SkyCube</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="n">ref_cube</span><span class="o">.</span><span class="n">wcs</span><span class="p">,</span> <span class="n">energy_axis</span><span class="o">=</span><span class="n">ref_cube</span><span class="o">.</span><span class="n">energy_axis</span><span class="p">)</span></div></div>
+<div class="viewcode-block" id="SkyModelMapEvaluator.compute_npred"><a class="viewcode-back" href="../../../api/gammapy.cube.SkyModelMapEvaluator.html#gammapy.cube.SkyModelMapEvaluator.compute_npred">[docs]</a>    <span class="k">def</span> <span class="nf">compute_npred</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate model predicted counts.</span>
+
+<span class="sd">        For now, we simply multiply flux with exposure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">flux</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flux</span><span class="p">()</span>
+        <span class="n">exposure</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">quantity</span>
+        <span class="n">npred</span> <span class="o">=</span> <span class="n">flux</span> <span class="o">*</span> <span class="n">exposure</span>
+        <span class="k">return</span> <span class="n">npred</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span></div></div>
 </pre></div>
 
            </div>
@@ -1296,7 +1320,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 15 Apr 2018.
+      Last updated on 17 Apr 2018.
 
     </p>
   </div>
@@ -1318,7 +1342,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev5774',
+            VERSION:'0.8.dev5797',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
