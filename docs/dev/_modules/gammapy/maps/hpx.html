@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.maps.hpx &mdash; gammapy v0.8.dev5797</title>
+  <title>gammapy.maps.hpx &mdash; gammapy v0.8.dev5841</title>
   
 
   
@@ -41,7 +41,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="gammapy v0.8.dev5797" href="../../../index.html"/>
+    <link rel="top" title="gammapy v0.8.dev5841" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -71,7 +71,7 @@
             
             
               <div class="version">
-                0.8.dev5797
+                0.8.dev5841
               </div>
             
           
@@ -630,9 +630,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../image/index.html#module-gammapy.image.models">gammapy.image.models Package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/index.html#id1">Functions</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/index.html#id2">Classes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/index.html#variables">Variables</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../image/index.html#id1">Classes</a></li>
 </ul>
 </li>
 </ul>
@@ -1124,6 +1122,7 @@
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="k">import</span> <span class="n">SkyCoord</span>
 <span class="kn">from</span> <span class="nn">astropy.units</span> <span class="k">import</span> <span class="n">Quantity</span>
+<span class="kn">from</span> <span class="nn">..utils.scripts</span> <span class="k">import</span> <span class="n">make_path</span>
 <span class="kn">from</span> <span class="nn">.wcs</span> <span class="k">import</span> <span class="n">WcsGeom</span>
 <span class="kn">from</span> <span class="nn">.geom</span> <span class="k">import</span> <span class="n">MapGeom</span><span class="p">,</span> <span class="n">MapCoord</span><span class="p">,</span> <span class="n">pix_tuple_to_idx</span>
 <span class="kn">from</span> <span class="nn">.geom</span> <span class="k">import</span> <span class="n">coordsys_to_frame</span><span class="p">,</span> <span class="n">skycoord_to_lonlat</span>
@@ -2182,6 +2181,9 @@
 
         <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pad_width</span><span class="p">):</span>
             <span class="c1"># Mask of neighbors that are not contained in the geometry</span>
+            <span class="c1"># TODO: change this to numpy.isin when we require Numpy 1.13+</span>
+            <span class="c1"># Here and everywhere in Gamampy -&gt; search for &quot;isin&quot;</span>
+            <span class="c1"># see https://github.com/gammapy/gammapy/pull/1371</span>
             <span class="n">mask_edge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">in1d</span><span class="p">(</span><span class="n">idx_nb</span><span class="p">,</span> <span class="n">idx_r</span><span class="p">,</span> <span class="n">invert</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">idx_nb</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
             <span class="n">idx_edge</span> <span class="o">=</span> <span class="n">idx_nb</span><span class="p">[</span><span class="n">mask_edge</span><span class="p">]</span>
             <span class="n">idx_edge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">idx_edge</span><span class="p">)</span>
@@ -2553,7 +2555,7 @@
 <span class="sd">        hdu : str</span>
 <span class="sd">            The HDU extension name</span>
 <span class="sd">        overwrite : bool</span>
-<span class="sd">            True -&gt; overwrite existing files</span>
+<span class="sd">            Overwrite existing file?</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">hdu_prim</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">()</span>
         <span class="n">hdu_hpx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_hdu</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="n">hdu</span><span class="p">)</span>
@@ -2892,8 +2894,17 @@
 <span class="sd">        HEALPIX region&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid</span>
 
-    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fitsfile</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Write this mapping to a FITS file, to avoid having to recompute it</span>
+    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Write this mapping to a FITS file.</span>
+
+<span class="sd">        This can be useful to avoid having to recompute it.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filename : str</span>
+<span class="sd">            FITS file name</span>
+<span class="sd">        overwrite : bool</span>
+<span class="sd">            Overwrite existing file?</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">from</span> <span class="nn">.wcsnd</span> <span class="k">import</span> <span class="n">WcsNDMap</span>
         <span class="n">hpx_header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hpx</span><span class="o">.</span><span class="n">make_header</span><span class="p">()</span>
@@ -2911,7 +2922,7 @@
         <span class="c1">#    mult_hdu.header[key] = hpx_header[key]</span>
 
         <span class="n">hdulist</span> <span class="o">=</span> <span class="n">index_map</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">()</span>
-        <span class="n">hdulist</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">fitsfile</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
+        <span class="n">hdulist</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hpx</span><span class="p">,</span> <span class="n">wcs</span><span class="p">):</span>
@@ -2937,6 +2948,7 @@
     <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Read a FITS file and use it to make a mapping.&quot;&quot;&quot;</span>
         <span class="kn">from</span> <span class="nn">.wcsnd</span> <span class="k">import</span> <span class="n">WcsNDMap</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">make_path</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
         <span class="n">index_map</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
         <span class="n">mult_map</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="k">with</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">ff</span><span class="p">:</span>
@@ -3019,7 +3031,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 17 Apr 2018.
+      Last updated on 27 Apr 2018.
 
     </p>
   </div>
@@ -3041,7 +3053,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev5797',
+            VERSION:'0.8.dev5841',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

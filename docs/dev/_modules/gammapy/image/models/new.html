@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.image.models.new &mdash; gammapy v0.8.dev5797</title>
+  <title>gammapy.image.models.new &mdash; gammapy v0.8.dev5841</title>
   
 
   
@@ -41,7 +41,7 @@
         <link rel="index" title="Index"
               href="../../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../../search.html"/>
-    <link rel="top" title="gammapy v0.8.dev5797" href="../../../../index.html"/>
+    <link rel="top" title="gammapy v0.8.dev5841" href="../../../../index.html"/>
         <link rel="up" title="Module code" href="../../../index.html"/> 
 
   
@@ -71,7 +71,7 @@
             
             
               <div class="version">
-                0.8.dev5797
+                0.8.dev5841
               </div>
             
           
@@ -630,9 +630,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../image/index.html#module-gammapy.image.models">gammapy.image.models Package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../../image/index.html#id1">Functions</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../image/index.html#id2">Classes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../image/index.html#variables">Variables</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../image/index.html#id1">Classes</a></li>
 </ul>
 </li>
 </ul>
@@ -1114,7 +1112,7 @@
   <h1>Source code for gammapy.image.models.new</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Morphological models for astrophysical gamma-ray sources - new implementation</span>
+<span class="sd">Spatial models for astrophysical gamma-ray sources.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
 <span class="kn">import</span> <span class="nn">copy</span>
@@ -1122,19 +1120,19 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates.angle_utilities</span> <span class="k">import</span> <span class="n">angular_separation</span>
-<span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="k">import</span> <span class="n">Angle</span><span class="p">,</span> <span class="n">Longitude</span><span class="p">,</span> <span class="n">Latitude</span><span class="p">,</span> <span class="n">SkyCoord</span>
-<span class="kn">from</span> <span class="nn">astropy.utils</span> <span class="k">import</span> <span class="n">lazyproperty</span>
+<span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="k">import</span> <span class="n">Angle</span><span class="p">,</span> <span class="n">Longitude</span><span class="p">,</span> <span class="n">Latitude</span>
 <span class="kn">from</span> <span class="nn">...extern</span> <span class="k">import</span> <span class="n">six</span>
 <span class="kn">from</span> <span class="nn">...utils.modeling</span> <span class="k">import</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">ParameterList</span>
-<span class="kn">from</span> <span class="nn">..core</span> <span class="k">import</span> <span class="n">SkyImage</span>
+<span class="kn">from</span> <span class="nn">...maps</span> <span class="k">import</span> <span class="n">Map</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s1">&#39;SkySpatialModel&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;SkyGaussian2D&#39;</span><span class="p">,</span>
     <span class="s1">&#39;SkyPointSource&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;SkyDisk2D&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;SkyShell2D&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;SkyTemplate2D&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;SkyGaussian&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;SkyDisk&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;SkyShell&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;SkyDiffuseConstant&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;SkyDiffuseMap&#39;</span><span class="p">,</span>
 <span class="p">]</span>
 
 
@@ -1156,12 +1154,6 @@
             <span class="n">ss</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n\t</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">covar</span><span class="o">.</span><span class="n">pformat</span><span class="p">())</span>
         <span class="k">return</span> <span class="n">ss</span>
 
-<div class="viewcode-block" id="SkySpatialModel.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkySpatialModel.html#gammapy.image.models.SkySpatialModel.evaluate">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
-    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">():</span>
-        <span class="sd">&quot;&quot;&quot;Model evaluation&quot;&quot;&quot;</span>
-        <span class="k">pass</span></div>
-
 <div class="viewcode-block" id="SkySpatialModel.__call__"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkySpatialModel.html#gammapy.image.models.SkySpatialModel.__call__">[docs]</a>    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Call evaluate method&quot;&quot;&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
@@ -1173,42 +1165,6 @@
 <div class="viewcode-block" id="SkySpatialModel.copy"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkySpatialModel.html#gammapy.image.models.SkySpatialModel.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;A deep copy.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div></div>
-
-
-<div class="viewcode-block" id="SkyGaussian2D"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyGaussian2D.html#gammapy.image.models.SkyGaussian2D">[docs]</a><span class="k">class</span> <span class="nc">SkyGaussian2D</span><span class="p">(</span><span class="n">SkySpatialModel</span><span class="p">):</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Two-dimensional symmetric Gaussian model.</span>
-
-<span class="sd">    .. math::</span>
-
-<span class="sd">        \phi(lon, lat) = \frac{1}{2\pi\sigma^2} \exp{\left(-\frac{1}{2}</span>
-<span class="sd">            \frac{\theta^2}{\sigma^2}\right)}</span>
-
-<span class="sd">    where :math:`\theta` is the sky separation</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    lon_0 : `~astropy.coordinates.Longitude`</span>
-<span class="sd">        :math:`lon_0`</span>
-<span class="sd">    lat_0 : `~astropy.coordinates.Latitude`</span>
-<span class="sd">        :math:`lat_0`</span>
-<span class="sd">    sigma : `~astropy.coordinates.Angle`</span>
-<span class="sd">        :math:`\sigma`</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lon_0</span><span class="p">,</span> <span class="n">lat_0</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">ParameterList</span><span class="p">([</span>
-            <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;lon_0&#39;</span><span class="p">,</span> <span class="n">Longitude</span><span class="p">(</span><span class="n">lon_0</span><span class="p">)),</span>
-            <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;lat_0&#39;</span><span class="p">,</span> <span class="n">Latitude</span><span class="p">(</span><span class="n">lat_0</span><span class="p">)),</span>
-            <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;sigma&#39;</span><span class="p">,</span> <span class="n">Angle</span><span class="p">(</span><span class="n">sigma</span><span class="p">))</span>
-        <span class="p">])</span>
-
-<div class="viewcode-block" id="SkyGaussian2D.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyGaussian2D.html#gammapy.image.models.SkyGaussian2D.evaluate">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon_0</span><span class="p">,</span> <span class="n">lat_0</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Evaluate the model (static function).&quot;&quot;&quot;</span>
-        <span class="n">sep</span> <span class="o">=</span> <span class="n">angular_separation</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon_0</span><span class="p">,</span> <span class="n">lat_0</span><span class="p">)</span>
-        <span class="n">fact</span> <span class="o">=</span> <span class="p">(</span><span class="n">sep</span> <span class="o">/</span> <span class="n">sigma</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
-        <span class="n">val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">fact</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">sigma</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">val</span></div></div>
 
 
 <div class="viewcode-block" id="SkyPointSource"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyPointSource.html#gammapy.image.models.SkyPointSource">[docs]</a><span class="k">class</span> <span class="nc">SkyPointSource</span><span class="p">(</span><span class="n">SkySpatialModel</span><span class="p">):</span>
@@ -1239,11 +1195,52 @@
         <span class="sd">&quot;&quot;&quot;Evaluate the model (static function).&quot;&quot;&quot;</span>
         <span class="n">tolerance</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">arcsec</span>
         <span class="n">sep</span> <span class="o">=</span> <span class="n">angular_separation</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon_0</span><span class="p">,</span> <span class="n">lat_0</span><span class="p">)</span>
-        <span class="n">val</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">sep</span> <span class="o">&lt;</span> <span class="n">tolerance</span> <span class="k">else</span> <span class="mi">0</span>
-        <span class="k">return</span> <span class="n">val</span></div></div>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">sep</span> <span class="o">&lt;</span> <span class="n">tolerance</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">val</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s1">&#39;sr-1&#39;</span><span class="p">)</span></div></div>
 
 
-<div class="viewcode-block" id="SkyDisk2D"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyDisk2D.html#gammapy.image.models.SkyDisk2D">[docs]</a><span class="k">class</span> <span class="nc">SkyDisk2D</span><span class="p">(</span><span class="n">SkySpatialModel</span><span class="p">):</span>
+<div class="viewcode-block" id="SkyGaussian"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyGaussian.html#gammapy.image.models.SkyGaussian">[docs]</a><span class="k">class</span> <span class="nc">SkyGaussian</span><span class="p">(</span><span class="n">SkySpatialModel</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Two-dimensional symmetric Gaussian model.</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \phi(lon, lat) = \frac{1}{2\pi\sigma^2} \exp{\left(-\frac{1}{2}</span>
+<span class="sd">            \frac{\theta^2}{\sigma^2}\right)}</span>
+
+<span class="sd">    where :math:`\theta` is the sky separation</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    lon_0 : `~astropy.coordinates.Longitude`</span>
+<span class="sd">        :math:`lon_0`</span>
+<span class="sd">    lat_0 : `~astropy.coordinates.Latitude`</span>
+<span class="sd">        :math:`lat_0`</span>
+<span class="sd">    sigma : `~astropy.coordinates.Angle`</span>
+<span class="sd">        :math:`\sigma`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lon_0</span><span class="p">,</span> <span class="n">lat_0</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">ParameterList</span><span class="p">([</span>
+            <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;lon_0&#39;</span><span class="p">,</span> <span class="n">Longitude</span><span class="p">(</span><span class="n">lon_0</span><span class="p">)),</span>
+            <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;lat_0&#39;</span><span class="p">,</span> <span class="n">Latitude</span><span class="p">(</span><span class="n">lat_0</span><span class="p">)),</span>
+            <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;sigma&#39;</span><span class="p">,</span> <span class="n">Angle</span><span class="p">(</span><span class="n">sigma</span><span class="p">))</span>
+        <span class="p">])</span>
+
+<div class="viewcode-block" id="SkyGaussian.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyGaussian.html#gammapy.image.models.SkyGaussian.evaluate">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon_0</span><span class="p">,</span> <span class="n">lat_0</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate the model (static function).&quot;&quot;&quot;</span>
+        <span class="n">sep</span> <span class="o">=</span> <span class="n">angular_separation</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon_0</span><span class="p">,</span> <span class="n">lat_0</span><span class="p">)</span>
+        <span class="n">sep</span> <span class="o">=</span> <span class="n">sep</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;rad&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;rad&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="n">norm</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">sigma</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">exponent</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">sep</span> <span class="o">/</span> <span class="n">sigma</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">norm</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">exponent</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">val</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s1">&#39;sr-1&#39;</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="SkyDisk"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyDisk.html#gammapy.image.models.SkyDisk">[docs]</a><span class="k">class</span> <span class="nc">SkyDisk</span><span class="p">(</span><span class="n">SkySpatialModel</span><span class="p">):</span>
     <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Constant radial disk model.</span>
 
 <span class="sd">    .. math::</span>
@@ -1273,16 +1270,20 @@
             <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;r_0&#39;</span><span class="p">,</span> <span class="n">Angle</span><span class="p">(</span><span class="n">r_0</span><span class="p">))</span>
         <span class="p">])</span>
 
-<div class="viewcode-block" id="SkyDisk2D.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyDisk2D.html#gammapy.image.models.SkyDisk2D.evaluate">[docs]</a>    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="SkyDisk.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyDisk.html#gammapy.image.models.SkyDisk.evaluate">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon_0</span><span class="p">,</span> <span class="n">lat_0</span><span class="p">,</span> <span class="n">r_0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Evaluate the model (static function).&quot;&quot;&quot;</span>
         <span class="n">sep</span> <span class="o">=</span> <span class="n">angular_separation</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon_0</span><span class="p">,</span> <span class="n">lat_0</span><span class="p">)</span>
+        <span class="n">sep</span> <span class="o">=</span> <span class="n">sep</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;rad&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">r_0</span> <span class="o">=</span> <span class="n">r_0</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;rad&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+
         <span class="n">norm</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">r_0</span><span class="p">)))</span>
-        <span class="n">val</span> <span class="o">=</span> <span class="n">norm</span> <span class="k">if</span> <span class="n">sep</span> <span class="o">&lt;=</span> <span class="n">r_0</span> <span class="k">else</span> <span class="mi">0</span>
-        <span class="k">return</span> <span class="n">val</span> <span class="o">/</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span> <span class="o">**</span> <span class="mi">2</span></div></div>
+        <span class="n">val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">sep</span> <span class="o">&lt;=</span> <span class="n">r_0</span><span class="p">,</span> <span class="n">norm</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">val</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s1">&#39;sr-1&#39;</span><span class="p">)</span></div></div>
 
 
-<div class="viewcode-block" id="SkyShell2D"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyShell2D.html#gammapy.image.models.SkyShell2D">[docs]</a><span class="k">class</span> <span class="nc">SkyShell2D</span><span class="p">(</span><span class="n">SkySpatialModel</span><span class="p">):</span>
+<div class="viewcode-block" id="SkyShell"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyShell.html#gammapy.image.models.SkyShell">[docs]</a><span class="k">class</span> <span class="nc">SkyShell</span><span class="p">(</span><span class="n">SkySpatialModel</span><span class="p">):</span>
     <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Shell model</span>
 
 <span class="sd">    .. math::</span>
@@ -1321,79 +1322,85 @@
             <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;r_o&#39;</span><span class="p">,</span> <span class="n">Angle</span><span class="p">(</span><span class="n">r_o</span><span class="p">))</span>
         <span class="p">])</span>
 
-<div class="viewcode-block" id="SkyShell2D.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyShell2D.html#gammapy.image.models.SkyShell2D.evaluate">[docs]</a>    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="SkyShell.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyShell.html#gammapy.image.models.SkyShell.evaluate">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon_0</span><span class="p">,</span> <span class="n">lat_0</span><span class="p">,</span> <span class="n">r_i</span><span class="p">,</span> <span class="n">r_o</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Evaluate the model (static function).&quot;&quot;&quot;</span>
         <span class="n">sep</span> <span class="o">=</span> <span class="n">angular_separation</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">lon_0</span><span class="p">,</span> <span class="n">lat_0</span><span class="p">)</span>
-        <span class="n">term1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">r_o</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">sep</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
-        <span class="n">term2</span> <span class="o">=</span> <span class="n">term1</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">r_i</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">sep</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">sep</span> <span class="o">=</span> <span class="n">sep</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;rad&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">r_i</span> <span class="o">=</span> <span class="n">r_i</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;rad&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">r_o</span> <span class="o">=</span> <span class="n">r_o</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;rad&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+
         <span class="n">norm</span> <span class="o">=</span> <span class="mi">3</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="n">r_o</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">-</span> <span class="n">r_i</span> <span class="o">**</span> <span class="mi">3</span><span class="p">))</span>
 
-        <span class="k">if</span> <span class="n">sep</span> <span class="o">&lt;</span> <span class="n">r_o</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">sep</span> <span class="o">&lt;</span> <span class="n">r_i</span><span class="p">:</span>
-                <span class="n">val</span> <span class="o">=</span> <span class="n">term2</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">val</span> <span class="o">=</span> <span class="n">term1</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">val</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">):</span>
+            <span class="n">val_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">r_o</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">sep</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="n">val_in</span> <span class="o">=</span> <span class="n">val_out</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">r_i</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">sep</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">select</span><span class="p">([</span><span class="n">sep</span> <span class="o">&lt;</span> <span class="n">r_i</span><span class="p">,</span> <span class="n">sep</span> <span class="o">&lt;</span> <span class="n">r_o</span><span class="p">],</span> <span class="p">[</span><span class="n">val_in</span><span class="p">,</span> <span class="n">val_out</span><span class="p">])</span>
 
-        <span class="k">return</span> <span class="n">norm</span> <span class="o">*</span> <span class="n">val</span></div></div>
+        <span class="k">return</span> <span class="n">norm</span> <span class="o">*</span> <span class="n">val</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s1">&#39;sr-1&#39;</span><span class="p">)</span></div></div>
 
 
-<div class="viewcode-block" id="SkyTemplate2D"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyTemplate2D.html#gammapy.image.models.SkyTemplate2D">[docs]</a><span class="k">class</span> <span class="nc">SkyTemplate2D</span><span class="p">(</span><span class="n">SkySpatialModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Two dimensional table model.</span>
+<div class="viewcode-block" id="SkyDiffuseConstant"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyDiffuseConstant.html#gammapy.image.models.SkyDiffuseConstant">[docs]</a><span class="k">class</span> <span class="nc">SkyDiffuseConstant</span><span class="p">(</span><span class="n">SkySpatialModel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Spatially constant (isotropic) spatial model.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    image : `~gammapy.image.SkyImage`</span>
-<span class="sd">        Template</span>
+<span class="sd">    value : `~astropy.units.Quantity`</span>
+<span class="sd">        Value</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">image</span> <span class="o">=</span> <span class="n">image</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">ParameterList</span><span class="p">([])</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">ParameterList</span><span class="p">([</span>
+            <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">value</span><span class="p">),</span>
+        <span class="p">])</span>
 
-    <span class="nd">@lazyproperty</span>
-    <span class="k">def</span> <span class="nf">_interpolate_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Interpolate data using `~scipy.interpolate.RegularGridInterpolator`.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="k">import</span> <span class="n">RegularGridInterpolator</span>
-        <span class="c1"># TODO: move e.g. to SkyImage.interpolate()</span>
+<div class="viewcode-block" id="SkyDiffuseConstant.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyDiffuseConstant.html#gammapy.image.models.SkyDiffuseConstant.evaluate">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="c1"># TODO: try fitting this -&gt; probably the interface doesn&#39;t work?!</span>
+        <span class="k">return</span> <span class="n">value</span></div></div>
 
-        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 
-        <span class="n">data_normed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">data</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-        <span class="n">data_normed</span> <span class="o">/=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">solid_angle</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg2&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+<div class="viewcode-block" id="SkyDiffuseMap"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyDiffuseMap.html#gammapy.image.models.SkyDiffuseMap">[docs]</a><span class="k">class</span> <span class="nc">SkyDiffuseMap</span><span class="p">(</span><span class="n">SkySpatialModel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Spatial sky map template model.</span>
 
-        <span class="n">f</span> <span class="o">=</span> <span class="n">RegularGridInterpolator</span><span class="p">((</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span> <span class="n">data_normed</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-                                    <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="sd">    At the moment only support 2D maps.</span>
+<span class="sd">    TODO: support maps with an energy axis here or in a separate class?</span>
+<span class="sd">    TODO: should we cache some interpolator object for efficiency?</span>
 
-        <span class="k">def</span> <span class="nf">interpolate</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">):</span>
-            <span class="n">shape</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span>
-            <span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">y</span><span class="o">.</span><span class="n">flat</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">flat</span><span class="p">])</span>
-            <span class="n">val</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">val</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    map : `~gammapy.map.Map`</span>
+<span class="sd">        Map template</span>
+<span class="sd">    norm : `~astropy.units.Quantity`</span>
+<span class="sd">        Norm parameter (multiplied with map values)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
-        <span class="k">return</span> <span class="n">interpolate</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">map</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_map</span> <span class="o">=</span> <span class="nb">map</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">ParameterList</span><span class="p">([</span>
+            <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;norm&#39;</span><span class="p">,</span> <span class="n">norm</span><span class="p">),</span>
+        <span class="p">])</span>
 
-<div class="viewcode-block" id="SkyTemplate2D.read"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyTemplate2D.html#gammapy.image.models.SkyTemplate2D.read">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="SkyDiffuseMap.read"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyDiffuseMap.html#gammapy.image.models.SkyDiffuseMap.read">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Read spatial template model from FITS image.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        filename : str</span>
-<span class="sd">            Fits image filename.</span>
+<span class="sd">            FITS image filename.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">template</span> <span class="o">=</span> <span class="n">SkyImage</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">template</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="SkyTemplate2D.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyTemplate2D.html#gammapy.image.models.SkyTemplate2D.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">):</span>
-        <span class="c1"># TODO: don&#39;t hardcode Galactic frame!</span>
-        <span class="n">coord</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s1">&#39;galactic&#39;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span>
-        <span class="n">x_pix</span><span class="p">,</span> <span class="n">y_pix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">image</span><span class="o">.</span><span class="n">wcs_skycoord_to_pixel</span><span class="p">(</span><span class="n">coord</span><span class="p">)</span>
-        <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interpolate_data</span><span class="p">(</span><span class="n">y_pix</span><span class="p">,</span> <span class="n">x_pix</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">values</span></div></div>
+<div class="viewcode-block" id="SkyDiffuseMap.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyDiffuseMap.html#gammapy.image.models.SkyDiffuseMap.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">norm</span><span class="p">):</span>
+        <span class="n">coord</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">lon</span><span class="o">=</span><span class="n">lon</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">lat</span><span class="o">=</span><span class="n">lat</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_map</span><span class="o">.</span><span class="n">interp_by_coord</span><span class="p">(</span><span class="n">coord</span><span class="p">)</span>
+        <span class="c1"># TODO: use map unit? self._map.unit</span>
+        <span class="k">return</span> <span class="n">norm</span> <span class="o">*</span> <span class="n">val</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s1">&#39;sr-1&#39;</span><span class="p">)</span></div></div>
 </pre></div>
 
            </div>
@@ -1409,7 +1416,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 17 Apr 2018.
+      Last updated on 27 Apr 2018.
 
     </p>
   </div>
@@ -1431,7 +1438,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.8.dev5797',
+            VERSION:'0.8.dev5841',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

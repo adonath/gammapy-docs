@@ -148,7 +148,7 @@ print(integral)
 
 # ## User-defined model
 # 
-# Now we'll see how you can define a custom model. To do that you need to subclass ``SpectralModel``.
+# Now we'll see how you can define a custom model. To do that you need to subclass ``SpectralModel``. All ``SpectralModel`` subclasses need to have an ``__init__`` function, which sets up the ``ParameterList`` of the model and a ``static`` function called ``evaluate`` where the mathematical expression for the model is defined.
 # 
 # As an example we will use a PowerLaw plus a Gaussian (with fixed width).
 
@@ -164,7 +164,8 @@ class UserModel(models.SpectralModel):
                 Parameter('mean', mean, parmin=0),
                 Parameter('width', width, parmin=0, frozen=True)
             ])
-    def evaluate(self, energy, index, amplitude, reference, mean, width):
+    @staticmethod
+    def evaluate(energy, index, amplitude, reference, mean, width):
         pwl = models.PowerLaw.evaluate(energy=energy, index=index, amplitude=amplitude, reference=reference)
         gauss = amplitude * np.exp(-1 *(energy - mean) ** 2/( 2 * width ** 2))
         return pwl + gauss

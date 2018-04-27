@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.catalog.gammacat &mdash; gammapy v0.8.dev5797</title>
+  <title>gammapy.catalog.gammacat &mdash; gammapy v0.8.dev5841</title>
   
 
   
@@ -41,7 +41,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="gammapy v0.8.dev5797" href="../../../index.html"/>
+    <link rel="top" title="gammapy v0.8.dev5841" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -71,7 +71,7 @@
             
             
               <div class="version">
-                0.8.dev5797
+                0.8.dev5841
               </div>
             
           
@@ -630,9 +630,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../image/index.html#module-gammapy.image.models">gammapy.image.models Package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/index.html#id1">Functions</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/index.html#id2">Classes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/index.html#variables">Variables</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../image/index.html#id1">Classes</a></li>
 </ul>
 </li>
 </ul>
@@ -1122,17 +1120,17 @@
 <span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span><span class="p">,</span> <span class="n">namedtuple</span>
 <span class="kn">import</span> <span class="nn">functools</span>
 <span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">..extern</span> <span class="k">import</span> <span class="n">six</span>
 <span class="kn">from</span> <span class="nn">astropy</span> <span class="k">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="k">import</span> <span class="n">Table</span>
-<span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="k">import</span> <span class="n">Angle</span>
-<span class="kn">from</span> <span class="nn">astropy.modeling.models</span> <span class="k">import</span> <span class="n">Gaussian2D</span>
 <span class="kn">from</span> <span class="nn">..utils.modeling</span> <span class="k">import</span> <span class="n">SourceModel</span><span class="p">,</span> <span class="n">SourceLibrary</span><span class="p">,</span> <span class="n">UnknownModelError</span>
 <span class="kn">from</span> <span class="nn">..utils.scripts</span> <span class="k">import</span> <span class="n">make_path</span>
 <span class="kn">from</span> <span class="nn">..spectrum</span> <span class="k">import</span> <span class="n">FluxPoints</span>
 <span class="kn">from</span> <span class="nn">..spectrum.models</span> <span class="k">import</span> <span class="n">PowerLaw</span><span class="p">,</span> <span class="n">PowerLaw2</span><span class="p">,</span> <span class="n">ExponentialCutoffPowerLaw</span>
-<span class="kn">from</span> <span class="nn">..image.models</span> <span class="k">import</span> <span class="n">Shell2D</span><span class="p">,</span> <span class="n">Delta2D</span>
+<span class="kn">from</span> <span class="nn">..image.models</span> <span class="k">import</span> <span class="n">SkyPointSource</span><span class="p">,</span> <span class="n">SkyGaussian</span><span class="p">,</span> <span class="n">SkyShell</span>
+<span class="kn">from</span> <span class="nn">..cube.models</span> <span class="k">import</span> <span class="n">SkyModel</span>
 <span class="kn">from</span> <span class="nn">.core</span> <span class="k">import</span> <span class="n">SourceCatalog</span><span class="p">,</span> <span class="n">SourceCatalogObject</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
@@ -1399,45 +1397,56 @@
 
         <span class="k">return</span> <span class="n">model</span>
 
-<div class="viewcode-block" id="SourceCatalogObjectGammaCat.spatial_model"><a class="viewcode-back" href="../../../api/gammapy.catalog.SourceCatalogObjectGammaCat.html#gammapy.catalog.SourceCatalogObjectGammaCat.spatial_model">[docs]</a>    <span class="k">def</span> <span class="nf">spatial_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">emin</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span> <span class="n">emax</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Source spatial model.&quot;&quot;&quot;</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">spatial_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Source spatial model (`~gammapy.image.models.SpatialModel`).</span>
+
+<span class="sd">        TODO: add parameter errors!</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
-        <span class="n">flux</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectral_model</span><span class="o">.</span><span class="n">integral</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">)</span>
         <span class="n">morph_type</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;morph_type&#39;</span><span class="p">]</span>
-        <span class="n">pars</span> <span class="o">=</span> <span class="p">{}</span>
 
-        <span class="n">glon</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;glon&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">wrap_at</span><span class="p">(</span><span class="s1">&#39;180d&#39;</span><span class="p">)</span>
-        <span class="n">glat</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;glat&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">wrap_at</span><span class="p">(</span><span class="s1">&#39;180d&#39;</span><span class="p">)</span>
+        <span class="n">glon</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;glon&#39;</span><span class="p">]</span>
+        <span class="n">glat</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;glat&#39;</span><span class="p">]</span>
 
-        <span class="k">if</span> <span class="n">morph_type</span> <span class="o">==</span> <span class="s1">&#39;gauss&#39;</span><span class="p">:</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;x_mean&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">glon</span><span class="o">.</span><span class="n">value</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;y_mean&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">glat</span><span class="o">.</span><span class="n">value</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;x_stddev&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;morph_sigma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;y_stddev&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;morph_sigma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;morph_sigma2&#39;</span><span class="p">]):</span>
-                <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;y_stddev&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;morph_sigma2&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;morph_pa&#39;</span><span class="p">]):</span>
-                <span class="c1"># TODO: handle reference frame for rotation angle</span>
-                <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;theta&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;morph_pa&#39;</span><span class="p">],</span> <span class="s1">&#39;deg&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">rad</span>
-            <span class="n">ampl</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;cm-2 s-1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ampl</span> <span class="o">*</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;x_stddev&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;y_stddev&#39;</span><span class="p">])</span>
-            <span class="k">return</span> <span class="n">Gaussian2D</span><span class="p">(</span><span class="o">**</span><span class="n">pars</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">morph_type</span> <span class="o">==</span> <span class="s1">&#39;point&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SkyPointSource</span><span class="p">(</span>
+                <span class="n">lon_0</span><span class="o">=</span><span class="n">glon</span><span class="p">,</span>
+                <span class="n">lat_0</span><span class="o">=</span><span class="n">glat</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">morph_type</span> <span class="o">==</span> <span class="s1">&#39;gauss&#39;</span><span class="p">:</span>
+            <span class="c1"># TODO: add infos back once model support elongation</span>
+            <span class="c1"># pars[&#39;x_stddev&#39;] = d[&#39;morph_sigma&#39;]</span>
+            <span class="c1"># pars[&#39;y_stddev&#39;] = d[&#39;morph_sigma&#39;]</span>
+            <span class="c1"># if not np.isnan(d[&#39;morph_sigma2&#39;]):</span>
+            <span class="c1">#     pars[&#39;y_stddev&#39;] = d[&#39;morph_sigma2&#39;]</span>
+            <span class="c1"># if not np.isnan(d[&#39;morph_pa&#39;]):</span>
+            <span class="c1">#     # TODO: handle reference frame for rotation angle</span>
+            <span class="c1">#     pars[&#39;theta&#39;] = Angle(d[&#39;morph_pa&#39;], &#39;deg&#39;).rad</span>
+            <span class="k">return</span> <span class="n">SkyGaussian</span><span class="p">(</span>
+                <span class="n">lon_0</span><span class="o">=</span><span class="n">glon</span><span class="p">,</span>
+                <span class="n">lat_0</span><span class="o">=</span><span class="n">glat</span><span class="p">,</span>
+                <span class="n">sigma</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;morph_sigma&#39;</span><span class="p">],</span>
+            <span class="p">)</span>
         <span class="k">elif</span> <span class="n">morph_type</span> <span class="o">==</span> <span class="s1">&#39;shell&#39;</span><span class="p">:</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;cm-2 s-1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;x_0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">glon</span><span class="o">.</span><span class="n">value</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;y_0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">glat</span><span class="o">.</span><span class="n">value</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;r_in&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;morph_sigma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="mf">0.8</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;morph_sigma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
-            <span class="k">return</span> <span class="n">Shell2D</span><span class="p">(</span><span class="o">**</span><span class="n">pars</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">morph_type</span> <span class="o">==</span> <span class="s1">&#39;point&#39;</span><span class="p">:</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;cm-2 s-1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;x_0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">glon</span><span class="o">.</span><span class="n">value</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;y_0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">glat</span><span class="o">.</span><span class="n">value</span>
-            <span class="k">return</span> <span class="n">Delta2D</span><span class="p">(</span><span class="o">**</span><span class="n">pars</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">SkyShell</span><span class="p">(</span>
+                <span class="n">lon_0</span><span class="o">=</span><span class="n">glon</span><span class="p">,</span>
+                <span class="n">lat_0</span><span class="o">=</span><span class="n">glat</span><span class="p">,</span>
+                <span class="c1"># TODO: probably we shouldn&#39;t guess a shell width here!</span>
+                <span class="n">r_i</span><span class="o">=</span><span class="mf">0.8</span> <span class="o">*</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;morph_sigma&#39;</span><span class="p">],</span>
+                <span class="n">r_o</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;morph_sigma&#39;</span><span class="p">],</span>
+            <span class="p">)</span>
         <span class="k">elif</span> <span class="n">morph_type</span> <span class="o">==</span> <span class="s1">&#39;none&#39;</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">NoDataAvailableError</span><span class="p">(</span><span class="s1">&#39;No spatial model available: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Unknown spatial model: </span><span class="si">{!r}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">morph_type</span><span class="p">))</span></div>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Unknown spatial model: </span><span class="si">{!r}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">morph_type</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sky_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Source sky model (`~gammapy.cube.models.SkyModel`).&quot;&quot;&quot;</span>
+        <span class="n">spatial_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span>
+        <span class="n">spectral_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectral_model</span>
+        <span class="k">return</span> <span class="n">SkyModel</span><span class="p">(</span><span class="n">spatial_model</span><span class="p">,</span> <span class="n">spectral_model</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_add_source_meta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Copy over some info to table.meta&quot;&quot;&quot;</span>
@@ -1586,9 +1595,9 @@
 <div class="viewcode-block" id="GammaCatDataCollection.from_index_file"><a class="viewcode-back" href="../../../api/gammapy.catalog.GammaCatDataCollection.html#gammapy.catalog.GammaCatDataCollection.from_index_file">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_index_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s1">&#39;$GAMMA_CAT/docs/data/gammacat-datasets.json&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Create from index file.&quot;&quot;&quot;</span>
-        <span class="n">filename</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">make_path</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">make_path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
         <span class="c1"># TODO: make a list of `GammaCatResource`, as well as a dict by ``resource_id`` for lookup!</span>
-        <span class="n">data_index</span> <span class="o">=</span> <span class="n">load_json</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">data_index</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">read_text</span><span class="p">())</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">data_index</span><span class="o">=</span><span class="n">data_index</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="GammaCatDataCollection.info"><a class="viewcode-back" href="../../../api/gammapy.catalog.GammaCatDataCollection.html#gammapy.catalog.GammaCatDataCollection.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1788,7 +1797,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 17 Apr 2018.
+      Last updated on 27 Apr 2018.
 
     </p>
   </div>
@@ -1810,7 +1819,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev5797',
+            VERSION:'0.8.dev5841',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

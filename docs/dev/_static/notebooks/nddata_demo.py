@@ -96,7 +96,7 @@ print(nddata2d)
 extent_x = nddata2d.axis('energy').bins[[0, -1]].value
 extent_y = nddata2d.axis('offset').nodes[[0, -1]].value
 extent = extent_x[0], extent_x[1], extent_y[0], extent_y[1]
-plt.imshow(nddata2d.data, extent=extent, aspect='auto')
+plt.imshow(nddata2d.data.value, extent=extent, aspect='auto')
 plt.xlabel('Energy')
 plt.ylabel('Offset')
 plt.colorbar()

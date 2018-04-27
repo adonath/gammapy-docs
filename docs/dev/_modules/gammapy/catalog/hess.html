@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.catalog.hess &mdash; gammapy v0.8.dev5797</title>
+  <title>gammapy.catalog.hess &mdash; gammapy v0.8.dev5841</title>
   
 
   
@@ -41,7 +41,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="gammapy v0.8.dev5797" href="../../../index.html"/>
+    <link rel="top" title="gammapy v0.8.dev5841" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -71,7 +71,7 @@
             
             
               <div class="version">
-                0.8.dev5797
+                0.8.dev5841
               </div>
             
           
@@ -630,9 +630,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../image/index.html#module-gammapy.image.models">gammapy.image.models Package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/index.html#id1">Functions</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/index.html#id2">Classes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/index.html#variables">Variables</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../image/index.html#id1">Classes</a></li>
 </ul>
 </li>
 </ul>
@@ -1122,13 +1120,13 @@
 <span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="k">import</span> <span class="n">Table</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="k">import</span> <span class="n">Angle</span>
-<span class="kn">from</span> <span class="nn">astropy.modeling.models</span> <span class="k">import</span> <span class="n">Gaussian2D</span>
 <span class="kn">from</span> <span class="nn">..extern.pathlib</span> <span class="k">import</span> <span class="n">Path</span>
 <span class="kn">from</span> <span class="nn">..utils.scripts</span> <span class="k">import</span> <span class="n">make_path</span>
 <span class="kn">from</span> <span class="nn">..utils.table</span> <span class="k">import</span> <span class="n">table_row_to_dict</span>
 <span class="kn">from</span> <span class="nn">..spectrum</span> <span class="k">import</span> <span class="n">FluxPoints</span>
-<span class="kn">from</span> <span class="nn">..spectrum.models</span> <span class="k">import</span> <span class="n">PowerLaw</span><span class="p">,</span> <span class="n">ExponentialCutoffPowerLaw</span>
-<span class="kn">from</span> <span class="nn">..image.models</span> <span class="k">import</span> <span class="n">Delta2D</span><span class="p">,</span> <span class="n">Shell2D</span>
+<span class="kn">from</span> <span class="nn">..spectrum.models</span> <span class="k">import</span> <span class="n">PowerLaw</span><span class="p">,</span> <span class="n">PowerLaw2</span><span class="p">,</span> <span class="n">ExponentialCutoffPowerLaw</span>
+<span class="kn">from</span> <span class="nn">..image.models</span> <span class="k">import</span> <span class="n">SkyPointSource</span><span class="p">,</span> <span class="n">SkyGaussian</span><span class="p">,</span> <span class="n">SkyShell</span>
+<span class="kn">from</span> <span class="nn">..cube.models</span> <span class="k">import</span> <span class="n">SkyModel</span>
 <span class="kn">from</span> <span class="nn">..background.models</span> <span class="k">import</span> <span class="n">GaussianBand2D</span>
 <span class="kn">from</span> <span class="nn">.core</span> <span class="k">import</span> <span class="n">SourceCatalog</span><span class="p">,</span> <span class="n">SourceCatalogObject</span>
 
@@ -1156,7 +1154,7 @@
 <span class="sd">    SourceCatalogHGPS, SourceCatalogObjectHGPS</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">_source_name_key</span> <span class="o">=</span> <span class="s1">&#39;Component_ID&#39;</span>
-    <span class="n">_source_index_key</span> <span class="o">=</span> <span class="s1">&#39;catalog_row_index&#39;</span>
+    <span class="n">_source_index_key</span> <span class="o">=</span> <span class="s1">&#39;row_index&#39;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
@@ -1191,20 +1189,39 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">spatial_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Component spatial model (`~astropy.modeling.models.Gaussian2D`).&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Component spatial model (`~gammapy.image.models.SkyGaussian`).&quot;&quot;&quot;</span>
         <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
-        <span class="c1"># At the moment spatial models are normalised by deg^2</span>
-        <span class="n">amplitude</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;Flux_Map&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;Size&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
-        <span class="n">glon</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;GLON&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">wrap_at</span><span class="p">(</span><span class="s1">&#39;180d&#39;</span><span class="p">)</span>
-        <span class="n">glat</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;GLAT&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">wrap_at</span><span class="p">(</span><span class="s1">&#39;180d&#39;</span><span class="p">)</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">SkyGaussian</span><span class="p">(</span>
+            <span class="n">lon_0</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;GLON&#39;</span><span class="p">],</span>
+            <span class="n">lat_0</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;GLAT&#39;</span><span class="p">],</span>
+            <span class="n">sigma</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;Size&#39;</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">set_parameter_errors</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span>
+            <span class="n">lon_0</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;GLON_Err&#39;</span><span class="p">],</span>
+            <span class="n">lat_0</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;GLAT_Err&#39;</span><span class="p">],</span>
+            <span class="n">sigma</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;Size_Err&#39;</span><span class="p">],</span>
+        <span class="p">))</span>
+        <span class="k">return</span> <span class="n">model</span>
 
-        <span class="k">return</span> <span class="n">Gaussian2D</span><span class="p">(</span>
-            <span class="n">x_mean</span><span class="o">=</span><span class="n">glon</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-            <span class="n">y_mean</span><span class="o">=</span><span class="n">glat</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-            <span class="n">x_stddev</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;Size&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-            <span class="n">y_stddev</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;Size&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-            <span class="n">amplitude</span><span class="o">=</span><span class="n">amplitude</span><span class="p">,</span>
-        <span class="p">)</span></div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">spectral_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Component spectral model (`gammapy.spectrum.models.PowerLaw2`).&quot;&quot;&quot;</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">PowerLaw2</span><span class="p">(</span>
+            <span class="n">amplitude</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;Flux_Map&#39;</span><span class="p">],</span>
+            <span class="n">index</span><span class="o">=</span><span class="mf">2.3</span><span class="p">,</span>
+            <span class="n">emin</span><span class="o">=</span><span class="s1">&#39;1 TeV&#39;</span><span class="p">,</span>
+            <span class="n">emax</span><span class="o">=</span><span class="s1">&#39;1e5 TeV&#39;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">set_parameter_errors</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span>
+            <span class="n">amplitude</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;Flux_Map_Err&#39;</span><span class="p">],</span>
+        <span class="p">))</span>
+        <span class="k">return</span> <span class="n">model</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sky_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Component sky model (`gammapy.cube.models.SkyModel`).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">SkyModel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectral_model</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="SourceCatalogObjectHGPS"><a class="viewcode-back" href="../../../api/gammapy.catalog.SourceCatalogObjectHGPS.html#gammapy.catalog.SourceCatalogObjectHGPS">[docs]</a><span class="k">class</span> <span class="nc">SourceCatalogObjectHGPS</span><span class="p">(</span><span class="n">SourceCatalogObject</span><span class="p">):</span>
@@ -1568,76 +1585,67 @@
         <span class="n">pointlike</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;Spatial_Model&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Point-Like&#39;</span>
         <span class="k">return</span> <span class="n">pointlike</span> <span class="ow">or</span> <span class="n">has_size_ul</span>
 
-<div class="viewcode-block" id="SourceCatalogObjectHGPS.spatial_model"><a class="viewcode-back" href="../../../api/gammapy.catalog.SourceCatalogObjectHGPS.html#gammapy.catalog.SourceCatalogObjectHGPS.spatial_model">[docs]</a>    <span class="k">def</span> <span class="nf">spatial_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">emin</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span> <span class="n">emax</span><span class="o">=</span><span class="mf">1E5</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">):</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">spatial_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Spatial model (`~gammapy.image.models.SpatialModel`).</span>
 
 <span class="sd">        One of the following models (given by ``Spatial_Model`` in the catalog):</span>
 
-<span class="sd">        - ``Point-Like`` or has a size upper limit : `~gammapy.image.models.Delta2D`</span>
-<span class="sd">        - ``Shell``: `~gammapy.image.models.Shell2D`</span>
-<span class="sd">        - ``Gaussian``: `gammapy.image.models.Gaussian2D`</span>
+<span class="sd">        - ``Point-Like`` or has a size upper limit : `~gammapy.image.models.SkyPointSource`</span>
+<span class="sd">        - ``Gaussian``: `~gammapy.image.models.SkyGaussian`</span>
 <span class="sd">        - ``2-Gaussian`` or ``3-Gaussian``: composite model (using ``+`` with Gaussians)</span>
+<span class="sd">        - ``Shell``: `~gammapy.image.models.SkyShell`</span>
+
+<span class="sd">        TODO: add parameter errors</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span>
-        <span class="n">flux</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectral_model</span><span class="p">()</span><span class="o">.</span><span class="n">integral</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">)</span>
-        <span class="n">amplitude</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;cm-2 s-1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
-
-        <span class="n">pars</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">glon</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;GLON&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">wrap_at</span><span class="p">(</span><span class="s1">&#39;180d&#39;</span><span class="p">)</span>
-        <span class="n">glat</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;GLAT&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">wrap_at</span><span class="p">(</span><span class="s1">&#39;180d&#39;</span><span class="p">)</span>
+        <span class="n">glon</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;GLON&#39;</span><span class="p">]</span>
+        <span class="n">glat</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;GLAT&#39;</span><span class="p">]</span>
 
         <span class="n">spatial_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_model_type</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_pointlike</span><span class="p">:</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">amplitude</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;x_0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">glon</span><span class="o">.</span><span class="n">value</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;y_0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">glat</span><span class="o">.</span><span class="n">value</span>
-            <span class="k">return</span> <span class="n">Delta2D</span><span class="p">(</span><span class="o">**</span><span class="n">pars</span><span class="p">)</span>
-
+            <span class="n">model</span> <span class="o">=</span> <span class="n">SkyPointSource</span><span class="p">(</span>
+                <span class="n">lon_0</span><span class="o">=</span><span class="n">glon</span><span class="p">,</span>
+                <span class="n">lat_0</span><span class="o">=</span><span class="n">glat</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">spatial_type</span> <span class="o">==</span> <span class="s1">&#39;gaussian&#39;</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">SkyGaussian</span><span class="p">(</span>
+                <span class="n">lon_0</span><span class="o">=</span><span class="n">glon</span><span class="p">,</span>
+                <span class="n">lat_0</span><span class="o">=</span><span class="n">glat</span><span class="p">,</span>
+                <span class="n">sigma</span><span class="o">=</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;Size&#39;</span><span class="p">],</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">spatial_type</span> <span class="ow">in</span> <span class="p">{</span><span class="s1">&#39;2-gaussian&#39;</span><span class="p">,</span> <span class="s1">&#39;3-gaussian&#39;</span><span class="p">}:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;For Gaussian or Multi-Gaussian models, use sky_model()!&#39;</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">spatial_type</span> <span class="o">==</span> <span class="s1">&#39;shell&#39;</span><span class="p">:</span>
             <span class="c1"># HGPS contains no information on shell width</span>
             <span class="c1"># Here we assuma a 5% shell width for all shells.</span>
-            <span class="n">shell_width_fraction</span> <span class="o">=</span> <span class="mf">0.05</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;x_0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">glon</span><span class="o">.</span><span class="n">value</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;y_0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">glat</span><span class="o">.</span><span class="n">value</span>
-            <span class="n">r_out</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;Size&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">r_out</span> <span class="o">*</span> <span class="n">shell_width_fraction</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;r_in&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">r_out</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">shell_width_fraction</span><span class="p">)</span>
-            <span class="n">pars</span><span class="p">[</span><span class="s1">&#39;amplitude&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">amplitude</span>
-            <span class="k">return</span> <span class="n">Shell2D</span><span class="p">(</span><span class="o">**</span><span class="n">pars</span><span class="p">)</span>
+            <span class="n">r_out</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;Size&#39;</span><span class="p">]</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">SkyShell</span><span class="p">(</span>
+                <span class="n">lon_0</span><span class="o">=</span><span class="n">glon</span><span class="p">,</span>
+                <span class="n">lat_0</span><span class="o">=</span><span class="n">glat</span><span class="p">,</span>
+                <span class="n">r_i</span><span class="o">=</span><span class="mf">0.95</span> <span class="o">*</span> <span class="n">r_out</span><span class="p">,</span>
+                <span class="n">r_o</span><span class="o">=</span><span class="n">r_out</span><span class="p">,</span>
 
-        <span class="k">elif</span> <span class="n">spatial_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;gaussian&#39;</span><span class="p">,</span> <span class="s1">&#39;2-gaussian&#39;</span><span class="p">,</span> <span class="s1">&#39;3-gaussian&#39;</span><span class="p">]:</span>
-            <span class="n">amplitude_total</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;Flux_Map&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;cm-2 s-1&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">component</span><span class="o">.</span><span class="n">spatial_model</span> <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">]</span>
-            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-                <span class="c1"># there is one external source (HESS J1801-233) where there is no</span>
-                <span class="c1"># component info available, so we create it here locally</span>
-                <span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">SourceCatalogObjectHGPSComponent</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="o">.</span><span class="n">spatial_model</span><span class="p">]</span>
-
-            <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">models</span><span class="p">:</span>
-                <span class="c1"># weight total flux according to relative amplitude</span>
-                <span class="n">model</span><span class="o">.</span><span class="n">amplitude</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">amplitude</span> <span class="o">/</span> <span class="n">amplitude_total</span> <span class="o">*</span> <span class="n">amplitude</span>
-
-            <span class="k">if</span> <span class="n">spatial_type</span> <span class="o">==</span> <span class="s1">&#39;gaussian&#39;</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="k">elif</span> <span class="n">spatial_type</span> <span class="o">==</span> <span class="s1">&#39;2-gaussian&#39;</span><span class="p">:</span>
-                <span class="n">model</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">models</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-
-                <span class="c1"># use generic bounding box of 2 deg width and height</span>
-                <span class="n">model</span><span class="o">.</span><span class="n">bounding_box</span> <span class="o">=</span> <span class="p">((</span><span class="n">glat</span><span class="o">.</span><span class="n">deg</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,</span> <span class="n">glat</span><span class="o">.</span><span class="n">deg</span> <span class="o">+</span> <span class="mi">2</span><span class="p">),</span>
-                                      <span class="p">(</span><span class="n">glon</span><span class="o">.</span><span class="n">deg</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,</span> <span class="n">glon</span><span class="o">.</span><span class="n">deg</span> <span class="o">+</span> <span class="mi">2</span><span class="p">))</span>
-                <span class="k">return</span> <span class="n">model</span>
-            <span class="k">elif</span> <span class="n">spatial_type</span> <span class="o">==</span> <span class="s1">&#39;3-gaussian&#39;</span><span class="p">:</span>
-                <span class="n">model</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">models</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">models</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-
-                <span class="c1"># use generic bounding box of 2 deg width and height</span>
-                <span class="n">model</span><span class="o">.</span><span class="n">bounding_box</span> <span class="o">=</span> <span class="p">((</span><span class="n">glat</span><span class="o">.</span><span class="n">deg</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,</span> <span class="n">glat</span><span class="o">.</span><span class="n">deg</span> <span class="o">+</span> <span class="mi">2</span><span class="p">),</span>
-                                      <span class="p">(</span><span class="n">glon</span><span class="o">.</span><span class="n">deg</span> <span class="o">-</span> <span class="mi">2</span><span class="p">,</span> <span class="n">glon</span><span class="o">.</span><span class="n">deg</span> <span class="o">+</span> <span class="mi">2</span><span class="p">))</span>
-                <span class="k">return</span> <span class="n">model</span>
-
+            <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Not a valid spatial model: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spatial_type</span><span class="p">))</span></div>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Not a valid spatial model: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">spatial_type</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">model</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sky_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Source sky model (`~gammapy.cube.models.SkyModel`).&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_model_type</span> <span class="ow">in</span> <span class="p">{</span><span class="s1">&#39;2-gaussian&#39;</span><span class="p">,</span> <span class="s1">&#39;3-gaussian&#39;</span><span class="p">}:</span>
+            <span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">sky_model</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">SkySumModel</span><span class="p">(</span><span class="n">models</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">spatial_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span>
+            <span class="c1"># TODO: there are two spectral models</span>
+            <span class="c1"># Here we only expose the default</span>
+            <span class="c1"># Change sky_model into a method and re-expose option to select spectral model?</span>
+            <span class="n">spectral_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectral_model</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">SkyModel</span><span class="p">(</span><span class="n">spatial_model</span><span class="p">,</span> <span class="n">spectral_model</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">flux_points</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1788,7 +1796,56 @@
 <div class="viewcode-block" id="SourceCatalogHGPS.gaussian_component"><a class="viewcode-back" href="../../../api/gammapy.catalog.SourceCatalogHGPS.html#gammapy.catalog.SourceCatalogHGPS.gaussian_component">[docs]</a>    <span class="k">def</span> <span class="nf">gaussian_component</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row_idx</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Gaussian component (`SourceCatalogObjectHGPSComponent`).&quot;&quot;&quot;</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">table_row_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table_components</span><span class="p">[</span><span class="n">row_idx</span><span class="p">])</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;row_index&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">row_idx</span>
         <span class="k">return</span> <span class="n">SourceCatalogObjectHGPSComponent</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">SkySumModel</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Additive sum of `SkyModel`.</span>
+
+<span class="sd">    TODO: fully implement this class or remove?</span>
+
+<span class="sd">    Not sure if we want this class, or only a + operator on SkyModel.</span>
+<span class="sd">    If we keep it, then probably SkyModel should become an ABC</span>
+<span class="sd">    and the current SkyModel renamed to SkyModelFactorised or something like that?</span>
+
+<span class="sd">    I&#39;m only adding this for now as a hack to migrate the multi-Gauss HGPS</span>
+<span class="sd">    models to the new model classes.</span>
+<span class="sd">    See https://github.com/gammapy/gammapy/pull/1387</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    models : list</span>
+<span class="sd">        List of SkyModel objects</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">models</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_models</span> <span class="o">=</span> <span class="n">models</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_models</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_models</span><span class="p">[</span><span class="n">item</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Concatenated parameters.</span>
+
+<span class="sd">        Currently no way to distinguish spectral and spatial.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">..utils.modeling</span> <span class="k">import</span> <span class="n">ParameterList</span>
+        <span class="n">pars</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_models</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+                <span class="n">pars</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ParameterList</span><span class="p">(</span><span class="n">pars</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">energy</span><span class="p">):</span>
+        <span class="c1"># TODO: untested; add test or remove</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">m</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">energy</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_models</span><span class="p">])</span>
+
+
 </pre></div>
 
            </div>
@@ -1804,7 +1861,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 17 Apr 2018.
+      Last updated on 27 Apr 2018.
 
     </p>
   </div>
@@ -1826,7 +1883,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev5797',
+            VERSION:'0.8.dev5841',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,

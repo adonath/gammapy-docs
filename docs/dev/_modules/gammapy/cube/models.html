@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.cube.models &mdash; gammapy v0.8.dev5797</title>
+  <title>gammapy.cube.models &mdash; gammapy v0.8.dev5841</title>
   
 
   
@@ -41,7 +41,7 @@
         <link rel="index" title="Index"
               href="../../../genindex.html"/>
         <link rel="search" title="Search" href="../../../search.html"/>
-    <link rel="top" title="gammapy v0.8.dev5797" href="../../../index.html"/>
+    <link rel="top" title="gammapy v0.8.dev5841" href="../../../index.html"/>
         <link rel="up" title="Module code" href="../../index.html"/> 
 
   
@@ -71,7 +71,7 @@
             
             
               <div class="version">
-                0.8.dev5797
+                0.8.dev5841
               </div>
             
           
@@ -630,9 +630,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../image/index.html#module-gammapy.image.models">gammapy.image.models Package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/index.html#id1">Functions</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/index.html#id2">Classes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/index.html#variables">Variables</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../image/index.html#id1">Classes</a></li>
 </ul>
 </li>
 </ul>
@@ -1115,8 +1113,10 @@
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
 <span class="kn">from</span> <span class="nn">astropy.utils</span> <span class="k">import</span> <span class="n">lazyproperty</span>
+<span class="kn">from</span> <span class="nn">..utils.modeling</span> <span class="k">import</span> <span class="n">ParameterList</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s1">&#39;SkyModel&#39;</span><span class="p">,</span>
@@ -1127,7 +1127,9 @@
 <div class="viewcode-block" id="SkyModel"><a class="viewcode-back" href="../../../api/gammapy.cube.SkyModel.html#gammapy.cube.SkyModel">[docs]</a><span class="k">class</span> <span class="nc">SkyModel</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Sky model component.</span>
 
-<span class="sd">    This model represents a factorised sky model.</span>
+<span class="sd">    This model represents a factorised sky model. It has a</span>
+<span class="sd">    `~gammapy.utils.modeling.ParameterList` combinining the spatial and spectral</span>
+<span class="sd">    parameters</span>
 
 <span class="sd">    TODO: add possibility to have a temporal model component also.</span>
 
@@ -1140,18 +1142,44 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spatial_model</span><span class="p">,</span> <span class="n">spectral_model</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span> <span class="o">=</span> <span class="n">spatial_model</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">spectral_model</span> <span class="o">=</span> <span class="n">spectral_model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_spatial_model</span> <span class="o">=</span> <span class="n">spatial_model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_spectral_model</span> <span class="o">=</span> <span class="n">spectral_model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_init_parameters</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_init_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create flat list of parameters&quot;&quot;&quot;</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spatial_model</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">parameters</span><span class="o">.</span><span class="n">parameters</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spectral_model</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span> <span class="o">=</span> <span class="n">parameters</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">spatial_pars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;List of spatial parameter names&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spatial_model</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">names</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">spectral_pars</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;List of spectral parameter names&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spectral_model</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">names</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;`~gammapy.utils.modeling.ParameterList`&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span>
+
+    <span class="nd">@parameters</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameters</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span> <span class="o">=</span> <span class="n">parameters</span>
 
     <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">(spatial_model=</span><span class="si">{!r}</span><span class="s1">, spectral_model=</span><span class="si">{!r}</span><span class="s1">)&#39;</span>
         <span class="k">return</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
-                          <span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectral_model</span><span class="p">)</span>
+                          <span class="bp">self</span><span class="o">.</span><span class="n">_spatial_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spectral_model</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">ss</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
-        <span class="n">ss</span> <span class="o">+=</span> <span class="s1">&#39;spatial_model = </span><span class="si">{}</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span><span class="p">)</span>
-        <span class="n">ss</span> <span class="o">+=</span> <span class="s1">&#39;spectral_model = </span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spectral_model</span><span class="p">)</span>
+        <span class="n">ss</span> <span class="o">+=</span> <span class="s1">&#39;spatial_model = </span><span class="si">{}</span><span class="se">\n\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_spatial_model</span><span class="p">)</span>
+        <span class="n">ss</span> <span class="o">+=</span> <span class="s1">&#39;spectral_model = </span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_spectral_model</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ss</span>
 
 <div class="viewcode-block" id="SkyModel.evaluate"><a class="viewcode-back" href="../../../api/gammapy.cube.SkyModel.html#gammapy.cube.SkyModel.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">energy</span><span class="p">):</span>
@@ -1172,14 +1200,25 @@
 <span class="sd">        value : `~astropy.units.Quantity`</span>
 <span class="sd">            Model value at the given point.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">val_spatial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">)</span>
+        <span class="n">spatial_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">spectral_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">par</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">par</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_pars</span><span class="p">:</span>
+                <span class="n">spatial_kwargs</span><span class="p">[</span><span class="n">par</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">quantity</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">spectral_kwargs</span><span class="p">[</span><span class="n">par</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">quantity</span>
 
-        <span class="n">val_spectral</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectral_model</span><span class="p">(</span><span class="n">energy</span><span class="p">)</span>
+        <span class="n">val_spatial</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spatial_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="o">**</span><span class="n">spatial_kwargs</span><span class="p">)</span>
+        <span class="n">val_spectral</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_spectral_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="o">**</span><span class="n">spectral_kwargs</span><span class="p">)</span>
         <span class="n">val_spectral</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">val_spectral</span><span class="p">)[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
 
         <span class="n">val</span> <span class="o">=</span> <span class="n">val_spatial</span> <span class="o">*</span> <span class="n">val_spectral</span>
 
-        <span class="k">return</span> <span class="n">val</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;cm-2 s-1 TeV-1 deg-2&#39;</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="n">val</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;cm-2 s-1 TeV-1 deg-2&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SkyModel.copy"><a class="viewcode-back" href="../../../api/gammapy.cube.SkyModel.html#gammapy.cube.SkyModel.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;A deep copy&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="SkyModelMapEvaluator"><a class="viewcode-back" href="../../../api/gammapy.cube.SkyModelMapEvaluator.html#gammapy.cube.SkyModelMapEvaluator">[docs]</a><span class="k">class</span> <span class="nc">SkyModelMapEvaluator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -1320,7 +1359,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 17 Apr 2018.
+      Last updated on 27 Apr 2018.
 
     </p>
   </div>
@@ -1342,7 +1381,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev5797',
+            VERSION:'0.8.dev5841',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
