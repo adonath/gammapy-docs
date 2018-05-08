@@ -113,7 +113,7 @@ obs_table_with_group_id = obs_groups.apply(data_store.obs_table.select_obs_id(li
 
 # ### Make table of known gamma-ray sources to exclude
 # 
-# We need a mask to remove known sources from the observation. We use TeVcat and exclude a circular region of at least 0.3° radius. Here since we use Crab runs, we will remove the Crab events from the FOV to select only the OFF events to build the acceptance curves. Of cource normally you use thousand of AGN runs to build coherent acceptance curves.
+# We need a mask to remove known sources from the observation. We use [gamma-cat](https://gamma-cat.readthedocs.io/) and exclude a circular region of at least 0.3° radius. Here since we use Crab runs, we will remove the Crab events from the FOV to select only the OFF events to build the acceptance curves. Of cource normally you use thousand of AGN runs to build coherent acceptance curves.
 
 # In[7]:
 
@@ -229,7 +229,7 @@ plt.ylabel("Bkg rate (MeV-1 s-1 sr-1)")
 model.bg_rate.plot()
 
 
-# ## Make new HDU index table including background
+# ## Make new index table
 # 
 # Here we first copy the dataset of the 4 crab runs from gammapy-extra in a new directory containing the data you will use for the analysis. 
 # 

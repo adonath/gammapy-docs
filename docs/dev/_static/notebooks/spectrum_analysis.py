@@ -128,22 +128,30 @@ on_region_radius = Angle('0.11 deg')
 on_region = CircleSkyRegion(center=target_position, radius=on_region_radius)
 
 
-# ## Load exclusion mask
+# ## Create exclusion mask
 # 
-# Most analysis will require a mask to exclude regions with possible gamma-ray signal from the background estimation procedure. For simplicity, we will use a pre-cooked exclusion mask from gammapy-extra which includes (or rather excludes) all source listed in the [TeVCat](http://tevcat.uchicago.edu/) and cutout only the region around the crab.
+# We will use the reflected regions method to place off regions to estimate the background level in the on region.
+# To make sure the off regions don't contain gamma-ray emission, we create an exclusion mask.
 # 
-# TODO: Change to [gamma-cat](https://gammapy.github.io/gamma-cat/)
+# Using http://gamma-sky.net/ we find that there's only one known gamma-ray source near the Crab nebula: the AGN called [RGB J0521+212](http://gamma-sky.net/#/cat/tev/23) at GLON = 183.604 deg and GLAT = -8.708 deg.
 
 # In[7]:
 
 
-EXCLUSION_FILE = '$GAMMAPY_EXTRA/datasets/exclusion_masks/tevcat_exclusion.fits'
-
-allsky_mask = SkyImage.read(EXCLUSION_FILE)
-exclusion_mask = allsky_mask.cutout(
-    position=on_region.center,
-    size=Angle('6 deg'),
+exclusion_region = CircleSkyRegion(
+    center=SkyCoord(183.604, -8.708, unit='deg', frame='galactic'),
+    radius=0.5 * u.deg,
 )
+
+image_center = target_position.galactic
+exclusion_mask = SkyImage.empty(
+    nxpix=150, nypix=150, binsz=0.05,
+    xref=image_center.l.deg, yref=image_center.b.deg,
+    proj='TAN', coordsys='GAL',
+)
+
+exclusion_mask = exclusion_mask.region_mask(exclusion_region)
+exclusion_mask.data = 1. - exclusion_mask.data
 
 
 # ## Estimate background
@@ -159,10 +167,15 @@ background_estimator = ReflectedRegionsBackgroundEstimator(
     exclusion_mask = exclusion_mask)
 
 background_estimator.run()
-print(background_estimator.result[0])
 
 
 # In[9]:
+
+
+# print(background_estimator.result[0])
+
+
+# In[10]:
 
 
 plt.figure(figsize=(8,8))
@@ -173,7 +186,7 @@ background_estimator.plot()
 # 
 # Next we're going to look at the overall source statistics in our signal region. For more info about what debug plots you can create check out the [ObservationSummary](http://docs.gammapy.org/dev/api/gammapy.data.ObservationSummary.html#gammapy.data.ObservationSummary) class.
 
-# In[10]:
+# In[11]:
 
 
 stats = []
@@ -195,7 +208,7 @@ obs_summary.plot_significance_vs_livetime(ax=ax2)
 # 
 # Now, we're going to extract a spectrum using the [SpectrumExtraction](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumExtraction.html) class. We provide the reconstructed energy binning we want to use. It is expected to be a Quantity with unit energy, i.e. an array with an energy unit. We use a utility function to create it. We also provide the true energy binning to use.
 
-# In[11]:
+# In[12]:
 
 
 e_reco = EnergyBounds.equal_log_spacing(0.1, 40, 40, unit='TeV')
@@ -204,7 +217,7 @@ e_true = EnergyBounds.equal_log_spacing(0.05, 100., 200, unit='TeV')
 
 # Instantiate a [SpectrumExtraction](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumExtraction.html) object that will do the extraction. The containment_correction parameter is there to allow for PSF leakage correction if one is working with full enclosure IRFs. We also compute a threshold energy and store the result in OGIP compliant files (pha, rmf, arf). This last step might be omitted though.
 
-# In[12]:
+# In[13]:
 
 
 ANALYSIS_DIR = 'crab_analysis'
@@ -228,7 +241,7 @@ print(extraction.observations[0])
 # 
 # Now we will look at the files we just created. We will use the [SpectrumObservation](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumObservation.html) object that are still in memory from the extraction step. Note, however, that you could also read them from disk if you have written them in the step above . The ``ANALYSIS_DIR`` folder contains 4 ``FITS`` files for each observation. These files are described in detail at https://gamma-astro-data-formats.readthedocs.io/en/latest/ogip/index.html. In short they correspond to the on vector, the off vector, the effectie area, and the energy dispersion.
 
-# In[13]:
+# In[14]:
 
 
 #filename = ANALYSIS_DIR + '/ogip_data/pha_obs23523.fits'
@@ -244,7 +257,7 @@ extraction.observations[0].peek()
 # 
 # Now we'll fit a global model to the spectrum. First we do a joint likelihood fit to all observations. If you want to stack the observations see below. We will also produce a debug plot in order to show how the global fit matches one of the individual observations.
 
-# In[14]:
+# In[15]:
 
 
 model = PowerLaw(
@@ -262,7 +275,7 @@ joint_fit.est_errors()
 joint_result = joint_fit.result
 
 
-# In[15]:
+# In[16]:
 
 
 ax0, ax1 = joint_result[0].plot(figsize=(8,8))
@@ -274,7 +287,7 @@ print(joint_result[0])
 # 
 # To round up out analysis we can compute flux points by fitting the norm of the global model in energy bands. We'll use a fixed energy binning for now.
 
-# In[16]:
+# In[17]:
 
 
 # Define energy binning
@@ -289,7 +302,7 @@ seg.compute_groups_fixed(ebounds=ebounds)
 print(seg.groups)
 
 
-# In[17]:
+# In[18]:
 
 
 fpe = FluxPointEstimator(
@@ -300,7 +313,7 @@ fpe = FluxPointEstimator(
 fpe.compute_points()
 
 
-# In[18]:
+# In[19]:
 
 
 fpe.flux_points.plot()
@@ -309,7 +322,7 @@ fpe.flux_points.table
 
 # The final plot with the best fit model and the flux points can be quickly made like this
 
-# In[19]:
+# In[20]:
 
 
 spectrum_result = SpectrumResult(
@@ -330,7 +343,7 @@ ax0.set_xlim(0.4, 50)
 # 
 # And alternative approach to fitting the spectrum is stacking all observations first and the fitting a model to the stacked observation. This works as follows. A comparison to the joint likelihood fit is also printed.
 
-# In[20]:
+# In[21]:
 
 
 stacked_obs = extraction.observations.stack()
@@ -361,7 +374,7 @@ print(total_table['method', 'index', 'index_err', 'amplitude', 'amplitude_err'])
 # 
 # TODO: give pointers how to do this (and maybe write a notebook with solutions)
 
-# In[21]:
+# In[22]:
 
 
 # Start exercises here
