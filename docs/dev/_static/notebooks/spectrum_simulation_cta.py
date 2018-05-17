@@ -38,7 +38,7 @@ from gammapy.scripts import CTAIrf
 
 
 # Define obs parameters
-livetime = 10 * u.min
+livetime = 10 * u.h
 offset = 0.3 * u.deg
 lo_threshold = 0.1 * u.TeV
 hi_threshold = 60 * u.TeV
