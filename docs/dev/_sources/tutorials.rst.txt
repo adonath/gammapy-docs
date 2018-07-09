@@ -162,6 +162,7 @@ Extra topics
    notebooks/source_population_model.ipynb
    notebooks/background_model.ipynb
    notebooks/cwt.ipynb
+   notebooks/astro_dark_matter.ipynb
 
 These notebooks contain examples on some more specialised functionality in Gammapy.
 
@@ -169,3 +170,18 @@ These notebooks contain examples on some more specialised functionality in Gamma
 - `Astrophysical source population modeling with Gammapy <notebooks/source_population_model.html>`__ | *source_population_model.ipynb*
 - `Template background model production with Gammapy <notebooks/background_model.html>`__ | *background_model.ipynb*
 - `Continuous wavelet transform on gamma-ray images <notebooks/cwt.html>`__ | *cwt.ipynb*
+- `Dark matter spatial and spectral models <notebooks/astro_dark_matter.ipynb>`__ | *astro_dark_matter.ipynb*
+
+Work in progress
+----------------
+
+.. toctree::
+   :hidden:
+
+   notebooks/source_population_model.ipynb
+
+The following notebooks are work in progress or broken.
+
+Please help make these better, or write new, better ones!
+
+- `Astrophysical source population modeling with Gammapy <notebooks/source_population_model.html>`__ | *source_population_model.ipynb*
