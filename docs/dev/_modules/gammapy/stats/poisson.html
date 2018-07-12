@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.stats.poisson &mdash; gammapy v0.8.dev6052</title>
+  <title>gammapy.stats.poisson &mdash; gammapy v0.8.dev6134</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6052
+                0.8.dev6134
               </div>
             
           
@@ -1065,6 +1065,7 @@
 <span class="sd">* background estimated from ``n_off`</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
+<span class="kn">from</span> <span class="nn">.significance</span> <span class="k">import</span> <span class="n">significance_to_probability_normal</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
@@ -1076,6 +1077,7 @@
     <span class="s1">&#39;significance_on_off&#39;</span><span class="p">,</span>
     <span class="s1">&#39;excess_matching_significance&#39;</span><span class="p">,</span>
     <span class="s1">&#39;excess_matching_significance_on_off&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;excess_ul_helene&#39;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="n">__doctest_skip__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;*&#39;</span><span class="p">]</span>
@@ -1473,6 +1475,75 @@
     <span class="k">return</span> <span class="n">significance</span>
 
 
+<div class="viewcode-block" id="excess_ul_helene"><a class="viewcode-back" href="../../../api/gammapy.stats.excess_ul_helene.html#gammapy.stats.excess_ul_helene">[docs]</a><span class="k">def</span> <span class="nf">excess_ul_helene</span><span class="p">(</span><span class="n">excess</span><span class="p">,</span> <span class="n">excess_error</span><span class="p">,</span> <span class="n">significance</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute excess upper limit using the Helene method.</span>
+
+<span class="sd">    Reference: http://adsabs.harvard.edu/abs/1984NIMPA.228..120H</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    excess : float</span>
+<span class="sd">        Signal excess</span>
+<span class="sd">    excess_error : float</span>
+<span class="sd">        Gaussian excess error</span>
+<span class="sd">        For on / off measurement, use this function to compute it:</span>
+<span class="sd">        `~gammapy.stats.excess_error`.</span>
+<span class="sd">    significance : float</span>
+<span class="sd">        Confidence level significance for the excess upper limit.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    excess_ul : float</span>
+<span class="sd">        Upper limit for the excess</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">conf_level1</span> <span class="o">=</span> <span class="n">significance_to_probability_normal</span><span class="p">(</span><span class="n">significance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">excess_error</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Non-positive excess_error: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">excess_error</span><span class="p">))</span>
+
+    <span class="kn">from</span> <span class="nn">math</span> <span class="k">import</span> <span class="n">sqrt</span>
+    <span class="kn">from</span> <span class="nn">scipy.special</span> <span class="k">import</span> <span class="n">erf</span>
+
+    <span class="k">if</span> <span class="n">excess</span> <span class="o">&gt;=</span> <span class="mf">0.</span><span class="p">:</span>
+        <span class="n">zeta</span> <span class="o">=</span> <span class="n">excess</span> <span class="o">/</span> <span class="n">excess_error</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">zeta</span> <span class="o">/</span> <span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span><span class="p">)</span>
+        <span class="n">integral</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">+</span> <span class="n">erf</span><span class="p">(</span><span class="n">value</span><span class="p">))</span> <span class="o">/</span> <span class="mf">2.</span>
+        <span class="n">integral2</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">-</span> <span class="n">conf_level1</span> <span class="o">*</span> <span class="n">integral</span>
+        <span class="n">value_old</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="n">value_new</span> <span class="o">=</span> <span class="n">value_old</span> <span class="o">+</span> <span class="mf">0.01</span>
+        <span class="k">if</span> <span class="n">integral</span> <span class="o">&gt;</span> <span class="n">integral2</span><span class="p">:</span>
+            <span class="n">value_new</span> <span class="o">=</span> <span class="mf">0.</span>
+        <span class="n">integral</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">+</span> <span class="n">erf</span><span class="p">(</span><span class="n">value_new</span><span class="p">))</span> <span class="o">/</span> <span class="mf">2.</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">zeta</span> <span class="o">=</span> <span class="o">-</span><span class="n">excess</span> <span class="o">/</span> <span class="n">excess_error</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">zeta</span> <span class="o">/</span> <span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span><span class="p">)</span>
+        <span class="n">integral</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">+</span> <span class="n">erf</span><span class="p">(</span><span class="n">value</span><span class="p">))</span> <span class="o">/</span> <span class="mf">2.</span>
+        <span class="n">integral2</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">-</span> <span class="n">conf_level1</span> <span class="o">*</span> <span class="n">integral</span>
+        <span class="n">value_old</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="n">value_new</span> <span class="o">=</span> <span class="n">value_old</span> <span class="o">+</span> <span class="mf">0.01</span>
+        <span class="n">integral</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">+</span> <span class="n">erf</span><span class="p">(</span><span class="n">value_new</span><span class="p">))</span> <span class="o">/</span> <span class="mf">2.</span>
+
+    <span class="c1"># The 1st Loop is for Speed &amp; 2nd For Precision</span>
+    <span class="k">while</span> <span class="n">integral</span> <span class="o">&lt;</span> <span class="n">integral2</span><span class="p">:</span>
+        <span class="n">value_old</span> <span class="o">=</span> <span class="n">value_new</span>
+        <span class="n">value_new</span> <span class="o">=</span> <span class="n">value_new</span> <span class="o">+</span> <span class="mf">0.01</span>
+        <span class="n">integral</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">+</span> <span class="n">erf</span><span class="p">(</span><span class="n">value_new</span><span class="p">))</span> <span class="o">/</span> <span class="mf">2.</span>
+    <span class="n">value_new</span> <span class="o">=</span> <span class="n">value_old</span> <span class="o">+</span> <span class="mf">0.0000001</span>
+    <span class="n">integral</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">+</span> <span class="n">erf</span><span class="p">(</span><span class="n">value_new</span><span class="p">))</span> <span class="o">/</span> <span class="mf">2.</span>
+
+    <span class="k">while</span> <span class="n">integral</span> <span class="o">&lt;</span> <span class="n">integral2</span><span class="p">:</span>
+        <span class="n">value_new</span> <span class="o">=</span> <span class="n">value_new</span> <span class="o">+</span> <span class="mf">0.0000001</span>
+        <span class="n">integral</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">+</span> <span class="n">erf</span><span class="p">(</span><span class="n">value_new</span><span class="p">))</span> <span class="o">/</span> <span class="mf">2.</span>
+    <span class="n">value_new</span> <span class="o">=</span> <span class="n">value_new</span> <span class="o">*</span> <span class="n">sqrt</span><span class="p">(</span><span class="mf">2.</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">excess</span> <span class="o">&gt;=</span> <span class="mf">0.</span><span class="p">:</span>
+        <span class="n">conf_limit</span> <span class="o">=</span> <span class="p">(</span><span class="n">value_new</span> <span class="o">+</span> <span class="n">zeta</span><span class="p">)</span> <span class="o">*</span> <span class="n">excess_error</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">conf_limit</span> <span class="o">=</span> <span class="p">(</span><span class="n">value_new</span> <span class="o">-</span> <span class="n">zeta</span><span class="p">)</span> <span class="o">*</span> <span class="n">excess_error</span>
+
+    <span class="k">return</span> <span class="n">conf_limit</span></div>
+
+
 <div class="viewcode-block" id="excess_matching_significance"><a class="viewcode-back" href="../../../api/gammapy.stats.excess_matching_significance.html#gammapy.stats.excess_matching_significance">[docs]</a><span class="k">def</span> <span class="nf">excess_matching_significance</span><span class="p">(</span><span class="n">mu_bkg</span><span class="p">,</span> <span class="n">significance</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;lima&#39;</span><span class="p">):</span>
     <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute excess matching a given significance.</span>
 
@@ -1622,7 +1693,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 09 Jul 2018.
+      Last updated on 12 Jul 2018.
 
     </p>
   </div>
@@ -1644,7 +1715,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6052',
+            VERSION:'0.8.dev6134',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

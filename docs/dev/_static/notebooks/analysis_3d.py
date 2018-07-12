@@ -13,26 +13,27 @@
 
 # ## Imports and versions
 
-# In[1]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 
 
-# In[2]:
+# In[ ]:
 
 
 import numpy as np
 from numpy.testing import assert_allclose
 import astropy.units as u
+from astropy.coordinates import SkyCoord
 from gammapy.extern.pathlib import Path
 from gammapy.data import DataStore
 from gammapy.maps import WcsGeom, MapAxis
-from gammapy.cube import MapMaker
+from gammapy.cube import MapMaker, PSFKernel
 
 
-# In[3]:
+# In[ ]:
 
 
 get_ipython().system('gammapy info --no-envvar --no-dependencies --no-system')
@@ -40,7 +41,7 @@ get_ipython().system('gammapy info --no-envvar --no-dependencies --no-system')
 
 # ## Setup
 
-# In[4]:
+# In[ ]:
 
 
 # Define which data to use
@@ -51,7 +52,7 @@ obs_ids = [110380, 111140, 111159]
 # obs_ids = [110380]
 
 
-# In[5]:
+# In[ ]:
 
 
 # Define map geometry (spatial and energy binning)
@@ -65,7 +66,7 @@ geom = WcsGeom.create(
 )
 
 
-# In[6]:
+# In[ ]:
 
 
 # We will write some files; let's put them in this path
@@ -75,30 +76,39 @@ out_path.mkdir(exist_ok=True)
 
 # ## Make maps
 
-# In[7]:
+# In[ ]:
 
 
 get_ipython().run_cell_magic('time', '', "maker = MapMaker(geom, 4. * u.deg)\n\nfor obs_id in obs_ids:\n    print('processing:', obs_id)\n    obs = data_store.obs(obs_id)\n    maker.process_obs(obs)")
 
 
-# In[8]:
+# In[ ]:
 
 
 count_map_2d = maker.count_map.sum_over_axes()
 count_map_2d.plot()
 
 
-# In[9]:
+# In[ ]:
 
 
-maker.count_map.write(str(out_path / 'counts.fits'))
-maker.background_map.write(str(out_path / 'background.fits'))
-maker.exposure_map.write(str(out_path / 'exposure.fits'))
+maker.count_map.write(str(out_path / 'counts.fits'),overwrite=True)
+maker.background_map.write(str(out_path / 'background.fits'),overwrite=True)
+maker.exposure_map.write(str(out_path / 'exposure.fits'),overwrite=True)
 
 
 # ## Compute PSF kernel
-# 
-# TODO
+#  For the moment we rely on the ObservationList.make_mean_psf() method.
+
+# In[ ]:
+
+
+obs_list = data_store.obs_list(obs_ids)
+
+table_psf = obs_list.make_mean_psf(SkyCoord(0.,0.,unit='deg',frame='galactic'))
+
+psf_kernel = PSFKernel.from_table_psf(table_psf, maker.exposure_map.geom, max_radius=1*u.deg)
+
 
 # ## Model fit
 # 

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.irf.psf_analytical &mdash; gammapy v0.8.dev6052</title>
+  <title>gammapy.irf.psf_analytical &mdash; gammapy v0.8.dev6134</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6052
+                0.8.dev6134
               </div>
             
           
@@ -1063,13 +1063,13 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="k">import</span> <span class="n">Table</span>
-<span class="kn">from</span> <span class="nn">astropy.units</span> <span class="k">import</span> <span class="n">Quantity</span>
+<span class="kn">from</span> <span class="nn">astropy.units</span> <span class="k">import</span> <span class="n">Quantity</span><span class="p">,</span> <span class="n">Unit</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="k">import</span> <span class="n">Angle</span>
 <span class="kn">from</span> <span class="nn">..extern.validator</span> <span class="k">import</span> <span class="n">validate_physical_type</span>
 <span class="kn">from</span> <span class="nn">..utils.array</span> <span class="k">import</span> <span class="n">array_stats_str</span>
 <span class="kn">from</span> <span class="nn">..utils.energy</span> <span class="k">import</span> <span class="n">Energy</span><span class="p">,</span> <span class="n">EnergyBounds</span>
 <span class="kn">from</span> <span class="nn">..utils.scripts</span> <span class="k">import</span> <span class="n">make_path</span>
-<span class="kn">from</span> <span class="nn">..irf</span> <span class="k">import</span> <span class="n">HESSMultiGaussPSF</span>
+<span class="kn">from</span> <span class="nn">..irf</span> <span class="k">import</span> <span class="n">HESSMultiGaussPSF</span><span class="p">,</span><span class="n">PSF3D</span>
 <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">EnergyDependentTablePSF</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;EnergyDependentMultiGaussPSF&#39;</span><span class="p">]</span>
@@ -1471,7 +1471,36 @@
             <span class="n">psf_value</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="n">psf_gauss</span><span class="p">(</span><span class="n">rad</span><span class="p">),</span> <span class="s1">&#39;deg^-2&#39;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">EnergyDependentTablePSF</span><span class="p">(</span><span class="n">energy</span><span class="o">=</span><span class="n">energies</span><span class="p">,</span> <span class="n">rad</span><span class="o">=</span><span class="n">rad</span><span class="p">,</span>
-                                       <span class="n">exposure</span><span class="o">=</span><span class="n">exposure</span><span class="p">,</span> <span class="n">psf_value</span><span class="o">=</span><span class="n">psf_value</span><span class="p">)</span></div></div>
+                                       <span class="n">exposure</span><span class="o">=</span><span class="n">exposure</span><span class="p">,</span> <span class="n">psf_value</span><span class="o">=</span><span class="n">psf_value</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EnergyDependentMultiGaussPSF.to_psf3d"><a class="viewcode-back" href="../../../api/gammapy.irf.EnergyDependentMultiGaussPSF.html#gammapy.irf.EnergyDependentMultiGaussPSF.to_psf3d">[docs]</a>    <span class="k">def</span> <span class="nf">to_psf3d</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rad</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Creates a PSF3D from an analytical PSF.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rad : `~astropy.units.Quantity` or `~astropy.coordinates.Angle`</span>
+<span class="sd">            the array of position errors (rad) on which the PSF3D will be defined</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        psf3d : `~gammapy.irf.PSF3D`</span>
+<span class="sd">            the PSF3D. It will be defined on the same energy and offset values than the input psf.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">offsets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span>
+        <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy</span>
+        <span class="n">energy_lo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_lo</span>
+        <span class="n">energy_hi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_hi</span>
+        <span class="n">rad_lo</span> <span class="o">=</span> <span class="n">rad</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">rad_hi</span> <span class="o">=</span> <span class="n">rad</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+
+        <span class="n">psf_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">rad_lo</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">offsets</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">energy_lo</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">*</span> <span class="n">Unit</span><span class="p">(</span><span class="s1">&#39;sr-1&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">offset</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">offsets</span><span class="p">):</span>
+            <span class="n">psftable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_energy_dependent_table_psf</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>
+            <span class="n">psf_values</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">psftable</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">rad_lo</span> <span class="o">+</span> <span class="n">rad_hi</span><span class="p">))</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="k">return</span> <span class="n">PSF3D</span><span class="p">(</span><span class="n">energy_lo</span><span class="p">,</span> <span class="n">energy_hi</span><span class="p">,</span> <span class="n">offsets</span><span class="p">,</span> <span class="n">rad_lo</span><span class="p">,</span> <span class="n">rad_hi</span><span class="p">,</span> <span class="n">psf_values</span><span class="p">,</span>
+                     <span class="bp">self</span><span class="o">.</span><span class="n">energy_thresh_lo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_thresh_hi</span><span class="p">)</span></div></div>
 </pre></div>
 
            </div>
@@ -1485,7 +1514,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 09 Jul 2018.
+      Last updated on 12 Jul 2018.
 
     </p>
   </div>
@@ -1507,7 +1536,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6052',
+            VERSION:'0.8.dev6134',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

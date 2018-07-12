@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.spectrum.fit &mdash; gammapy v0.8.dev6052</title>
+  <title>gammapy.spectrum.fit &mdash; gammapy v0.8.dev6134</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6052
+                0.8.dev6134
               </div>
             
           
@@ -1067,6 +1067,8 @@
 <span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">stats</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">CountsPredictor</span>
 <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">SpectrumObservationList</span><span class="p">,</span> <span class="n">SpectrumObservation</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="k">import</span> <span class="n">product</span>
+
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s1">&#39;SpectrumFit&#39;</span><span class="p">,</span>
@@ -1101,7 +1103,7 @@
 <span class="sd">        Background model to be used in cash fits</span>
 <span class="sd">    method : {&#39;sherpa&#39;, &#39;iminuit&#39;}</span>
 <span class="sd">        Optimization backend for the fit</span>
-<span class="sd">    err_method : {&#39;sherpa&#39;}</span>
+<span class="sd">    err_method : {&#39;sherpa&#39;, &#39;iminuit&#39;}</span>
 <span class="sd">        Optimization backend for error estimation</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -1521,6 +1523,7 @@
         <span class="sd">&quot;&quot;&quot;Iminuit minimization&quot;&quot;&quot;</span>
         <span class="n">parameters</span><span class="p">,</span> <span class="n">minuit</span> <span class="o">=</span> <span class="n">fit_minuit</span><span class="p">(</span><span class="n">parameters</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
                                         <span class="n">function</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">total_stat</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_iminuit_fit</span> <span class="o">=</span> <span class="n">minuit</span>
         <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">minuit</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_make_fit_result</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span>
 
@@ -1571,6 +1574,8 @@
         <span class="sd">&quot;&quot;&quot;Estimate parameter errors.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">err_method</span> <span class="o">==</span> <span class="s1">&#39;sherpa&#39;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_est_errors_sherpa</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">err_method</span> <span class="o">==</span> <span class="s1">&#39;iminuit&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_est_errors_iminuit</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">err_method</span><span class="p">))</span>
 
@@ -1578,6 +1583,22 @@
             <span class="n">res</span><span class="o">.</span><span class="n">covar_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">covar_axis</span>
             <span class="n">res</span><span class="o">.</span><span class="n">covariance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariance</span>
             <span class="n">res</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">set_parameter_covariance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covariance</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">covar_axis</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_est_errors_iminuit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># this covariance is a dict indexed by tuples containing combinations of</span>
+        <span class="c1"># parameter names</span>
+        <span class="n">cov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iminuit_fit</span><span class="o">.</span><span class="n">covariance</span>
+
+        <span class="c1">#create tuples of combinations</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+        <span class="n">parameter_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">l</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;parameters&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">l</span><span class="p">[</span><span class="s1">&#39;frozen&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="kc">False</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">covar_axis</span> <span class="o">=</span> <span class="n">parameter_names</span>
+        <span class="n">parameter_combinations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">product</span><span class="p">(</span><span class="n">parameter_names</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+
+        <span class="n">cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">cov</span><span class="p">[</span><span class="n">combination</span><span class="p">]</span> <span class="k">for</span> <span class="n">combination</span> <span class="ow">in</span> <span class="n">parameter_combinations</span><span class="p">])</span>
+        <span class="n">cov</span> <span class="o">=</span> <span class="n">cov</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">parameter_names</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">covariance</span> <span class="o">=</span> <span class="n">cov</span>
+
 
     <span class="k">def</span> <span class="nf">_est_errors_sherpa</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Wrapper around Sherpa error estimator.&quot;&quot;&quot;</span>
@@ -1623,7 +1644,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 09 Jul 2018.
+      Last updated on 12 Jul 2018.
 
     </p>
   </div>
@@ -1645,7 +1666,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6052',
+            VERSION:'0.8.dev6134',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
