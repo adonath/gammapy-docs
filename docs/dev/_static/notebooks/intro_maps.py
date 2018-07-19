@@ -78,7 +78,7 @@ binsz_var = np.sqrt((3.0*(energy_axis.center/100.)**-0.8)**2 + 0.1**2)
 
 geom3d = WcsGeom.create(binsz=binsz, skydir=source_pos, width=15.0,
                        axes=[energy_axis])
-geom4d = WcsGeom.create(binsz=binsz, skydir=source_pos, width=15.0,axes=[energy_axis, mc_axis])
+geom4d = WcsGeom.create(binsz=binsz, skydir=source_pos, width=(20.0, 15), axes=[energy_axis, mc_axis])
 
 
 # The axes details can be accessed from within the geom object, and the map coordinates for each pixel using the get_coord()
@@ -126,7 +126,7 @@ fill_map_counts(map4d,evts)
 # In[12]:
 
 
-map4d
+map4d.geom
 
 
 # For a given source pos, the pixel position in the map can be obtained using 
@@ -155,12 +155,26 @@ geom4d.shape
 map4d.data.shape
 
 
+# This is because the data members have a column major ordering following the FITS convention (making it easier to read and write files using astropy.io.fits. On the other hand, the accessor methods have a row major ordering according to the convention is astrophy.wcs. Thus, the map geometry has the last two axes as the spatial ones in (lon, lat) whereas the map has the spatial axes ordered as (lat, lon). Note that the spatial axes are always the last 2 axes.
+
+# In[16]:
+
+
+map4d.geom
+
+
+# In[17]:
+
+
+map4d
+
+
 # Each spatial slice can be extracted in a variety of ways
 # (i) by specifying the slice indices - get_image_by_idx()
 # (ii) by specifying the values at which the slice is required - get_image_by_coord
 # (iii) by specifying the pixels - get_image_by_pix()
 
-# In[16]:
+# In[18]:
 
 
 map4d_slice = map4d.get_image_by_idx([0,0])
@@ -169,7 +183,7 @@ map4d_slice = map4d.get_image_by_coord({'energy': '500 GeV', 'MC_ID': '2'})
 
 # The images can then be plotted
 
-# In[17]:
+# In[19]:
 
 
 map4d_slice.plot()
@@ -177,19 +191,19 @@ map4d_slice.plot()
 
 # This map does not really convey a lot, so we will first make a spatial cutout on our region of interest, and then smooth before plotting for a better visualisation 
 
-# In[18]:
+# In[20]:
 
 
-map4d_cutout=map4d.make_cutout(position=source_pos,width=7.0*u.deg)
+map4d_cutout, _ =map4d.make_cutout(position=source_pos,width=8.0*u.deg)
 
 
-# In[19]:
+# In[21]:
 
 
 map4d_cutout
 
 
-# In[20]:
+# In[22]:
 
 
 map4d_slice=map4d_cutout.get_image_by_coord({'energy': '500 GeV', 'MC_ID': '2'})
@@ -200,14 +214,14 @@ map4d_slice.smooth(radius=0.2*u.deg,kernel="gauss").plot(add_cbar=True)
 
 # It is often useful to reproject the maps onto different geometries. Here, we will reproject our map onto a Galactic Coordinate system
 
-# In[21]:
+# In[23]:
 
 
 geom_rep = WcsGeom.create(binsz=binsz, skydir=source_pos,coordsys="GAL", width=15.0,axes=[energy_axis, mc_axis])
 map_rep = map4d.reproject(geom_rep)
 
 
-# In[22]:
+# In[24]:
 
 
 fig = plt.figure(figsize=(30,20))
@@ -223,7 +237,7 @@ map_rep.get_image_by_coord({'energy': '500 GeV', 'MC_ID': '2'}).smooth(radius=0.
 # It is very simple to read fits files from already prepared data sets as well.
 # As an example, we will read a FITS file from a prepared Fermi-LAT 2FHL dataset:
 
-# In[23]:
+# In[25]:
 
 
 vela_2fhl = WcsNDMap.read("$GAMMAPY_EXTRA/datasets/fermi_2fhl/fermi_2fhl_vela.fits.gz", hdu='COUNTS')
@@ -231,13 +245,13 @@ vela_2fhl = WcsNDMap.read("$GAMMAPY_EXTRA/datasets/fermi_2fhl/fermi_2fhl_vela.fi
 
 # We can see the geometry and the shape of the map
 
-# In[24]:
+# In[26]:
 
 
 vela_2fhl
 
 
-# In[25]:
+# In[27]:
 
 
 vela_2fhl.geom
@@ -245,7 +259,7 @@ vela_2fhl.geom
 
 # Since this is a 2D map in the first place, we can make some nice plots (no slicing required)
 
-# In[26]:
+# In[28]:
 
 
 vela_2fhl.smooth(kernel='gauss', radius=0.5 * u.deg).plot()
@@ -255,7 +269,7 @@ vela_2fhl.smooth(kernel='gauss', radius=0.5 * u.deg).plot()
 
 # Lets try to plot some contours now! We will read a second image containing WMAP data from the same region, and overlay WMAP contours on top of the Fermi image. 
 
-# In[27]:
+# In[29]:
 
 
 vela_wmap = WcsNDMap.read("$GAMMAPY_EXTRA/datasets/images/Vela_region_WMAP_K.fits")
@@ -264,44 +278,60 @@ vela_wmap.geom
 
 # As you can see, these two images have a different geometry. This is where reprojection comes in handy
 
-# In[28]:
+# In[30]:
 
 
 vela_wmap_rep = vela_wmap.reproject(vela_2fhl.geom)
 
 
-# In[29]:
+# In[31]:
+
+
+vela_2fhl
+
+
+# In[32]:
 
 
 vela_pos = vela_2fhl.geom.center_skydir
 
 
-# In[30]:
+# In[36]:
 
 
-fig, ax, _ = vela_2fhl.make_cutout(vela_pos, width=9.0 * u.deg).smooth(kernel='gauss', radius=0.5 * u.deg).plot()
-ax.contour(vela_wmap_rep.make_cutout(vela_pos, width=9.0 * u.deg).data, cmap='Blues')
+vela_cutout, _ = vela_2fhl.make_cutout(vela_pos, width=9.0 * u.deg)
+vela_rep_cut, _ = vela_wmap_rep.make_cutout(vela_pos, width=9.0 * u.deg)
+fig, ax, _ = vela_cutout.smooth(kernel='gauss', radius=0.5 * u.deg).plot()
+ax.contour(vela_rep_cut.data, cmap='Blues')
 
 
 # # Combining multiple observations
 
 # Multiple observations can be combined, and, counts, background and exposure maps created using the MapMaker class
 
-# In[31]:
+# In[39]:
 
 
+obs_id=[110380, 111140, 111159]
 mmaker=MapMaker(geom3d,4.0*u.deg)
-for obsid in ds.obs_table['OBS_ID']:
+for obsid in obs_id:
+    print(obsid)
     mmaker.process_obs(ds.obs(obsid))
 
 
-# In[32]:
+# In[40]:
 
 
 mmaker.count_map.data.shape
 
 
-# In[33]:
+# In[41]:
+
+
+mmaker.exposure_map.geom.shape
+
+
+# In[42]:
 
 
 fig = plt.figure(figsize=(20,12))

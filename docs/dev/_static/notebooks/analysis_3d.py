@@ -13,18 +13,17 @@
 
 # ## Imports and versions
 
-# In[ ]:
+# In[1]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 
 
-# In[ ]:
+# In[2]:
 
 
 import numpy as np
-from numpy.testing import assert_allclose
 import astropy.units as u
 from astropy.coordinates import SkyCoord
 from gammapy.extern.pathlib import Path
@@ -33,7 +32,7 @@ from gammapy.maps import WcsGeom, MapAxis
 from gammapy.cube import MapMaker, PSFKernel
 
 
-# In[ ]:
+# In[3]:
 
 
 get_ipython().system('gammapy info --no-envvar --no-dependencies --no-system')
@@ -41,7 +40,7 @@ get_ipython().system('gammapy info --no-envvar --no-dependencies --no-system')
 
 # ## Setup
 
-# In[ ]:
+# In[4]:
 
 
 # Define which data to use
@@ -52,12 +51,12 @@ obs_ids = [110380, 111140, 111159]
 # obs_ids = [110380]
 
 
-# In[ ]:
+# In[5]:
 
 
 # Define map geometry (spatial and energy binning)
 axis = MapAxis.from_edges(
-    np.logspace(-1., 1., 10), unit='TeV',
+    np.logspace(-1., 1., 10), unit='TeV', name='energy'
 )
 geom = WcsGeom.create(
     skydir=(0, 0), binsz=0.02, width=(20, 15),
@@ -66,7 +65,7 @@ geom = WcsGeom.create(
 )
 
 
-# In[ ]:
+# In[6]:
 
 
 # We will write some files; let's put them in this path
@@ -76,20 +75,20 @@ out_path.mkdir(exist_ok=True)
 
 # ## Make maps
 
-# In[ ]:
+# In[7]:
 
 
 get_ipython().run_cell_magic('time', '', "maker = MapMaker(geom, 4. * u.deg)\n\nfor obs_id in obs_ids:\n    print('processing:', obs_id)\n    obs = data_store.obs(obs_id)\n    maker.process_obs(obs)")
 
 
-# In[ ]:
+# In[8]:
 
 
 count_map_2d = maker.count_map.sum_over_axes()
-count_map_2d.plot()
+count_map_2d.smooth(radius=0.2*u.deg).plot()
 
 
-# In[ ]:
+# In[9]:
 
 
 maker.count_map.write(str(out_path / 'counts.fits'),overwrite=True)
@@ -100,7 +99,7 @@ maker.exposure_map.write(str(out_path / 'exposure.fits'),overwrite=True)
 # ## Compute PSF kernel
 #  For the moment we rely on the ObservationList.make_mean_psf() method.
 
-# In[ ]:
+# In[10]:
 
 
 obs_list = data_store.obs_list(obs_ids)
@@ -108,6 +107,16 @@ obs_list = data_store.obs_list(obs_ids)
 table_psf = obs_list.make_mean_psf(SkyCoord(0.,0.,unit='deg',frame='galactic'))
 
 psf_kernel = PSFKernel.from_table_psf(table_psf, maker.exposure_map.geom, max_radius=1*u.deg)
+
+
+# # Get the energy dispersion
+
+# In[11]:
+
+
+energy = geom.get_axis_by_name('energy')
+ene = energy.edges * energy.unit
+edisp = obs_list.make_mean_edisp(position=SkyCoord(0.,0.,unit='deg',frame='galactic'), e_true=ene, e_reco=ene)
 
 
 # ## Model fit
