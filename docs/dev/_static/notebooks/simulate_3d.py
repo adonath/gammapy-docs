@@ -32,15 +32,15 @@ import astropy.units as u
 import tempfile
 from astropy.coordinates import SkyCoord, Angle
 from gammapy.irf import EffectiveAreaTable2D, EnergyDispersion2D, EnergyDependentMultiGaussPSF, Background3D
-from gammapy.maps import WcsGeom, MapAxis, WcsNDMap
+from gammapy.maps import WcsGeom, MapAxis, WcsNDMap, Map
 from gammapy.spectrum.models import PowerLaw
 from gammapy.image.models import SkyGaussian
 from gammapy.utils.random import get_random_state
 from gammapy.cube import (
     make_map_exposure_true_energy,
     SkyModel,
-    SkyModelMapFit,
-    SkyModelMapEvaluator,
+    MapFit,
+    MapEvaluator,
     SourceLibrary,
     PSFKernel,
 )
@@ -73,6 +73,13 @@ irfs = get_irfs()
 # In[5]:
 
 
+import os
+os.environ['GAMMAPY_EXTRA']
+
+
+# In[6]:
+
+
 # Define sky model to simulate the data
 spatial_model = SkyGaussian(
     lon_0='0.2 deg',
@@ -88,14 +95,14 @@ sky_model = SkyModel(
     spatial_model=spatial_model,
     spectral_model=spectral_model,
 )
+print(sky_model)
 
 
-# In[6]:
+# In[7]:
 
 
 # Alternatively read the skymodel from an XML file
-with tempfile.NamedTemporaryFile() as xml_file:
-    xml_file.write(b'''<?xml version="1.0" encoding="utf-8"?>
+xml = b'''<?xml version="1.0" encoding="utf-8"?>
     <source_library title="source library">
         <source name="3C 273" type="PointSource">
             <spectrum type="PowerLaw">;i
@@ -109,13 +116,14 @@ with tempfile.NamedTemporaryFile() as xml_file:
             </spatialModel>
         </source>
     </source_library>
-    ''')
-    xml_file.seek(0)
-    sourcelib = SourceLibrary.from_xml(xml_file.name)
-alternative_sky_model = sourcelib.skymodels[0]
+    '''
+
+#source_library = SourceLibrary.from_xml(xml)
+#sky_model = source_library.skymodels[0]
+#print(sky_model)
 
 
-# In[7]:
+# In[8]:
 
 
 # Define map geometry
@@ -128,7 +136,7 @@ geom = WcsGeom.create(
 )
 
 
-# In[8]:
+# In[9]:
 
 
 # Define some observation parameters
@@ -136,11 +144,11 @@ geom = WcsGeom.create(
 # we are not simulating many pointings / observations
 pointing = SkyCoord(1, 0.5, unit='deg', frame='galactic')
 livetime = 1 * u.hour
-offset_max = 3 * u.deg
+offset_max = 2 * u.deg
 offset = Angle('2 deg')
 
 
-# In[9]:
+# In[10]:
 
 
 # Compute maps, PSF and EDISP - just as you would for analysis of real data
@@ -160,21 +168,36 @@ psf_kernel = PSFKernel.from_table_psf(psf,
 # EDISP : TODO
 edisp = irfs['edisp'].to_energy_dispersion(offset=offset)
 
-# Background : TODO
+# Background: Assume constant background in FoV
+bkg = Map.from_geom(geom)
+bkg.quantity = np.ones(bkg.data.shape) * 1e-1
 
 
-# In[10]:
+# In[11]:
+
+
+plt.imshow(exposure_map.data[2,:,:])
+
+
+# In[12]:
+
+
+plt.imshow(psf_kernel.psf_kernel_map.data[2,:,:])
+
+
+# In[13]:
 
 
 # The idea is that we have this class that can compute `npred`
 # maps, i.e. "predicted counts per pixel" given the model and
 # the observation infos: exposure, background, PSF and EDISP
-evaluator = SkyModelMapEvaluator(sky_model=sky_model, 
-                                 exposure=exposure_map,
-                                 psf=psf_kernel)
+evaluator = MapEvaluator(sky_model=sky_model, 
+                         exposure=exposure_map,
+                         psf=psf_kernel,
+                         background=bkg)
 
 
-# In[11]:
+# In[14]:
 
 
 # Accessing and saving a lot of the following maps is for debugging.
@@ -186,20 +209,20 @@ npred = evaluator.compute_npred()
 npred_map = WcsNDMap(geom, npred)
 
 
-# In[12]:
+# In[15]:
 
 
-npred_map.sum_over_axes().plot()
+npred_map.sum_over_axes().plot(add_cbar=True)
 
 
-# In[13]:
+# In[16]:
 
 
 # The npred map contains negative values, this is probably a bug in the PSFKernel application
 npred[npred<0] = 0
 
 
-# In[14]:
+# In[17]:
 
 
 # This one line is the core of how to simulate data when
@@ -211,7 +234,7 @@ counts = rng.poisson(npred)
 counts_map = WcsNDMap(geom, counts)
 
 
-# In[15]:
+# In[18]:
 
 
 counts_map.sum_over_axes().plot()
@@ -222,7 +245,7 @@ counts_map.sum_over_axes().plot()
 # Now let's analyse the simulated data.
 # Here we just fit it again with the same model we had before, but you could do any analysis you like here, e.g. fit a different model, or do a region-based analysis, ...
 
-# In[16]:
+# In[19]:
 
 
 # Define sky model to fit the data
@@ -252,19 +275,20 @@ model.parameters.set_parameter_errors({
 model.parameters['sigma'].parmin = 0
 
 
-# In[17]:
+# In[20]:
 
 
-fit = SkyModelMapFit(
+fit = MapFit(
     model=model.copy(),
     counts=counts_map,
     exposure=exposure_map,
+    background=bkg
 )
 
 fit.fit()
 
 
-# In[18]:
+# In[21]:
 
 
 print('Start values:\n\n{}\n\n'.format(model.parameters))
@@ -274,7 +298,7 @@ print('Fit result:\n\n{}\n\n'.format(fit.model.parameters))
 # print('True values\n{}'.format(get_sky_model().parameters))
 
 
-# In[19]:
+# In[22]:
 
 
 # TODO: show e.g. how to make a residual image
@@ -291,7 +315,7 @@ print('Fit result:\n\n{}\n\n'.format(fit.model.parameters))
 # access to e.g. the covariance matrix, or can check a likelihood profile, or can run ``Minuit.minos()``
 # to compute asymmetric errors or ...
 
-# In[20]:
+# In[23]:
 
 
 # Check correlation between model parameters
@@ -301,7 +325,7 @@ print('Fit result:\n\n{}\n\n'.format(fit.model.parameters))
 fit.minuit.print_matrix()
 
 
-# In[21]:
+# In[24]:
 
 
 # You can use likelihood profiles to check if your model is
