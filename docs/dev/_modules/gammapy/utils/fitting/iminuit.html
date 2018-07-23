@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.utils.fitting.iminuit &mdash; gammapy v0.8.dev6344</title>
+  <title>gammapy.utils.fitting.iminuit &mdash; gammapy v0.8.dev6353</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6344
+                0.8.dev6353
               </div>
             
           
@@ -144,7 +144,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../../notebooks/first_steps.html">Getting started with Gammapy</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/first_steps.html#Introduction">Introduction</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/first_steps.html#Setup">Setup</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/first_steps.html#Sky-images">Sky images</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/first_steps.html#Maps">Maps</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/first_steps.html#Event-lists">Event lists</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/first_steps.html#Source-catalogs">Source catalogs</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/first_steps.html#Spectral-models-and-flux-points">Spectral models and flux points</a></li>
@@ -193,13 +193,13 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../notebooks/analysis_3d.html">3D analysis</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/analysis_3d.html#Imports-and-versions">Imports and versions</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/analysis_3d.html#Setup">Setup</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/analysis_3d.html#Make-maps">Make maps</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/analysis_3d.html#Compute-PSF-kernel">Compute PSF kernel</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="../../../../notebooks/analysis_3d.html#Get-the-energy-dispersion">Get the energy dispersion</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/analysis_3d.html#Compute-energy-dispersion">Compute energy dispersion</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/analysis_3d.html#Save-maps">Save maps</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/analysis_3d.html#Model-fit">Model fit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/analysis_3d.html#Check-model-fit">Check model fit</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/analysis_3d.html#Exercises">Exercises</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../notebooks/simulate_3d.html">3D simulation and fitting</a><ul>
@@ -1047,7 +1047,6 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">..modeling</span> <span class="k">import</span> <span class="n">ParameterList</span><span class="p">,</span> <span class="n">Parameter</span>
 
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
@@ -1055,7 +1054,7 @@
 <span class="p">]</span>
 
 
-<div class="viewcode-block" id="fit_iminuit"><a class="viewcode-back" href="../../../../api/gammapy.utils.fitting.fit_iminuit.html#gammapy.utils.fitting.fit_iminuit">[docs]</a><span class="k">def</span> <span class="nf">fit_iminuit</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">function</span><span class="p">):</span>
+<div class="viewcode-block" id="fit_iminuit"><a class="viewcode-back" href="../../../../api/gammapy.utils.fitting.fit_iminuit.html#gammapy.utils.fitting.fit_iminuit">[docs]</a><span class="k">def</span> <span class="nf">fit_iminuit</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">function</span><span class="p">,</span> <span class="n">opts_minuit</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;iminuit optimization</span>
 
 <span class="sd">    The input `~gammapy.utils.modeling.ParameterList` is copied internally</span>
@@ -1069,6 +1068,8 @@
 <span class="sd">        Parameters with starting values</span>
 <span class="sd">    function : callable</span>
 <span class="sd">        Likelihood function</span>
+<span class="sd">    opts_minuit : dict (optional)</span>
+<span class="sd">        Options passed to `iminuit.Minuit` constructor</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1081,11 +1082,14 @@
 
     <span class="n">parameters</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
     <span class="n">minuit_func</span> <span class="o">=</span> <span class="n">MinuitFunction</span><span class="p">(</span><span class="n">function</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
-    <span class="n">minuit_kwargs</span> <span class="o">=</span> <span class="n">make_minuit_kwargs</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">opts_minuit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">opts_minuit</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">opts_minuit</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">make_minuit_par_kwargs</span><span class="p">(</span><span class="n">parameters</span><span class="p">))</span>
 
     <span class="n">minuit</span> <span class="o">=</span> <span class="n">Minuit</span><span class="p">(</span><span class="n">minuit_func</span><span class="o">.</span><span class="n">fcn</span><span class="p">,</span>
                     <span class="n">forced_parameters</span><span class="o">=</span><span class="n">parameters</span><span class="o">.</span><span class="n">names</span><span class="p">,</span>
-                    <span class="o">**</span><span class="n">minuit_kwargs</span><span class="p">)</span>
+                    <span class="o">**</span><span class="n">opts_minuit</span><span class="p">)</span>
 
     <span class="n">minuit</span><span class="o">.</span><span class="n">migrad</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">minuit</span></div>
@@ -1113,8 +1117,11 @@
         <span class="k">return</span> <span class="n">val</span>
 
 
-<span class="k">def</span> <span class="nf">make_minuit_kwargs</span><span class="p">(</span><span class="n">parameters</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Create kwargs for iminuit&quot;&quot;&quot;</span>
+<span class="k">def</span> <span class="nf">make_minuit_par_kwargs</span><span class="p">(</span><span class="n">parameters</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create *Parameter Keyword Arguments* for the `Minuit` constructor.</span>
+
+<span class="sd">    See: http://iminuit.readthedocs.io/en/latest/api.html#iminuit.Minuit</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">par</span> <span class="ow">in</span> <span class="n">parameters</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="n">par</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">value</span>
@@ -1146,7 +1153,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 20 Jul 2018.
+      Last updated on 23 Jul 2018.
 
     </p>
   </div>
@@ -1168,7 +1175,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.8.dev6344',
+            VERSION:'0.8.dev6353',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

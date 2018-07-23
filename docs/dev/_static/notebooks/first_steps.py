@@ -11,9 +11,9 @@
 # 
 # We will cover the following topics:
 # 
-# * **Sky images**
+# * **Sky maps**
 #   * We will learn how to handle image based data with gammapy using a Fermi-LAT 2FHL example image. We will work with the following classes:
-#     - [gammapy.image.SkyImage](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html)
+#     - [gammapy.maps.WcsNDMap](http://docs.gammapy.org/dev/api/gammapy.maps.WcsNDMap.html)
 #     - [astropy.coordinates.SkyCoord](http://astropy.readthedocs.io/en/latest/coordinates/index.html)
 #     - [numpy.ndarray](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html)
 # 
@@ -41,7 +41,7 @@
 # 
 # 
 
-# In[1]:
+# In[ ]:
 
 
 import os
@@ -80,44 +80,45 @@ from astropy.coordinates import SkyCoord
 from astropy.visualization import simple_norm
 
 
-# ## Sky images
+# ## Maps
 # 
-# The central data structure to work with image based data in Gammapy is the [SkyImage](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html) class. It combines the raw data with world coordinate (WCS) information, FITS I/O functionality and convenience methods, that allow easy handling, processing and plotting of image based data. 
+# The [gammapy.maps](http://docs.gammapy.org/dev/maps) package contains classes to work with sky images and cubes.
 # 
-# In this section we will learn how to:
+# In this section, we will use a simple 2D sky image and will learn how to:
 # 
 # * Read sky images from FITS files
 # * Smooth images
 # * Plot images
 # * Cutout parts from images
 # * Reproject images to different WCS
-# 
-# The `SkyImage` class is part of the [gammapy.image](http://docs.gammapy.org/dev/image/index.html) submodule. So we will start by importing it from there:
 
 # In[5]:
 
 
-from gammapy.image import SkyImage
+from gammapy.maps import Map
+vela_2fhl = Map.read("$GAMMAPY_EXTRA/datasets/fermi_2fhl/fermi_2fhl_vela.fits.gz", hdu='COUNTS')
 
 
-# As a first example, we will read a FITS file from a prepared Fermi-LAT 2FHL dataset:
+# As the FITS file `fermi_2fhl_vela.fits.gz` contains mutiple image extensions and a map can only represent a single image, we explicitely specify to read the extension called 'COUNTS'.
+# 
+# The image is a ``WCSNDMap`` object:
 
 # In[6]:
 
 
-vela_2fhl = SkyImage.read("$GAMMAPY_EXTRA/datasets/fermi_2fhl/fermi_2fhl_vela.fits.gz", hdu='COUNTS')
+vela_2fhl
 
 
-# As the FITS file `fermi_2fhl_vela.fits.gz` contains mutiple image extensions and a `SkyImage` can only represent a single image, we explicitely specify to read the extension called 'Counts'. Let's print the image to get some basic information about it:
+# The shape of the image is 320x180 pixel and it is defined using a cartesian projection in galactic coordinates.
+# 
+# The ``geom`` attribute is a ``WcsGeom`` object:
 
 # In[7]:
 
 
-print(vela_2fhl)
+vela_2fhl.geom
 
 
-# The shape of the image is 320x180 pixel, the data unit is counts ('ct') and it is defined using a cartesian projection in galactic coordinates.
-# 
 # Let's take a closer look a the `.data` attribute:
 
 # In[8]:
@@ -134,76 +135,76 @@ vela_2fhl.data
 print('Total number of counts in the image: {:.0f}'.format(vela_2fhl.data.sum()))
 
 
-# To show the image on the screen we can use the [SkyImage.show()](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html#gammapy.image.SkyImage.show) method. It basically calls [plt.imshow](http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.imshow), passing the `vela_2fhl.data` attribute but in addition handles axis with world coordinates using [wcsaxes](https://wcsaxes.readthedocs.io/en/latest/) and defines some defaults for nicer plots (e.g. the colormap 'afmhot'):
+# To show the image on the screen we can use the ``plot`` method. It basically calls [plt.imshow](http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.imshow), passing the `vela_2fhl.data` attribute but in addition handles axis with world coordinates using [wcsaxes](https://wcsaxes.readthedocs.io/en/latest/) and defines some defaults for nicer plots (e.g. the colormap 'afmhot'):
 
 # In[10]:
 
 
-vela_2fhl.show()
+vela_2fhl.plot();
 
 
-# To make the structures in the image more visible we will smooth the data using a Gausian kernel with a radius of 0.5 deg. Again `SkyImage.smooth()` is a wrapper around existing functionality from the scientific Python libraries. In this case it is Scipy's [gaussian_filter](https://docs.scipy.org/doc/scipy-0.16.1/reference/generated/scipy.ndimage.filters.gaussian_filter.html) method. For convenience the kernel shape can be specified with as string and the smoothing radius with a quantity. It returns again a `SkyImage` object, that we can plot directly the same way we did above:
+# To make the structures in the image more visible we will smooth the data using a Gausian kernel with a radius of 0.5 deg. Again `smooth()` is a wrapper around existing functionality from the scientific Python libraries. In this case it is Scipy's [gaussian_filter](https://docs.scipy.org/doc/scipy-0.16.1/reference/generated/scipy.ndimage.filters.gaussian_filter.html) method. For convenience the kernel shape can be specified with as string and the smoothing radius with a quantity. It returns again a map object, that we can plot directly the same way we did above:
 
 # In[11]:
 
 
-# smooth counts image with gaussian kernel of 0.5 deg
 vela_2fhl_smoothed = vela_2fhl.smooth(kernel='gauss', radius=0.5 * u.deg)
-vela_2fhl_smoothed.show()
 
-
-# The smoothed plot already looks much nicer, but still the image is rather large. As we are mostly interested in the inner part of the image, we will cut out a quadratic region of the size 9 deg x 9 deg around Vela. Therefore we use [SkyImage.cutout()](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html#gammapy.image.SkyImage.cutout), which wraps Astropy's [Cutout2D](http://docs.astropy.org/en/stable/api/astropy.nddata.Cutout2D.html). Again it returns a `SkyImage` object:
 
 # In[12]:
 
 
-# define center and size of the cutout region
-center = SkyCoord(265.0, -2.0, unit='deg', frame='galactic')
-size = 9.0 * u.deg
-
-vela_2fhl_cutout = vela_2fhl_smoothed.cutout(center, size)
-vela_2fhl_cutout.show()
+vela_2fhl_smoothed.plot();
 
 
-# To make this exercise a bit more scientifically useful, we will load a second image containing WMAP data from the same region:
+# The smoothed plot already looks much nicer, but still the image is rather large. As we are mostly interested in the inner part of the image, we will cut out a quadratic region of the size 9 deg x 9 deg around Vela. Therefore we use ``make_cutout`` to make a cutout map:
 
 # In[13]:
 
 
-vela_wmap = SkyImage.read("$GAMMAPY_EXTRA/datasets/images/Vela_region_WMAP_K.fits")
+# define center and size of the cutout region
+center = SkyCoord(265.0, -2.0, unit='deg', frame='galactic')
+vela_2fhl_cutout, _ = vela_2fhl_smoothed.make_cutout(center, 9 * u.deg)
+vela_2fhl_cutout.plot();
+
+
+# To make this exercise a bit more scientifically useful, we will load a second image containing WMAP data from the same region:
+
+# In[14]:
+
+
+vela_wmap = Map.read("$GAMMAPY_EXTRA/datasets/images/Vela_region_WMAP_K.fits")
 
 # define a norm to stretch the data, so it is better visible
 norm = simple_norm(vela_wmap.data, stretch='sqrt', max_percent=99.9)
-vela_wmap.show(cmap='viridis', norm=norm)
+vela_wmap.plot(cmap='viridis', norm=norm);
 
 
 # In order to make the structures in the data better visible we used the [simple_norm()](http://docs.astropy.org/en/stable/api/astropy.visualization.mpl_normalize.simple_norm.html#astropy.visualization.mpl_normalize.simple_norm) method, which allows to stretch the data for plotting. This is very similar to the methods that e.g. `ds9` provides. In addition we used a different colormap called 'viridis'. An overview of different colomaps can be found [here](http://matplotlib.org/examples/color/colormaps_reference.html). 
 # 
 # Now let's check the details of the WMAP image:
 
-# In[14]:
-
-
-print(vela_wmap)
-
-
-# As you can see it is defined using a tangential projection and ICRS coordinates, which is different from the projection used for the `vela_2fhl` image. To compare both images we have to reproject one image to the WCS of the other. This can be achieved with the [SkyImage.reproject()](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html#gammapy.image.SkyImage.reproject) method: 
-
 # In[15]:
 
 
-# reproject WMAP image
-vela_wmap_reprojected = vela_wmap.reproject(vela_2fhl)
+vela_wmap
 
-# cutout part we're interested in
-vela_wmap_reprojected_cutout = vela_wmap_reprojected.cutout(center, size)
-vela_wmap_reprojected_cutout.show(cmap='viridis', norm=norm)
+
+# As you can see it is defined using a tangential projection and ICRS coordinates, which is different from the projection used for the `vela_2fhl` image. To compare both images we have to reproject one image to the WCS of the other. This can be achieved with the ``reproject`` method: 
+
+# In[16]:
+
+
+# reproject and cut out the part we're interested in:
+vela_wmap_reprojected = vela_wmap.reproject(vela_2fhl.geom)
+vela_wmap_reprojected_cutout, _ = vela_wmap_reprojected.make_cutout(center, 9 * u.deg)
+vela_wmap_reprojected_cutout.plot(cmap='viridis', norm=norm);
 
 
 # Finally we will combine both images in single plot, by plotting WMAP contours on top of the smoothed Fermi-LAT 2FHL image:
 # 
 
-# In[16]:
+# In[17]:
 
 
 fig, ax, _ = vela_2fhl_cutout.plot()
@@ -213,10 +214,6 @@ ax.contour(vela_wmap_reprojected_cutout.data, cmap='Blues')
 # ### Exercises
 # 
 # * Add a marker and circle at the Vela pulsar position (you can find examples in the WCSAxes [documentation](https://wcsaxes.readthedocs.io/en/latest/overlays.html)).
-# * Find the maximum brightness location in the WMAP image. The methods [np.argmax()](https://docs.scipy.org/doc/numpy/reference/generated/numpy.argmax.html) and [SkyImage.wcs_pixel_to_skycoord()](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html#gammapy.image.SkyImage.wcs_pixel_to_skycoord) might be helpful. Try to identify the source.
-# 
-# 
-# 
 
 # ## Event lists
 # 
@@ -230,15 +227,15 @@ ax.contour(vela_wmap_reprojected_cutout.data, cmap='Blues')
 # 
 # Let's start with the import from the [gammapy.data](http://docs.gammapy.org/dev/data/index.html) submodule:
 
-# In[17]:
+# In[18]:
 
 
 from gammapy.data import EventList
 
 
-# Very similar to the `SkyImage` class an event list can be created, by passing a filename to the `.read()` method:
+# Very similar to the sky map class an event list can be created, by passing a filename to the `.read()` method:
 
-# In[18]:
+# In[19]:
 
 
 events_2fhl = EventList.read('$GAMMAPY_EXTRA/datasets/fermi_2fhl/2fhl_events.fits.gz')
@@ -246,7 +243,7 @@ events_2fhl = EventList.read('$GAMMAPY_EXTRA/datasets/fermi_2fhl/2fhl_events.fit
 
 # This time the actual data is stored as an [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html#astropy.table.Table) object. It can be accessed with `.table` attribute: 
 
-# In[19]:
+# In[20]:
 
 
 events_2fhl.table
@@ -255,7 +252,7 @@ events_2fhl.table
 # Let's try to find the total number of events contained int the list. This doesn't work:
 # 
 
-# In[20]:
+# In[21]:
 
 
 print('Total number of events: {}'.format(len(events_2fhl.table)))
@@ -265,7 +262,7 @@ print('Total number of events: {}'.format(len(events_2fhl.table)))
 # 
 # So in this case of course we can directly use the `.table` attribute to find the total number of events:
 
-# In[21]:
+# In[22]:
 
 
 print('Total number of events: {}'.format(len(events_2fhl.table)))
@@ -273,7 +270,7 @@ print('Total number of events: {}'.format(len(events_2fhl.table)))
 
 # And we can access any other attribute of the `Table` object as well:
 
-# In[22]:
+# In[23]:
 
 
 events_2fhl.table.colnames
@@ -281,20 +278,20 @@ events_2fhl.table.colnames
 
 # For convenience we can access the most important event parameters as properties on the `EventList` objects. The attributes will return corresponding Astropy objects to represent the data, such as [astropy.units.Quantity](http://docs.astropy.org/en/stable/api/astropy.units.Quantity.html#astropy.units.Quantity), [astropy.coordinates.SkyCoord](http://docs.astropy.org/en/stable/api/astropy.coordinates.SkyCoord.html) or [astropy.time.Time](http://docs.astropy.org/en/stable/api/astropy.time.Time.html#astropy.time.Time) objects:
 
-# In[23]:
+# In[24]:
 
 
 events_2fhl.energy.to('GeV')
 
 
-# In[24]:
+# In[25]:
 
 
 events_2fhl.galactic
 #events_2fhl.radec
 
 
-# In[25]:
+# In[26]:
 
 
 events_2fhl.time
@@ -302,7 +299,7 @@ events_2fhl.time
 
 # In addition `EventList` provides convenience methods to filter the event lists. One possible use case is to find the highest energy event within a radius of 0.5 deg around the vela position:
 
-# In[26]:
+# In[27]:
 
 
 # select all events within a radius of 0.5 deg around center
@@ -331,7 +328,7 @@ events_vela_2fhl.energy[-1].to('GeV')
 # 
 # Let's start with importing the 2FHL catalog object from the [gammapy.catalog](http://docs.gammapy.org/dev/catalog/index.html) submodule:
 
-# In[27]:
+# In[28]:
 
 
 from gammapy.catalog import SourceCatalog2FHL
@@ -339,7 +336,7 @@ from gammapy.catalog import SourceCatalog2FHL
 
 # First we initialize the Fermi-LAT 2FHL catalog and directly take a look at the `.table` attribute:
 
-# In[28]:
+# In[29]:
 
 
 fermi_2fhl = SourceCatalog2FHL('$GAMMAPY_EXTRA/datasets/catalogs/fermi/gll_psch_v08.fit.gz')
@@ -350,7 +347,7 @@ fermi_2fhl.table
 # 
 # 
 
-# In[29]:
+# In[30]:
 
 
 # sort table by TS
@@ -365,7 +362,7 @@ top_five_TS_2fhl[['Source_Name', 'ASSOC', 'CLASS']]
 
 # If you are interested in the data of an individual source you can access the information from catalog using the name of the source or any alias source name that is defined in the catalog:
 
-# In[30]:
+# In[31]:
 
 
 mkn_421_2fhl = fermi_2fhl['2FHL J1104.4+3812']
@@ -378,7 +375,7 @@ print(mkn_421_2fhl.data['TS'])
 # ### Exercises
 # 
 # * Try to load the Fermi-LAT 3FHL catalog and check the total number of sources it contains.
-# * Select all the sources from the 2FHL catalog which are contained in the Vela region. Add markers for all these sources and try to add labels with the source names. The methods [SkyImage.contains()](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html#gammapy.image.SkyImage.contains) and [ax.text()](http://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.text.html#matplotlib.axes.Axes.text) might be helpful.
+# * Select all the sources from the 2FHL catalog which are contained in the Vela region. Add markers for all these sources and try to add labels with the source names. The function [ax.text()](http://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.text.html#matplotlib.axes.Axes.text) might be helpful.
 # * Try to find the source class of the object at position ra=68.6803, dec=9.3331
 #  
 
@@ -392,7 +389,7 @@ print(mkn_421_2fhl.data['TS'])
 # 
 # As a first example we will start with the Crab Nebula:
 
-# In[31]:
+# In[32]:
 
 
 crab_2fhl = fermi_2fhl['Crab']
@@ -403,7 +400,7 @@ print(crab_2fhl.spectral_model)
 # 
 # Let's plot the spectral model in the energy range between 50 GeV and 2000 GeV:
 
-# In[32]:
+# In[33]:
 
 
 ax_crab_2fhl = crab_2fhl.spectral_model.plot(
@@ -414,7 +411,7 @@ ax_crab_2fhl = crab_2fhl.spectral_model.plot(
 # 
 # To compute the differential flux at 100 GeV we can simply call the model like normal Python function and convert to the desired units:
 
-# In[33]:
+# In[34]:
 
 
 crab_2fhl.spectral_model(100 * u.GeV).to('cm-2 s-1 GeV-1')
@@ -422,7 +419,7 @@ crab_2fhl.spectral_model(100 * u.GeV).to('cm-2 s-1 GeV-1')
 
 # Next we can compute the integral flux of the Crab between 50 GeV and 2000 GeV:
 
-# In[34]:
+# In[35]:
 
 
 crab_2fhl.spectral_model.integral(
@@ -432,7 +429,7 @@ crab_2fhl.spectral_model.integral(
 
 # We can easily convince ourself, that it corresponds to the value given in the Fermi-LAT 2FHL catalog:
 
-# In[35]:
+# In[36]:
 
 
 crab_2fhl.data['Flux50']
@@ -440,7 +437,7 @@ crab_2fhl.data['Flux50']
 
 # In addition we can compute the energy flux between 50 GeV and 2000 GeV:
 
-# In[36]:
+# In[37]:
 
 
 crab_2fhl.spectral_model.energy_flux(
@@ -450,7 +447,7 @@ crab_2fhl.spectral_model.energy_flux(
 
 # Next we will access the flux points data of the Crab:
 
-# In[37]:
+# In[38]:
 
 
 print(crab_2fhl.flux_points)
@@ -460,7 +457,7 @@ print(crab_2fhl.flux_points)
 # 
 # No we can check again the underlying astropy data structure by accessing the `.table` attribute:
 
-# In[38]:
+# In[39]:
 
 
 crab_2fhl.flux_points.table
@@ -468,7 +465,7 @@ crab_2fhl.flux_points.table
 
 # Finally let's combine spectral model and flux points in a single plot and scale with `energy_power=2` to obtain the spectral energy distribution:
 
-# In[39]:
+# In[40]:
 
 
 ax = crab_2fhl.spectral_model.plot(

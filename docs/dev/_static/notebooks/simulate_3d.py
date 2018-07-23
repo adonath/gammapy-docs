@@ -291,11 +291,8 @@ fit.fit()
 # In[21]:
 
 
-print('Start values:\n\n{}\n\n'.format(model.parameters))
+print('True values:\n\n{}\n\n'.format(sky_model.parameters))
 print('Fit result:\n\n{}\n\n'.format(fit.model.parameters))
-
-# TODO: 
-# print('True values\n{}'.format(get_sky_model().parameters))
 
 
 # In[22]:

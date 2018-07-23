@@ -6,10 +6,6 @@
 # This tutorial shows how to run a 3D map-based analysis (two spatial and one energy axis).
 # 
 # The example data is three observations of the Galactic center region with CTA.
-# 
-# Warning: this is work in progress, several missing pieces: background, PSF, diffuse and point source models, model serialisation.
-# 
-# We aim to have a first usable version ready and documented here for the Gammapy v0.8 release on May 7, 208.
 
 # ## Imports and versions
 
@@ -20,7 +16,7 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 
 
-# In[2]:
+# In[47]:
 
 
 import numpy as np
@@ -28,8 +24,12 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 from gammapy.extern.pathlib import Path
 from gammapy.data import DataStore
-from gammapy.maps import WcsGeom, MapAxis
-from gammapy.cube import MapMaker, PSFKernel
+from gammapy.irf import EnergyDispersion
+from gammapy.maps import WcsGeom, MapAxis, Map
+from gammapy.cube import MapMaker, PSFKernel, MapFit
+from gammapy.cube.models import SkyModel
+from gammapy.spectrum.models import PowerLaw
+from gammapy.image.models import SkyGaussian
 
 
 # In[3]:
@@ -38,7 +38,7 @@ from gammapy.cube import MapMaker, PSFKernel
 get_ipython().system('gammapy info --no-envvar --no-dependencies --no-system')
 
 
-# ## Setup
+# ## Make maps
 
 # In[4]:
 
@@ -65,61 +65,151 @@ geom = WcsGeom.create(
 )
 
 
-# In[6]:
+# In[50]:
 
 
-# We will write some files; let's put them in this path
-out_path = Path('analysis_3d')
-out_path.mkdir(exist_ok=True)
+get_ipython().run_cell_magic('time', '', "maker = MapMaker(geom, 4. * u.deg)\n\nfor obs_id in obs_ids:\n    print('processing:', obs_id)\n    obs = data_store.obs(obs_id)\n    maker.process_obs(obs)\n\n# TODO: add this as a property `.results`? on the maker\nmaps = {\n    'counts': maker.count_map,\n    'background': maker.background_map,\n    'exposure': maker.exposure_map,\n}")
 
 
-# ## Make maps
-
-# In[7]:
+# In[51]:
 
 
-get_ipython().run_cell_magic('time', '', "maker = MapMaker(geom, 4. * u.deg)\n\nfor obs_id in obs_ids:\n    print('processing:', obs_id)\n    obs = data_store.obs(obs_id)\n    maker.process_obs(obs)")
+maps['counts'].sum_over_axes().smooth(radius=0.2*u.deg).plot();
 
 
-# In[8]:
+# In[52]:
 
 
-count_map_2d = maker.count_map.sum_over_axes()
-count_map_2d.smooth(radius=0.2*u.deg).plot()
+maps['background'].sum_over_axes().plot(stretch='sqrt');
 
 
-# In[9]:
+# In[53]:
 
 
-maker.count_map.write(str(out_path / 'counts.fits'),overwrite=True)
-maker.background_map.write(str(out_path / 'background.fits'),overwrite=True)
-maker.exposure_map.write(str(out_path / 'exposure.fits'),overwrite=True)
+maps['counts'].write(str(out_path / 'counts.fits'), overwrite=True)
+maps['background'].write(str(out_path / 'background.fits'), overwrite=True)
+maps['exposure'].write(str(out_path / 'exposure.fits'), overwrite=True)
 
 
 # ## Compute PSF kernel
-#  For the moment we rely on the ObservationList.make_mean_psf() method.
+# 
+# For the moment we rely on the ObservationList.make_mean_psf() method.
 
-# In[10]:
+# In[54]:
 
 
 obs_list = data_store.obs_list(obs_ids)
+src_pos = SkyCoord(0, 0, unit='deg', frame='galactic')
 
-table_psf = obs_list.make_mean_psf(SkyCoord(0.,0.,unit='deg',frame='galactic'))
-
-psf_kernel = PSFKernel.from_table_psf(table_psf, maker.exposure_map.geom, max_radius=1*u.deg)
-
-
-# # Get the energy dispersion
-
-# In[11]:
+table_psf = obs_list.make_mean_psf(src_pos)
+psf_kernel = PSFKernel.from_table_psf(
+    table_psf,
+    maker.exposure_map.geom,
+    max_radius='1 deg',
+)
 
 
-energy = geom.get_axis_by_name('energy')
-ene = energy.edges * energy.unit
-edisp = obs_list.make_mean_edisp(position=SkyCoord(0.,0.,unit='deg',frame='galactic'), e_true=ene, e_reco=ene)
+# ## Compute energy dispersion
+
+# In[55]:
+
+
+energy_axis = geom.get_axis_by_name('energy')
+energy = energy_axis.edges * energy_axis.unit
+edisp = obs_list.make_mean_edisp(position=src_pos, e_true=energy, e_reco=energy)
+
+
+# ## Save maps
+# 
+# It's common to run the "precompute" step and the "likelihood fit" step separately,
+# because often the "precompute" of maps, PSF and EDISP is slow if you have a lot of data.
+# 
+# Here it woudn't really be necessary, because the precompute step (everything above this cell)
+# takes less than a minute.
+# 
+# But usually you would do it like this: write precomputed things to FITS files,
+# and then read them from your script that does the likelihood fitting without
+# having to run the precomputations again.
+
+# In[56]:
+
+
+# Write
+path = Path('analysis_3d')
+path.mkdir(exist_ok=True)
+maps['counts'].write(str(path / 'counts.fits'), overwrite=True)
+maps['background'].write(str(path / 'background.fits'), overwrite=True)
+maps['exposure'].write(str(path / 'exposure.fits'), overwrite=True)
+psf_kernel.write(str(path / 'psf.fits'), overwrite=True)
+edisp.write(str(path / 'edisp.fits'), overwrite=True)
+
+
+# In[57]:
+
+
+# Read
+maps = {
+    'counts': Map.read(str(path / 'counts.fits')),
+    'background': Map.read(str(path / 'background.fits')),
+    'exposure': Map.read(str(path / 'exposure.fits')),
+}
+psf_kernel = PSFKernel.read(str(path / 'psf.fits'))
+edisp = EnergyDispersion.read(str(path / 'edisp.fits'))
 
 
 # ## Model fit
 # 
-# TODO: add model fit or other kind of analysis here.
-# For now, see the `simulate_3d` notebook.
+# - TODO: Add diffuse emission model? (it's 800 MB, maybe prepare a cutout)
+# - TODO: make it faster (less than 1 minute)
+# - TODO: compare against true model known for DC1
+
+# In[77]:
+
+
+spatial_model = SkyGaussian(
+    lon_0='0 deg',
+    lat_0='0 deg',
+    sigma='0.1 deg',
+)
+spectral_model = PowerLaw(
+    index=2.2,
+    amplitude='3e-12 cm-2 s-1 TeV-1',
+    reference='1 TeV',
+)
+model = SkyModel(
+    spatial_model=spatial_model,
+    spectral_model=spectral_model,
+)
+
+
+# In[78]:
+
+
+# For now, users have to set initial step sizes
+# to help MINUIT to converge
+model.parameters.set_parameter_errors({
+    'lon_0': '0.1 deg',
+    'lat_0': '0.1 deg',
+    'sigma': '0.1 deg',
+    'index': 0.1,
+    'amplitude': '1e-12 cm-2 s-1 TeV-1',
+})
+
+model.parameters['sigma'].parmin = 0
+
+
+# In[79]:
+
+
+get_ipython().run_cell_magic('time', '', "fit = MapFit(\n    model=model,\n    counts=maps['counts'],\n    exposure=maps['exposure'],\n    background=maps['background'],\n    psf=psf_kernel,\n#     edisp=edisp,\n)\n\nfit.fit()")
+
+
+# ## Check model fit
+# 
+# - plot counts spectrum for some on region (e.g. the one used in 1D spec analysis, 0.2 deg)
+# - plot residual image for some energy band (e.g. the total one used here)
+
+# ## Exercises
+# 
+# * Analyse the second source in the field of view: G0.9+0.1
+# * Run the model fit with energy dispersion (pass edisp to MapFit)

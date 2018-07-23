@@ -94,12 +94,12 @@ jfactory.run()
 jfact = jfactory.jfact
 
 
-# In[7]:
+# In[8]:
 
 
-fig, ax, im = jfact.plot(cmap='viridis', norm=LogNorm())
+fig, ax = jfact.plot(cmap='viridis', norm=LogNorm())
 plt.title('J-Factor [{}]'.format(jfact.unit))
-plt.colorbar(im)
+plt.colorbar()
 
 # 1 deg circle usually used in H.E.S.S. analyses
 sky_reg = CircleSkyRegion(center=position, radius=1 * u.deg)
@@ -110,7 +110,7 @@ ax.add_patch(pix_reg.as_patch(facecolor='none', edgecolor='red', label='1 deg ci
 plt.legend()
 
 
-# In[8]:
+# In[ ]:
 
 
 # NOTE: https://arxiv.org/abs/1607.08142 cite 2.67e21 without the the +/- 0.3 deg band around the plane
