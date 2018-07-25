@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.image.utils &mdash; gammapy v0.8.dev6354</title>
+  <title>gammapy.image.utils &mdash; gammapy v0.8.dev6386</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6354
+                0.8.dev6386
               </div>
             
           
@@ -1054,11 +1054,8 @@
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s1">&#39;image_groupby&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;lon_lat_rectangle_mask&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;lon_lat_circle_mask&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;scale_cube&#39;</span><span class="p">,</span>
     <span class="s1">&#39;make_header&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;process_image_pixels&#39;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -1078,7 +1075,7 @@
         <span class="k">return</span> <span class="n">fftconvolve</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">kernel</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;same&#39;</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">scale_cube</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">kernels</span><span class="p">,</span> <span class="n">parallel</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<div class="viewcode-block" id="scale_cube"><a class="viewcode-back" href="../../../api/gammapy.image.scale_cube.html#gammapy.image.scale_cube">[docs]</a><span class="k">def</span> <span class="nf">scale_cube</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">kernels</span><span class="p">,</span> <span class="n">parallel</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute scale space cube.</span>
 
@@ -1108,137 +1105,7 @@
         <span class="n">pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">result</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">wrap</span><span class="p">,</span> <span class="n">kernels</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">dstack</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-
-
-<div class="viewcode-block" id="process_image_pixels"><a class="viewcode-back" href="../../../api/gammapy.image.process_image_pixels.html#gammapy.image.process_image_pixels">[docs]</a><span class="k">def</span> <span class="nf">process_image_pixels</span><span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">out</span><span class="p">,</span> <span class="n">pixel_function</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Process images for a given kernel and per-pixel function.</span>
-
-<span class="sd">    This is a helper function for the following common task:</span>
-<span class="sd">    For a given set of same-shaped images and a smaller-shaped kernel,</span>
-<span class="sd">    process each image pixel by moving the kernel at that position,</span>
-<span class="sd">    cut out kernel-shaped parts from the images and call a function</span>
-<span class="sd">    to compute output values for that position.</span>
-
-<span class="sd">    This function loops over image pixels and takes care of bounding</span>
-<span class="sd">    box computations, including image boundary handling.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    images : dict of arrays</span>
-<span class="sd">        Images needed to compute out</span>
-<span class="sd">    kernel : array (shape must be odd-valued)</span>
-<span class="sd">        kernel shape must be odd-valued</span>
-<span class="sd">    out : single array or dict of arrays</span>
-<span class="sd">        These arrays must have been pre-created by the caller</span>
-<span class="sd">    pixel_function : function to process a part of the images</span>
-
-<span class="sd">    Examples</span>
-<span class="sd">    --------</span>
-
-<span class="sd">    As an example, here is how to implement convolution as a special</span>
-<span class="sd">    case of process_image_pixels with one input and output image::</span>
-
-<span class="sd">        def convolve(image, kernel):</span>
-<span class="sd">            &#39;&#39;&#39;Convolve image with kernel&#39;&#39;&#39;</span>
-<span class="sd">            from gammapy.image.utils import process_image_pixels</span>
-<span class="sd">            images = dict(image=np.asanyarray(image))</span>
-<span class="sd">            kernel = np.asanyarray(kernel)</span>
-<span class="sd">            out = dict(image=np.empty_like(image))</span>
-<span class="sd">            def convolve_function(images, kernel):</span>
-<span class="sd">                value = np.sum(images[&#39;image&#39;] * kernel)</span>
-<span class="sd">                return dict(image=value)</span>
-<span class="sd">            process_image_pixels(images, kernel, out, convolve_function)</span>
-<span class="sd">            return out[&#39;image&#39;]</span>
-
-<span class="sd">    * TODO: add different options to treat the edges</span>
-<span class="sd">    * TODO: implement multiprocessing version</span>
-<span class="sd">    * TODO: this function is similar to view_as_windows in scikit-image:</span>
-<span class="sd">            http://scikit-image.org/docs/dev/api/skimage.util.html#view-as-windows</span>
-<span class="sd">            Is this function needed or can everything be done with view_as_windows?</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-        <span class="n">n0</span><span class="p">,</span> <span class="n">n1</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">values</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">n0</span><span class="p">,</span> <span class="n">n1</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span>
-
-    <span class="c1"># Check kernel shape</span>
-    <span class="n">k0</span><span class="p">,</span> <span class="n">k1</span> <span class="o">=</span> <span class="n">kernel</span><span class="o">.</span><span class="n">shape</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">k0</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">k1</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Kernel shape must have odd dimensions&#39;</span><span class="p">)</span>
-    <span class="n">k0</span><span class="p">,</span> <span class="n">k1</span> <span class="o">=</span> <span class="p">(</span><span class="n">k0</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="n">k1</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
-
-    <span class="c1"># Loop over all pixels</span>
-    <span class="k">for</span> <span class="n">i0</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n0</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">i1</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n1</span><span class="p">):</span>
-            <span class="c1"># Compute low and high extension</span>
-            <span class="c1"># (# pixels, not counting central pixel)</span>
-            <span class="n">i0_lo</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">k0</span><span class="p">,</span> <span class="n">i0</span><span class="p">)</span>
-            <span class="n">i1_lo</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">k1</span><span class="p">,</span> <span class="n">i1</span><span class="p">)</span>
-            <span class="n">i0_hi</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">k0</span><span class="p">,</span> <span class="n">n0</span> <span class="o">-</span> <span class="n">i0</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-            <span class="n">i1_hi</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">k1</span><span class="p">,</span> <span class="n">n1</span> <span class="o">-</span> <span class="n">i1</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-
-            <span class="c1"># Cut out relevant parts of the image arrays</span>
-            <span class="c1"># This creates views, i.e. is fast and memory efficient</span>
-            <span class="n">image_parts</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">images</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                <span class="c1"># hi + 1 because with Python slicing the hi edge is not included</span>
-                <span class="n">part</span> <span class="o">=</span> <span class="n">image</span><span class="p">[</span><span class="n">i0</span> <span class="o">-</span> <span class="n">i0_lo</span><span class="p">:</span> <span class="n">i0</span> <span class="o">+</span> <span class="n">i0_hi</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
-                       <span class="n">i1</span> <span class="o">-</span> <span class="n">i1_lo</span><span class="p">:</span> <span class="n">i1</span> <span class="o">+</span> <span class="n">i1_hi</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
-                <span class="n">image_parts</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">part</span>
-
-            <span class="c1"># Cut out relevant part of the kernel array</span>
-            <span class="c1"># This only applies when close to the edge</span>
-            <span class="c1"># hi + 1 because with Python slicing the hi edge is not included</span>
-            <span class="n">kernel_part</span> <span class="o">=</span> <span class="n">kernel</span><span class="p">[</span><span class="n">k0</span> <span class="o">-</span> <span class="n">i0_lo</span><span class="p">:</span> <span class="n">k0</span> <span class="o">+</span> <span class="n">i0_hi</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
-                          <span class="n">k1</span> <span class="o">-</span> <span class="n">i1_lo</span><span class="p">:</span> <span class="n">k1</span> <span class="o">+</span> <span class="n">i1_hi</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
-
-            <span class="c1"># Call pixel_function for this one part</span>
-            <span class="n">out_part</span> <span class="o">=</span> <span class="n">pixel_function</span><span class="p">(</span><span class="n">image_parts</span><span class="p">,</span> <span class="n">kernel_part</span><span class="p">)</span>
-
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out_part</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-                <span class="c1"># Store output</span>
-                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">out</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                    <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">i0</span><span class="p">,</span> <span class="n">i1</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_part</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">out</span><span class="p">[</span><span class="n">i0</span><span class="p">,</span> <span class="n">i1</span><span class="p">]</span> <span class="o">=</span> <span class="n">out_part</span></div>
-
-
-<div class="viewcode-block" id="image_groupby"><a class="viewcode-back" href="../../../api/gammapy.image.image_groupby.html#gammapy.image.image_groupby">[docs]</a><span class="k">def</span> <span class="nf">image_groupby</span><span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Group pixel by labels.</span>
-
-<span class="sd">    This function is similar to `scipy.ndimage.measurements.labeled_comprehension`,</span>
-<span class="sd">    but more general because it supports multiple input and output images.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    images : list of `~numpy.ndarray`</span>
-<span class="sd">        List of image objects.</span>
-<span class="sd">    labels : `~numpy.ndarray`</span>
-<span class="sd">        Labels for pixel grouping.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    groups : list of `~numpy.ndarray`</span>
-<span class="sd">        Grouped pixels acording to the labels.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">for</span> <span class="n">image</span> <span class="ow">in</span> <span class="n">images</span><span class="p">:</span>
-        <span class="k">assert</span> <span class="n">image</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">labels</span><span class="o">.</span><span class="n">shape</span>
-
-    <span class="c1"># Store data in 1D data frame (i.e. as pixel lists)</span>
-    <span class="c1"># TODO: should we use array.flat or array.ravel() here?</span>
-    <span class="c1"># It&#39;s not clear to me what the difference is and which is more efficient here.</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-    <span class="n">data</span><span class="p">[</span><span class="s1">&#39;labels&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">flat</span>
-    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">values</span> <span class="ow">in</span> <span class="n">images</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">values</span><span class="o">.</span><span class="n">flat</span>
-
-    <span class="c1"># Group pixels by labels</span>
-    <span class="n">groups</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;labels&#39;</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">groups</span></div>
-    <span class="c1"># out = groups.aggregate(function)</span>
-    <span class="c1"># return out</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">dstack</span><span class="p">(</span><span class="n">result</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="make_header"><a class="viewcode-back" href="../../../api/gammapy.image.make_header.html#gammapy.image.make_header">[docs]</a><span class="k">def</span> <span class="nf">make_header</span><span class="p">(</span><span class="n">nxpix</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">nypix</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">binsz</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">xref</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">yref</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
@@ -1302,86 +1169,6 @@
     <span class="n">header</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">pars</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">header</span></div>
-
-
-<div class="viewcode-block" id="lon_lat_rectangle_mask"><a class="viewcode-back" href="../../../api/gammapy.image.lon_lat_rectangle_mask.html#gammapy.image.lon_lat_rectangle_mask">[docs]</a><span class="k">def</span> <span class="nf">lon_lat_rectangle_mask</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">lon_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lon_max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                           <span class="n">lat_min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lat_max</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Produces a rectangular boolean mask array based on lat and lon limits.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    lons : `~numpy.ndarray`</span>
-<span class="sd">        Array of longitude values.</span>
-<span class="sd">    lats : `~numpy.ndarray`</span>
-<span class="sd">        Array of latitude values.</span>
-<span class="sd">    lon_min : float, optional</span>
-<span class="sd">        Minimum longitude of rectangular mask.</span>
-<span class="sd">    lon_max : float, optional</span>
-<span class="sd">        Maximum longitude of rectangular mask.</span>
-<span class="sd">    lat_min : float, optional</span>
-<span class="sd">        Minimum latitude of rectangular mask.</span>
-<span class="sd">    lat_max : float, optional</span>
-<span class="sd">        Maximum latitude of rectangular mask.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    mask : `~numpy.ndarray`</span>
-<span class="sd">        Boolean mask array for a rectangular sub-region defined by specified</span>
-<span class="sd">        maxima and minima lon and lat.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">lon_min</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">mask_lon_min</span> <span class="o">=</span> <span class="p">(</span><span class="n">lon_min</span> <span class="o">&lt;=</span> <span class="n">lons</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">mask_lon_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">lons</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">lon_max</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">mask_lon_max</span> <span class="o">=</span> <span class="p">(</span><span class="n">lons</span> <span class="o">&lt;</span> <span class="n">lon_max</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">mask_lon_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">lons</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
-
-    <span class="n">lon_mask</span> <span class="o">=</span> <span class="n">mask_lon_min</span> <span class="o">&amp;</span> <span class="n">mask_lon_max</span>
-
-    <span class="k">if</span> <span class="n">lat_min</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">mask_lat_min</span> <span class="o">=</span> <span class="p">(</span><span class="n">lat_min</span> <span class="o">&lt;=</span> <span class="n">lats</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">mask_lat_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">lats</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">lat_max</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">mask_lat_max</span> <span class="o">=</span> <span class="p">(</span><span class="n">lats</span> <span class="o">&lt;</span> <span class="n">lat_max</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">mask_lat_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">lats</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
-
-    <span class="n">lat_mask</span> <span class="o">=</span> <span class="n">mask_lat_min</span> <span class="o">&amp;</span> <span class="n">mask_lat_max</span>
-
-    <span class="k">return</span> <span class="n">lon_mask</span> <span class="o">&amp;</span> <span class="n">lat_mask</span></div>
-
-
-<div class="viewcode-block" id="lon_lat_circle_mask"><a class="viewcode-back" href="../../../api/gammapy.image.lon_lat_circle_mask.html#gammapy.image.lon_lat_circle_mask">[docs]</a><span class="k">def</span> <span class="nf">lon_lat_circle_mask</span><span class="p">(</span><span class="n">lons</span><span class="p">,</span> <span class="n">lats</span><span class="p">,</span> <span class="n">center_lon</span><span class="p">,</span> <span class="n">center_lat</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Produces a circular boolean mask array.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    lons : `~astropy.coordinates.Longitude`</span>
-<span class="sd">        Array of longitude values.</span>
-<span class="sd">    lats : `~astropy.coordinates.Latitude`</span>
-<span class="sd">        Array of latitude values.</span>
-<span class="sd">    center_lon : `~astropy.coordinates.Longitude`</span>
-<span class="sd">        Longitude of center of circular mask.</span>
-<span class="sd">    center_lat : `~astropy.coordinates.Latitude`</span>
-<span class="sd">        Latitude of center of circular mask.</span>
-<span class="sd">    radius : `~astropy.coordinates.Angle`</span>
-<span class="sd">        Radius of circular mask.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    mask : `~numpy.ndarray`</span>
-<span class="sd">        Boolean mask array for a circular sub-region</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">lons</span><span class="o">.</span><span class="n">wrap_angle</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="s1">&#39;180 deg&#39;</span><span class="p">)</span>
-    <span class="n">center_lon</span><span class="o">.</span><span class="n">wrap_angle</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="s1">&#39;180 deg&#39;</span><span class="p">)</span>
-
-    <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">lons</span> <span class="o">-</span> <span class="n">center_lon</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">lats</span> <span class="o">-</span> <span class="n">center_lat</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">&lt;</span> <span class="n">radius</span> <span class="o">**</span> <span class="mi">2</span>
-    <span class="k">return</span> <span class="n">mask</span></div>
 </pre></div>
 
            </div>
@@ -1395,7 +1182,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 23 Jul 2018.
+      Last updated on 25 Jul 2018.
 
     </p>
   </div>
@@ -1417,7 +1204,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6354',
+            VERSION:'0.8.dev6386',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

@@ -42,9 +42,9 @@
 # 
 # * From [astropy](http://docs.astropy.org/), we will use [astropy.io.fits](http://docs.astropy.org/en/stable/io/fits/index.html) to read the FITS data, [astropy.table.Table](http://docs.astropy.org/en/stable/table/index.html) to work with the tables, but also [astropy.coordinates.SkyCoord](http://docs.astropy.org/en/stable/coordinates/index.html) and [astropy.wcs.WCS](http://docs.astropy.org/en/stable/wcs/index.html) to work with sky and pixel coordinates and [astropy.units.Quantity](http://docs.astropy.org/en/stable/units/index.html) to work with quantities.
 # 
-# * From [gammapy](http://docs.gammapy.org/), we will use [gammapy.image.SkyImage](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html) to work with the HGPS sky maps, and [gammapy.catalog.SourceCatalogHGPS](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogHGPS.html) and [gammapy.catalog.SourceCatalogObjectHGPS](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogObjectHGPS.html) to work with the HGPS catalog data, especially the HGPS spectral data using [gammapy.spectrum.models.SpectralModel](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.SpectralModel.html) and [gammapy.spectrum.FluxPoints](http://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html) objects.
+# * From [gammapy](http://docs.gammapy.org/), we will use [gammapy.maps.WcsNDMap](http://docs.gammapy.org/dev/api/gammapy.maps.WcsNDMap.html) to work with the HGPS sky maps, and [gammapy.catalog.SourceCatalogHGPS](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogHGPS.html) and [gammapy.catalog.SourceCatalogObjectHGPS](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogObjectHGPS.html) to work with the HGPS catalog data, especially the HGPS spectral data using [gammapy.spectrum.models.SpectralModel](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.SpectralModel.html) and [gammapy.spectrum.FluxPoints](http://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html) objects.
 # 
-# * [matplotlib](https://matplotlib.org/) for all plotting. For sky image plotting, we will use matplotlib via [astropy.visualization](http://docs.astropy.org/en/stable/visualization/index.html) and [gammapy.image.SkyImage.plot](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html#gammapy.image.SkyImage.plot).
+# * [matplotlib](https://matplotlib.org/) for all plotting. For sky image plotting, we will use matplotlib via [astropy.visualization](http://docs.astropy.org/en/stable/visualization/index.html) and [gammapy.maps.WcsNDMap.plot](http://docs.gammapy.org/dev/api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.plot).
 # 
 # If you're not familiar with Python, Numpy, Astropy, Gammapy or matplotlib yet, use the tutorial introductions as explained [here](http://docs.gammapy.org/dev/tutorials.html), as well as the links to the documentation that we just mentioned.
 
@@ -78,7 +78,7 @@ print(astropy.__version__)
 # In[3]:
 
 
-from gammapy.image import SkyImage
+from gammapy.maps import Map
 from gammapy.catalog import SourceCatalogHGPS
 
 import gammapy
@@ -538,7 +538,7 @@ pos = SkyCoord.from_pixel(xp, yp, wcs)
 pos
 
 
-# As you can see, working with FITS images and sky / pixel coordinates directly requires that you learn how to use the WCS object and Numpy arrays and to know that the axis order is `(x, y)` in FITS and WCS, but `(row, column)`, i.e. `(y, x)` in Numpy. It seems quite complex at first, but most astronomers get used to it and manage after a while. `gammapy.image.SkyImage` is a wrapper class that is a bit simpler to use (see below), but under the hood it just calls these Numpy and Astropy methods for you, so it's good to know what is going on in any case.
+# As you can see, working with FITS images and sky / pixel coordinates directly requires that you learn how to use the WCS object and Numpy arrays and to know that the axis order is `(x, y)` in FITS and WCS, but `(row, column)`, i.e. `(y, x)` in Numpy. It seems quite complex at first, but most astronomers get used to it and manage after a while. `gammapy.maps.WcsNDMap` is a wrapper class that is a bit simpler to use (see below), but under the hood it just calls these Numpy and Astropy methods for you, so it's good to know what is going on in any case.
 
 # ## Catalog with Gammapy
 # 
@@ -670,19 +670,19 @@ plt.title('Vela X HGPS spectrum')
 
 # ## Maps with Gammapy
 # 
-# Let's use the [SkyImage](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html) class to load up the HGPS significance survey map.
+# Let's use the [gammapy.maps.Map.read](http://docs.gammapy.org/dev/api/gammapy.maps.Map.html#gammapy.maps.Map.read) method to load up the HGPS significance survey map.
 
 # In[51]:
 
 
 path = hgps_data_path / 'hgps_map_significance_0.1deg_v1.fits.gz'
-survey_map = SkyImage.read(path)
+survey_map = Map.read(path)
 
 
 # In[52]:
 
 
-# SkyImage has a quick-look plot method, but it's not
+# Map has a quick-look plot method, but it's not
 # very useful for a survey map that wide with default settings  
 survey_map.plot()
 
@@ -705,7 +705,7 @@ _ = survey_map.plot(stretch='sqrt')
 # In[54]:
 
 
-image = survey_map.cutout(pos, size=(2.5, 3.8)*u.deg)
+image, _ = survey_map.make_cutout(pos, width=(2.5, 3.8)*u.deg)
 fig, ax, _ = image.plot(stretch='sqrt', cmap='inferno')
 [ax.coords[_].set_major_formatter('dd') for _ in (0, 1)]
 
@@ -719,7 +719,7 @@ fig, ax, _ = image.plot(stretch='sqrt', cmap='inferno')
 
 
 pos = SkyCoord(266.416826, -29.007797, unit='deg')
-survey_map.lookup(pos)
+survey_map.get_by_coord(pos)
 
 
 # ### Vela X
@@ -743,8 +743,8 @@ from matplotlib.patches import Circle
 
 # Cutout and plot a nice image
 pos = SkyCoord(264.5, -2.5, unit='deg', frame='galactic')
-size = (4, 6)*u.deg
-image = survey_map.cutout(pos, size=size)
+width = (4, 6) * u.deg
+image, _ = survey_map.make_cutout(pos, width=width)
 norm = simple_norm(image.data, stretch='sqrt', min_cut=0, max_cut=20)
 fig = plt.figure(figsize=(12, 8))
 fig, ax, _ = image.plot(fig=fig, norm=norm, cmap='inferno')

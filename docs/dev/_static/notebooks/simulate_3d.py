@@ -29,7 +29,6 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 import astropy.units as u
-import tempfile
 from astropy.coordinates import SkyCoord, Angle
 from gammapy.irf import EffectiveAreaTable2D, EnergyDispersion2D, EnergyDependentMultiGaussPSF, Background3D
 from gammapy.maps import WcsGeom, MapAxis, WcsNDMap, Map
@@ -101,31 +100,6 @@ print(sky_model)
 # In[7]:
 
 
-# Alternatively read the skymodel from an XML file
-xml = b'''<?xml version="1.0" encoding="utf-8"?>
-    <source_library title="source library">
-        <source name="3C 273" type="PointSource">
-            <spectrum type="PowerLaw">;i
-                <parameter free="1" max="1000.0" min="0.001" name="Prefactor" scale="1e-09" value="10"></parameter>
-                <parameter free="1" max="-1.0" min="-5.0" name="Index" scale="1.0" value="-2.1"></parameter>
-                <parameter free="0" max="2000.0" min="30.0" name="Scale" scale="1.0" value="100.0"></parameter>
-            </spectrum>
-            <spatialModel type="SkyDirFunction">
-                <parameter free="0" max="360" min="-360" name="RA" scale="1.0" value="187.25"></parameter>
-                <parameter free="0" max="90" min="-90" name="DEC" scale="1.0" value="2.17"></parameter>
-            </spatialModel>
-        </source>
-    </source_library>
-    '''
-
-#source_library = SourceLibrary.from_xml(xml)
-#sky_model = source_library.skymodels[0]
-#print(sky_model)
-
-
-# In[8]:
-
-
 # Define map geometry
 axis = MapAxis.from_edges(
     np.logspace(-1., 1., 10), unit='TeV',
@@ -136,7 +110,7 @@ geom = WcsGeom.create(
 )
 
 
-# In[9]:
+# In[8]:
 
 
 # Define some observation parameters
@@ -148,81 +122,80 @@ offset_max = 2 * u.deg
 offset = Angle('2 deg')
 
 
-# In[10]:
+# In[9]:
 
 
 # Compute maps, PSF and EDISP - just as you would for analysis of real data
 
-# Exposure
 exposure_map = make_map_exposure_true_energy(
     pointing=pointing, livetime=livetime, aeff=irfs['aeff'],
     ref_geom=geom, offset_max=offset_max,
 )
 
-# PSF
 psf = irfs['psf'].to_energy_dependent_table_psf(theta=offset)
 psf_kernel = PSFKernel.from_table_psf(psf,
                                       geom,
                                       max_radius=1 * u.deg)
 
-# EDISP : TODO
 edisp = irfs['edisp'].to_energy_dispersion(offset=offset)
 
 # Background: Assume constant background in FoV
+# TODO: Fill CTA background
 bkg = Map.from_geom(geom)
 bkg.quantity = np.ones(bkg.data.shape) * 1e-1
+
+
+# In[10]:
+
+
+plt.imshow(exposure_map.data[2,:,:]);
 
 
 # In[11]:
 
 
-plt.imshow(exposure_map.data[2,:,:])
+plt.imshow(psf_kernel.psf_kernel_map.data[2,:,:]);
 
 
 # In[12]:
 
 
-plt.imshow(psf_kernel.psf_kernel_map.data[2,:,:])
+# The idea is that we have this class that can compute `npred`
+# maps, i.e. "predicted counts per pixel" given the model and
+# the observation infos: exposure, background, PSF and EDISP
+evaluator = MapEvaluator(
+    sky_model=sky_model, 
+    exposure=exposure_map,
+    psf=psf_kernel,
+    background=bkg,
+)
 
 
 # In[13]:
 
 
-# The idea is that we have this class that can compute `npred`
-# maps, i.e. "predicted counts per pixel" given the model and
-# the observation infos: exposure, background, PSF and EDISP
-evaluator = MapEvaluator(sky_model=sky_model, 
-                         exposure=exposure_map,
-                         psf=psf_kernel,
-                         background=bkg)
+# Accessing and saving a lot of the following maps is for debugging.
+# Just for a simulation one doesn't need to store all these things.
+# dnde = evaluator.compute_dnde()
+# flux = evaluator.compute_flux()
+npred = evaluator.compute_npred()
+npred_map = WcsNDMap(geom, npred)
 
 
 # In[14]:
 
 
-# Accessing and saving a lot of the following maps is for debugging.
-# Just for a simulation one doesn't need to store all these things.
-#dnde = evaluator.compute_dnde()
-#flux = evaluator.compute_flux()
-
-npred = evaluator.compute_npred()
-npred_map = WcsNDMap(geom, npred)
+npred_map.sum_over_axes().plot(add_cbar=True);
 
 
 # In[15]:
-
-
-npred_map.sum_over_axes().plot(add_cbar=True)
-
-
-# In[16]:
 
 
 # The npred map contains negative values, this is probably a bug in the PSFKernel application
 npred[npred<0] = 0
 
 
-# In[17]:
+# In[16]:
 
 
 # This one line is the core of how to simulate data when
@@ -234,10 +207,10 @@ counts = rng.poisson(npred)
 counts_map = WcsNDMap(geom, counts)
 
 
-# In[18]:
+# In[17]:
 
 
-counts_map.sum_over_axes().plot()
+counts_map.sum_over_axes().plot();
 
 
 # ## Fit
@@ -245,7 +218,7 @@ counts_map.sum_over_axes().plot()
 # Now let's analyse the simulated data.
 # Here we just fit it again with the same model we had before, but you could do any analysis you like here, e.g. fit a different model, or do a region-based analysis, ...
 
-# In[19]:
+# In[18]:
 
 
 # Define sky model to fit the data
@@ -272,30 +245,32 @@ model.parameters.set_parameter_errors({
     'amplitude': '1e-12 cm-2 s-1 TeV-1',
 })
 
-model.parameters['sigma'].parmin = 0
+# model.parameters['sigma'].min = 0
+print(model.parameters['sigma'])
+print(model)
 
 
-# In[20]:
+# In[19]:
 
 
 fit = MapFit(
-    model=model.copy(),
+    model=model,
     counts=counts_map,
     exposure=exposure_map,
-    background=bkg
+    background=bkg,
 )
 
 fit.fit()
 
 
-# In[21]:
+# In[20]:
 
 
 print('True values:\n\n{}\n\n'.format(sky_model.parameters))
-print('Fit result:\n\n{}\n\n'.format(fit.model.parameters))
+print('Fit result:\n\n{}\n\n'.format(model.parameters))
 
 
-# In[22]:
+# In[21]:
 
 
 # TODO: show e.g. how to make a residual image
@@ -312,7 +287,7 @@ print('Fit result:\n\n{}\n\n'.format(fit.model.parameters))
 # access to e.g. the covariance matrix, or can check a likelihood profile, or can run ``Minuit.minos()``
 # to compute asymmetric errors or ...
 
-# In[23]:
+# In[22]:
 
 
 # Check correlation between model parameters
@@ -322,7 +297,7 @@ print('Fit result:\n\n{}\n\n'.format(fit.model.parameters))
 fit.minuit.print_matrix()
 
 
-# In[24]:
+# In[23]:
 
 
 # You can use likelihood profiles to check if your model is
