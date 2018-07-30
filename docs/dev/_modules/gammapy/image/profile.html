@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.image.profile &mdash; gammapy v0.8.dev6411</title>
+  <title>gammapy.image.profile &mdash; gammapy v0.8.dev6501</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6411
+                0.8.dev6501
               </div>
             
           
@@ -492,7 +492,8 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../data/obs_group.html">Observation grouping</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../data/obs_group.html#examples">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../data/obs_group.html#compute-groups">Compute groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../data/obs_group.html#use-groups">Use groups</a></li>
 </ul>
 </li>
 </ul>
@@ -542,21 +543,15 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#using-gammapy-image">Using <code class="docutils literal notranslate"><span class="pre">gammapy.image</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../image/sky_image.html">Sky image</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/sky_image.html#introduction-and-concept">Introduction and Concept</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/sky_image.html#getting-started">Getting started</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/sky_image.html#cutout-and-paste">Cutout and paste</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../image/models.html">Morphology models (<code class="docutils literal notranslate"><span class="pre">gammapy.image.models</span></code>)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#getting-started">Getting Started</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#reference-api">Reference/API</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../image/plotting.html">Image plotting</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../image/plotting.html#colormaps">Colormaps</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../image/plotting.html#multi-panel-galactic-plane-survey-image-plots">Multi-panel Galactic plane survey image plots</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="../../../image/models.html">Morphology models (<code class="docutils literal notranslate"><span class="pre">gammapy.image.models</span></code>)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#introduction">Introduction</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#getting-started">Getting Started</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#reference-api">Reference/API</a></li>
 </ul>
 </li>
 </ul>
@@ -913,6 +908,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/index.html">PIGs</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../development/pigs/pig-001.html">PIG 1 - PIG purpose and guidelines</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../development/pigs/pig-002.html">PIG 2 - Organization of low-level analysis code</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/dataformats.html">Data Formats</a><ul>
@@ -1045,13 +1041,11 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="k">import</span> <span class="n">Table</span>
 <span class="kn">from</span> <span class="nn">astropy</span> <span class="k">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
-<span class="kn">from</span> <span class="nn">.core</span> <span class="k">import</span> <span class="n">SkyImage</span>
+<span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="k">import</span> <span class="n">Angle</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s1">&#39;ImageProfile&#39;</span><span class="p">,</span>
     <span class="s1">&#39;ImageProfileEstimator&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;radial_profile&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;radial_profile_label_image&#39;</span><span class="p">,</span>
 <span class="p">]</span>
 
 
@@ -1108,8 +1102,10 @@
 <span class="sd">        Coordinate edges to define a custom measument grid (optional).</span>
 <span class="sd">    method : [&#39;sum&#39;, &#39;mean&#39;]</span>
 <span class="sd">        Compute sum or mean within profile bins.</span>
-<span class="sd">    axis : [&#39;lon&#39;, &#39;lat&#39;]</span>
+<span class="sd">    axis : [&#39;lon&#39;, &#39;lat&#39;, &#39;radial&#39;]</span>
 <span class="sd">        Along which axis to estimate the profile.</span>
+<span class="sd">    center : `~astropy.coordinates.SkyCoord`</span>
+<span class="sd">        Center coordinate for the radial profile option.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
@@ -1119,14 +1115,13 @@
 <span class="sd">    .. code:: python</span>
 
 <span class="sd">        import matplotlib.pyplot as plt</span>
-<span class="sd">        from gammapy.datasets import FermiGalacticCenter</span>
-<span class="sd">        from gammapy.image import ImageProfile, ImageProfileEstimator</span>
-<span class="sd">        from gammapy.image import SkyImage</span>
+<span class="sd">        from gammapy.image import ImageProfileEstimator</span>
+<span class="sd">        from gammapy.maps import Map</span>
 <span class="sd">        from astropy import units as u</span>
 
 <span class="sd">        # load example data</span>
-<span class="sd">        fermi_cts = SkyImage.from_image_hdu(FermiGalacticCenter.counts())</span>
-<span class="sd">        fermi_cts.unit = u.count</span>
+<span class="sd">        filename = &#39;$GAMMAPY_EXTRA/test_datasets/unbundled/fermi/fermi_counts.fits.gz&#39;</span>
+<span class="sd">        fermi_cts = Map.read(filename)</span>
 
 <span class="sd">        # set up profile estimator and run</span>
 <span class="sd">        p = ImageProfileEstimator(axis=&#39;lon&#39;, method=&#39;sum&#39;)</span>
@@ -1135,22 +1130,24 @@
 <span class="sd">        # smooth profile and plot</span>
 <span class="sd">        smoothed = profile.smooth(kernel=&#39;gauss&#39;)</span>
 <span class="sd">        smoothed.peek()</span>
-
 <span class="sd">        plt.show()</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_edges</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s1">&#39;lon&#39;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_edges</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="s1">&#39;lon&#39;</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_x_edges</span> <span class="o">=</span> <span class="n">x_edges</span>
 
         <span class="k">if</span> <span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;sum&#39;</span><span class="p">,</span> <span class="s1">&#39;mean&#39;</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Not a valid method, choose either &#39;sum&#39; or &#39;mean&#39;&quot;</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">axis</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;lon&#39;</span><span class="p">,</span> <span class="s1">&#39;lat&#39;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">axis</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;lon&#39;</span><span class="p">,</span> <span class="s1">&#39;lat&#39;</span><span class="p">,</span> <span class="s1">&#39;radial&#39;</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Not a valid axis, choose either &#39;lon&#39; or &#39;lat&#39;&quot;</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;radial&#39;</span> <span class="ow">and</span> <span class="n">center</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Please provide center coordinate for radial profiles&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="n">center</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_get_x_edges</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1160,13 +1157,18 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_x_edges</span>
 
         <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
-        <span class="n">coordinates</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">coordinates</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;edges&#39;</span><span class="p">)</span>
+        <span class="n">coordinates</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;edges&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">skycoord</span>
 
         <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;lat&#39;</span><span class="p">:</span>
             <span class="n">x_edges</span> <span class="o">=</span> <span class="n">coordinates</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">lat</span>
         <span class="k">elif</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;lon&#39;</span><span class="p">:</span>
             <span class="n">lon</span> <span class="o">=</span> <span class="n">coordinates</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">lon</span>
             <span class="n">x_edges</span> <span class="o">=</span> <span class="n">lon</span><span class="o">.</span><span class="n">wrap_at</span><span class="p">(</span><span class="s1">&#39;180d&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;radial&#39;</span><span class="p">:</span>
+            <span class="n">rad_step</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">pixel_scales</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+            <span class="n">corners</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">rad_max</span> <span class="o">=</span> <span class="n">coordinates</span><span class="p">[</span><span class="n">corners</span><span class="p">]</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;center&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+            <span class="n">x_edges</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">rad_max</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span> <span class="n">rad_step</span><span class="o">.</span><span class="n">deg</span><span class="p">),</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">x_edges</span>
 
     <span class="k">def</span> <span class="nf">_estimate_profile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">image_err</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
@@ -1208,8 +1210,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
 
-        <span class="n">label_image</span> <span class="o">=</span> <span class="n">SkyImage</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
-        <span class="n">coordinates</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">coordinates</span><span class="p">()</span>
+        <span class="n">coordinates</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span><span class="o">.</span><span class="n">skycoord</span>
         <span class="n">x_edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_x_edges</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;lon&#39;</span><span class="p">:</span>
@@ -1220,12 +1221,15 @@
             <span class="n">lat</span> <span class="o">=</span> <span class="n">coordinates</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">lat</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">digitize</span><span class="p">(</span><span class="n">lat</span><span class="o">.</span><span class="n">degree</span><span class="p">,</span> <span class="n">x_edges</span><span class="o">.</span><span class="n">deg</span><span class="p">)</span>
 
+        <span class="k">elif</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;radial&#39;</span><span class="p">:</span>
+            <span class="n">separation</span> <span class="o">=</span> <span class="n">coordinates</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;center&#39;</span><span class="p">])</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">digitize</span><span class="p">(</span><span class="n">separation</span><span class="o">.</span><span class="n">degree</span><span class="p">,</span> <span class="n">x_edges</span><span class="o">.</span><span class="n">deg</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># assign masked values to background</span>
             <span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="o">.</span><span class="n">data</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
 
-        <span class="n">label_image</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
-        <span class="k">return</span> <span class="n">label_image</span>
+        <span class="k">return</span> <span class="n">image</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
 
 <div class="viewcode-block" id="ImageProfileEstimator.run"><a class="viewcode-back" href="../../../api/gammapy.image.ImageProfileEstimator.html#gammapy.image.ImageProfileEstimator.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">image_err</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1233,11 +1237,11 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        image : `~gammapy.image.SkyImage`</span>
+<span class="sd">        image : `~gammapy.maps.Map`</span>
 <span class="sd">            Input image to run profile estimator on.</span>
-<span class="sd">        image_err : `~gammapy.image.SkyImage`</span>
+<span class="sd">        image_err : `~gammapy.maps.Map`</span>
 <span class="sd">            Input error image to run profile estimator on.</span>
-<span class="sd">        mask : `~gammapy.image.SkyImage`</span>
+<span class="sd">        mask : `~gammapy.maps.Map`</span>
 <span class="sd">            Optional mask to exclude regions from the measurement.</span>
 
 <span class="sd">        Returns</span>
@@ -1246,14 +1250,9 @@
 <span class="sd">            Result image profile object.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
-        <span class="n">image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="n">image</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">is_equivalent</span><span class="p">(</span><span class="s1">&#39;count&#39;</span><span class="p">):</span>
-            <span class="n">image_err</span> <span class="o">=</span> <span class="n">SkyImage</span><span class="o">.</span><span class="n">empty_like</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
-            <span class="n">image_err</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">image_err</span><span class="p">:</span>
-            <span class="n">image_err</span> <span class="o">=</span> <span class="n">image_err</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">image_err</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="p">)</span>
 
         <span class="n">profile</span><span class="p">,</span> <span class="n">profile_err</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_estimate_profile</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">image_err</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
 
@@ -1527,149 +1526,6 @@
             <span class="n">table</span><span class="p">[</span><span class="s1">&#39;profile_err&#39;</span><span class="p">]</span> <span class="o">/=</span> <span class="n">norm</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">table</span><span class="p">)</span></div></div>
-
-<div class="viewcode-block" id="radial_profile"><a class="viewcode-back" href="../../../api/gammapy.image.radial_profile.html#gammapy.image.radial_profile">[docs]</a><span class="k">def</span> <span class="nf">radial_profile</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Image radial profile.</span>
-
-<span class="sd">    TODO: show example and explain handling of &quot;overflow&quot;</span>
-<span class="sd">    and &quot;underflow&quot; bins (see ``radial_profile_label_image`` docstring).</span>
-
-<span class="sd">    Calls `numpy.digitize` to compute a label image and then</span>
-<span class="sd">    `scipy.ndimage.sum` to do measurements.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    image : `~gammapy.image.SkyImage`</span>
-<span class="sd">        Image</span>
-<span class="sd">    center : `~astropy.coordinates.SkyCoord`</span>
-<span class="sd">        Center position</span>
-<span class="sd">    radius : `~astropy.coordinates.Angle`</span>
-<span class="sd">        Offset bin edge array.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    table : `~astropy.table.Table`</span>
-
-<span class="sd">        Table with the following fields that define the binning:</span>
-
-<span class="sd">        * ``RADIUS_BIN_ID`` : Integer bin ID (starts at ``1``).</span>
-<span class="sd">        * ``RADIUS_MEAN`` : Radial bin center</span>
-<span class="sd">        * ``RADIUS_MIN`` : Radial bin minimum edge</span>
-<span class="sd">        * ``RADIUS_MAX`` : Radial bin maximum edge</span>
-
-<span class="sd">        And the following measurements from the pixels in each bin:</span>
-
-<span class="sd">        * ``N_PIX`` : Number of pixels</span>
-<span class="sd">        * ``SUM`` : Sum of pixel values</span>
-<span class="sd">        * ``MEAN`` : Mean of pixel values, computed as ``SUM / N_PIX``</span>
-
-
-<span class="sd">    Examples</span>
-<span class="sd">    --------</span>
-
-<span class="sd">    Make some example data::</span>
-
-<span class="sd">        from astropy.coordinates import Angle</span>
-<span class="sd">        from gammapy.image import SkyImage</span>
-<span class="sd">        image = SkyImage.empty()</span>
-<span class="sd">        image.fill(value=1)</span>
-<span class="sd">        center = image.center</span>
-<span class="sd">        radius = Angle([0.1, 0.2, 0.4, 0.5, 1.0], &#39;deg&#39;)</span>
-
-<span class="sd">    Compute and print a radial profile::</span>
-
-<span class="sd">        from gammapy.image import radial_profile</span>
-<span class="sd">        table = radial_profile(image, center, radius)</span>
-<span class="sd">        table.pprint()</span>
-
-<span class="sd">    If your measurement represents counts, you could e.g. use this</span>
-<span class="sd">    method to compute errors::</span>
-
-<span class="sd">        import numpy as np</span>
-<span class="sd">        table[&#39;SUM_ERR&#39;] = np.sqrt(table[&#39;SUM&#39;])</span>
-<span class="sd">        table[&#39;MEAN_ERR&#39;] = table[&#39;SUM_ERR&#39;] / table[&#39;N_PIX&#39;]</span>
-
-<span class="sd">    If you need to do special measurements or error computation</span>
-<span class="sd">    in each bin with access to the pixel values,</span>
-<span class="sd">    you could get the label image and then do the measurements yourself::</span>
-
-<span class="sd">        labels = radial_profile_label_image(image, center, radius)</span>
-<span class="sd">        labels.show()</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">labels</span> <span class="o">=</span> <span class="n">radial_profile_label_image</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">radius</span><span class="p">)</span>
-
-    <span class="c1"># Note: here we could decide to also measure overflow and underflow bins.</span>
-    <span class="n">index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">radius</span><span class="p">))</span>
-    <span class="n">table</span> <span class="o">=</span> <span class="n">_radial_profile_measure</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
-
-    <span class="n">table</span><span class="p">[</span><span class="s1">&#39;RADIUS_BIN_ID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">index</span>
-    <span class="n">table</span><span class="p">[</span><span class="s1">&#39;RADIUS_MIN&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">radius</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">table</span><span class="p">[</span><span class="s1">&#39;RADIUS_MAX&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">radius</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
-    <span class="n">table</span><span class="p">[</span><span class="s1">&#39;RADIUS_MEAN&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;RADIUS_MAX&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">table</span><span class="p">[</span><span class="s1">&#39;RADIUS_MIN&#39;</span><span class="p">])</span>
-
-    <span class="n">meta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-        <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;radial profile&#39;</span><span class="p">,</span>
-        <span class="n">center</span><span class="o">=</span><span class="n">center</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="n">table</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">table</span></div>
-
-
-<div class="viewcode-block" id="radial_profile_label_image"><a class="viewcode-back" href="../../../api/gammapy.image.radial_profile_label_image.html#gammapy.image.radial_profile_label_image">[docs]</a><span class="k">def</span> <span class="nf">radial_profile_label_image</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Image radial profile label image.</span>
-
-<span class="sd">    The ``radius`` array defines ``n_bins = len(radius) - 1`` bins.</span>
-
-<span class="sd">    The label image has the following values:</span>
-<span class="sd">    * Value ``1`` to ``n_bins`` for pixels in ``(radius[0], radius[-1])``</span>
-<span class="sd">    * Value ``0`` for pixels with ``r &lt; radius[0]``</span>
-<span class="sd">    * Value ``n_bins`` for pixels with ``r &gt;= radius[-1]``</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    image : `~gammapy.image.SkyImage`</span>
-<span class="sd">        Image</span>
-<span class="sd">    center : `~astropy.coordinates.SkyCoord`</span>
-<span class="sd">        Center position</span>
-<span class="sd">    radius : `~astropy.coordinates.Angle`</span>
-<span class="sd">        Offset bin edge array.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    labels : `~gammapy.image.SkyImage`</span>
-<span class="sd">        Label image (1 to max_label; outside pixels have value 0)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">radius_image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">coordinates</span><span class="p">()</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">center</span><span class="p">)</span>
-    <span class="n">labels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">digitize</span><span class="p">(</span><span class="n">radius_image</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span> <span class="n">radius</span><span class="o">.</span><span class="n">deg</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;labels&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="n">image</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span></div>
-
-
-<span class="k">def</span> <span class="nf">_radial_profile_measure</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Measurements for radial profile.</span>
-
-<span class="sd">    This is a helper function to do measurements.</span>
-
-<span class="sd">    TODO: this should call the generic function,</span>
-<span class="sd">    nothing radial profile-specific here.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">scipy</span> <span class="k">import</span> <span class="n">ndimage</span>
-
-    <span class="c1"># This function takes `SkyImage` objects as inputs</span>
-    <span class="c1"># but only operates on their `data`</span>
-    <span class="n">image</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">data</span>
-    <span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span><span class="o">.</span><span class="n">data</span>
-
-    <span class="n">table</span> <span class="o">=</span> <span class="n">Table</span><span class="p">()</span>
-    <span class="n">table</span><span class="p">[</span><span class="s1">&#39;N_PIX&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">image</span><span class="p">),</span> <span class="n">labels</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">)</span>
-    <span class="n">table</span><span class="p">[</span><span class="s1">&#39;SUM&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ndimage</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">)</span>
-    <span class="n">table</span><span class="p">[</span><span class="s1">&#39;MEAN&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s1">&#39;SUM&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="n">table</span><span class="p">[</span><span class="s1">&#39;N_PIX&#39;</span><span class="p">]</span>
-
-    <span class="k">return</span> <span class="n">table</span>
 </pre></div>
 
            </div>
@@ -1683,7 +1539,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 26 Jul 2018.
+      Last updated on 30 Jul 2018.
 
     </p>
   </div>
@@ -1705,7 +1561,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6411',
+            VERSION:'0.8.dev6501',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

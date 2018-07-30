@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Observation grouping &mdash; gammapy v0.8.dev6411</title>
+  <title>Observation grouping &mdash; gammapy v0.8.dev6501</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.8.dev6411
+                0.8.dev6501
               </div>
             
           
@@ -494,7 +494,8 @@
 </ul>
 </li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Observation grouping</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#examples">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#compute-groups">Compute groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#use-groups">Use groups</a></li>
 </ul>
 </li>
 </ul>
@@ -544,21 +545,15 @@
 <li class="toctree-l2"><a class="reference internal" href="../image/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../image/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../image/index.html#using-gammapy-image">Using <code class="docutils literal notranslate"><span class="pre">gammapy.image</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../image/sky_image.html">Sky image</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../image/sky_image.html#introduction-and-concept">Introduction and Concept</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../image/sky_image.html#getting-started">Getting started</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../image/sky_image.html#cutout-and-paste">Cutout and paste</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../image/models.html">Morphology models (<code class="docutils literal notranslate"><span class="pre">gammapy.image.models</span></code>)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../image/models.html#introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../image/models.html#getting-started">Getting Started</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../image/models.html#reference-api">Reference/API</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../image/plotting.html">Image plotting</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../image/plotting.html#colormaps">Colormaps</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../image/plotting.html#multi-panel-galactic-plane-survey-image-plots">Multi-panel Galactic plane survey image plots</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="../image/models.html">Morphology models (<code class="docutils literal notranslate"><span class="pre">gammapy.image.models</span></code>)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../image/models.html#introduction">Introduction</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../image/models.html#getting-started">Getting Started</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../image/models.html#reference-api">Reference/API</a></li>
 </ul>
 </li>
 </ul>
@@ -915,6 +910,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../development/pigs/index.html">PIGs</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../development/pigs/pig-001.html">PIG 1 - PIG purpose and guidelines</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../development/pigs/pig-002.html">PIG 2 - Organization of low-level analysis code</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../development/dataformats.html">Data Formats</a><ul>
@@ -1084,68 +1080,71 @@ data with similar characteristics. It is also essential in some cases,
 like the production of background models. In this case, the scarce
 statistic forces the grouping of observations taken under similar
 conditions in order to produce reliable models.</p>
-<p>There are 2 classes in Gammapy that handle observation groups:</p>
+<div class="section" id="compute-groups">
+<h2>Compute groups<a class="headerlink" href="#compute-groups" title="Permalink to this headline">¶</a></h2>
+<p>Observation grouping can be done by taking a <a class="reference external" href="http://docs.astropy.org/en/latest/api/astropy.table.Table.html#astropy.table.Table" title="(in Astropy v3.1.dev22261)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">astropy.table.Table</span></code></a>
+with observation parameters (with colum <code class="docutils literal notranslate"><span class="pre">OBS_ID</span></code>, but also e.g.
+<code class="docutils literal notranslate"><span class="pre">ZENITH</span></code> or <code class="docutils literal notranslate"><span class="pre">N_TELS</span></code>), and using some grouping method to assign
+an integer <code class="docutils literal notranslate"><span class="pre">GROUP_ID</span></code> to each.</p>
+<p>As an example, let’s show how to group by two parameters:</p>
 <ul class="simple">
-<li><a class="reference internal" href="../api/gammapy.data.ObservationGroupAxis.html#gammapy.data.ObservationGroupAxis" title="gammapy.data.ObservationGroupAxis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ObservationGroupAxis</span></code></a> is a class to define an axis
-along which to define bins for creating observation groups. The
-class offers support for dimensionless or
-<a class="reference external" href="http://docs.astropy.org/en/latest/api/astropy.units.Quantity.html#astropy.units.Quantity" title="(in Astropy v3.1.dev22251)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Quantity</span></code></a>-like parameter axes. In both cases, both,
-continuous and discrete variables can be used.</li>
-<li><a class="reference internal" href="../api/gammapy.data.ObservationGroups.html#gammapy.data.ObservationGroups" title="gammapy.data.ObservationGroups"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ObservationGroups</span></code></a> is a class that takes a list of
-axes (<a class="reference internal" href="../api/gammapy.data.ObservationGroupAxis.html#gammapy.data.ObservationGroupAxis" title="gammapy.data.ObservationGroupAxis"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ObservationGroupAxis</span></code></a>) and defines groups
-based on the cartesian product of the bins on each axis. The group
-definitions are internally stored as a <a class="reference external" href="http://docs.astropy.org/en/latest/api/astropy.table.Table.html#astropy.table.Table" title="(in Astropy v3.1.dev22251)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Table</span></code></a>
-object. This class has also methods to group the observations of a
-given ‘ObservationTable’ following the defined grouping.</li>
+<li><code class="docutils literal notranslate"><span class="pre">ZENITH</span></code> bins with edges <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">30,</span> <span class="pre">40,</span> <span class="pre">50,</span> <span class="pre">90]</span></code> degrees</li>
+<li><code class="docutils literal notranslate"><span class="pre">N_TELS</span></code> bins with values <code class="docutils literal notranslate"><span class="pre">[3,</span> <span class="pre">4]</span></code></li>
 </ul>
-<div class="section" id="examples">
-<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
-<p>Create an <a class="reference internal" href="../api/gammapy.data.ObservationGroups.html#gammapy.data.ObservationGroups" title="gammapy.data.ObservationGroups"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ObservationGroups</span></code></a> object with three axes:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">Angle</span>
-<span class="kn">from</span> <span class="nn">gammapy.data</span> <span class="kn">import</span> <span class="n">ObservationGroups</span><span class="p">,</span> <span class="n">ObservationGroupAxis</span>
-<span class="n">zenith</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span> <span class="s1">&#39;deg&#39;</span><span class="p">)</span>
-<span class="n">ntels</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span>
-<span class="n">obs_groups</span> <span class="o">=</span> <span class="n">ObservationGroups</span><span class="p">([</span>
-    <span class="n">ObservationGroupAxis</span><span class="p">(</span><span class="s1">&#39;ZENITH&#39;</span><span class="p">,</span> <span class="n">zenith</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;edges&#39;</span><span class="p">),</span>
-    <span class="n">ObservationGroupAxis</span><span class="p">(</span><span class="s1">&#39;N_TELS&#39;</span><span class="p">,</span> <span class="n">ntels</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s1">&#39;values&#39;</span><span class="p">),</span>
-<span class="p">])</span>
+<p>This gives a total of eight groups (with <code class="docutils literal notranslate"><span class="pre">GROUP_ID</span> <span class="pre">=</span> <span class="pre">0</span> <span class="pre">..</span> <span class="pre">7</span></code>),
+four on the <code class="docutils literal notranslate"><span class="pre">ZENITH</span></code> axis and two on the <code class="docutils literal notranslate"><span class="pre">N_TELS</span></code> axis.</p>
+<p>We use <a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.digitize.html#numpy.digitize" title="(in NumPy v1.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.digitize</span></code></a> to compute the group index along each axis,
+and then <a class="reference external" href="https://docs.scipy.org/doc/numpy/reference/generated/numpy.ravel_multi_index.html#numpy.ravel_multi_index" title="(in NumPy v1.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ravel_multi_index</span></code></a> to create a single <code class="docutils literal notranslate"><span class="pre">OBS_ID</span></code> from
+the two axis group indices.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span>
+
+<span class="n">table</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s1">&#39;https://github.com/cdeil/HESS-DL3-DR1-preview/raw/master/obs-index.fits.gz&#39;</span><span class="p">)</span>
+
+<span class="n">zen_pnt_bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">90</span><span class="p">])</span>
+<span class="n">zen_pnt_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">digitize</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;ZEN_PNT&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">zen_pnt_bins</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+
+<span class="n">n_tels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+<span class="n">n_tels_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">digitize</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;N_TELS&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="n">n_tels</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+
+<span class="n">group_id</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel_multi_index</span><span class="p">(</span>
+    <span class="n">multi_index</span><span class="o">=</span><span class="p">(</span><span class="n">zen_pnt_idx</span><span class="p">,</span> <span class="n">n_tels_idx</span><span class="p">),</span>
+    <span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">zen_pnt_bins</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">n_tels</span><span class="p">)),</span>
+<span class="p">)</span>
+
+<span class="n">table</span><span class="p">[</span><span class="s1">&#39;GROUP_ID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">group_id</span>
 </pre></div>
 </div>
-<p>The axes info is stored:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span><span class="p">(</span><span class="n">obs_groups</span><span class="o">.</span><span class="n">info</span><span class="p">)</span>
-<span class="go">ZENITH edges [  0.  30.  40.  50.] deg</span>
-<span class="go">N_TELS values [3 4]</span>
+<p>Note that this is just an example; with a few lines of Python and Numpy,
+you can compute any grouping you like. You can do something simple like
+what we did here, or you could do something very fancy, such as using
+a cluster method from scikit-learn to cluster observations by certain parameters.
+Another option is to compute IRF characteristics (e.g. similar energy threshold)
+for each observation, and then group based on that. Usually grouping is done
+before stacking runs within a given group and you want their IRFs to be similar.</p>
+</div>
+<div class="section" id="use-groups">
+<h2>Use groups<a class="headerlink" href="#use-groups" title="Permalink to this headline">¶</a></h2>
+<p>We currently don’t use <code class="docutils literal notranslate"><span class="pre">GROUP_ID</span></code> in observation tables within Gammapy.
+For now, it’s left up to the user to group observations and usually compute
+one set of stacked maps or spectra per group, and then to use those in a joint
+likelihood fit. We might or might not build this grouping functionality into
+Gammapy, e.g. by using <code class="docutils literal notranslate"><span class="pre">GROUP_ID</span></code> if present and stacking observations within
+each group in the spectrum or map analysis.</p>
+<p>For now, for spectra, it’s already possible to group observations like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="n">table</span> <span class="o">=</span> <span class="s2">&quot;Table with GROUP_ID column, see above&quot;</span>
+<span class="n">spectra</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">group_id</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;GROUP_ID&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">):</span>
+    <span class="n">group_table</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;GROUP_ID&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">group_id</span><span class="p">]</span>
+    <span class="n">obs_id</span> <span class="o">=</span> <span class="n">group_table</span><span class="p">[</span><span class="s1">&#39;OBS_ID&#39;</span><span class="p">]</span>
+    <span class="c1"># Make a stacked spectrum for these `group_id`</span>
+    <span class="n">spectra</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">spectrum</span><span class="p">)</span>
+
+<span class="c1"># Pass list of grouped spectra to SpectrumFit for joint fit</span>
 </pre></div>
 </div>
-<p>The observation groups are stored as a table (computed once on <code class="docutils literal notranslate"><span class="pre">ObservationGroups</span></code> object construction):</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">print</span><span class="p">(</span><span class="n">obs_groups</span><span class="o">.</span><span class="n">obs_groups_table</span><span class="p">)</span>
-<span class="go">GROUP_ID ZENITH_MIN ZENITH_MAX N_TELS</span>
-<span class="go">            deg        deg</span>
-<span class="go">-------- ---------- ---------- ------</span>
-<span class="go">       0        0.0       30.0      3</span>
-<span class="go">       1        0.0       30.0      4</span>
-<span class="go">       2       30.0       40.0      3</span>
-<span class="go">       3       30.0       40.0      4</span>
-<span class="go">       4       40.0       50.0      3</span>
-<span class="go">       5       40.0       50.0      4</span>
-</pre></div>
-</div>
-<p>TODO: make this a real example … use the four Crab runs!</p>
-<p>Apply the observation grouping to an observation list:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">obs_table</span> <span class="o">=</span> <span class="n">obs_groups</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">obs_table</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">obs_table</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>This would print an observation table with the format described in
-<a class="reference external" href="http://gamma-astro-data-formats.readthedocs.io/en/latest/data_storage/obs_index/index.html#obs-index" title="(in Data formats for gamma-ray astronomy v0.1)"><span>Observation index table</span></a> and an extra-column at the beginning specifying the ID
-of the group to which each observation belongs.</p>
-<p>Get the observations of a particular group and print them:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">obs_table_group2</span> <span class="o">=</span> <span class="n">obs_groups</span><span class="o">.</span><span class="n">get_group_of_observations</span><span class="p">(</span><span class="n">obs_table</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">obs_table_group2</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>This would print the observation table corresponding to the group
-with ID 8.</p>
+<p>TODO: make a complete, fully working example how to do a grouped analysis</p>
 </div>
 </div>
 
@@ -1170,7 +1169,7 @@ with ID 8.</p>
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 26 Jul 2018.
+      Last updated on 30 Jul 2018.
 
     </p>
   </div>
@@ -1192,7 +1191,7 @@ with ID 8.</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.8.dev6411',
+            VERSION:'0.8.dev6501',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

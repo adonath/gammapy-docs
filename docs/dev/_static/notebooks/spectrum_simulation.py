@@ -68,23 +68,24 @@ aeff.plot(ax=axes[1])
 # In[4]:
 
 
-index = 2.3 * u.Unit('')
+index = 2.3
 amplitude = 1e-11 * u.Unit('cm-2 s-1 TeV-1')
 reference = 1 * u.TeV
 
 pwl = PowerLaw(index=index, amplitude=amplitude, reference=reference)
 print(pwl)
 
-livetime = 2 * u.h
-
 
 # In[5]:
 
 
-sim = SpectrumSimulation(aeff=aeff,
-                         edisp=edisp,
-                         source_model=pwl,
-                         livetime=livetime)
+livetime = 2 * u.h
+sim = SpectrumSimulation(
+    aeff=aeff,
+    edisp=edisp,
+    source_model=pwl,
+    livetime=livetime,
+)
 sim.simulate_obs(seed=2309, obs_id=1)
 print(sim.obs)
 
@@ -106,7 +107,7 @@ print(fit.result[0])
 # In[7]:
 
 
-bkg_index = 2.5 * u.Unit('')
+bkg_index = 2.5
 bkg_amplitude = 1e-11 * u.Unit('cm-2 s-1 TeV-1')
 reference = 1 * u.TeV
 
@@ -120,12 +121,14 @@ alpha = 0.2
 n_obs = 10
 seeds = np.arange(n_obs)
 
-sim = SpectrumSimulation(aeff=aeff,
-                         edisp=edisp,
-                         source_model=pwl,
-                         livetime=livetime,
-                         background_model=bkg_model,
-                         alpha=alpha)
+sim = SpectrumSimulation(
+    aeff=aeff,
+    edisp=edisp,
+    source_model=pwl,
+    livetime=livetime,
+    background_model=bkg_model,
+    alpha=alpha,
+)
 
 sim.run(seeds)
 print(sim.result)
@@ -153,12 +156,11 @@ axes[2].set_xlabel('excess')
 # In[10]:
 
 
-best_fit_index = []
+# pwl.parameters['index'].max = 10
 
-pwl.parameters['index'].parmax = 10
+best_fit_index = []
 for obs in sim.result:
     fit = SpectrumFit(obs, pwl.copy(), stat='wstat')
-    fit.model.parameters['index'].value = 2
     fit.fit()
     best_fit_index.append(fit.result[0].model.parameters['index'].value)
 

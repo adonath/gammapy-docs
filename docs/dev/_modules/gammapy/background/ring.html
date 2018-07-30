@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.background.ring &mdash; gammapy v0.8.dev6411</title>
+  <title>gammapy.background.ring &mdash; gammapy v0.8.dev6501</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6411
+                0.8.dev6501
               </div>
             
           
@@ -492,7 +492,8 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../data/obs_group.html">Observation grouping</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../data/obs_group.html#examples">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../data/obs_group.html#compute-groups">Compute groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../data/obs_group.html#use-groups">Use groups</a></li>
 </ul>
 </li>
 </ul>
@@ -542,21 +543,15 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#using-gammapy-image">Using <code class="docutils literal notranslate"><span class="pre">gammapy.image</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../image/sky_image.html">Sky image</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/sky_image.html#introduction-and-concept">Introduction and Concept</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/sky_image.html#getting-started">Getting started</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/sky_image.html#cutout-and-paste">Cutout and paste</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../image/models.html">Morphology models (<code class="docutils literal notranslate"><span class="pre">gammapy.image.models</span></code>)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#getting-started">Getting Started</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#reference-api">Reference/API</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../image/plotting.html">Image plotting</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../image/plotting.html#colormaps">Colormaps</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../image/plotting.html#multi-panel-galactic-plane-survey-image-plots">Multi-panel Galactic plane survey image plots</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="../../../image/models.html">Morphology models (<code class="docutils literal notranslate"><span class="pre">gammapy.image.models</span></code>)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#introduction">Introduction</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#getting-started">Getting Started</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#reference-api">Reference/API</a></li>
 </ul>
 </li>
 </ul>
@@ -913,6 +908,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/index.html">PIGs</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../development/pigs/pig-001.html">PIG 1 - PIG purpose and guidelines</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../development/pigs/pig-002.html">PIG 2 - Organization of low-level analysis code</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/dataformats.html">Data Formats</a><ul>
@@ -1045,23 +1041,47 @@
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="k">import</span> <span class="n">product</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">astropy.convolution</span> <span class="k">import</span> <span class="n">Ring2DKernel</span><span class="p">,</span> <span class="n">Tophat2DKernel</span>
-<span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
-<span class="kn">from</span> <span class="nn">..image</span> <span class="k">import</span> <span class="n">SkyImage</span><span class="p">,</span> <span class="n">SkyImageList</span>
+<span class="kn">from</span> <span class="nn">astropy.convolution</span> <span class="k">import</span> <span class="n">convolve_fft</span><span class="p">,</span> <span class="n">convolve</span>
+<span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="k">import</span> <span class="n">Angle</span>
 <span class="kn">from</span> <span class="nn">..image.utils</span> <span class="k">import</span> <span class="n">scale_cube</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s1">&#39;AdaptiveRingBackgroundEstimator&#39;</span><span class="p">,</span>
     <span class="s1">&#39;RingBackgroundEstimator&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;ring_r_out&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;ring_area_factor&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;ring_alpha&#39;</span><span class="p">,</span>
 <span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">_convolve_map</span><span class="p">(</span><span class="nb">map</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">use_fft</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convolve input map with kernel.</span>
+
+<span class="sd">    The same kernel is used for each 2D map along the map axes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    map : `~gammapy.maps.WcsNDMap`</span>
+<span class="sd">        input map</span>
+<span class="sd">    kernel : `~astropy.convolution.Ring2DKernel`</span>
+<span class="sd">        the kernel</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    convolved_map : `~gammapy.maps.WcsNDMap`</span>
+<span class="sd">        output map</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">convolved_map</span> <span class="o">=</span> <span class="nb">map</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">img</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">map</span><span class="o">.</span><span class="n">iter_by_image</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">use_fft</span><span class="p">:</span>
+            <span class="n">convolved_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">convolve_fft</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">normalize_kernel</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">convolved_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">convolve</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">normalize_kernel</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">convolved_map</span>
 
 
 <div class="viewcode-block" id="AdaptiveRingBackgroundEstimator"><a class="viewcode-back" href="../../../api/gammapy.background.AdaptiveRingBackgroundEstimator.html#gammapy.background.AdaptiveRingBackgroundEstimator">[docs]</a><span class="k">class</span> <span class="nc">AdaptiveRingBackgroundEstimator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Adaptive ring background algorithm.</span>
 
-<span class="sd">    This algorithm extends the standard `RingBackground` method by adapting the</span>
+<span class="sd">    This algorithm extends the `RingBackgroundEstimator` method by adapting the</span>
 <span class="sd">    size of the ring to achieve a minimum on / off exposure ratio (alpha) in regions</span>
 <span class="sd">    where the area to estimate the background from is limited.</span>
 
@@ -1084,45 +1104,62 @@
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
-<span class="sd">    Here&#39;s an example how to use the `AdaptiveRingBackgroundEstimator`:</span>
+<span class="sd">    Example using `AdaptiveRingBackgroundEstimator`::</span>
 
-<span class="sd">    .. code:: python</span>
-
-<span class="sd">        from astropy import units as u</span>
+<span class="sd">        from gammapy.maps import Map</span>
 <span class="sd">        from gammapy.background import AdaptiveRingBackgroundEstimator</span>
-<span class="sd">        from gammapy.image import SkyImageList</span>
 
 <span class="sd">        filename = &#39;$GAMMAPY_EXTRA/test_datasets/unbundled/poisson_stats_image/input_all.fits.gz&#39;</span>
-<span class="sd">        images = SkyImageList.read(filename)</span>
-<span class="sd">        images[&#39;exposure&#39;].name = &#39;exposure_on&#39;</span>
-<span class="sd">        adaptive_ring_bkg = RingBackgroundEstimator(r_in=0.22 * u.deg,</span>
-<span class="sd">                                                    r_out_max=0.8 * u.deg,</span>
-<span class="sd">                                                    width=0.1 * u.deg)</span>
+<span class="sd">        images = {</span>
+<span class="sd">            &#39;counts&#39;: Map.read(filename, hdu=&#39;counts&#39;),</span>
+<span class="sd">            &#39;exposure_on&#39;: Map.read(filename, hdu=&#39;exposure&#39;),</span>
+<span class="sd">            &#39;exclusion&#39;: Map.read(filename, hdu=&#39;exclusion&#39;),</span>
+<span class="sd">        }</span>
+
+<span class="sd">        adaptive_ring_bkg = AdaptiveRingBackgroundEstimator(</span>
+<span class="sd">            r_in=&#39;0.22 deg&#39;,</span>
+<span class="sd">            r_out_max=&#39;0.8 deg&#39;,</span>
+<span class="sd">            width=&#39;0.1 deg&#39;,</span>
+<span class="sd">        )</span>
 <span class="sd">        results = adaptive_ring_bkg.run(images)</span>
-<span class="sd">        results[&#39;background&#39;].show()</span>
+<span class="sd">        results[&#39;background&#39;].plot()</span>
 
 <span class="sd">    See Also</span>
 <span class="sd">    --------</span>
 <span class="sd">    RingBackgroundEstimator, gammapy.detect.KernelBackgroundEstimator</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r_in</span><span class="p">,</span> <span class="n">r_out_max</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">stepsize</span><span class="o">=</span><span class="mf">0.02</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
-                 <span class="n">threshold_alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">0.22</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;fixed_width&#39;</span><span class="p">):</span>
-        <span class="c1"># input validation</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r_in</span><span class="p">,</span> <span class="n">r_out_max</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">stepsize</span><span class="o">=</span><span class="s1">&#39;0.02 deg&#39;</span><span class="p">,</span>
+                 <span class="n">threshold_alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="s1">&#39;0.22 deg&#39;</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;fixed_width&#39;</span><span class="p">):</span>
+
+        <span class="n">stepsize</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">stepsize</span><span class="p">)</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+
         <span class="k">if</span> <span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;fixed_width&#39;</span><span class="p">,</span> <span class="s1">&#39;fixed_r_in&#39;</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Not a valid adaptive ring method.&quot;</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="n">r_in</span><span class="o">=</span><span class="n">r_in</span><span class="p">,</span> <span class="n">r_out_max</span><span class="o">=</span><span class="n">r_out_max</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">,</span>
-                                      <span class="n">stepsize</span><span class="o">=</span><span class="n">stepsize</span><span class="p">,</span> <span class="n">threshold_alpha</span><span class="o">=</span><span class="n">threshold_alpha</span><span class="p">,</span>
-                                      <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
+            <span class="n">r_in</span><span class="o">=</span><span class="n">Angle</span><span class="p">(</span><span class="n">r_in</span><span class="p">),</span>
+            <span class="n">r_out_max</span><span class="o">=</span><span class="n">Angle</span><span class="p">(</span><span class="n">r_out_max</span><span class="p">),</span>
+            <span class="n">width</span><span class="o">=</span><span class="n">Angle</span><span class="p">(</span><span class="n">width</span><span class="p">),</span>
+            <span class="n">stepsize</span><span class="o">=</span><span class="n">Angle</span><span class="p">(</span><span class="n">stepsize</span><span class="p">),</span>
+            <span class="n">threshold_alpha</span><span class="o">=</span><span class="n">threshold_alpha</span><span class="p">,</span>
+            <span class="n">theta</span><span class="o">=</span><span class="n">Angle</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span>
+            <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;OrderedDict of parameters&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span>
 
 <div class="viewcode-block" id="AdaptiveRingBackgroundEstimator.kernels"><a class="viewcode-back" href="../../../api/gammapy.background.AdaptiveRingBackgroundEstimator.html#gammapy.background.AdaptiveRingBackgroundEstimator.kernels">[docs]</a>    <span class="k">def</span> <span class="nf">kernels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Ring kernels according to the specified method.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        image : `~gammapy.image.SkyImage`</span>
-<span class="sd">            Sky image specifying the WCS information.</span>
+<span class="sd">        image : `~gammapy.maps.WcsNDMap`</span>
+<span class="sd">            Map specifying the WCS information.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1131,13 +1168,11 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
 
-        <span class="n">scale</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">wcs_pixel_scale</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">pixel_scales</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span>
         <span class="n">r_in</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;r_in&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span>
         <span class="n">r_out_max</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;r_out_max&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span>
         <span class="n">width</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span>
         <span class="n">stepsize</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;stepsize&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span>
-
-        <span class="n">kernels</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;fixed_width&#39;</span><span class="p">:</span>
             <span class="n">r_ins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">r_in</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="n">r_out_max</span> <span class="o">-</span> <span class="n">width</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">stepsize</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
@@ -1145,35 +1180,40 @@
         <span class="k">elif</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;fixed_r_in&#39;</span><span class="p">:</span>
             <span class="n">widths</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">width</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="n">r_out_max</span> <span class="o">-</span> <span class="n">r_in</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">stepsize</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
             <span class="n">r_ins</span> <span class="o">=</span> <span class="p">[</span><span class="n">r_in</span><span class="o">.</span><span class="n">value</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid method: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">]))</span>
 
+        <span class="n">kernels</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">r_in</span><span class="p">,</span> <span class="n">width</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="n">r_ins</span><span class="p">,</span> <span class="n">widths</span><span class="p">):</span>
             <span class="n">kernel</span> <span class="o">=</span> <span class="n">Ring2DKernel</span><span class="p">(</span><span class="n">r_in</span><span class="p">,</span> <span class="n">width</span><span class="p">)</span>
             <span class="n">kernel</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s1">&#39;peak&#39;</span><span class="p">)</span>
             <span class="n">kernels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">kernels</span></div>
 
-    <span class="k">def</span> <span class="nf">_alpha_approx_cube</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cubes</span><span class="p">):</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_alpha_approx_cube</span><span class="p">(</span><span class="n">cubes</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compute alpha as on_exposure / off_exposure.</span>
 
 <span class="sd">        Where off_exposure &lt; 0, alpha is set to infinity.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">exposure_on</span> <span class="o">=</span> <span class="n">cubes</span><span class="p">[</span><span class="s1">&#39;exposure_on&#39;</span><span class="p">]</span>
         <span class="n">exposure_off</span> <span class="o">=</span> <span class="n">cubes</span><span class="p">[</span><span class="s1">&#39;exposure_off&#39;</span><span class="p">]</span>
-
         <span class="n">alpha_approx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">exposure_off</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">exposure_on</span> <span class="o">/</span> <span class="n">exposure_off</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">alpha_approx</span>
 
-    <span class="k">def</span> <span class="nf">_exposure_off_cube</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">images</span><span class="p">,</span> <span class="n">kernels</span><span class="p">):</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_exposure_off_cube</span><span class="p">(</span><span class="n">exposure_on</span><span class="p">,</span> <span class="n">exclusion</span><span class="p">,</span> <span class="n">kernels</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compute off exposure cube.</span>
 
 <span class="sd">        The on exposure is convolved with different</span>
 <span class="sd">        ring kernels and stacking the data along the third dimension.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">exposure</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="s1">&#39;exposure_on&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
-        <span class="n">exclusion</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="s1">&#39;exclusion&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">exposure</span> <span class="o">=</span> <span class="n">exposure_on</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">exclusion</span> <span class="o">=</span> <span class="n">exclusion</span><span class="o">.</span><span class="n">data</span>
         <span class="k">return</span> <span class="n">scale_cube</span><span class="p">(</span><span class="n">exposure</span> <span class="o">*</span> <span class="n">exclusion</span><span class="p">,</span> <span class="n">kernels</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_exposure_on_cube</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">images</span><span class="p">,</span> <span class="n">kernels</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_exposure_on_cube</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exposure_on</span><span class="p">,</span> <span class="n">kernels</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compute on exposure cube.</span>
 
 <span class="sd">        Calculated by convolving the on exposure with a tophat</span>
@@ -1181,25 +1221,23 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">from</span> <span class="nn">scipy.ndimage</span> <span class="k">import</span> <span class="n">convolve</span>
 
-        <span class="n">exposure_on</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="s1">&#39;exposure_on&#39;</span><span class="p">]</span>
-        <span class="n">scale</span> <span class="o">=</span> <span class="n">exposure_on</span><span class="o">.</span><span class="n">wcs_pixel_scale</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="n">exposure_on</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">pixel_scales</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span>
         <span class="n">theta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;theta&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">scale</span>
 
         <span class="n">tophat</span> <span class="o">=</span> <span class="n">Tophat2DKernel</span><span class="p">(</span><span class="n">theta</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
         <span class="n">tophat</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s1">&#39;peak&#39;</span><span class="p">)</span>
-        <span class="n">exposure_on</span> <span class="o">=</span> <span class="n">convolve</span><span class="p">(</span><span class="n">exposure_on</span><span class="p">,</span> <span class="n">tophat</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
+        <span class="n">exposure_on</span> <span class="o">=</span> <span class="n">convolve</span><span class="p">(</span><span class="n">exposure_on</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">tophat</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
         <span class="n">exposure_on_cube</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">exposure_on</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">kernels</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">exposure_on_cube</span>
 
-    <span class="k">def</span> <span class="nf">_off_cube</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">images</span><span class="p">,</span> <span class="n">kernels</span><span class="p">):</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_off_cube</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">exclusion</span><span class="p">,</span> <span class="n">kernels</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compute off cube.</span>
 
 <span class="sd">        Calculated by convolving the raw counts with different ring kernels</span>
 <span class="sd">        and stacking the data along the third dimension.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">counts</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="s1">&#39;counts&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
-        <span class="n">exclusion</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="s1">&#39;exclusion&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
-        <span class="k">return</span> <span class="n">scale_cube</span><span class="p">(</span><span class="n">counts</span> <span class="o">*</span> <span class="n">exclusion</span><span class="p">,</span> <span class="n">kernels</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">scale_cube</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">exclusion</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">kernels</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_reduce_cubes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cubes</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compute off and off exposure map.</span>
@@ -1208,7 +1246,7 @@
 <span class="sd">        iterated along the third axis (i.e. increasing ring sizes), the value</span>
 <span class="sd">        with the first approximate alpha &lt; threshold is taken.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;threshold_alpha&#39;</span><span class="p">]</span>
+        <span class="n">threshold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="p">[</span><span class="s1">&#39;threshold_alpha&#39;</span><span class="p">]</span>
 
         <span class="n">alpha_approx_cube</span> <span class="o">=</span> <span class="n">cubes</span><span class="p">[</span><span class="s1">&#39;alpha_approx&#39;</span><span class="p">]</span>
         <span class="n">off_cube</span> <span class="o">=</span> <span class="n">cubes</span><span class="p">[</span><span class="s1">&#39;off&#39;</span><span class="p">]</span>
@@ -1230,51 +1268,62 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        images : `SkyImageList`</span>
-<span class="sd">            Input sky images.</span>
+<span class="sd">        images : dict of `~gammapy.maps.WcsNDMap`</span>
+<span class="sd">            Input sky maps.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        result : `SkyImageList`</span>
-<span class="sd">            Result sky images.</span>
+<span class="sd">        result : dict of `~gammapy.maps.WcsNDMap`</span>
+<span class="sd">            Result sky maps.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">required</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;counts&#39;</span><span class="p">,</span> <span class="s1">&#39;exposure_on&#39;</span><span class="p">,</span> <span class="s1">&#39;exclusion&#39;</span><span class="p">]</span>
-        <span class="n">images</span><span class="o">.</span><span class="n">check_required</span><span class="p">(</span><span class="n">required</span><span class="p">)</span>
-        <span class="n">wcs</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="s1">&#39;counts&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">counts_map</span><span class="p">,</span> <span class="n">exposure_on_map</span><span class="p">,</span> <span class="n">exclusion_map</span> <span class="o">=</span> <span class="p">[</span><span class="n">images</span><span class="p">[</span><span class="n">_</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">required</span><span class="p">]</span>
 
-        <span class="n">cubes</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;exposure_off&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exposure_on_map</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;off&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exposure_on_map</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exposure_on_map</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;background&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exposure_on_map</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
 
-        <span class="n">kernels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kernels</span><span class="p">(</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;counts&#39;</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">img</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">counts_map</span><span class="o">.</span><span class="n">iter_by_image</span><span class="p">():</span>
+            <span class="n">counts</span> <span class="o">=</span> <span class="n">counts_map</span><span class="o">.</span><span class="n">get_image_by_idx</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">exposure_on</span> <span class="o">=</span> <span class="n">exposure_on_map</span><span class="o">.</span><span class="n">get_image_by_idx</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">exclusion</span> <span class="o">=</span> <span class="n">exclusion_map</span><span class="o">.</span><span class="n">get_image_by_idx</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-        <span class="n">cubes</span><span class="p">[</span><span class="s1">&#39;exposure_on&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exposure_on_cube</span><span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">kernels</span><span class="p">)</span>
-        <span class="n">cubes</span><span class="p">[</span><span class="s1">&#39;exposure_off&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exposure_off_cube</span><span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">kernels</span><span class="p">)</span>
-        <span class="n">cubes</span><span class="p">[</span><span class="s1">&#39;off&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_off_cube</span><span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">kernels</span><span class="p">)</span>
-        <span class="n">cubes</span><span class="p">[</span><span class="s1">&#39;alpha_approx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_alpha_approx_cube</span><span class="p">(</span><span class="n">cubes</span><span class="p">)</span>
+            <span class="n">cubes</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
 
-        <span class="n">exposure_off</span><span class="p">,</span> <span class="n">off</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reduce_cubes</span><span class="p">(</span><span class="n">cubes</span><span class="p">)</span>
-        <span class="n">alpha</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="s1">&#39;exposure_on&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">/</span> <span class="n">exposure_off</span>
-        <span class="n">not_has_exposure</span> <span class="o">=</span> <span class="o">~</span><span class="p">(</span><span class="n">images</span><span class="p">[</span><span class="s1">&#39;exposure_on&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">kernels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kernels</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span>
 
-        <span class="c1"># set data outside fov to zero</span>
-        <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="p">[</span><span class="n">alpha</span><span class="p">,</span> <span class="n">off</span><span class="p">,</span> <span class="n">exposure_off</span><span class="p">]:</span>
-            <span class="n">data</span><span class="p">[</span><span class="n">not_has_exposure</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">cubes</span><span class="p">[</span><span class="s1">&#39;exposure_on&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exposure_on_cube</span><span class="p">(</span><span class="n">exposure_on</span><span class="p">,</span> <span class="n">kernels</span><span class="p">)</span>
+            <span class="n">cubes</span><span class="p">[</span><span class="s1">&#39;exposure_off&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exposure_off_cube</span><span class="p">(</span><span class="n">exposure_on</span><span class="p">,</span> <span class="n">exclusion</span><span class="p">,</span> <span class="n">kernels</span><span class="p">)</span>
 
-        <span class="n">background</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">off</span>
+            <span class="n">cubes</span><span class="p">[</span><span class="s1">&#39;off&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_off_cube</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">exclusion</span><span class="p">,</span> <span class="n">kernels</span><span class="p">)</span>
+            <span class="n">cubes</span><span class="p">[</span><span class="s1">&#39;alpha_approx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_alpha_approx_cube</span><span class="p">(</span><span class="n">cubes</span><span class="p">)</span>
 
-        <span class="n">result</span> <span class="o">=</span> <span class="n">SkyImageList</span><span class="p">()</span>
-        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;exposure_off&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">exposure_off</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="n">wcs</span><span class="p">)</span>
-        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;off&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">off</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="n">wcs</span><span class="p">)</span>
-        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="n">wcs</span><span class="p">)</span>
-        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;background&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">background</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="n">wcs</span><span class="p">)</span>
+            <span class="n">exposure_off</span><span class="p">,</span> <span class="n">off</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reduce_cubes</span><span class="p">(</span><span class="n">cubes</span><span class="p">)</span>
+            <span class="n">alpha</span> <span class="o">=</span> <span class="n">exposure_on</span><span class="o">.</span><span class="n">data</span> <span class="o">/</span> <span class="n">exposure_off</span>
+            <span class="n">not_has_exposure</span> <span class="o">=</span> <span class="o">~</span><span class="p">(</span><span class="n">exposure_on</span><span class="o">.</span><span class="n">data</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+
+            <span class="c1"># set data outside fov to zero</span>
+            <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="p">[</span><span class="n">alpha</span><span class="p">,</span> <span class="n">off</span><span class="p">,</span> <span class="n">exposure_off</span><span class="p">]:</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">not_has_exposure</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="n">background</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">off</span>
+
+            <span class="n">result</span><span class="p">[</span><span class="s1">&#39;exposure_off&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">exposure_off</span>
+            <span class="n">result</span><span class="p">[</span><span class="s1">&#39;off&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">off</span>
+            <span class="n">result</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">alpha</span>
+            <span class="n">result</span><span class="p">[</span><span class="s1">&#39;background&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">background</span>
+
         <span class="k">return</span> <span class="n">result</span></div></div>
 
 
 <div class="viewcode-block" id="RingBackgroundEstimator"><a class="viewcode-back" href="../../../api/gammapy.background.RingBackgroundEstimator.html#gammapy.background.RingBackgroundEstimator">[docs]</a><span class="k">class</span> <span class="nc">RingBackgroundEstimator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Ring background method for cartesian coordinates.</span>
 
-<span class="sd">    Step 1: apply exclusion mask</span>
-<span class="sd">    Step 2: ring-correlate</span>
-<span class="sd">    Step 3: apply psi cut</span>
+<span class="sd">    - Step 1: apply exclusion mask</span>
+<span class="sd">    - Step 2: ring-correlate</span>
+<span class="sd">    - Step 3: apply psi cut</span>
 
 <span class="sd">    TODO: add method to apply the psi cut</span>
 
@@ -1285,26 +1334,26 @@
 <span class="sd">    width : `~astropy.units.Quantity`</span>
 <span class="sd">        Ring width.</span>
 <span class="sd">    use_fft_convolution : bool</span>
-<span class="sd">        Use fft convolution.</span>
+<span class="sd">        Use FFT convolution?</span>
 
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
-<span class="sd">    Here&#39;s an example how to use the `RingBackgroundEstimator`:</span>
+<span class="sd">    Example using `RingBackgroundEstimator`::</span>
 
-<span class="sd">    .. code:: python</span>
-
-<span class="sd">        from astropy import units as u</span>
+<span class="sd">        from gammapy.maps import Map</span>
 <span class="sd">        from gammapy.background import RingBackgroundEstimator</span>
-<span class="sd">        from gammapy.image import SkyImageList</span>
 
 <span class="sd">        filename = &#39;$GAMMAPY_EXTRA/test_datasets/unbundled/poisson_stats_image/input_all.fits.gz&#39;</span>
-<span class="sd">        images = SkyImageList.read(filename)</span>
-<span class="sd">        images[&#39;exposure&#39;].name = &#39;exposure_on&#39;</span>
-<span class="sd">        ring_bkg = RingBackgroundEstimator(r_in=0.35 * u.deg, width=0.3 * u.deg)</span>
-<span class="sd">        results = ring_bkg.run(images)</span>
-<span class="sd">        results[&#39;background&#39;].show()</span>
+<span class="sd">        images = {</span>
+<span class="sd">            &#39;counts&#39;: Map.read(filename, hdu=&#39;counts&#39;),</span>
+<span class="sd">            &#39;exposure_on&#39;: Map.read(filename, hdu=&#39;exposure&#39;),</span>
+<span class="sd">            &#39;exclusion&#39;: Map.read(filename, hdu=&#39;exclusion&#39;),</span>
+<span class="sd">        }</span>
 
+<span class="sd">        ring_bkg = RingBackgroundEstimator(r_in=&#39;0.35 deg&#39;, width=&#39;0.3 deg&#39;)</span>
+<span class="sd">        results = ring_bkg.run(images)</span>
+<span class="sd">        results[&#39;background&#39;].plot()</span>
 
 <span class="sd">    See Also</span>
 <span class="sd">    --------</span>
@@ -1312,15 +1361,24 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r_in</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">use_fft_convolution</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">r_in</span><span class="o">=</span><span class="n">r_in</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">use_fft_convolution</span><span class="o">=</span><span class="n">use_fft_convolution</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">r_in</span><span class="o">=</span><span class="n">Angle</span><span class="p">(</span><span class="n">r_in</span><span class="p">),</span>
+            <span class="n">width</span><span class="o">=</span><span class="n">Angle</span><span class="p">(</span><span class="n">width</span><span class="p">),</span>
+            <span class="n">use_fft_convolution</span><span class="o">=</span><span class="n">use_fft_convolution</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;dict of parameters&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span>
 
 <div class="viewcode-block" id="RingBackgroundEstimator.kernel"><a class="viewcode-back" href="../../../api/gammapy.background.RingBackgroundEstimator.html#gammapy.background.RingBackgroundEstimator.kernel">[docs]</a>    <span class="k">def</span> <span class="nf">kernel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Ring kernel.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        image : `gammapy.image.SkyImage`</span>
-<span class="sd">            Image</span>
+<span class="sd">        image : `~gammapy.maps.WcsNDMap`</span>
+<span class="sd">            Input Map</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1329,7 +1387,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
 
-        <span class="n">scale</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">wcs_pixel_scale</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">pixel_scales</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span>
         <span class="n">r_in</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;r_in&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span>
         <span class="n">width</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span>
 
@@ -1340,36 +1398,31 @@
 <div class="viewcode-block" id="RingBackgroundEstimator.run"><a class="viewcode-back" href="../../../api/gammapy.background.RingBackgroundEstimator.html#gammapy.background.RingBackgroundEstimator.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">images</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Run ring background algorithm.</span>
 
-<span class="sd">        Required sky images: {required}</span>
+<span class="sd">        Required Maps: {required}</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        images : `SkyImageList`</span>
-<span class="sd">            Input sky images.</span>
+<span class="sd">        images : dict of `~gammapy.maps.WcsNDMap`</span>
+<span class="sd">            Input sky maps.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        result : `SkyImageList`</span>
-<span class="sd">            Result sky images</span>
+<span class="sd">        result : dict of `~gammapy.maps.WcsNDMap`</span>
+<span class="sd">            Result sky maps</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
         <span class="n">required</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;counts&#39;</span><span class="p">,</span> <span class="s1">&#39;exposure_on&#39;</span><span class="p">,</span> <span class="s1">&#39;exclusion&#39;</span><span class="p">]</span>
-        <span class="n">images</span><span class="o">.</span><span class="n">check_required</span><span class="p">(</span><span class="n">required</span><span class="p">)</span>
-        <span class="n">counts</span><span class="p">,</span> <span class="n">exposure_on</span><span class="p">,</span> <span class="n">exclusion</span> <span class="o">=</span> <span class="p">[</span><span class="n">images</span><span class="p">[</span><span class="n">_</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">required</span><span class="p">]</span>
-        <span class="n">wcs</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
-        <span class="n">result</span> <span class="o">=</span> <span class="n">SkyImageList</span><span class="p">()</span>
+        <span class="n">counts</span><span class="p">,</span> <span class="n">exposure_on</span><span class="p">,</span> <span class="n">exclusion</span> <span class="o">=</span> <span class="p">[</span><span class="n">images</span><span class="p">[</span><span class="n">_</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">required</span><span class="p">]</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="n">ring</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kernel</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span>
 
-        <span class="n">counts_excluded</span> <span class="o">=</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">exclusion</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="n">wcs</span><span class="p">)</span>
-        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;off&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">counts_excluded</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">ring</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;constant&#39;</span><span class="p">,</span>
-                                                 <span class="n">use_fft</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;use_fft_convolution&#39;</span><span class="p">])</span>
-        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;off&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;off&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">counts_excluded</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">exclusion</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float&#39;</span><span class="p">))</span>
+        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;off&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_convolve_map</span><span class="p">(</span><span class="n">counts_excluded</span><span class="p">,</span> <span class="n">ring</span><span class="p">,</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;use_fft_convolution&#39;</span><span class="p">])</span>
 
-        <span class="n">exposure_on_excluded</span> <span class="o">=</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">exposure_on</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">exclusion</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="n">wcs</span><span class="p">)</span>
-
-        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;exposure_off&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exposure_on_excluded</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">ring</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;constant&#39;</span><span class="p">,</span>
-                                                               <span class="n">use_fft</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="s1">&#39;use_fft_convolution&#39;</span><span class="p">])</span>
+        <span class="n">exposure_on_excluded</span> <span class="o">=</span> <span class="n">exposure_on</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">exposure_on</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">exclusion</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float&#39;</span><span class="p">))</span>
+        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;exposure_off&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_convolve_map</span><span class="p">(</span><span class="n">exposure_on_excluded</span><span class="p">,</span> <span class="n">ring</span><span class="p">,</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;use_fft_convolution&#39;</span><span class="p">])</span>
 
         <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">divide</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="n">invalid</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">):</span>
             <span class="c1"># set pixels, where ring is too small to NaN</span>
@@ -1380,10 +1433,11 @@
             <span class="n">result</span><span class="p">[</span><span class="s1">&#39;off&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">not_has_exposure</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="n">result</span><span class="p">[</span><span class="s1">&#39;exposure_off&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">not_has_exposure</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
 
-            <span class="n">result</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">exposure_on</span><span class="o">.</span><span class="n">data</span> <span class="o">/</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;exposure_off&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="n">wcs</span><span class="p">)</span>
+            <span class="n">result</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exposure_on</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">exposure_on</span><span class="o">.</span><span class="n">data</span> <span class="o">/</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;exposure_off&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
             <span class="n">result</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">not_has_exposure</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
 
-        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;background&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;off&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="n">wcs</span><span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="s1">&#39;background&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;off&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">result</span></div>
 
 <div class="viewcode-block" id="RingBackgroundEstimator.info"><a class="viewcode-back" href="../../../api/gammapy.background.RingBackgroundEstimator.html#gammapy.background.RingBackgroundEstimator.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1398,7 +1452,7 @@
         <span class="k">return</span> <span class="n">info</span></div>
 
 
-<div class="viewcode-block" id="ring_r_out"><a class="viewcode-back" href="../../../api/gammapy.background.ring_r_out.html#gammapy.background.ring_r_out">[docs]</a><span class="k">def</span> <span class="nf">ring_r_out</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">r_in</span><span class="p">,</span> <span class="n">area_factor</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">ring_r_out</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">r_in</span><span class="p">,</span> <span class="n">area_factor</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Compute ring outer radius.</span>
 
 <span class="sd">    The determining equation is:</span>
@@ -1420,10 +1474,10 @@
 <span class="sd">    r_out : float</span>
 <span class="sd">        Outer ring radius</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">area_factor</span> <span class="o">*</span> <span class="n">theta</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">r_in</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">area_factor</span> <span class="o">*</span> <span class="n">theta</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">r_in</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="ring_area_factor"><a class="viewcode-back" href="../../../api/gammapy.background.ring_area_factor.html#gammapy.background.ring_area_factor">[docs]</a><span class="k">def</span> <span class="nf">ring_area_factor</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">r_in</span><span class="p">,</span> <span class="n">r_out</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">ring_area_factor</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">r_in</span><span class="p">,</span> <span class="n">r_out</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Compute ring area factor.</span>
 
 <span class="sd">    Parameters</span>
@@ -1435,10 +1489,10 @@
 <span class="sd">    r_out : float</span>
 <span class="sd">        Outer ring radius</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">r_out</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">r_in</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">theta</span> <span class="o">**</span> <span class="mi">2</span></div>
+    <span class="k">return</span> <span class="p">(</span><span class="n">r_out</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">r_in</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">theta</span> <span class="o">**</span> <span class="mi">2</span>
 
 
-<div class="viewcode-block" id="ring_alpha"><a class="viewcode-back" href="../../../api/gammapy.background.ring_alpha.html#gammapy.background.ring_alpha">[docs]</a><span class="k">def</span> <span class="nf">ring_alpha</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">r_in</span><span class="p">,</span> <span class="n">r_out</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">ring_alpha</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">r_in</span><span class="p">,</span> <span class="n">r_out</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Compute ring alpha, the inverse area factor.</span>
 
 <span class="sd">    Parameters</span>
@@ -1450,7 +1504,7 @@
 <span class="sd">    r_out : float</span>
 <span class="sd">        Outer ring radius</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">ring_area_factor</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">r_in</span><span class="p">,</span> <span class="n">r_out</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">ring_area_factor</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">r_in</span><span class="p">,</span> <span class="n">r_out</span><span class="p">)</span>
 </pre></div>
 
            </div>
@@ -1464,7 +1518,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 26 Jul 2018.
+      Last updated on 30 Jul 2018.
 
     </p>
   </div>
@@ -1486,7 +1540,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6411',
+            VERSION:'0.8.dev6501',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

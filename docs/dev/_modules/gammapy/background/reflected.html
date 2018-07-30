@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.background.reflected &mdash; gammapy v0.8.dev6411</title>
+  <title>gammapy.background.reflected &mdash; gammapy v0.8.dev6501</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6411
+                0.8.dev6501
               </div>
             
           
@@ -492,7 +492,8 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../data/obs_group.html">Observation grouping</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../data/obs_group.html#examples">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../data/obs_group.html#compute-groups">Compute groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../data/obs_group.html#use-groups">Use groups</a></li>
 </ul>
 </li>
 </ul>
@@ -542,21 +543,15 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#using-gammapy-image">Using <code class="docutils literal notranslate"><span class="pre">gammapy.image</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../image/sky_image.html">Sky image</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/sky_image.html#introduction-and-concept">Introduction and Concept</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/sky_image.html#getting-started">Getting started</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/sky_image.html#cutout-and-paste">Cutout and paste</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../image/models.html">Morphology models (<code class="docutils literal notranslate"><span class="pre">gammapy.image.models</span></code>)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#getting-started">Getting Started</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#reference-api">Reference/API</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../image/plotting.html">Image plotting</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../image/plotting.html#colormaps">Colormaps</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../image/plotting.html#multi-panel-galactic-plane-survey-image-plots">Multi-panel Galactic plane survey image plots</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="../../../image/models.html">Morphology models (<code class="docutils literal notranslate"><span class="pre">gammapy.image.models</span></code>)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#introduction">Introduction</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#getting-started">Getting Started</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#reference-api">Reference/API</a></li>
 </ul>
 </li>
 </ul>
@@ -913,6 +908,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/index.html">PIGs</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../development/pigs/pig-001.html">PIG 1 - PIG purpose and guidelines</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../development/pigs/pig-002.html">PIG 2 - Organization of low-level analysis code</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/dataformats.html">Data Formats</a><ul>
@@ -1044,7 +1040,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="k">import</span> <span class="n">Angle</span>
 <span class="kn">from</span> <span class="nn">regions</span> <span class="k">import</span> <span class="n">PixCoord</span><span class="p">,</span> <span class="n">CirclePixelRegion</span>
-<span class="kn">from</span> <span class="nn">..image</span> <span class="k">import</span> <span class="n">SkyImage</span>
+<span class="kn">from</span> <span class="nn">..maps</span> <span class="k">import</span> <span class="n">WcsNDMap</span>
 <span class="kn">from</span> <span class="nn">.background_estimate</span> <span class="k">import</span> <span class="n">BackgroundEstimate</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
@@ -1053,6 +1049,55 @@
 <span class="p">]</span>
 
 <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_compute_distance_image</span><span class="p">(</span><span class="n">mask_map</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Distance to nearest exclusion region.</span>
+
+<span class="sd">    Compute distance image, i.e. the Euclidean (=Cartesian 2D)</span>
+<span class="sd">    distance (in pixels) to the nearest exclusion region.</span>
+
+<span class="sd">    We need to call distance_transform_edt twice because it only computes</span>
+<span class="sd">    dist for pixels outside exclusion regions, so to get the</span>
+<span class="sd">    distances for pixels inside we call it on the inverted mask</span>
+<span class="sd">    and then combine both distance images into one, using negative</span>
+<span class="sd">    distances (note the minus sign) for pixels inside exclusion regions.</span>
+
+<span class="sd">    If data consist only of ones, it&#39;ll be supposed to be far away</span>
+<span class="sd">    from zero pixels, so in capacity of answer it should be return</span>
+<span class="sd">    the matrix with the shape as like as data but packed by constant</span>
+<span class="sd">    value Max_Value (MAX_VALUE = 1e10).</span>
+
+<span class="sd">    If data consist only of zeros, it&#39;ll be supposed to be deep inside</span>
+<span class="sd">    an exclusion region, so in capacity of answer it should be return</span>
+<span class="sd">    the matrix with the shape as like as data but packed by constant</span>
+<span class="sd">    value -Max_Value (MAX_VALUE = 1e10).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    distance : `~gammapy.maps.WcsNDMap`</span>
+<span class="sd">        Map of distance to nearest exclusion region.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">scipy.ndimage</span> <span class="k">import</span> <span class="n">distance_transform_edt</span>
+
+    <span class="n">max_value</span> <span class="o">=</span> <span class="mf">1e10</span>
+
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">mask_map</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="n">dist_map</span> <span class="o">=</span> <span class="n">mask_map</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">mask_map</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">max_value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dist_map</span>
+
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">mask_map</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="n">dist_map</span> <span class="o">=</span> <span class="n">mask_map</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">mask_map</span><span class="o">.</span><span class="n">data</span> <span class="o">-</span> <span class="n">max_value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dist_map</span>
+
+    <span class="n">distance_outside</span> <span class="o">=</span> <span class="n">distance_transform_edt</span><span class="p">(</span><span class="n">mask_map</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="n">invert_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">invert</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mask_map</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">bool</span><span class="p">))</span>
+    <span class="n">distance_inside</span> <span class="o">=</span> <span class="n">distance_transform_edt</span><span class="p">(</span><span class="n">invert_mask</span><span class="p">)</span>
+
+    <span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">mask_map</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">distance_outside</span><span class="p">,</span> <span class="o">-</span><span class="n">distance_inside</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">mask_map</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">distance</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="ReflectedRegionsFinder"><a class="viewcode-back" href="../../../api/gammapy.background.ReflectedRegionsFinder.html#gammapy.background.ReflectedRegionsFinder">[docs]</a><span class="k">class</span> <span class="nc">ReflectedRegionsFinder</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -1076,7 +1121,7 @@
 <span class="sd">        Minimal distance between to reflected regions</span>
 <span class="sd">    min_distance_input : `~astropy.coordinates.Angle`, optional</span>
 <span class="sd">        Minimal distance from input region</span>
-<span class="sd">    exclusion_mask : `~gammapy.image.SkyImage`, optional</span>
+<span class="sd">    exclusion_mask : `~gammapy.maps.WcsNDMap`, optional</span>
 <span class="sd">        Exclusion mask</span>
 
 <span class="sd">    Examples</span>
@@ -1088,9 +1133,9 @@
 <span class="sd">    &gt;&gt;&gt; target_position = SkyCoord(80.2, 23.5, unit=&#39;deg&#39;, frame=&#39;icrs&#39;)</span>
 <span class="sd">    &gt;&gt;&gt; theta = Angle(0.4, &#39;deg&#39;)</span>
 <span class="sd">    &gt;&gt;&gt; on_region = CircleSkyRegion(target_position, theta)</span>
-<span class="sd">    &gt;&gt;&gt; finder = ReflectedRegionsFinder(min_distance_input=&#39;1 rad&#39;, region=on_region, center=pointing))</span>
-<span class="sd">    &gt;&gt;&gt; regions = finder.run()</span>
-<span class="sd">    &gt;&gt;&gt; print(regions[0])</span>
+<span class="sd">    &gt;&gt;&gt; finder = ReflectedRegionsFinder(min_distance_input=&#39;1 rad&#39;, region=on_region, center=pointing)</span>
+<span class="sd">    &gt;&gt;&gt; finder.run()</span>
+<span class="sd">    &gt;&gt;&gt; print(finder.reflected_regions[0])</span>
 <span class="sd">    Region: CircleSkyRegion</span>
 <span class="sd">    center: &lt;SkyCoord (Galactic): (l, b) in deg</span>
 <span class="sd">        ( 184.9367087, -8.37920222)&gt;</span>
@@ -1135,19 +1180,13 @@
         <span class="n">min_size</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">center</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">center</span><span class="p">)</span>
         <span class="n">binsz</span> <span class="o">=</span> <span class="mf">0.02</span>
         <span class="n">npix</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="mi">3</span> <span class="o">*</span> <span class="n">min_size</span> <span class="o">/</span> <span class="n">binsz</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">SkyImage</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span>
-            <span class="n">name</span><span class="o">=</span><span class="s1">&#39;empty exclusion mask&#39;</span><span class="p">,</span>
-            <span class="n">xref</span><span class="o">=</span><span class="n">center</span><span class="o">.</span><span class="n">galactic</span><span class="o">.</span><span class="n">l</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-            <span class="n">yref</span><span class="o">=</span><span class="n">center</span><span class="o">.</span><span class="n">galactic</span><span class="o">.</span><span class="n">b</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-            <span class="n">binsz</span><span class="o">=</span><span class="n">binsz</span><span class="p">,</span>
-            <span class="n">nxpix</span><span class="o">=</span><span class="n">npix</span><span class="p">,</span>
-            <span class="n">nypix</span><span class="o">=</span><span class="n">npix</span><span class="p">,</span>
-            <span class="n">fill</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-        <span class="p">)</span></div>
+        <span class="n">maskmap</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">skydir</span><span class="o">=</span><span class="n">center</span><span class="p">,</span> <span class="n">binsz</span><span class="o">=</span><span class="n">binsz</span><span class="p">,</span> <span class="n">npix</span><span class="o">=</span><span class="n">npix</span><span class="p">,</span> <span class="n">coordsys</span><span class="o">=</span><span class="s1">&#39;GAL&#39;</span><span class="p">,</span> <span class="n">proj</span><span class="o">=</span><span class="s1">&#39;TAN&#39;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="n">maskmap</span><span class="o">.</span><span class="n">data</span> <span class="o">+=</span> <span class="mf">1.</span>
+        <span class="k">return</span> <span class="n">maskmap</span></div>
 
 <div class="viewcode-block" id="ReflectedRegionsFinder.setup"><a class="viewcode-back" href="../../../api/gammapy.background.ReflectedRegionsFinder.html#gammapy.background.ReflectedRegionsFinder.setup">[docs]</a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compute parameters for reflected regions algorithm.&quot;&quot;&quot;</span>
-        <span class="n">wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_mask</span><span class="o">.</span><span class="n">wcs</span>
+        <span class="n">wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_mask</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">wcs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pix_region</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="n">wcs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pix_center</span> <span class="o">=</span> <span class="n">PixCoord</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="n">wcs</span><span class="p">))</span>
         <span class="n">dx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pix_region</span><span class="o">.</span><span class="n">center</span><span class="o">.</span><span class="n">x</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pix_center</span><span class="o">.</span><span class="n">x</span>
@@ -1169,7 +1208,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_max_angle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_angle</span> <span class="o">+</span> <span class="n">Angle</span><span class="p">(</span><span class="s1">&#39;360deg&#39;</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_ang</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_distance_input</span>
 
         <span class="c1"># Distance image</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_distance_image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_mask</span><span class="o">.</span><span class="n">distance_image</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_distance_image</span> <span class="o">=</span> <span class="n">_compute_distance_image</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exclusion_mask</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="ReflectedRegionsFinder.find_regions"><a class="viewcode-back" href="../../../api/gammapy.background.ReflectedRegionsFinder.html#gammapy.background.ReflectedRegionsFinder.find_regions">[docs]</a>    <span class="k">def</span> <span class="nf">find_regions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Find reflected regions.&quot;&quot;&quot;</span>
@@ -1179,7 +1218,7 @@
             <span class="n">test_pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_xy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pix_center</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_offset</span><span class="p">,</span> <span class="n">curr_angle</span><span class="p">)</span>
             <span class="n">test_reg</span> <span class="o">=</span> <span class="n">CirclePixelRegion</span><span class="p">(</span><span class="n">test_pos</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pix_region</span><span class="o">.</span><span class="n">radius</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_inside_exclusion</span><span class="p">(</span><span class="n">test_reg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_distance_image</span><span class="p">):</span>
-                <span class="n">refl_region</span> <span class="o">=</span> <span class="n">test_reg</span><span class="o">.</span><span class="n">to_sky</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exclusion_mask</span><span class="o">.</span><span class="n">wcs</span><span class="p">)</span>
+                <span class="n">refl_region</span> <span class="o">=</span> <span class="n">test_reg</span><span class="o">.</span><span class="n">to_sky</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exclusion_mask</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">wcs</span><span class="p">)</span>
                 <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Placing reflected region</span><span class="se">\n</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">refl_region</span><span class="p">))</span>
                 <span class="n">reflected_regions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">refl_region</span><span class="p">)</span>
                 <span class="n">curr_angle</span> <span class="o">=</span> <span class="n">curr_angle</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_ang</span>
@@ -1195,7 +1234,7 @@
 <span class="sd">        See example here: :ref:&#39;regions_reflected&#39;.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_mask</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fig</span><span class="o">=</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;gray&#39;</span><span class="p">)</span>
-        <span class="n">wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_mask</span><span class="o">.</span><span class="n">wcs</span>
+        <span class="n">wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_mask</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">wcs</span>
         <span class="n">on_patch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="n">wcs</span><span class="o">=</span><span class="n">wcs</span><span class="p">)</span><span class="o">.</span><span class="n">as_patch</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">on_patch</span><span class="p">)</span>
 
@@ -1317,7 +1356,7 @@
 
         <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">cbar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">finder</span><span class="o">.</span><span class="n">exclusion_mask</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fig</span><span class="o">=</span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
 
-        <span class="n">wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">finder</span><span class="o">.</span><span class="n">exclusion_mask</span><span class="o">.</span><span class="n">wcs</span>
+        <span class="n">wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">finder</span><span class="o">.</span><span class="n">exclusion_mask</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">wcs</span>
         <span class="n">on_patch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">on_region</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="n">wcs</span><span class="o">=</span><span class="n">wcs</span><span class="p">)</span><span class="o">.</span><span class="n">as_patch</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">on_patch</span><span class="p">)</span>
 
@@ -1369,7 +1408,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 26 Jul 2018.
+      Last updated on 30 Jul 2018.
 
     </p>
   </div>
@@ -1391,7 +1430,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6411',
+            VERSION:'0.8.dev6501',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

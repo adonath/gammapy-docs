@@ -23,7 +23,7 @@ from gammapy.astro.darkmatter import (
     DMFluxMapMaker
 )
 
-from gammapy.maps import Map, WcsNDMap
+from gammapy.maps import WcsGeom, WcsNDMap
 from astropy.coordinates import SkyCoord
 from matplotlib.colors import LogNorm
 from regions import CircleSkyRegion
@@ -83,27 +83,26 @@ profiles.DMProfile.LOCAL_DENSITY = 0.39 * u.Unit('GeV / cm3')
 profile.scale_to_local_density()
 
 position = SkyCoord(0.0, 0.0, frame='galactic', unit='deg')
-m = Map.create(binsz=0.05, map_type='wcs', skydir=position, width=3.0, coordsys='GAL')
+geom = WcsGeom.create(binsz=0.05, skydir=position, width=3.0, coordsys='GAL')
 
 
 # In[6]:
 
 
-jfactory = JFactory(map_=m, profile=profile, distance=profiles.DMProfile.DISTANCE_GC)
-jfactory.run()
-jfact = jfactory.jfact
+jfactory = JFactory(ref_geom=geom, profile=profile, distance=profiles.DMProfile.DISTANCE_GC)
+jfact = jfactory.compute_jfactor()
 
 
 # In[7]:
 
 
-fig, ax, im = jfact.plot(cmap='viridis', norm=LogNorm())
-plt.title('J-Factor [{}]'.format(jfact.unit))
-plt.colorbar(im)
+jfact_map = WcsNDMap(geom=geom, data=jfact)
+fig, ax, im = jfact_map.plot(cmap='viridis', norm=LogNorm(), add_cbar=True)
+plt.title('J-Factor [{}]'.format(jfact_map.unit))
 
 # 1 deg circle usually used in H.E.S.S. analyses
 sky_reg = CircleSkyRegion(center=position, radius=1 * u.deg)
-pix_reg = sky_reg.to_pixel(wcs=m.geom.wcs)
+pix_reg = sky_reg.to_pixel(wcs=geom.wcs)
 
 print(type(ax))
 ax.add_patch(pix_reg.as_patch(facecolor='none', edgecolor='red', label='1 deg circle'))
@@ -161,20 +160,21 @@ plt.subplots_adjust(hspace=0.5)
 
 
 map_maker = DMFluxMapMaker(
-    jfact_map=jfact,
+    jfact=jfact,
     prim_flux=fluxes, 
     x_section='1e-26 cm3s-1', 
     energy_range=[0.1, 10] * u.TeV)
-map_maker.run()
+flux = map_maker.run()
 
 
 # In[12]:
 
 
-fig, ax, im = map_maker.flux_map.plot(cmap='viridis', norm=LogNorm())
+flux_map = WcsNDMap(geom=geom, data=flux)
+
+fig, ax, im = flux_map.plot(cmap='viridis', norm=LogNorm(), add_cbar=True)
 plt.title('Flux [{}]\n m$_{{DM}}$={}\n channel={}'.format(
-    map_maker.flux_map.unit, 
+    flux_map.unit, 
     fluxes.mDM.to('TeV'),
     fluxes.channel))
-plt.colorbar(im)
 

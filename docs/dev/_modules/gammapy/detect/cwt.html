@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.detect.cwt &mdash; gammapy v0.8.dev6411</title>
+  <title>gammapy.detect.cwt &mdash; gammapy v0.8.dev6501</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6411
+                0.8.dev6501
               </div>
             
           
@@ -492,7 +492,8 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../data/obs_group.html">Observation grouping</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../data/obs_group.html#examples">Examples</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../data/obs_group.html#compute-groups">Compute groups</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../data/obs_group.html#use-groups">Use groups</a></li>
 </ul>
 </li>
 </ul>
@@ -542,21 +543,15 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#using-gammapy-image">Using <code class="docutils literal notranslate"><span class="pre">gammapy.image</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../image/sky_image.html">Sky image</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/sky_image.html#introduction-and-concept">Introduction and Concept</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/sky_image.html#getting-started">Getting started</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/sky_image.html#cutout-and-paste">Cutout and paste</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../image/models.html">Morphology models (<code class="docutils literal notranslate"><span class="pre">gammapy.image.models</span></code>)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#getting-started">Getting Started</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#reference-api">Reference/API</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../image/plotting.html">Image plotting</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../image/plotting.html#colormaps">Colormaps</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../image/plotting.html#multi-panel-galactic-plane-survey-image-plots">Multi-panel Galactic plane survey image plots</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="../../../image/models.html">Morphology models (<code class="docutils literal notranslate"><span class="pre">gammapy.image.models</span></code>)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#introduction">Introduction</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#getting-started">Getting Started</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#reference-api">Reference/API</a></li>
 </ul>
 </li>
 </ul>
@@ -913,6 +908,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/index.html">PIGs</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../development/pigs/pig-001.html">PIG 1 - PIG purpose and guidelines</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../development/pigs/pig-002.html">PIG 2 - Organization of low-level analysis code</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/dataformats.html">Data Formats</a><ul>
@@ -1047,8 +1043,7 @@
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="k">import</span> <span class="n">Table</span>
 <span class="kn">from</span> <span class="nn">astropy.convolution</span> <span class="k">import</span> <span class="n">Gaussian2DKernel</span><span class="p">,</span> <span class="n">MexicanHat2DKernel</span>
-<span class="kn">from</span> <span class="nn">..image</span> <span class="k">import</span> <span class="n">SkyImage</span>
-<span class="kn">from</span> <span class="nn">..cube</span> <span class="k">import</span> <span class="n">SkyCube</span>
+<span class="kn">from</span> <span class="nn">..maps</span> <span class="k">import</span> <span class="n">WcsNDMap</span><span class="p">,</span> <span class="n">MapAxis</span><span class="p">,</span> <span class="n">WcsGeom</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s1">&#39;CWT&#39;</span><span class="p">,</span>
@@ -1449,27 +1444,29 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    counts : `~gammapy.image.SkyImage`</span>
+<span class="sd">    counts : `~gammapy.maps.WcsNDMap`</span>
 <span class="sd">        2D counts image.</span>
-<span class="sd">    background : `~gammapy.image.SkyImage`</span>
+<span class="sd">    background : `~gammapy.maps.WcsNDMap`</span>
 <span class="sd">        2D background image.</span>
 <span class="sd">    n_scale : int</span>
 <span class="sd">        Number of scales.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
-<span class="sd">    &gt;&gt;&gt; from gammapy.image import SkyImage</span>
+<span class="sd">    &gt;&gt;&gt; from gammapy.maps import Map</span>
 <span class="sd">    &gt;&gt;&gt; from gammapy.detect import CWTData</span>
 <span class="sd">    &gt;&gt;&gt; filename = &#39;$GAMMAPY_EXTRA/datasets/fermi_survey/all.fits.gz&#39;</span>
-<span class="sd">    &gt;&gt;&gt; image = SkyImage.read(filename, hdu=&#39;COUNTS&#39;)</span>
-<span class="sd">    &gt;&gt;&gt; background = SkyImage.read(filename, hdu=&#39;BACKGROUND&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; image = Map.read(filename, hdu=&#39;COUNTS&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; background = Map.read(filename, hdu=&#39;BACKGROUND&#39;)</span>
 <span class="sd">    &gt;&gt;&gt; data = CWTData(counts=image, background=background, n_scale=2)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">n_scale</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_background</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">background</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">wcs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_geom2d</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">scale_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_scale</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_geom3d</span> <span class="o">=</span> <span class="n">WcsGeom</span><span class="p">(</span><span class="n">wcs</span><span class="o">=</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">wcs</span><span class="p">,</span> <span class="n">npix</span><span class="o">=</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">npix</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">scale_axis</span><span class="p">])</span>
 
         <span class="n">shape_2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_counts</span><span class="o">.</span><span class="n">shape</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape_2d</span><span class="p">)</span>
@@ -1484,113 +1481,111 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">counts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;2D counts input image (`~gammapy.image.SkyImage`).&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;counts&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_counts</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="p">))</span>
+        <span class="sd">&quot;&quot;&quot;2D counts input image (`~gammapy.maps.WcsNDMap`).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_geom2d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_counts</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">background</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;2D background input image (`~gammapy.image.SkyImage`).&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;background&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_background</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="p">))</span>
+        <span class="sd">&quot;&quot;&quot;2D background input image (`~gammapy.maps.WcsNDMap`).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_geom2d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_background</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;2D model image (`~gammapy.image.SkyImage`).</span>
+        <span class="sd">&quot;&quot;&quot;2D model image (`~gammapy.maps.WcsNDMap`).</span>
 
 <span class="sd">        Positive version of transform_2d image.</span>
 <span class="sd">        Primordial initialized by zero array.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_geom2d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">approx</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;2D approx ??? image (`~gammapy.image.SkyImage`).</span>
+        <span class="sd">&quot;&quot;&quot;2D approx ??? image (`~gammapy.maps.WcsNDMap`).</span>
 
 <span class="sd">        In the course of iterations updated by convolution of</span>
 <span class="sd">        ``counts - model - background`` with ``kern_approx``</span>
 <span class="sd">        Primordial initialized by zero array.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;approx&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_approx</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_geom2d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_approx</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">approx_bkg</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;2D approx bkg image (`~gammapy.image.SkyImage`).</span>
+        <span class="sd">&quot;&quot;&quot;2D approx bkg image (`~gammapy.maps.WcsNDMap`).</span>
 
 <span class="sd">        In the course of iterations updated by convolution of ``background`` with ``kern_approx``.</span>
 <span class="sd">        Primordial initialized by zero array.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;approx_bkg&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_approx_bkg</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_geom2d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_approx_bkg</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">transform_2d</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;2D transform ??? image (`~gammapy.image.SkyImage`).</span>
+        <span class="sd">&quot;&quot;&quot;2D transform ??? image (`~gammapy.maps.WcsNDMap`).</span>
 
 <span class="sd">        Created from transform_3d by summarize values per 0 axes.</span>
 <span class="sd">        Primordial initialized by zero array.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;transform_2d&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_transform_2d</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_geom2d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transform_2d</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">support_2d</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;2D cube exclusion mask (`~gammapy.cube.SkyCube`).</span>
+        <span class="sd">&quot;&quot;&quot;2D cube exclusion mask (`~gammapy.maps.WcsNDMap`).</span>
 
 <span class="sd">        Created from support_3d by OR-operation per 0 axis.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">support_2d</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_support</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;support_2d&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">support_2d</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_geom2d</span><span class="p">,</span> <span class="n">support_2d</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">residual</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;2D residual image (`~gammapy.image.SkyImage`).</span>
+        <span class="sd">&quot;&quot;&quot;2D residual image (`~gammapy.maps.WcsNDMap`).</span>
 
 <span class="sd">        Calculate as ``counts - model - approx``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">residual</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_counts</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_approx</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;residual&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">residual</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_geom2d</span><span class="p">,</span> <span class="n">residual</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">model_plus_approx</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;TODO: document what this is.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;/model plus approx&#39;</span><span class="p">,</span>
-                        <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_approx</span><span class="p">,</span>
-                        <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_geom2d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_approx</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">transform_3d</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;3D transform ??? cube (`~gammapy.cube.SkyCube`).</span>
+        <span class="sd">&quot;&quot;&quot;3D transform ??? cube (`~gammapy.maps.WcsNDMap`).</span>
 
 <span class="sd">        Primordial initialized by zero array. In the course of</span>
 <span class="sd">        iterations updated by convolution of ``counts - total_background`` with kernel</span>
 <span class="sd">        for each scale (``total_background = model + background + approx``).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">SkyCube</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;transform_3d&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_transform_3d</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_geom3d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transform_3d</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;3D error cube (`~gammapy.cube.SkyCube`).</span>
+        <span class="sd">&quot;&quot;&quot;3D error cube (`~gammapy.maps.WcsNDMap`).</span>
 
 <span class="sd">        Primordial initialized by zero array.</span>
 <span class="sd">        In the course of iterations updated by convolution of ``total_background``</span>
 <span class="sd">        with kernel^2 for each scale.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">SkyCube</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_error</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_geom3d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_error</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">support_3d</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;3D support (exclusion) cube (`~gammapy.cube.SkyCube`).</span>
+        <span class="sd">&quot;&quot;&quot;3D support (exclusion) cube (`~gammapy.maps.WcsNDMap`).</span>
 
 <span class="sd">        Primordial initialized by zero array.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;support_3d&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_support</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_geom3d</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_support</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">max_scale_image</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Maximum scale image (`~gammapy.image.SkyImage`).&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Maximum scale image (`~gammapy.maps.WcsNDMap`).&quot;&quot;&quot;</span>
         <span class="c1"># Previous version:</span>
         <span class="c1"># idx_scale_max = np.argmax(self._transform_3d, axis=0)</span>
         <span class="c1"># return kernels.scales[idx_scale_max] * (self._support.sum(0) &gt; 0)</span>
         <span class="n">transform_2d_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_transform_3d</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="n">maximal_image</span> <span class="o">=</span> <span class="n">transform_2d_max</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">support_2d</span>
-        <span class="k">return</span> <span class="n">SkyImage</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;maximal&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">maximal_image</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="p">)</span>
+        <span class="n">maximal_image</span> <span class="o">=</span> <span class="n">transform_2d_max</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">support_2d</span><span class="o">.</span><span class="n">data</span>
+        <span class="k">return</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_geom2d</span><span class="p">,</span> <span class="n">maximal_image</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__sub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">CWTData</span><span class="p">(</span><span class="n">counts</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="p">,</span>
@@ -1644,7 +1639,8 @@
             <span class="n">support</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">support_3d</span><span class="p">,</span>
         <span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">_metrics_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_metrics_info</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compute variance, mean, find max and min values and compute sum for given data.</span>
 
 <span class="sd">        Parameters</span>
@@ -1795,7 +1791,7 @@
 <span class="sd">        overwrite : bool, optional (default False)</span>
 <span class="sd">            If True, overwrite file with name as filename.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="o">.</span><span class="n">to_header</span><span class="p">()</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_geom2d</span><span class="o">.</span><span class="n">make_header</span><span class="p">()</span>
         <span class="n">hdu_list</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">()</span>
         <span class="n">hdu_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">())</span>
         <span class="n">hdu_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">ImageHDU</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_counts</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">header</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;counts&#39;</span><span class="p">))</span>
@@ -1818,7 +1814,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 26 Jul 2018.
+      Last updated on 30 Jul 2018.
 
     </p>
   </div>
@@ -1840,7 +1836,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6411',
+            VERSION:'0.8.dev6501',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

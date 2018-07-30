@@ -54,7 +54,7 @@ print(pwl)
 
 
 pwl = models.PowerLaw(
-    index=2.3 * u.Unit(''),
+    index=2.3,
     amplitude=1e-12 * u.Unit('cm-2 s-1 TeV-1'),
     reference=1 * u.TeV,
 )
@@ -73,7 +73,7 @@ print(pwl)
 print(pwl.parameters)
 
 print(pwl.parameters['index'])
-pwl.parameters['index'].value=2.6
+pwl.parameters['index'].value = 2.6
 print(pwl.parameters['index'])
 
 print(pwl.parameters['amplitude'])
@@ -110,8 +110,8 @@ pwl.plot(energy_range, energy_power=2, energy_unit='GeV')
 
 
 errors = dict(
-    index = 0.2 * u.Unit(''),
-    amplitude = 0.1 * pwl.parameters['amplitude'].quantity
+    index=0.2,
+    amplitude=0.1 * pwl.parameters['amplitude'].quantity
 )
 pwl.parameters.set_parameter_errors(errors)
 print(pwl)
@@ -158,11 +158,11 @@ print(integral)
 class UserModel(models.SpectralModel):
     def __init__(self, index, amplitude, reference, mean, width):
         self.parameters = ParameterList([
-                Parameter('index', index, parmin=0),
-                Parameter('amplitude', amplitude, parmin=0),
+                Parameter('index', index, min=0),
+                Parameter('amplitude', amplitude, min=0),
                 Parameter('reference', reference, frozen=True),
-                Parameter('mean', mean, parmin=0),
-                Parameter('width', width, parmin=0, frozen=True)
+                Parameter('mean', mean, min=0),
+                Parameter('width', width, min=0, frozen=True)
             ])
     @staticmethod
     def evaluate(energy, index, amplitude, reference, mean, width):
@@ -175,7 +175,7 @@ class UserModel(models.SpectralModel):
 
 
 model = UserModel(
-    index=2 * u.Unit(''),
+    index=2,
     amplitude=1e-12 * u.Unit('cm-2 s-1 TeV-1'),
     reference=1 * u.TeV,
     mean=5 * u.TeV,
