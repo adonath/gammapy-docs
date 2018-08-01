@@ -27,25 +27,10 @@ import matplotlib.pyplot as plt
 # In[2]:
 
 
-# Check package versions, if something goes wrong here you won't be able to run the notebook
-import gammapy
-import numpy as np
-import astropy
-import regions
-import sherpa
-import uncertainties
-import photutils
-
-print('gammapy:', gammapy.__version__)
-print('numpy:', np.__version__)
-print('astropy:', astropy.__version__)
-print('regions:', regions.__version__)
-print('sherpa:', sherpa.__version__)
-print('uncertainties:', uncertainties.__version__)
-print('photutils:', photutils.__version__)
+get_ipython().system('gammapy info --no-envvar --no-system')
 
 
-# In[3]:
+# In[14]:
 
 
 import numpy as np
@@ -53,6 +38,7 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 from regions import CircleSkyRegion
 from photutils.detection import find_peaks
+from gammapy.utils.energy import EnergyBounds
 from gammapy.data import DataStore
 from gammapy.spectrum import (
     SpectrumExtraction,
@@ -62,10 +48,10 @@ from gammapy.spectrum import (
     SpectrumEnergyGroupMaker,
     FluxPointEstimator,
 )
-from gammapy.image import SkyImage, IACTBasicImageEstimator
-from gammapy.background import RingBackgroundEstimator, ReflectedRegionsBackgroundEstimator
-from gammapy.utils.energy import EnergyBounds
-from gammapy.detect import TSImageEstimator
+from gammapy.maps import Map, MapAxis, WcsNDMap, WcsGeom
+from gammapy.cube import MapMaker
+from gammapy.background import ReflectedRegionsBackgroundEstimator
+from gammapy.detect import TSMapEstimator
 
 
 # In[4]:
@@ -88,7 +74,8 @@ log.setLevel(logging.ERROR)
 # In[5]:
 
 
-data_store = DataStore.from_dir('$CTADATA/index/gps')
+# data_store = DataStore.from_dir('$CTADATA/index/gps')
+data_store = DataStore.from_dir('$GAMMAPY_EXTRA/datasets/cta-1dc/index/gps/')
 
 
 # In[6]:
@@ -133,75 +120,61 @@ on_radius = 0.2 * u.deg
 on_region = CircleSkyRegion(center=target_position, radius=on_radius)
 
 
-# In[10]:
+# In[15]:
 
 
-# Define reference image centered on the target
-xref = target_position.galactic.l.value
-yref = target_position.galactic.b.value
-# size = 10 * u.deg
-# binsz = 0.02 # degree per pixel
-# npix = int((size / binsz).value)
-
-ref_image = SkyImage.empty(
-    nxpix=800, nypix=600, binsz=0.02,
-    xref=xref, yref=yref,
-    proj='TAN', coordsys='GAL',
+axis = MapAxis.from_edges(
+    np.logspace(-1., 1., 10), unit='TeV', name='energy'
 )
-print(ref_image)
+geom = WcsGeom.create(
+    skydir=(0, 0),
+    npix=(800, 600),
+    binsz=0.02,
+    coordsys='GAL',
+    axes=[axis]
+)
+geom
 
 
 # ### Compute images
 # 
 # We use the ring background estimation method, and an exclusion mask that excludes the bright source at the Galactic center.
 
-# In[11]:
+# In[17]:
 
 
-exclusion_mask = ref_image.region_mask(on_region)
-exclusion_mask.data = 1 - exclusion_mask.data
-exclusion_mask.plot()
+exclusion_mask = WcsNDMap(geom.to_image()).make_region_mask(on_region, inside=True)
+exclusion_mask.plot();
 
 
-# In[12]:
+# In[18]:
 
 
-bkg_estimator = RingBackgroundEstimator(
-    r_in=0.5 * u.deg,
-    width=0.2 * u.deg,
-)
-image_estimator = IACTBasicImageEstimator(
-    reference=ref_image,
-    emin=100 * u.GeV,
-    emax=100 * u.TeV,
-    offset_max=3 * u.deg,
-    background_estimator=bkg_estimator,
-    exclusion_mask=exclusion_mask,
-)
-images = image_estimator.run(obs_list)
-images.names
+maker = MapMaker(geom, offset_max='2 deg')
+maps = maker.run(obs_list)
+print(maps.keys())
 
 
 # ### Show images
 # 
 # Let's define a little helper function and then show all the resulting images that were computed.
 
-# In[13]:
+# In[39]:
 
 
 def show_image(image, radius=3, vmin=0, vmax=3):
     """Little helper function to show the images for this application here."""
-    image.smooth(radius=radius).show(vmin=vmin, vmax=vmax, add_cbar=True)
-    image.cutout(
+    image.smooth(radius=radius).plot(vmin=vmin, vmax=vmax, add_cbar=True)
+    image.make_cutout(
         position=SkyCoord(0.5, 0, unit='deg', frame='galactic'),
-        size=(2*u.deg, 3*u.deg),
-    ).smooth(radius=radius).show(vmin=vmin, vmax=vmax, add_cbar=True)
+        width=(3*u.deg, 2*u.deg),
+    )[0].smooth(radius=radius).plot(vmin=vmin, vmax=vmax, add_cbar=True)
 
 
-# In[14]:
+# In[40]:
 
 
-show_image(images['counts'], radius=0, vmax=10)
+show_image(maps['counts_map'].sum_over_axes(), radius=0, vmax=10)
 
 
 # In[15]:

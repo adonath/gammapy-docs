@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.cube.new &mdash; gammapy v0.8.dev6532</title>
+  <title>gammapy.cube.exposure &mdash; gammapy v0.8.dev6584</title>
   
 
   
@@ -17,7 +17,7 @@
   
   
   
-    <link rel="canonical" href="http://docs.gammapy.org/dev/_modules/gammapy/cube/new.html"/>
+    <link rel="canonical" href="http://docs.gammapy.org/dev/_modules/gammapy/cube/exposure.html"/>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6532
+                0.8.dev6584
               </div>
             
           
@@ -520,6 +520,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../detect/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../detect/index.html#computation-of-ts-images">Computation of TS images</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../detect/index.html#computation-of-li-ma-significance-images">Computation of Li &amp; Ma significance images</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../detect/index.html#using-gammapy-detect">Using <code class="docutils literal notranslate"><span class="pre">gammapy.detect</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../detect/index.html#reference-api">Reference/API</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../detect/index.html#module-gammapy.detect">gammapy.detect Package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../detect/index.html#functions">Functions</a></li>
@@ -532,11 +533,9 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../../background/index.html">background - Background modeling</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#getting-started">Getting Started</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../background/index.html#using-gammapy-background">Using <code class="docutils literal notranslate"><span class="pre">gammapy.background</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html">Reflected regions</a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#using-gammapy-background">Using <code class="docutils literal notranslate"><span class="pre">gammapy.background</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../background/reflected.html">Reflected regions</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#reference-api">Reference/API</a><ul>
@@ -582,7 +581,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../time/index.html#other-codes">Other codes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../time/index.html#content">Content</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../time/index.html#using-gammapy-time">Using <code class="docutils literal notranslate"><span class="pre">gammapy.time</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../time/period.html">Period detection and plotting</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../time/period.html#introduction">Introduction</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../time/period.html#getting-started">Getting Started</a></li>
@@ -1000,7 +999,7 @@
         
           <li><a href="../../index.html">Module code</a> &raquo;</li>
         
-      <li>gammapy.cube.new</li>
+      <li>gammapy.cube.exposure</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -1015,92 +1014,22 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <h1>Source code for gammapy.cube.new</h1><div class="highlight"><pre>
+  <h1>Source code for gammapy.cube.exposure</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
-<span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="k">import</span> <span class="n">Angle</span>
-<span class="kn">from</span> <span class="nn">astropy.units</span> <span class="k">import</span> <span class="n">Quantity</span>
-<span class="kn">from</span> <span class="nn">astropy.nddata.utils</span> <span class="k">import</span> <span class="n">PartialOverlapError</span>
-<span class="kn">from</span> <span class="nn">..maps</span> <span class="k">import</span> <span class="n">WcsNDMap</span><span class="p">,</span> <span class="n">Map</span>
-<span class="kn">from</span> <span class="nn">.counts</span> <span class="k">import</span> <span class="n">fill_map_counts</span>
+<span class="kn">from</span> <span class="nn">..maps</span> <span class="k">import</span> <span class="n">WcsNDMap</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s1">&#39;make_map_separation&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;make_map_counts&#39;</span><span class="p">,</span>
     <span class="s1">&#39;make_map_exposure_true_energy&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;make_map_background_irf&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;make_map_background_fov&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;MapMaker&#39;</span><span class="p">,</span>
 <span class="p">]</span>
 
-<span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
+<div class="viewcode-block" id="make_map_exposure_true_energy"><a class="viewcode-back" href="../../../api/gammapy.cube.make_map_exposure_true_energy.html#gammapy.cube.make_map_exposure_true_energy">[docs]</a><span class="k">def</span> <span class="nf">make_map_exposure_true_energy</span><span class="p">(</span><span class="n">pointing</span><span class="p">,</span> <span class="n">livetime</span><span class="p">,</span> <span class="n">aeff</span><span class="p">,</span> <span class="n">geom</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute exposure map.</span>
 
-<div class="viewcode-block" id="make_map_separation"><a class="viewcode-back" href="../../../api/gammapy.cube.make_map_separation.html#gammapy.cube.make_map_separation">[docs]</a><span class="k">def</span> <span class="nf">make_map_separation</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">position</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Compute distance of pixels to a given position for the input reference WCSGeom.</span>
-
-<span class="sd">    Result is returned as a 2D WcsNDmap</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    geom : `~gammapy.maps.WcsGeom`</span>
-<span class="sd">        Reference geometry</span>
-<span class="sd">    position : `~astropy.coordinates.SkyCoord`</span>
-<span class="sd">        Reference position</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    separation : `~gammapy.maps.Map`</span>
-<span class="sd">        Separation map (2D)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># We use WcsGeom.get_coords which does not provide SkyCoords for the moment</span>
-    <span class="c1"># We convert the output to SkyCoords</span>
-    <span class="n">geom</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span>
-
-    <span class="n">coord</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span>
-    <span class="n">separation</span> <span class="o">=</span> <span class="n">position</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">coord</span><span class="o">.</span><span class="n">skycoord</span><span class="p">)</span>
-
-    <span class="n">m</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span>
-    <span class="n">m</span><span class="o">.</span><span class="n">quantity</span> <span class="o">=</span> <span class="n">separation</span>
-    <span class="k">return</span> <span class="n">m</span></div>
-
-
-<div class="viewcode-block" id="make_map_counts"><a class="viewcode-back" href="../../../api/gammapy.cube.make_map_counts.html#gammapy.cube.make_map_counts">[docs]</a><span class="k">def</span> <span class="nf">make_map_counts</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">ref_geom</span><span class="p">,</span> <span class="n">pointing</span><span class="p">,</span> <span class="n">offset_max</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Build a WcsNDMap (space - energy) with events from an EventList.</span>
-
-<span class="sd">    The energy of the events is used for the non-spatial axis.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    events : `~gammapy.data.EventList`</span>
-<span class="sd">        Event list</span>
-<span class="sd">    ref_geom : `~gammapy.maps.WcsGeom`</span>
-<span class="sd">        Reference WcsGeom object used to define geometry (space - energy)</span>
-<span class="sd">    pointing : `~astropy.coordinates.SkyCoord`</span>
-<span class="sd">        Pointing direction</span>
-<span class="sd">    offset_max : `~astropy.coordinates.Angle`</span>
-<span class="sd">        Maximum field of view offset.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    cntmap : `~gammapy.maps.WcsNDMap`</span>
-<span class="sd">        Count cube (3D) in true energy bins</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">counts_map</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="n">ref_geom</span><span class="p">)</span>
-    <span class="n">fill_map_counts</span><span class="p">(</span><span class="n">counts_map</span><span class="p">,</span> <span class="n">events</span><span class="p">)</span>
-
-    <span class="c1"># Compute and apply FOV offset mask</span>
-    <span class="n">offset</span> <span class="o">=</span> <span class="n">make_map_separation</span><span class="p">(</span><span class="n">ref_geom</span><span class="p">,</span> <span class="n">pointing</span><span class="p">)</span><span class="o">.</span><span class="n">quantity</span>
-    <span class="n">offset_mask</span> <span class="o">=</span> <span class="n">offset</span> <span class="o">&gt;=</span> <span class="n">offset_max</span>
-    <span class="n">counts_map</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="n">offset_mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-
-    <span class="k">return</span> <span class="n">counts_map</span></div>
-
-
-<div class="viewcode-block" id="make_map_exposure_true_energy"><a class="viewcode-back" href="../../../api/gammapy.cube.make_map_exposure_true_energy.html#gammapy.cube.make_map_exposure_true_energy">[docs]</a><span class="k">def</span> <span class="nf">make_map_exposure_true_energy</span><span class="p">(</span><span class="n">pointing</span><span class="p">,</span> <span class="n">livetime</span><span class="p">,</span> <span class="n">aeff</span><span class="p">,</span> <span class="n">ref_geom</span><span class="p">,</span> <span class="n">offset_max</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Compute exposure WcsNDMap in true energy (i.e. not convolved by Edisp).</span>
+<span class="sd">     This map has a true energy axis, the exposure is not combined</span>
+<span class="sd">     with energy dispersion.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1110,22 +1039,20 @@
 <span class="sd">        Livetime</span>
 <span class="sd">    aeff : `~gammapy.irf.EffectiveAreaTable2D`</span>
 <span class="sd">        Effective area table</span>
-<span class="sd">    ref_geom : `~gammapy.maps.WcsGeom`</span>
+<span class="sd">    geom : `~gammapy.maps.WcsGeom`</span>
 <span class="sd">        Reference WcsGeom object used to define geometry (space - energy)</span>
-<span class="sd">    offset_max : `~astropy.coordinates.Angle`</span>
-<span class="sd">        Maximum field of view offset.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    expmap : `~gammapy.maps.WcsNDMap`</span>
 <span class="sd">        Exposure cube (3D) in true energy bins</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">offset</span> <span class="o">=</span> <span class="n">make_map_separation</span><span class="p">(</span><span class="n">ref_geom</span><span class="p">,</span> <span class="n">pointing</span><span class="p">)</span><span class="o">.</span><span class="n">quantity</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">pointing</span><span class="p">)</span>
 
     <span class="c1"># Retrieve energies from WcsNDMap</span>
     <span class="c1"># Note this would require a log_center from the geometry</span>
     <span class="c1"># Or even better edges, but WcsNDmap does not really allows it.</span>
-    <span class="n">energy</span> <span class="o">=</span> <span class="n">ref_geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">center</span> <span class="o">*</span> <span class="n">ref_geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
+    <span class="n">energy</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">center</span> <span class="o">*</span> <span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
 
     <span class="n">exposure</span> <span class="o">=</span> <span class="n">aeff</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span> <span class="n">energy</span><span class="o">=</span><span class="n">energy</span><span class="p">)</span>
     <span class="n">exposure</span> <span class="o">*=</span> <span class="n">livetime</span>
@@ -1135,218 +1062,9 @@
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
         <span class="n">exposure</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="n">exposure</span><span class="o">.</span><span class="n">unit</span>
 
-    <span class="c1"># Put exposure outside offset max to zero</span>
-    <span class="c1"># This might be more generaly dealt with a mask map</span>
-    <span class="n">exposure</span><span class="p">[:,</span> <span class="n">offset</span> <span class="o">&gt;=</span> <span class="n">offset_max</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-
     <span class="n">data</span> <span class="o">=</span> <span class="n">exposure</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;m2 s&#39;</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="n">ref_geom</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="make_map_background_irf"><a class="viewcode-back" href="../../../api/gammapy.cube.make_map_background_irf.html#gammapy.cube.make_map_background_irf">[docs]</a><span class="k">def</span> <span class="nf">make_map_background_irf</span><span class="p">(</span><span class="n">pointing</span><span class="p">,</span> <span class="n">livetime</span><span class="p">,</span> <span class="n">bkg</span><span class="p">,</span> <span class="n">ref_geom</span><span class="p">,</span> <span class="n">offset_max</span><span class="p">,</span> <span class="n">n_integration_bins</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Compute background map from background IRFs.</span>
-
-<span class="sd">    TODO: Call a method on bkg that returns integral over energy bin directly</span>
-<span class="sd">    Related: https://github.com/gammapy/gammapy/pull/1342</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    pointing : `~astropy.coordinates.SkyCoord`</span>
-<span class="sd">        Pointing direction</span>
-<span class="sd">    livetime : `~astropy.units.Quantity`</span>
-<span class="sd">        Observation livetime</span>
-<span class="sd">    bkg : `~gammapy.irf.Background3D`</span>
-<span class="sd">        Background rate model</span>
-<span class="sd">    ref_geom : `~gammapy.maps.WcsGeom`</span>
-<span class="sd">        Reference geometry</span>
-<span class="sd">    offset_max : `~astropy.coordinates.Angle`</span>
-<span class="sd">        Maximum field of view offset</span>
-<span class="sd">    n_integration_bins : int</span>
-<span class="sd">            Number of bins used to integrate on each energy range</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    background : `~gammapy.maps.WcsNDMap`</span>
-<span class="sd">        Background predicted counts sky cube in reco energy</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Compute the expected background</span>
-    <span class="c1"># TODO: properly transform FOV to sky coordinates</span>
-    <span class="c1"># For now we assume the background is radially symmetric</span>
-
-    <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">ref_geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="c1"># Compute offsets of all pixels</span>
-    <span class="n">map_coord</span> <span class="o">=</span> <span class="n">ref_geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span>
-    <span class="c1"># Retrieve energies from map coordinates</span>
-    <span class="n">energy_reco</span> <span class="o">=</span> <span class="n">map_coord</span><span class="p">[</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">*</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">unit</span>
-    <span class="c1"># TODO: go from SkyCoord to FOV coordinates. Here assume symmetric geometry for fov_lon, fov_lat</span>
-    <span class="c1"># Compute offset at all the pixels and energy of the Map</span>
-    <span class="n">fov_lon</span> <span class="o">=</span> <span class="n">map_coord</span><span class="o">.</span><span class="n">skycoord</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">pointing</span><span class="p">)</span>
-    <span class="n">fov_lat</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">fov_lon</span><span class="p">),</span> <span class="n">fov_lon</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
-    <span class="n">data_int</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">fov_lat</span><span class="o">.</span><span class="n">value</span><span class="p">),</span> <span class="s2">&quot;s^-1 sr^-1&quot;</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">ie</span><span class="p">,</span> <span class="p">(</span><span class="n">e_lo</span><span class="p">,</span> <span class="n">e_hi</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:])):</span>
-        <span class="n">data_int</span><span class="p">[</span><span class="n">ie</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">bkg</span><span class="o">.</span><span class="n">integrate_on_energy_range</span><span class="p">(</span>
-            <span class="n">fov_lon</span><span class="o">=</span><span class="n">fov_lon</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span>
-            <span class="n">fov_lat</span><span class="o">=</span><span class="n">fov_lat</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span>
-            <span class="n">energy_range</span><span class="o">=</span><span class="p">[</span><span class="n">e_lo</span> <span class="o">*</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">unit</span><span class="p">,</span> <span class="n">e_hi</span> <span class="o">*</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">unit</span><span class="p">],</span> <span class="n">n_integration_bins</span><span class="o">=</span><span class="n">n_integration_bins</span><span class="p">)</span>
-
-    <span class="n">d_omega</span> <span class="o">=</span> <span class="n">ref_geom</span><span class="o">.</span><span class="n">solid_angle</span><span class="p">()</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="n">data_int</span> <span class="o">*</span> <span class="n">d_omega</span> <span class="o">*</span> <span class="n">livetime</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
-
-    <span class="c1"># Put exposure outside offset max to zero</span>
-    <span class="c1"># This might be more generaly dealt with a mask map</span>
-    <span class="n">offset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">fov_lon</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">fov_lat</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
-    <span class="n">data</span><span class="p">[:,</span> <span class="n">offset</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">&gt;=</span> <span class="n">offset_max</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-
-    <span class="k">return</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="n">ref_geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="make_map_background_fov"><a class="viewcode-back" href="../../../api/gammapy.cube.make_map_background_fov.html#gammapy.cube.make_map_background_fov">[docs]</a><span class="k">def</span> <span class="nf">make_map_background_fov</span><span class="p">(</span><span class="n">acceptance_map</span><span class="p">,</span> <span class="n">counts_map</span><span class="p">,</span> <span class="n">exclusion_mask</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Build Normalized background map from a given acceptance map and counts map.</span>
-
-<span class="sd">    This operation is normally performed on single observation maps.</span>
-<span class="sd">    An exclusion map is used to avoid using regions with significant gamma-ray emission.</span>
-<span class="sd">    All maps are assumed to follow the same WcsGeom.</span>
-
-<span class="sd">    TODO: A model map could be used instead of an exclusion mask.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    acceptance_map : `~gammapy.maps.WcsNDMap`</span>
-<span class="sd">        Observation hadron acceptance map (i.e. predicted background map)</span>
-<span class="sd">    counts_map : `~gammapy.maps.WcsNDMap`</span>
-<span class="sd">        Observation counts map</span>
-<span class="sd">    exclusion_mask : `~gammapy.maps.WcsNDMap`</span>
-<span class="sd">        Exclusion mask</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    norm_bkg_map : `~gammapy.maps.WcsNDMap`</span>
-<span class="sd">        Normalized background</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># We resize the mask</span>
-    <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">exclusion_mask</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="n">acceptance_map</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-
-    <span class="c1"># We multiply the data with the mask to obtain normalization factors in each energy bin</span>
-    <span class="n">integ_acceptance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">acceptance_map</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">mask</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
-    <span class="n">integ_counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">counts_map</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">mask</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
-
-    <span class="c1"># TODO: Here we need to add a function rebin energy axis to have minimal statistics for the normalization</span>
-
-    <span class="c1"># Normalize background</span>
-    <span class="n">norm_factor</span> <span class="o">=</span> <span class="n">integ_counts</span> <span class="o">/</span> <span class="n">integ_acceptance</span>
-
-    <span class="n">norm_bkg</span> <span class="o">=</span> <span class="n">norm_factor</span> <span class="o">*</span> <span class="n">acceptance_map</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">T</span>
-
-    <span class="k">return</span> <span class="n">acceptance_map</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">norm_bkg</span><span class="o">.</span><span class="n">T</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="MapMaker"><a class="viewcode-back" href="../../../api/gammapy.cube.MapMaker.html#gammapy.cube.MapMaker">[docs]</a><span class="k">class</span> <span class="nc">MapMaker</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Make all basic maps from observations.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    ref_geom : `~gammapy.maps.WcsGeom`</span>
-<span class="sd">        Reference image geometry</span>
-<span class="sd">    offset_max : `~astropy.coordinates.Angle`</span>
-<span class="sd">        Maximum offset angle</span>
-<span class="sd">    cutout_mode : {&#39;trim&#39;, &#39;strict&#39;}, optional</span>
-<span class="sd">        Options for making cutouts, see :func: `~gammapy.maps.WcsNDMap.make_cutout`</span>
-<span class="sd">        Should be left to the default value &#39;trim&#39;</span>
-<span class="sd">        unless you want only fully contained observations to be added to the map</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref_geom</span><span class="p">,</span> <span class="n">offset_max</span><span class="p">,</span> <span class="n">cutout_mode</span><span class="o">=</span><span class="s2">&quot;trim&quot;</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">offset_max</span> <span class="o">=</span> <span class="n">offset_max</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ref_geom</span> <span class="o">=</span> <span class="n">ref_geom</span>
-
-        <span class="c1"># We instantiate the end products of the MakeMaps class</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">counts_map</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_geom</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_geom</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m2 s&quot;</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">background_map</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_geom</span><span class="p">)</span>
-
-        <span class="c1"># We will need this general exclusion mask for the analysis</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_map</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_geom</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_map</span><span class="o">.</span><span class="n">data</span> <span class="o">+=</span> <span class="mi">1</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">cutout_mode</span> <span class="o">=</span> <span class="n">cutout_mode</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">maps</span><span class="o">=</span><span class="p">{}</span>
-
-<div class="viewcode-block" id="MapMaker.process_obs"><a class="viewcode-back" href="../../../api/gammapy.cube.MapMaker.html#gammapy.cube.MapMaker.process_obs">[docs]</a>    <span class="k">def</span> <span class="nf">process_obs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Process one observation and add it to the cutout image</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        obs : `~gammapy.data.DataStoreObservation`</span>
-<span class="sd">            Observation</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># First make cutout of the global image</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">exclusion_mask_cutout</span><span class="p">,</span> <span class="n">cutout_slices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_map</span><span class="o">.</span><span class="n">make_cutout</span><span class="p">(</span>
-                <span class="n">obs</span><span class="o">.</span><span class="n">pointing_radec</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset_max</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cutout_mode</span>
-            <span class="p">)</span>
-        <span class="k">except</span> <span class="n">PartialOverlapError</span><span class="p">:</span>
-            <span class="c1"># TODO: can we silently do the right thing here? Discuss</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Observation </span><span class="si">{}</span><span class="s2"> not fully contained in target image. Skipping it.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">obs_id</span><span class="p">))</span>
-            <span class="k">return</span>
-
-        <span class="n">cutout_geom</span> <span class="o">=</span> <span class="n">exclusion_mask_cutout</span><span class="o">.</span><span class="n">geom</span>
-
-        <span class="n">counts_obs_map</span> <span class="o">=</span> <span class="n">make_map_counts</span><span class="p">(</span>
-            <span class="n">obs</span><span class="o">.</span><span class="n">events</span><span class="p">,</span> <span class="n">cutout_geom</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">pointing_radec</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset_max</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">expo_obs_map</span> <span class="o">=</span> <span class="n">make_map_exposure_true_energy</span><span class="p">(</span>
-            <span class="n">obs</span><span class="o">.</span><span class="n">pointing_radec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">observation_live_time_duration</span><span class="p">,</span>
-            <span class="n">obs</span><span class="o">.</span><span class="n">aeff</span><span class="p">,</span> <span class="n">cutout_geom</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset_max</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">acceptance_obs_map</span> <span class="o">=</span> <span class="n">make_map_background_irf</span><span class="p">(</span>
-            <span class="n">obs</span><span class="o">.</span><span class="n">pointing_radec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">observation_live_time_duration</span><span class="p">,</span>
-            <span class="n">obs</span><span class="o">.</span><span class="n">bkg</span><span class="p">,</span> <span class="n">cutout_geom</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset_max</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">background_obs_map</span> <span class="o">=</span> <span class="n">make_map_background_fov</span><span class="p">(</span>
-            <span class="n">acceptance_obs_map</span><span class="p">,</span> <span class="n">counts_obs_map</span><span class="p">,</span> <span class="n">exclusion_mask_cutout</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_add_cutouts</span><span class="p">(</span><span class="n">cutout_slices</span><span class="p">,</span> <span class="n">counts_obs_map</span><span class="p">,</span> <span class="n">expo_obs_map</span><span class="p">,</span> <span class="n">background_obs_map</span><span class="p">)</span></div>
-
-
-    <span class="k">def</span> <span class="nf">_add_cutouts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cutout_slices</span><span class="p">,</span> <span class="n">counts_obs_map</span><span class="p">,</span> <span class="n">expo_obs_map</span><span class="p">,</span> <span class="n">acceptance_obs_map</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add current cutout to global maps.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">counts_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">cutout_slices</span><span class="p">]</span> <span class="o">+=</span> <span class="n">counts_obs_map</span><span class="o">.</span><span class="n">data</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">cutout_slices</span><span class="p">]</span> <span class="o">+=</span> <span class="n">expo_obs_map</span><span class="o">.</span><span class="n">quantity</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">background_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">cutout_slices</span><span class="p">]</span> <span class="o">+=</span> <span class="n">acceptance_obs_map</span><span class="o">.</span><span class="n">data</span>
-
-<div class="viewcode-block" id="MapMaker.run"><a class="viewcode-back" href="../../../api/gammapy.cube.MapMaker.html#gammapy.cube.MapMaker.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs_list</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Run MapMaker for a list of observations to create</span>
-<span class="sd">        stacked counts, exposure and background maps</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        --------------</span>
-<span class="sd">        obs_list: `~gammapy.data.ObservationList`</span>
-<span class="sd">            List of observations</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -----------</span>
-<span class="sd">        maps: dict of stacked counts, background and exposure maps.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="kn">from</span> <span class="nn">astropy.utils.console</span> <span class="k">import</span> <span class="n">ProgressBar</span>
-
-        <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">ProgressBar</span><span class="p">(</span><span class="n">obs_list</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">process_obs</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">maps</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;counts_map&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_map</span><span class="p">,</span>
-            <span class="s1">&#39;background_map&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_map</span><span class="p">,</span>
-            <span class="s1">&#39;exposure_map&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span>
-                <span class="p">}</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">maps</span></div></div>
-
+    <span class="k">return</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span></div>
 </pre></div>
 
            </div>
@@ -1360,7 +1078,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 31 Jul 2018.
+      Last updated on 01 Aug 2018.
 
     </p>
   </div>
@@ -1382,7 +1100,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6532',
+            VERSION:'0.8.dev6584',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

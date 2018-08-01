@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.background.reflected &mdash; gammapy v0.8.dev6532</title>
+  <title>gammapy.background.reflected &mdash; gammapy v0.8.dev6584</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6532
+                0.8.dev6584
               </div>
             
           
@@ -520,6 +520,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../detect/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../detect/index.html#computation-of-ts-images">Computation of TS images</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../detect/index.html#computation-of-li-ma-significance-images">Computation of Li &amp; Ma significance images</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../detect/index.html#using-gammapy-detect">Using <code class="docutils literal notranslate"><span class="pre">gammapy.detect</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../detect/index.html#reference-api">Reference/API</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../detect/index.html#module-gammapy.detect">gammapy.detect Package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../detect/index.html#functions">Functions</a></li>
@@ -532,11 +533,9 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../../background/index.html">background - Background modeling</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#getting-started">Getting Started</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../background/index.html#using-gammapy-background">Using <code class="docutils literal notranslate"><span class="pre">gammapy.background</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html">Reflected regions</a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#getting-started">Getting Started</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#using-gammapy-background">Using <code class="docutils literal notranslate"><span class="pre">gammapy.background</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../background/reflected.html">Reflected regions</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#reference-api">Reference/API</a><ul>
@@ -582,7 +581,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../time/index.html#other-codes">Other codes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../time/index.html#content">Content</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../time/index.html#using-gammapy-time">Using <code class="docutils literal notranslate"><span class="pre">gammapy.time</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../time/period.html">Period detection and plotting</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../time/period.html#introduction">Introduction</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../time/period.html#getting-started">Getting Started</a></li>
@@ -1032,8 +1031,8 @@
 
 <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<span class="k">def</span> <span class="nf">_compute_distance_image</span><span class="p">(</span><span class="n">mask_map</span><span class="p">):</span>
 
+<span class="k">def</span> <span class="nf">_compute_distance_image</span><span class="p">(</span><span class="n">mask_map</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Distance to nearest exclusion region.</span>
 
 <span class="sd">    Compute distance image, i.e. the Euclidean (=Cartesian 2D)</span>
@@ -1098,11 +1097,13 @@
 <span class="sd">    center : `~astropy.coordinates.SkyCoord`</span>
 <span class="sd">        Rotation point</span>
 <span class="sd">    angle_increment : `~astropy.coordinates.Angle`, optional</span>
-<span class="sd">        Rotation angle for each step</span>
+<span class="sd">        Rotation angle applied when a region falls in an excluded region.</span>
 <span class="sd">    min_distance : `~astropy.coordinates.Angle`, optional</span>
 <span class="sd">        Minimal distance between to reflected regions</span>
 <span class="sd">    min_distance_input : `~astropy.coordinates.Angle`, optional</span>
 <span class="sd">        Minimal distance from input region</span>
+<span class="sd">    max_region_number : int, optional</span>
+<span class="sd">        Maximum number of regions to use</span>
 <span class="sd">    exclusion_mask : `~gammapy.maps.WcsNDMap`, optional</span>
 <span class="sd">        Exclusion mask</span>
 
@@ -1126,14 +1127,19 @@
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">region</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span>
                  <span class="n">angle_increment</span><span class="o">=</span><span class="s1">&#39;0.1 rad&#39;</span><span class="p">,</span> <span class="n">min_distance</span><span class="o">=</span><span class="s1">&#39;0 rad&#39;</span><span class="p">,</span>
-                 <span class="n">min_distance_input</span><span class="o">=</span><span class="s1">&#39;0.1 rad&#39;</span><span class="p">,</span> <span class="n">exclusion_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                 <span class="n">min_distance_input</span><span class="o">=</span><span class="s1">&#39;0.1 rad&#39;</span><span class="p">,</span> <span class="n">max_region_number</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+                 <span class="n">exclusion_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="o">=</span> <span class="n">region</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">center</span> <span class="o">=</span> <span class="n">center</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">angle_increment</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">angle_increment</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle_increment</span> <span class="o">&lt;</span> <span class="n">Angle</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;deg&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;ReflectedRegionsFinder: the angle_increment parameter is too small.&quot;</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">min_distance</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">min_distance</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">min_distance_input</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">min_distance_input</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_mask</span> <span class="o">=</span> <span class="n">exclusion_mask</span>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_region_number</span> <span class="o">=</span> <span class="n">max_region_number</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">reflected_regions</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="ReflectedRegionsFinder.run"><a class="viewcode-back" href="../../../api/gammapy.background.ReflectedRegionsFinder.html#gammapy.background.ReflectedRegionsFinder.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1204,6 +1210,8 @@
                 <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s1">&#39;Placing reflected region</span><span class="se">\n</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">refl_region</span><span class="p">))</span>
                 <span class="n">reflected_regions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">refl_region</span><span class="p">)</span>
                 <span class="n">curr_angle</span> <span class="o">=</span> <span class="n">curr_angle</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_min_ang</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_region_number</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">reflected_regions</span><span class="p">):</span>
+                    <span class="k">break</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">curr_angle</span> <span class="o">=</span> <span class="n">curr_angle</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">angle_increment</span>
 
@@ -1390,7 +1398,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 31 Jul 2018.
+      Last updated on 01 Aug 2018.
 
     </p>
   </div>
@@ -1412,7 +1420,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6532',
+            VERSION:'0.8.dev6584',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
