@@ -128,14 +128,18 @@ offset = Angle('2 deg')
 # Compute maps, PSF and EDISP - just as you would for analysis of real data
 
 exposure_map = make_map_exposure_true_energy(
-    pointing=pointing, livetime=livetime, aeff=irfs['aeff'],
-    ref_geom=geom, offset_max=offset_max,
+    pointing=pointing,
+    livetime=livetime,
+    aeff=irfs['aeff'],
+    geom=geom,
 )
 
 psf = irfs['psf'].to_energy_dependent_table_psf(theta=offset)
-psf_kernel = PSFKernel.from_table_psf(psf,
-                                      geom,
-                                      max_radius=1 * u.deg)
+psf_kernel = PSFKernel.from_table_psf(
+    psf,
+    geom,
+    max_radius=1 * u.deg,
+)
 
 edisp = irfs['edisp'].to_energy_dispersion(offset=offset)
 
@@ -160,15 +164,7 @@ plt.imshow(psf_kernel.psf_kernel_map.data[2,:,:]);
 # In[12]:
 
 
-# The idea is that we have this class that can compute `npred`
-# maps, i.e. "predicted counts per pixel" given the model and
-# the observation infos: exposure, background, PSF and EDISP
-evaluator = MapEvaluator(
-    sky_model=sky_model, 
-    exposure=exposure_map,
-    psf=psf_kernel,
-    background=bkg,
-)
+get_ipython().run_cell_magic('time', '', '# The idea is that we have this class that can compute `npred`\n# maps, i.e. "predicted counts per pixel" given the model and\n# the observation infos: exposure, background, PSF and EDISP\nevaluator = MapEvaluator(\n    sky_model=sky_model, \n    exposure=exposure_map,\n    psf=psf_kernel,\n    background=bkg,\n)')
 
 
 # In[13]:
@@ -253,14 +249,7 @@ print(model)
 # In[19]:
 
 
-fit = MapFit(
-    model=model,
-    counts=counts_map,
-    exposure=exposure_map,
-    background=bkg,
-)
-
-fit.fit()
+get_ipython().run_cell_magic('time', '', 'fit = MapFit(\n    model=model,\n    counts=counts_map,\n    exposure=exposure_map,\n    background=bkg,\n)\n\nfit.fit()')
 
 
 # In[20]:

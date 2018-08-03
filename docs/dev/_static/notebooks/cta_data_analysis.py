@@ -30,12 +30,13 @@ import matplotlib.pyplot as plt
 get_ipython().system('gammapy info --no-envvar --no-system')
 
 
-# In[14]:
+# In[3]:
 
 
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
+from astropy.convolution import Gaussian2DKernel
 from regions import CircleSkyRegion
 from photutils.detection import find_peaks
 from gammapy.utils.energy import EnergyBounds
@@ -120,7 +121,7 @@ on_radius = 0.2 * u.deg
 on_region = CircleSkyRegion(center=target_position, radius=on_radius)
 
 
-# In[15]:
+# In[10]:
 
 
 axis = MapAxis.from_edges(
@@ -128,7 +129,7 @@ axis = MapAxis.from_edges(
 )
 geom = WcsGeom.create(
     skydir=(0, 0),
-    npix=(800, 600),
+    npix=(500, 400),
     binsz=0.02,
     coordsys='GAL',
     axes=[axis]
@@ -140,121 +141,98 @@ geom
 # 
 # We use the ring background estimation method, and an exclusion mask that excludes the bright source at the Galactic center.
 
-# In[17]:
+# In[11]:
 
 
-exclusion_mask = WcsNDMap(geom.to_image()).make_region_mask(on_region, inside=True)
+exclusion_mask = geom.to_image().region_mask([on_region], inside=False)
+exclusion_mask = WcsNDMap(geom.to_image(), exclusion_mask)
 exclusion_mask.plot();
 
 
-# In[18]:
+# In[12]:
 
 
-maker = MapMaker(geom, offset_max='2 deg')
-maps = maker.run(obs_list)
-print(maps.keys())
+get_ipython().run_cell_magic('time', '', "maker = MapMaker(geom, offset_max='2 deg')\nmaps = maker.run(obs_list)\nprint(maps.keys())")
+
+
+# In[13]:
+
+
+# The maps are cubes, with an energy axis.
+# Let's also make some images:
+images = {}
+images['counts'] = maps['counts'].sum_over_axes()
+images['background'] = maps['background'].sum_over_axes()
+images['exposure'] = maps['exposure'].get_image_by_coord({'energy': '1 TeV'})
+
+excess = images['counts'].copy()
+excess.data -= images['background'].data
+images['excess'] = excess
 
 
 # ### Show images
 # 
 # Let's define a little helper function and then show all the resulting images that were computed.
 
-# In[39]:
+# In[14]:
 
 
-def show_image(image, radius=3, vmin=0, vmax=3):
-    """Little helper function to show the images for this application here."""
-    image.smooth(radius=radius).plot(vmin=vmin, vmax=vmax, add_cbar=True)
-    image.make_cutout(
-        position=SkyCoord(0.5, 0, unit='deg', frame='galactic'),
-        width=(3*u.deg, 2*u.deg),
-    )[0].smooth(radius=radius).plot(vmin=vmin, vmax=vmax, add_cbar=True)
-
-
-# In[40]:
-
-
-show_image(maps['counts_map'].sum_over_axes(), radius=0, vmax=10)
+images['counts'].plot(vmax=5);
 
 
 # In[15]:
 
 
-show_image(images['counts'], vmax=5)
+images['counts'].smooth(2).plot(vmax=5)
 
 
 # In[16]:
 
 
-show_image(images['background'], vmax=4)
+images['background'].plot(vmax=5)
 
 
 # In[17]:
 
 
-show_image(images['excess'], vmax=2)
-
-
-# In[18]:
-
-
-# Significance image
-# Just for fun, let's compute it by hand ...
-from astropy.convolution import Tophat2DKernel
-kernel = Tophat2DKernel(4)
-kernel.normalize('peak')
-
-counts_conv = images['counts'].convolve(kernel.array)
-background_conv = images['background'].convolve(kernel.array)
-
-from gammapy.stats import significance
-significance_image = SkyImage.empty_like(ref_image)
-significance_image.data = significance(counts_conv.data, background_conv.data)
-show_image(significance_image, vmax=8)
+images['excess'].smooth(3).plot(vmax=2);
 
 
 # ## Source Detection
 # 
-# Use the class [TSImageEstimator](http://docs.gammapy.org/dev/api/gammapy.detect.compute_ts_image.html#gammapy.detect.TSImageEstimator.html) and [photutils.find_peaks](http://photutils.readthedocs.io/en/stable/api/photutils.find_peaks.html) to detect point-like sources on the images:
+# Use the class [TSImageEstimator](http://docs.gammapy.org/dev/api/gammapy.detect.compute_ts_image.html#gammapy.detect.TSImageEstimator.html) and [photutils.find_peaks](http://photutils.readthedocs.io/en/stable/api/photutils.find_peaks.html) to detect sources on the images:
 
-# In[19]:
+# In[18]:
 
 
 # cut out smaller piece of the PSF image to save computing time
 # for covenience we're "misusing" the SkyImage class represent the PSF on the sky.
-kernel = images['psf'].cutout(target_position, size= 1.1 * u.deg)
-kernel.show()
+kernel = Gaussian2DKernel(1, mode='oversample')
+plt.imshow(kernel);
+
+
+# In[19]:
+
+
+get_ipython().run_cell_magic('time', '', 'ts_image_estimator = TSMapEstimator()\nimages_ts = ts_image_estimator.run(images, kernel.array)\nprint(images_ts.keys())')
 
 
 # In[20]:
 
 
-ts_image_estimator = TSImageEstimator()
-images_ts = ts_image_estimator.run(images, kernel.data)
-print(images_ts.names)
+get_ipython().run_cell_magic('time', '', "sources = find_peaks(\n    data=images_ts['sqrt_ts'].data,\n    threshold=8,\n    wcs=images_ts['sqrt_ts'].geom.wcs,\n)\nprint('Number of sources:', len(sources))")
 
 
 # In[21]:
 
 
-# find pointlike sources with sqrt(TS) > 5
-sources = find_peaks(data=images_ts['sqrt_ts'].data, threshold=5, wcs=images_ts['sqrt_ts'].wcs)
-sources
-
-
-# In[22]:
-
-
 # Plot sources on top of significance sky image
-images_ts['sqrt_ts'].cutout(
-    position=SkyCoord(0, 0, unit='deg', frame='galactic'),
-    size=(3*u.deg, 4*u.deg)
-).plot(add_cbar=True)
+images_ts['sqrt_ts'].plot(add_cbar=True)
 
 plt.gca().scatter(
     sources['icrs_ra_peak'], sources['icrs_dec_peak'],
     transform=plt.gca().get_transform('icrs'),
-    color='none', edgecolor='white', marker='o', s=600, lw=1.5,
+    color='none', edgecolor='white', marker='o', s=200, lw=1.5,
 )
 
 
@@ -266,7 +244,7 @@ plt.gca().scatter(
 # 
 # For now, please see [image_fitting_with_sherpa.ipynb](image_fitting_with_sherpa.ipynb) as an extensive tutorial on how to model complex spatial models with Sherpa.
 
-# In[23]:
+# In[22]:
 
 
 # TODO: fit a Gaussian to the GC source
@@ -281,53 +259,33 @@ plt.gca().scatter(
 # 
 # The first step is to "extract" the spectrum, i.e. 1-dimensional counts and exposure and background vectors, as well as an energy dispersion matrix from the data and IRFs.
 
+# In[23]:
+
+
+get_ipython().run_cell_magic('time', '', 'bkg_estimator = ReflectedRegionsBackgroundEstimator(\n    obs_list=obs_list,\n    on_region=on_region,\n    exclusion_mask=exclusion_mask,\n)\nbkg_estimator.run()\nbkg_estimate = bkg_estimator.result\nbkg_estimator.plot();')
+
+
 # In[24]:
 
 
-bkg_estimator = ReflectedRegionsBackgroundEstimator(
-    obs_list=obs_list,
-    on_region=on_region,
-    exclusion_mask=exclusion_mask,
-)
-bkg_estimator.run()
-bkg_estimate = bkg_estimator.result
-bkg_estimator.plot()
-
-
-# In[25]:
-
-
-extract = SpectrumExtraction(
-    obs_list=obs_list,
-    bkg_estimate=bkg_estimate,
-)
-extract.run()
+get_ipython().run_cell_magic('time', '', 'extract = SpectrumExtraction(\n    obs_list=obs_list,\n    bkg_estimate=bkg_estimate,\n)\nextract.run()\nobservations = extract.observations')
 
 
 # ### Model fit
 # 
 # The next step is to fit a spectral model, using all data (i.e. a "global" fit, using all energies).
 
-# In[26]:
+# In[25]:
 
 
-model = models.PowerLaw(
-    index = 2 * u.Unit(''),
-    amplitude = 1e-11 * u.Unit('cm-2 s-1 TeV-1'),
-    reference = 1 * u.TeV,
-)
-
-fit = SpectrumFit(extract.observations, model)
-fit.fit()
-fit.est_errors()
-print(fit.result[0])
+get_ipython().run_cell_magic('time', '', "model = models.PowerLaw(\n    index = 2,\n    amplitude = 1e-11 * u.Unit('cm-2 s-1 TeV-1'),\n    reference = 1 * u.TeV,\n)\n\nfit = SpectrumFit(observations, model)\nfit.fit()\nfit.est_errors()\nprint(fit.result[0])")
 
 
 # ### Spectral points
 # 
 # Finally, let's compute spectral points. The method used is to first choose an energy binning, and then to do a 1-dim likelihood fit / profile to compute the flux and flux error.
 
-# In[27]:
+# In[26]:
 
 
 # Flux points are computed on stacked observation
@@ -354,7 +312,7 @@ fpe.flux_points.table
 # Let's plot the spectral model and points. You could do it directly, but there is a helper class.
 # Note that a spectral uncertainty band, a "butterfly" is drawn, but it is very thin, i.e. barely visible.
 
-# In[28]:
+# In[ ]:
 
 
 total_result = SpectrumResult(
@@ -379,7 +337,7 @@ total_result.plot(
 # * Change the target. Make a sky image and spectrum for your favourite source.
 #     * If you don't know any, the Crab nebula is the "hello world!" analysis of gamma-ray astronomy.
 
-# In[29]:
+# In[ ]:
 
 
 # print('hello world')
