@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.cube.make &mdash; gammapy v0.8.dev6584</title>
+  <title>gammapy.cube.make &mdash; gammapy v0.8.dev6623</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6584
+                0.8.dev6623
               </div>
             
           
@@ -197,6 +197,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Compute-PSF-kernel">Compute PSF kernel</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Compute-energy-dispersion">Compute energy dispersion</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Save-maps">Save maps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Cutout">Cutout</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Model-fit">Model fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Check-model-fit">Check model fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Exercises">Exercises</a></li>
@@ -1021,20 +1022,21 @@
 <span class="kn">from</span> <span class="nn">astropy.utils.console</span> <span class="k">import</span> <span class="n">ProgressBar</span>
 <span class="kn">from</span> <span class="nn">astropy.nddata.utils</span> <span class="k">import</span> <span class="n">PartialOverlapError</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="k">import</span> <span class="n">Angle</span>
-<span class="kn">from</span> <span class="nn">..maps</span> <span class="k">import</span> <span class="n">WcsNDMap</span>
-<span class="kn">from</span> <span class="nn">.counts</span> <span class="k">import</span> <span class="n">make_map_counts</span>
+<span class="kn">from</span> <span class="nn">..maps</span> <span class="k">import</span> <span class="n">Map</span><span class="p">,</span> <span class="n">WcsGeom</span>
+<span class="kn">from</span> <span class="nn">.counts</span> <span class="k">import</span> <span class="n">fill_map_counts</span>
 <span class="kn">from</span> <span class="nn">.exposure</span> <span class="k">import</span> <span class="n">make_map_exposure_true_energy</span>
-<span class="kn">from</span> <span class="nn">.background</span> <span class="k">import</span> <span class="n">make_map_background_irf</span><span class="p">,</span> <span class="n">make_map_background_fov</span>
+<span class="kn">from</span> <span class="nn">.background</span> <span class="k">import</span> <span class="n">make_map_background_irf</span><span class="p">,</span> <span class="n">_fov_background_norm</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s1">&#39;MapMaker&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;MapMakerObs&#39;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="MapMaker"><a class="viewcode-back" href="../../../api/gammapy.cube.MapMaker.html#gammapy.cube.MapMaker">[docs]</a><span class="k">class</span> <span class="nc">MapMaker</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Make all basic maps from observations.</span>
+    <span class="sd">&quot;&quot;&quot;Make maps from IACT observations.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1042,80 +1044,37 @@
 <span class="sd">        Reference image geometry</span>
 <span class="sd">    offset_max : `~astropy.coordinates.Angle`</span>
 <span class="sd">        Maximum offset angle</span>
+<span class="sd">    exclusion_mask : `~gammapy.maps.Map`</span>
+<span class="sd">        Exclusion mask</span>
 <span class="sd">    cutout_mode : {&#39;trim&#39;, &#39;strict&#39;}, optional</span>
 <span class="sd">        Options for making cutouts, see :func: `~gammapy.maps.WcsNDMap.make_cutout`</span>
 <span class="sd">        Should be left to the default value &#39;trim&#39;</span>
 <span class="sd">        unless you want only fully contained observations to be added to the map</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">offset_max</span><span class="p">,</span> <span class="n">cutout_mode</span><span class="o">=</span><span class="s2">&quot;trim&quot;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">offset_max</span><span class="p">,</span> <span class="n">exclusion_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cutout_mode</span><span class="o">=</span><span class="s2">&quot;trim&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">WcsGeom</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;MapMaker only works with WcsGeom&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">geom</span><span class="o">.</span><span class="n">is_image</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;MapMaker only works with geom with an energy axis&#39;</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">=</span> <span class="n">geom</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">offset_max</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">offset_max</span><span class="p">)</span>
 
-        <span class="c1"># We instantiate the end products of the MakeMaps class</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">counts_map</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m2 s&quot;</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">background_map</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
-
-        <span class="c1"># We will need this general exclusion mask for the analysis</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_map</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_map</span><span class="o">.</span><span class="n">data</span> <span class="o">+=</span> <span class="mi">1</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">cutout_mode</span> <span class="o">=</span> <span class="n">cutout_mode</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">maps</span> <span class="o">=</span> <span class="p">{}</span>
 
-<div class="viewcode-block" id="MapMaker.process_obs"><a class="viewcode-back" href="../../../api/gammapy.cube.MapMaker.html#gammapy.cube.MapMaker.process_obs">[docs]</a>    <span class="k">def</span> <span class="nf">process_obs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Process one observation and add it to the cutout image</span>
+        <span class="c1"># Start with zero-filled maps</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maps</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;counts&#39;</span><span class="p">:</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">),</span>
+            <span class="s1">&#39;exposure&#39;</span><span class="p">:</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m2 s&quot;</span><span class="p">),</span>
+            <span class="s1">&#39;background&#39;</span><span class="p">:</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">),</span>
+        <span class="p">}</span>
 
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        obs : `~gammapy.data.DataStoreObservation`</span>
-<span class="sd">            Observation</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># First make cutout of the global image</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">exclusion_mask_cutout</span><span class="p">,</span> <span class="n">cutout_slices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_map</span><span class="o">.</span><span class="n">make_cutout</span><span class="p">(</span>
-                <span class="n">obs</span><span class="o">.</span><span class="n">pointing_radec</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset_max</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cutout_mode</span>
-            <span class="p">)</span>
-        <span class="k">except</span> <span class="n">PartialOverlapError</span><span class="p">:</span>
-            <span class="c1"># TODO: can we silently do the right thing here? Discuss</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Observation </span><span class="si">{}</span><span class="s2"> not fully contained in target image. Skipping it.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">obs_id</span><span class="p">))</span>
-            <span class="k">return</span>
-
-        <span class="n">cutout_geom</span> <span class="o">=</span> <span class="n">exclusion_mask_cutout</span><span class="o">.</span><span class="n">geom</span>
-
-        <span class="n">offset</span> <span class="o">=</span> <span class="n">exclusion_mask_cutout</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">pointing_radec</span><span class="p">)</span>
-        <span class="n">offset_mask</span> <span class="o">=</span> <span class="n">offset</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset_max</span>
-
-        <span class="n">counts_obs_map</span> <span class="o">=</span> <span class="n">make_map_counts</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">events</span><span class="p">,</span> <span class="n">cutout_geom</span><span class="p">)</span>
-        <span class="n">counts_obs_map</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="n">offset_mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-
-        <span class="n">expo_obs_map</span> <span class="o">=</span> <span class="n">make_map_exposure_true_energy</span><span class="p">(</span>
-            <span class="n">obs</span><span class="o">.</span><span class="n">pointing_radec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">observation_live_time_duration</span><span class="p">,</span>
-            <span class="n">obs</span><span class="o">.</span><span class="n">aeff</span><span class="p">,</span> <span class="n">cutout_geom</span>
-        <span class="p">)</span>
-        <span class="n">expo_obs_map</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="n">offset_mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-
-        <span class="n">acceptance_obs_map</span> <span class="o">=</span> <span class="n">make_map_background_irf</span><span class="p">(</span>
-            <span class="n">obs</span><span class="o">.</span><span class="n">pointing_radec</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">observation_live_time_duration</span><span class="p">,</span>
-            <span class="n">obs</span><span class="o">.</span><span class="n">bkg</span><span class="p">,</span> <span class="n">cutout_geom</span>
-        <span class="p">)</span>
-        <span class="n">acceptance_obs_map</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="n">offset_mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-
-        <span class="n">background_obs_map</span> <span class="o">=</span> <span class="n">make_map_background_fov</span><span class="p">(</span>
-            <span class="n">acceptance_obs_map</span><span class="p">,</span> <span class="n">counts_obs_map</span><span class="p">,</span> <span class="n">exclusion_mask_cutout</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">background_obs_map</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="n">offset_mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_add_cutouts</span><span class="p">(</span><span class="n">cutout_slices</span><span class="p">,</span> <span class="n">counts_obs_map</span><span class="p">,</span> <span class="n">expo_obs_map</span><span class="p">,</span> <span class="n">background_obs_map</span><span class="p">)</span></div>
-
-    <span class="k">def</span> <span class="nf">_add_cutouts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cutout_slices</span><span class="p">,</span> <span class="n">counts_obs_map</span><span class="p">,</span> <span class="n">expo_obs_map</span><span class="p">,</span> <span class="n">acceptance_obs_map</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Add current cutout to global maps.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">counts_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">cutout_slices</span><span class="p">]</span> <span class="o">+=</span> <span class="n">counts_obs_map</span><span class="o">.</span><span class="n">data</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">cutout_slices</span><span class="p">]</span> <span class="o">+=</span> <span class="n">expo_obs_map</span><span class="o">.</span><span class="n">quantity</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">background_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">cutout_slices</span><span class="p">]</span> <span class="o">+=</span> <span class="n">acceptance_obs_map</span><span class="o">.</span><span class="n">data</span>
+        <span class="c1"># Some background estimation methods need an exclusion mask.</span>
+        <span class="k">if</span> <span class="n">exclusion_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">maps</span><span class="p">[</span><span class="s1">&#39;exclusion&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exclusion_mask</span>
 
 <div class="viewcode-block" id="MapMaker.run"><a class="viewcode-back" href="../../../api/gammapy.cube.MapMaker.html#gammapy.cube.MapMaker.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs_list</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1132,14 +1091,110 @@
 <span class="sd">        maps: dict of stacked counts, background and exposure maps.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">ProgressBar</span><span class="p">(</span><span class="n">obs_list</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">process_obs</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
+            <span class="c1"># First make cutout of the global image</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># TODO: this is a hack. We should make cutout better.</span>
+                <span class="c1"># See https://github.com/gammapy/gammapy/issues/1608</span>
+                <span class="n">cutout_map</span><span class="p">,</span> <span class="n">cutout_slices</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span><span class="o">.</span><span class="n">make_cutout</span><span class="p">(</span>
+                    <span class="n">obs</span><span class="o">.</span><span class="n">pointing_radec</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset_max</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cutout_mode</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="n">PartialOverlapError</span><span class="p">:</span>
+                <span class="c1"># TODO: can we silently do the right thing here? Discuss</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Observation </span><span class="si">{}</span><span class="s2"> not fully contained in target image. Skipping it.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">obs_id</span><span class="p">))</span>
+                <span class="k">continue</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">maps</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s1">&#39;counts_map&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_map</span><span class="p">,</span>
-            <span class="s1">&#39;background_map&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_map</span><span class="p">,</span>
-            <span class="s1">&#39;exposure_map&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span>
-        <span class="p">}</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Processing observation </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">obs_id</span><span class="p">))</span>
+
+            <span class="c1"># Compute field of view mask on the cutout</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="n">cutout_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">pointing_radec</span><span class="p">)</span>
+            <span class="n">fov_mask</span> <span class="o">=</span> <span class="n">offset</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset_max</span>
+
+            <span class="c1"># Only if there is an exclusion mask, make a cutout</span>
+            <span class="n">exclusion_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">maps</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;exclusion&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">exclusion_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">exclusion_mask</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">exclusion_mask</span><span class="o">.</span><span class="n">make_cutout</span><span class="p">(</span>
+                    <span class="n">obs</span><span class="o">.</span><span class="n">pointing_radec</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset_max</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cutout_mode</span>
+                <span class="p">)</span>
+
+            <span class="n">map_maker_obs</span> <span class="o">=</span> <span class="n">MapMakerObs</span><span class="p">(</span>
+                <span class="n">obs</span><span class="o">=</span><span class="n">obs</span><span class="p">,</span>
+                <span class="n">geom</span><span class="o">=</span><span class="n">cutout_map</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span>
+                <span class="n">fov_mask</span><span class="o">=</span><span class="n">fov_mask</span><span class="p">,</span>
+                <span class="n">exclusion_mask</span><span class="o">=</span><span class="n">exclusion_mask</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">maps</span> <span class="o">=</span> <span class="n">map_maker_obs</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+            <span class="c1"># Stack maps from this observation into the total maps</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">maps</span><span class="p">[</span><span class="s1">&#39;counts&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">cutout_slices</span><span class="p">]</span> <span class="o">+=</span> <span class="n">maps</span><span class="p">[</span><span class="s1">&#39;counts&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">maps</span><span class="p">[</span><span class="s1">&#39;exposure&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">cutout_slices</span><span class="p">]</span> <span class="o">+=</span> <span class="n">maps</span><span class="p">[</span><span class="s1">&#39;exposure&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">maps</span><span class="p">[</span><span class="s1">&#39;exposure&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">maps</span><span class="p">[</span><span class="s1">&#39;background&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">cutout_slices</span><span class="p">]</span> <span class="o">+=</span> <span class="n">maps</span><span class="p">[</span><span class="s1">&#39;background&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">maps</span></div></div>
+
+
+<div class="viewcode-block" id="MapMakerObs"><a class="viewcode-back" href="../../../api/gammapy.cube.MapMakerObs.html#gammapy.cube.MapMakerObs">[docs]</a><span class="k">class</span> <span class="nc">MapMakerObs</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Make maps for a single IACT observation.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    obs : `~gammapy.data.DataStoreObservation`</span>
+<span class="sd">        Observation</span>
+<span class="sd">    geom : `~gammapy.maps.WcsGeom`</span>
+<span class="sd">        Reference image geometry</span>
+<span class="sd">    fov_mask : `~numpy.ndarray`</span>
+<span class="sd">        Mask to select pixels in field of view</span>
+<span class="sd">    exclusion_mask : `~gammapy.maps.Map`</span>
+<span class="sd">        Exclusion mask (used by some background estimators)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">fov_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">exclusion_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs</span> <span class="o">=</span> <span class="n">obs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">=</span> <span class="n">geom</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fov_mask</span> <span class="o">=</span> <span class="n">fov_mask</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_mask</span> <span class="o">=</span> <span class="n">exclusion_mask</span>
+
+<div class="viewcode-block" id="MapMakerObs.run"><a class="viewcode-back" href="../../../api/gammapy.cube.MapMakerObs.html#gammapy.cube.MapMakerObs.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;tbd</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
+        <span class="n">fill_map_counts</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">events</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fov_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fov_mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">exposure</span> <span class="o">=</span> <span class="n">make_map_exposure_true_energy</span><span class="p">(</span>
+            <span class="n">pointing</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">pointing_radec</span><span class="p">,</span>
+            <span class="n">livetime</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">observation_live_time_duration</span><span class="p">,</span>
+            <span class="n">aeff</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">aeff</span><span class="p">,</span>
+            <span class="n">geom</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fov_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">exposure</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fov_mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">background</span> <span class="o">=</span> <span class="n">make_map_background_irf</span><span class="p">(</span>
+            <span class="n">pointing</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">pointing_radec</span><span class="p">,</span>
+            <span class="n">livetime</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">observation_live_time_duration</span><span class="p">,</span>
+            <span class="n">bkg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">bkg</span><span class="p">,</span>
+            <span class="n">geom</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fov_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">background</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fov_mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># TODO: decide what background modeling options to support</span>
+        <span class="c1"># This is not well tested or documented at the moment,</span>
+        <span class="c1"># so for now take this out</span>
+        <span class="c1"># background_scale = _fov_background_norm(</span>
+        <span class="c1">#     acceptance_map=background,</span>
+        <span class="c1">#     counts_map=counts,</span>
+        <span class="c1">#     exclusion_mask=self.exclusion_mask,</span>
+        <span class="c1"># )</span>
+        <span class="c1"># if self.fov_mask is not None:</span>
+        <span class="c1">#     background.data *= background_scale[:, None, None]</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;counts&#39;</span><span class="p">:</span> <span class="n">counts</span><span class="p">,</span>
+            <span class="s1">&#39;exposure&#39;</span><span class="p">:</span> <span class="n">exposure</span><span class="p">,</span>
+            <span class="s1">&#39;background&#39;</span><span class="p">:</span> <span class="n">background</span><span class="p">,</span>
+        <span class="p">}</span></div></div>
 </pre></div>
 
            </div>
@@ -1153,7 +1208,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 01 Aug 2018.
+      Last updated on 03 Aug 2018.
 
     </p>
   </div>
@@ -1175,7 +1230,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6584',
+            VERSION:'0.8.dev6623',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

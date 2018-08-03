@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.cube.background &mdash; gammapy v0.8.dev6584</title>
+  <title>gammapy.cube.background &mdash; gammapy v0.8.dev6623</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6584
+                0.8.dev6623
               </div>
             
           
@@ -197,6 +197,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Compute-PSF-kernel">Compute PSF kernel</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Compute-energy-dispersion">Compute energy dispersion</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Save-maps">Save maps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Cutout">Cutout</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Model-fit">Model fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Check-model-fit">Check model fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Exercises">Exercises</a></li>
@@ -1024,15 +1025,11 @@
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s1">&#39;make_map_background_irf&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;make_map_background_fov&#39;</span><span class="p">,</span>
 <span class="p">]</span>
 
 
 <div class="viewcode-block" id="make_map_background_irf"><a class="viewcode-back" href="../../../api/gammapy.cube.make_map_background_irf.html#gammapy.cube.make_map_background_irf">[docs]</a><span class="k">def</span> <span class="nf">make_map_background_irf</span><span class="p">(</span><span class="n">pointing</span><span class="p">,</span> <span class="n">livetime</span><span class="p">,</span> <span class="n">bkg</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">n_integration_bins</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Compute background map from background IRFs.</span>
-
-<span class="sd">    TODO: Call a method on bkg that returns integral over energy bin directly</span>
-<span class="sd">    Related: https://github.com/gammapy/gammapy/pull/1342</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1045,49 +1042,50 @@
 <span class="sd">    geom : `~gammapy.maps.WcsGeom`</span>
 <span class="sd">        Reference geometry</span>
 <span class="sd">    n_integration_bins : int</span>
-<span class="sd">            Number of bins used to integrate on each energy range</span>
+<span class="sd">        Number of bins per energy bin in integration</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    background : `~gammapy.maps.WcsNDMap`</span>
 <span class="sd">        Background predicted counts sky cube in reco energy</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Compute the expected background</span>
-    <span class="c1"># TODO: properly transform FOV to sky coordinates</span>
-    <span class="c1"># For now we assume the background is radially symmetric</span>
-
     <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="c1"># Compute offsets of all pixels</span>
+    <span class="n">ebounds</span> <span class="o">=</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span> <span class="o">*</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">unit</span>
+
+    <span class="c1"># Compute FOV coordinates; at the moment assume symmetric background model</span>
+    <span class="c1"># TODO: implement FOV coordinates properly</span>
     <span class="n">map_coord</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span>
-    <span class="c1"># Retrieve energies from map coordinates</span>
-    <span class="n">energy_reco</span> <span class="o">=</span> <span class="n">map_coord</span><span class="p">[</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">*</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">unit</span>
-    <span class="c1"># TODO: go from SkyCoord to FOV coordinates. Here assume symmetric geometry for fov_lon, fov_lat</span>
-    <span class="c1"># Compute offset at all the pixels and energy of the Map</span>
     <span class="n">fov_lon</span> <span class="o">=</span> <span class="n">map_coord</span><span class="o">.</span><span class="n">skycoord</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">pointing</span><span class="p">)</span>
     <span class="n">fov_lat</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">fov_lon</span><span class="p">),</span> <span class="n">fov_lon</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
-    <span class="n">data_int</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">fov_lat</span><span class="o">.</span><span class="n">value</span><span class="p">),</span> <span class="s2">&quot;s^-1 sr^-1&quot;</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">ie</span><span class="p">,</span> <span class="p">(</span><span class="n">e_lo</span><span class="p">,</span> <span class="n">e_hi</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:])):</span>
-        <span class="n">data_int</span><span class="p">[</span><span class="n">ie</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">bkg</span><span class="o">.</span><span class="n">integrate_on_energy_range</span><span class="p">(</span>
-            <span class="n">fov_lon</span><span class="o">=</span><span class="n">fov_lon</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span>
-            <span class="n">fov_lat</span><span class="o">=</span><span class="n">fov_lat</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span>
-            <span class="n">energy_range</span><span class="o">=</span><span class="p">[</span><span class="n">e_lo</span> <span class="o">*</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">unit</span><span class="p">,</span> <span class="n">e_hi</span> <span class="o">*</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">unit</span><span class="p">],</span>
-            <span class="n">n_integration_bins</span><span class="o">=</span><span class="n">n_integration_bins</span><span class="p">,</span>
-        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">n_integration_bins</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">energy_reco</span> <span class="o">=</span> <span class="n">map_coord</span><span class="p">[</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">*</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">unit</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">bkg</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">fov_lon</span><span class="o">=</span><span class="n">fov_lon</span><span class="p">,</span> <span class="n">fov_lat</span><span class="o">=</span><span class="n">fov_lat</span><span class="p">,</span> <span class="n">energy_reco</span><span class="o">=</span><span class="n">energy_reco</span><span class="p">)</span>
+        <span class="n">d_energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">)</span> <span class="o">*</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">unit</span>
+        <span class="n">bkg_de</span> <span class="o">=</span> <span class="n">data</span> <span class="o">*</span> <span class="n">d_energy</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">bkg_de</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">fov_lat</span><span class="o">.</span><span class="n">value</span><span class="p">),</span> <span class="s2">&quot;s^-1 sr^-1&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ebounds</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">energy_range</span> <span class="o">=</span> <span class="n">ebounds</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">ebounds</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">bkg_de</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">bkg</span><span class="o">.</span><span class="n">integrate_on_energy_range</span><span class="p">(</span>
+                <span class="n">fov_lon</span><span class="o">=</span><span class="n">fov_lon</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span>
+                <span class="n">fov_lat</span><span class="o">=</span><span class="n">fov_lat</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:],</span>
+                <span class="n">energy_range</span><span class="o">=</span><span class="n">energy_range</span><span class="p">,</span>
+                <span class="n">n_integration_bins</span><span class="o">=</span><span class="n">n_integration_bins</span><span class="p">,</span>
+            <span class="p">)</span>
 
     <span class="n">d_omega</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">solid_angle</span><span class="p">()</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="n">data_int</span> <span class="o">*</span> <span class="n">d_omega</span> <span class="o">*</span> <span class="n">livetime</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="n">bkg_de</span> <span class="o">*</span> <span class="n">d_omega</span> <span class="o">*</span> <span class="n">livetime</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
 
     <span class="k">return</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="make_map_background_fov"><a class="viewcode-back" href="../../../api/gammapy.cube.make_map_background_fov.html#gammapy.cube.make_map_background_fov">[docs]</a><span class="k">def</span> <span class="nf">make_map_background_fov</span><span class="p">(</span><span class="n">acceptance_map</span><span class="p">,</span> <span class="n">counts_map</span><span class="p">,</span> <span class="n">exclusion_mask</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Build Normalized background map from a given acceptance map and counts map.</span>
+<span class="k">def</span> <span class="nf">_fov_background_norm</span><span class="p">(</span><span class="n">acceptance_map</span><span class="p">,</span> <span class="n">counts_map</span><span class="p">,</span> <span class="n">exclusion_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute FOV background norm</span>
 
 <span class="sd">    This operation is normally performed on single observation maps.</span>
 <span class="sd">    An exclusion map is used to avoid using regions with significant gamma-ray emission.</span>
 <span class="sd">    All maps are assumed to follow the same WcsGeom.</span>
-
-<span class="sd">    TODO: A model map could be used instead of an exclusion mask.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1100,24 +1098,22 @@
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    norm_bkg_map : `~gammapy.maps.WcsNDMap`</span>
-<span class="sd">        Normalized background</span>
+<span class="sd">    norm_factor : array</span>
+<span class="sd">        Background normalisation factor as function of energy (1D vector)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># We resize the mask</span>
-    <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">exclusion_mask</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="n">acceptance_map</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">exclusion_mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">counts_map</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># We resize the mask</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">exclusion_mask</span><span class="o">.</span><span class="n">data</span><span class="p">),</span> <span class="n">acceptance_map</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 
     <span class="c1"># We multiply the data with the mask to obtain normalization factors in each energy bin</span>
     <span class="n">integ_acceptance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">acceptance_map</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">mask</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
     <span class="n">integ_counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">counts_map</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">mask</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
 
-    <span class="c1"># TODO: Here we need to add a function rebin energy axis to have minimal statistics for the normalization</span>
-
-    <span class="c1"># Normalize background</span>
     <span class="n">norm_factor</span> <span class="o">=</span> <span class="n">integ_counts</span> <span class="o">/</span> <span class="n">integ_acceptance</span>
 
-    <span class="n">norm_bkg</span> <span class="o">=</span> <span class="n">norm_factor</span> <span class="o">*</span> <span class="n">acceptance_map</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">T</span>
-
-    <span class="k">return</span> <span class="n">acceptance_map</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">norm_bkg</span><span class="o">.</span><span class="n">T</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">norm_factor</span>
 </pre></div>
 
            </div>
@@ -1131,7 +1127,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 01 Aug 2018.
+      Last updated on 03 Aug 2018.
 
     </p>
   </div>
@@ -1153,7 +1149,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6584',
+            VERSION:'0.8.dev6623',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

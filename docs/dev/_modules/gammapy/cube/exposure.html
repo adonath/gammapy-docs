@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.cube.exposure &mdash; gammapy v0.8.dev6584</title>
+  <title>gammapy.cube.exposure &mdash; gammapy v0.8.dev6623</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6584
+                0.8.dev6623
               </div>
             
           
@@ -197,6 +197,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Compute-PSF-kernel">Compute PSF kernel</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Compute-energy-dispersion">Compute energy dispersion</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Save-maps">Save maps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Cutout">Cutout</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Model-fit">Model fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Check-model-fit">Check model fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Exercises">Exercises</a></li>
@@ -1028,8 +1029,8 @@
 <div class="viewcode-block" id="make_map_exposure_true_energy"><a class="viewcode-back" href="../../../api/gammapy.cube.make_map_exposure_true_energy.html#gammapy.cube.make_map_exposure_true_energy">[docs]</a><span class="k">def</span> <span class="nf">make_map_exposure_true_energy</span><span class="p">(</span><span class="n">pointing</span><span class="p">,</span> <span class="n">livetime</span><span class="p">,</span> <span class="n">aeff</span><span class="p">,</span> <span class="n">geom</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Compute exposure map.</span>
 
-<span class="sd">     This map has a true energy axis, the exposure is not combined</span>
-<span class="sd">     with energy dispersion.</span>
+<span class="sd">    This map has a true energy axis, the exposure is not combined</span>
+<span class="sd">    with energy dispersion.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1038,30 +1039,25 @@
 <span class="sd">    livetime : `~astropy.units.Quantity`</span>
 <span class="sd">        Livetime</span>
 <span class="sd">    aeff : `~gammapy.irf.EffectiveAreaTable2D`</span>
-<span class="sd">        Effective area table</span>
+<span class="sd">        Effective area</span>
 <span class="sd">    geom : `~gammapy.maps.WcsGeom`</span>
-<span class="sd">        Reference WcsGeom object used to define geometry (space - energy)</span>
+<span class="sd">        Map geometry (must have an energy axis)</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    expmap : `~gammapy.maps.WcsNDMap`</span>
-<span class="sd">        Exposure cube (3D) in true energy bins</span>
+<span class="sd">    map : `~gammapy.maps.WcsNDMap`</span>
+<span class="sd">        Exposure map</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">offset</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">pointing</span><span class="p">)</span>
-
-    <span class="c1"># Retrieve energies from WcsNDMap</span>
-    <span class="c1"># Note this would require a log_center from the geometry</span>
-    <span class="c1"># Or even better edges, but WcsNDmap does not really allows it.</span>
     <span class="n">energy</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">center</span> <span class="o">*</span> <span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
 
     <span class="n">exposure</span> <span class="o">=</span> <span class="n">aeff</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span> <span class="n">energy</span><span class="o">=</span><span class="n">energy</span><span class="p">)</span>
-    <span class="n">exposure</span> <span class="o">*=</span> <span class="n">livetime</span>
-
-    <span class="c1"># We check if exposure is a 3D array in case there is a single bin in energy</span>
-    <span class="c1"># TODO: call np.atleast_3d ?</span>
+    <span class="c1"># TODO: Improve IRF evaluate to preserve energy axis if length 1</span>
+    <span class="c1"># For now, we handle that case via this hack:</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
         <span class="n">exposure</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="n">exposure</span><span class="o">.</span><span class="n">unit</span>
 
+    <span class="n">exposure</span> <span class="o">*=</span> <span class="n">livetime</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">exposure</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;m2 s&#39;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span></div>
@@ -1078,7 +1074,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 01 Aug 2018.
+      Last updated on 03 Aug 2018.
 
     </p>
   </div>
@@ -1100,7 +1096,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6584',
+            VERSION:'0.8.dev6623',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

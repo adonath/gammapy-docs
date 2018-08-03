@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>3D analysis &mdash; gammapy v0.8.dev6584</title>
+  <title>3D analysis &mdash; gammapy v0.8.dev6623</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.8.dev6584
+                0.8.dev6623
               </div>
             
           
@@ -199,6 +199,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#Compute-PSF-kernel">Compute PSF kernel</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Compute-energy-dispersion">Compute energy dispersion</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Save-maps">Save maps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Cutout">Cutout</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Model-fit">Model fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Check-model-fit">Check model fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Exercises">Exercises</a></li>
@@ -1289,8 +1290,8 @@ with CTA.</p>
 Gammapy package:
 
         path                   : /Users/deil/work/code/gammapy/gammapy
-        version                : 0.8.dev6384
-        githash                : 168842c7506cfbdc869a532beff3fa5eaf75ca52
+        version                : 0.8.dev6623
+        githash                : 8cfeaf51105c2888007c82443eac7bf817ca544a
 
 </pre></div></div>
 </div>
@@ -1309,6 +1310,7 @@ Gammapy package:
 <span class="p">)</span>
 <span class="n">obs_ids</span> <span class="o">=</span> <span class="p">[</span><span class="mi">110380</span><span class="p">,</span> <span class="mi">111140</span><span class="p">,</span> <span class="mi">111159</span><span class="p">]</span>
 <span class="c1"># obs_ids = [110380]</span>
+<span class="n">obs_list</span> <span class="o">=</span> <span class="n">data_store</span><span class="o">.</span><span class="n">obs_list</span><span class="p">(</span><span class="n">obs_ids</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1338,18 +1340,7 @@ Gammapy package:
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="o">%%</span><span class="k">time</span>
 maker = MapMaker(geom, 4. * u.deg)
-
-for obs_id in obs_ids:
-    print(&#39;processing:&#39;, obs_id)
-    obs = data_store.obs(obs_id)
-    maker.process_obs(obs)
-
-# TODO: add this as a property `.results`? on the maker
-maps = {
-    &#39;counts&#39;: maker.count_map,
-    &#39;background&#39;: maker.background_map,
-    &#39;exposure&#39;: maker.exposure_map,
-}
+maps = maker.run(obs_list)
 </pre></div>
 </div>
 </div>
@@ -1358,11 +1349,8 @@ maps = {
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-processing: 110380
-processing: 111140
-processing: 111159
-CPU times: user 27.1 s, sys: 3.06 s, total: 30.2 s
-Wall time: 8.8 s
+CPU times: user 30.4 s, sys: 2.65 s, total: 33 s
+Wall time: 9.52 s
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -1371,7 +1359,7 @@ Wall time: 8.8 s
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">maps</span><span class="p">[</span><span class="s1">&#39;counts&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">()</span><span class="o">.</span><span class="n">smooth</span><span class="p">(</span><span class="n">radius</span><span class="o">=</span><span class="mf">0.2</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
+<span></span><span class="n">maps</span><span class="p">[</span><span class="s1">&#39;counts&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">()</span><span class="o">.</span><span class="n">smooth</span><span class="p">(</span><span class="n">radius</span><span class="o">=</span><span class="mf">0.2</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">stretch</span><span class="o">=</span><span class="s1">&#39;sqrt&#39;</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -1399,13 +1387,32 @@ Wall time: 8.8 s
 <img alt="../_images/notebooks_analysis_3d_11_0.png" src="../_images/notebooks_analysis_3d_11_0.png" />
 </div>
 </div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">residual</span> <span class="o">=</span> <span class="n">maps</span><span class="p">[</span><span class="s1">&#39;counts&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">residual</span><span class="o">.</span><span class="n">data</span> <span class="o">-=</span> <span class="n">maps</span><span class="p">[</span><span class="s1">&#39;background&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+<span class="n">residual</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">()</span><span class="o">.</span><span class="n">smooth</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">stretch</span><span class="o">=</span><span class="s1">&#39;sqrt&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_analysis_3d_12_0.png" src="../_images/notebooks_analysis_3d_12_0.png" />
+</div>
+</div>
 </div>
 <div class="section" id="Compute-PSF-kernel">
 <h2>Compute PSF kernel<a class="headerlink" href="#Compute-PSF-kernel" title="Permalink to this headline">¶</a></h2>
 <p>For the moment we rely on the ObservationList.make_mean_psf() method.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [9]:
+<span></span>In [10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1415,8 +1422,8 @@ Wall time: 8.8 s
 <span class="n">table_psf</span> <span class="o">=</span> <span class="n">obs_list</span><span class="o">.</span><span class="n">make_mean_psf</span><span class="p">(</span><span class="n">src_pos</span><span class="p">)</span>
 <span class="n">psf_kernel</span> <span class="o">=</span> <span class="n">PSFKernel</span><span class="o">.</span><span class="n">from_table_psf</span><span class="p">(</span>
     <span class="n">table_psf</span><span class="p">,</span>
-    <span class="n">maker</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span>
-    <span class="n">max_radius</span><span class="o">=</span><span class="s1">&#39;1 deg&#39;</span><span class="p">,</span>
+    <span class="n">maps</span><span class="p">[</span><span class="s1">&#39;exposure&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span>
+    <span class="n">max_radius</span><span class="o">=</span><span class="s1">&#39;0.3 deg&#39;</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -1434,7 +1441,7 @@ WARNING: AstropyDeprecationWarning: The truth value of a Quantity is ambiguous. 
 <h2>Compute energy dispersion<a class="headerlink" href="#Compute-energy-dispersion" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [10]:
+<span></span>In [11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1457,7 +1464,7 @@ files, and then read them from your script that does the likelihood
 fitting without having to run the precomputations again.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [11]:
+<span></span>In [12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1474,7 +1481,7 @@ fitting without having to run the precomputations again.</p>
 </div>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [12]:
+<span></span>In [13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1490,6 +1497,31 @@ fitting without having to run the precomputations again.</p>
 </div>
 </div>
 </div>
+<div class="section" id="Cutout">
+<h2>Cutout<a class="headerlink" href="#Cutout" title="Permalink to this headline">¶</a></h2>
+<p>Let’s cut out only part of the map, so that we can have a faster fit</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">cmaps</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">make_cutout</span><span class="p">(</span><span class="n">SkyCoord</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s1">&#39;galactic&#39;</span><span class="p">),</span> <span class="mf">1.5</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">maps</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+<span class="p">}</span>
+<span class="n">cmaps</span><span class="p">[</span><span class="s1">&#39;counts&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">stretch</span><span class="o">=</span><span class="s1">&#39;sqrt&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_analysis_3d_21_0.png" src="../_images/notebooks_analysis_3d_21_0.png" />
+</div>
+</div>
+</div>
 <div class="section" id="Model-fit">
 <h2>Model fit<a class="headerlink" href="#Model-fit" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
@@ -1500,7 +1532,7 @@ cutout)</li>
 </ul>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [13]:
+<span></span>In [15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1523,7 +1555,7 @@ cutout)</li>
 </div>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [14]:
+<span></span>In [16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1539,23 +1571,23 @@ cutout)</li>
 
 <span class="c1"># model.parameters[&#39;lon_0&#39;].frozen = True</span>
 <span class="c1"># model.parameters[&#39;lat_0&#39;].frozen = True</span>
-<span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">frozen</span> <span class="o">=</span> <span class="bp">True</span>
-<span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;sigma&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="c1"># model.parameters[&#39;sigma&#39;].frozen = True</span>
+<span class="c1"># model.parameters[&#39;sigma&#39;].min = 0</span>
 </pre></div>
 </div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [15]:
+<span></span>In [17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="o">%%</span><span class="k">time</span>
 fit = MapFit(
     model=model,
-    counts=maps[&#39;counts&#39;],
-    exposure=maps[&#39;exposure&#39;],
-    background=maps[&#39;background&#39;],
+    counts=cmaps[&#39;counts&#39;],
+    exposure=cmaps[&#39;exposure&#39;],
+    background=cmaps[&#39;background&#39;],
     psf=psf_kernel,
 #     edisp=edisp,
 )
@@ -1576,12 +1608,12 @@ fit.fit()
 <div class="output_area docutils container">
 <table>
     <tr>
-        <td title="Minimum value of function">FCN = 791737.4766482912</td>
-        <td title="Total number of call to FCN so far">TOTAL NCALL = 109</td>
-        <td title="Number of call in last migrad">NCALLS = 109</td>
+        <td title="Minimum value of function">FCN = 46198.37629613703</td>
+        <td title="Total number of call to FCN so far">TOTAL NCALL = 199</td>
+        <td title="Number of call in last migrad">NCALLS = 199</td>
     </tr>
     <tr>
-        <td title="Estimated distance to minimum">EDM = 5.411610892977309e-06</td>
+        <td title="Estimated distance to minimum">EDM = 1.217618885041634e-05</td>
         <td title="Maximum EDM definition of convergence">GOAL EDM = 1e-05</td>
         <td title="Error def. Amount of increase in FCN to be defined as 1 standard deviation">
         UP = 1.0</td>
@@ -1625,7 +1657,7 @@ fit.fit()
 <div class="output_area docutils container">
         <table>
             <tr>
-                <td><a href="#" onclick="$('#bIrccFpUzi').toggle()">+</a></td>
+                <td><a href="#" onclick="$('#pVaGhtMYNC').toggle()">+</a></td>
                 <td title="Variable name">Name</td>
                 <td title="Value of parameter">Value</td>
                 <td title="Parabolic error">Parab Error</td>
@@ -1639,8 +1671,8 @@ fit.fit()
             <tr>
                 <td>1</td>
                 <td>lon_0</td>
-                <td>-0.0489699</td>
-                <td>0.00603099</td>
+                <td>-0.0476148</td>
+                <td>0.0035595</td>
                 <td>0</td>
                 <td>0</td>
                 <td></td>
@@ -1651,8 +1683,8 @@ fit.fit()
             <tr>
                 <td>2</td>
                 <td>lat_0</td>
-                <td>-0.0532021</td>
-                <td>0.00517017</td>
+                <td>-0.0502588</td>
+                <td>0.00329575</td>
                 <td>0</td>
                 <td>0</td>
                 <td></td>
@@ -1663,20 +1695,20 @@ fit.fit()
             <tr>
                 <td>3</td>
                 <td>sigma</td>
-                <td>0.1</td>
-                <td>0.1</td>
+                <td>0.0425763</td>
+                <td>0.00787962</td>
                 <td>0</td>
                 <td>0</td>
-                <td>0.0</td>
                 <td></td>
-                <td>FIXED</td>
+                <td></td>
+                <td></td>
             </tr>
 
             <tr>
                 <td>4</td>
                 <td>index</td>
-                <td>2.34823</td>
-                <td>0.0329683</td>
+                <td>2.29045</td>
+                <td>0.0385137</td>
                 <td>0</td>
                 <td>0</td>
                 <td></td>
@@ -1687,8 +1719,8 @@ fit.fit()
             <tr>
                 <td>5</td>
                 <td>amplitude</td>
-                <td>4.8668e-12</td>
-                <td>2.03008e-13</td>
+                <td>3.23545e-12</td>
+                <td>2.29229e-13</td>
                 <td>0</td>
                 <td>0</td>
                 <td></td>
@@ -1710,20 +1742,20 @@ fit.fit()
 
             </table>
 
-            <pre id="bIrccFpUzi" style="display:none;">
+            <pre id="pVaGhtMYNC" style="display:none;">
             <textarea rows="18" cols="50" onclick="this.select()" readonly>\begin{tabular}{|c|r|r|r|r|r|r|r|c|}
 \hline
  & Name & Value & Para Error & Error+ & Error- & Limit+ & Limit- & FIXED\\
 \hline
-1 & $lon_{0}$ & -4.897e-02 & 6.031e-03 &  &  &  &  & \\
+1 & $lon_{0}$ & -4.761e-02 & 3.560e-03 &  &  &  &  & \\
 \hline
-2 & $lat_{0}$ & -5.320e-02 & 5.170e-03 &  &  &  &  & \\
+2 & $lat_{0}$ & -5.026e-02 & 3.296e-03 &  &  &  &  & \\
 \hline
-3 & $\sigma$ & 1.000e-01 & 1.000e-01 &  &  & 0.000e+00 & 0.000e+00 & FIXED\\
+3 & $\sigma$ & 4.258e-02 & 7.880e-03 &  &  &  &  & \\
 \hline
-4 & index & 2.348e+00 & 3.297e-02 &  &  &  &  & \\
+4 & index & 2.290e+00 & 3.851e-02 &  &  &  &  & \\
 \hline
-5 & amplitude & 4.867e-12 & 2.030e-13 &  &  &  &  & \\
+5 & amplitude & 3.235e-12 & 2.292e-13 &  &  &  &  & \\
 \hline
 6 & reference & 1.000e+00 & 0.000e+00 &  &  & 0.000e+00 & 0.000e+00 & FIXED\\
 \hline
@@ -1741,13 +1773,13 @@ fit.fit()
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-CPU times: user 30min 30s, sys: 3min 35s, total: 34min 5s
-Wall time: 8min 39s
+CPU times: user 13.1 s, sys: 387 ms, total: 13.4 s
+Wall time: 3.4 s
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [16]:
+<span></span>In [18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1761,24 +1793,24 @@ Wall time: 8min 39s
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 ParameterList
-Parameter(name=&#39;lon_0&#39;, value=-0.04896994794396681, unit=&#39;deg&#39;, min=nan, max=nan, frozen=False)
-Parameter(name=&#39;lat_0&#39;, value=-0.05320209350456812, unit=&#39;deg&#39;, min=nan, max=nan, frozen=False)
-Parameter(name=&#39;sigma&#39;, value=0.1, unit=&#39;deg&#39;, min=0.0, max=nan, frozen=True)
-Parameter(name=&#39;index&#39;, value=2.3612069061929533, unit=&#39;&#39;, min=nan, max=nan, frozen=False)
-Parameter(name=&#39;amplitude&#39;, value=4.946727737339892e-12, unit=&#39;1 / (cm2 s TeV)&#39;, min=nan, max=nan, frozen=False)
+Parameter(name=&#39;lon_0&#39;, value=-0.04761477341251164, unit=&#39;deg&#39;, min=nan, max=nan, frozen=False)
+Parameter(name=&#39;lat_0&#39;, value=-0.05025876271598867, unit=&#39;deg&#39;, min=nan, max=nan, frozen=False)
+Parameter(name=&#39;sigma&#39;, value=0.04257629868919711, unit=&#39;deg&#39;, min=nan, max=nan, frozen=False)
+Parameter(name=&#39;index&#39;, value=2.2904467657077934, unit=&#39;&#39;, min=nan, max=nan, frozen=False)
+Parameter(name=&#39;amplitude&#39;, value=3.2354525670249617e-12, unit=&#39;1 / (cm2 s TeV)&#39;, min=nan, max=nan, frozen=False)
 Parameter(name=&#39;reference&#39;, value=1.0, unit=&#39;TeV&#39;, min=0.0, max=nan, frozen=True)
 
 Covariance:
-[[ 3.63728796e-05  2.65410675e-07  0.00000000e+00 -7.94479589e-06
-  -4.44382559e-18  0.00000000e+00]
- [ 2.65410675e-07  2.67307082e-05  0.00000000e+00 -1.36402754e-06
-  -1.35747905e-17  0.00000000e+00]
- [ 0.00000000e+00  0.00000000e+00  0.00000000e+00  0.00000000e+00
-   0.00000000e+00  0.00000000e+00]
- [-7.94479589e-06 -1.36402754e-06  0.00000000e+00  1.08690745e-03
-  -2.82192784e-15  0.00000000e+00]
- [-4.44382559e-18 -1.35747905e-17  0.00000000e+00 -2.82192784e-15
-   4.12122025e-26  0.00000000e+00]
+[[ 1.26700465e-05  5.34842238e-07  7.19419781e-06 -9.68567952e-06
+   1.66755286e-16  0.00000000e+00]
+ [ 5.34842238e-07  1.08619516e-05  3.85608855e-07 -8.17305734e-07
+   8.71765707e-18  0.00000000e+00]
+ [ 7.19419781e-06  3.85608855e-07  6.20884506e-05 -2.03200013e-05
+   1.34134704e-15  0.00000000e+00]
+ [-9.68567952e-06 -8.17305734e-07 -2.03200013e-05  1.48330659e-03
+  -2.46437065e-15  0.00000000e+00]
+ [ 1.66755286e-16  8.71765707e-18  1.34134704e-15 -2.46437065e-15
+   5.25460832e-26  0.00000000e+00]
  [ 0.00000000e+00  0.00000000e+00  0.00000000e+00  0.00000000e+00
    0.00000000e+00  0.00000000e+00]]
 </pre></div></div>
@@ -1792,6 +1824,102 @@ analysis, 0.2 deg)</li>
 <li>plot residual image for some energy band (e.g.&nbsp;the total one used
 here)</li>
 </ul>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Parameter error are not synched back to</span>
+<span class="c1"># sub model components automatically yet</span>
+<span class="n">spec</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">spectral_model</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+PowerLaw
+
+Parameters:
+
+           name     value   error       unit         min    max frozen
+        --------- --------- ----- --------------- --------- --- ------
+            index 2.290e+00   nan                       nan nan  False
+        amplitude 3.235e-12   nan 1 / (cm2 s TeV)       nan nan  False
+        reference 1.000e+00   nan             TeV 0.000e+00 nan   True
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># For now, we can copy the parameter error manually</span>
+<span class="n">spec</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">set_parameter_errors</span><span class="p">({</span>
+    <span class="s1">&#39;index&#39;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;index&#39;</span><span class="p">),</span>
+    <span class="s1">&#39;amplitude&#39;</span><span class="p">:</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;amplitude&#39;</span><span class="p">),</span>
+<span class="p">})</span>
+<span class="k">print</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+PowerLaw
+
+Parameters:
+
+           name     value     error         unit         min    max frozen
+        --------- --------- --------- --------------- --------- --- ------
+            index 2.290e+00 3.851e-02                       nan nan  False
+        amplitude 3.235e-12 2.292e-13 1 / (cm2 s TeV)       nan nan  False
+        reference 1.000e+00 0.000e+00             TeV 0.000e+00 nan   True
+
+Covariance:
+
+        name/name  index  amplitude
+        --------- ------- ---------
+            index 0.00148       0.0
+        amplitude     0.0  5.25e-26
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">energy_range</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mi">10</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span>
+<span class="n">spec</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">energy_range</span><span class="p">,</span> <span class="n">energy_power</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">spec</span><span class="o">.</span><span class="n">plot_error</span><span class="p">(</span><span class="n">energy_range</span><span class="p">,</span> <span class="n">energy_power</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>Out[21]:
+</pre></div>
+</div>
+<div class="output_area highlight-none notranslate"><div class="highlight"><pre>
+<span></span>&lt;matplotlib.axes._subplots.AxesSubplot at 0xb1c10a7b8&gt;
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_analysis_3d_30_1.png" src="../_images/notebooks_analysis_3d_30_1.png" />
+</div>
+</div>
 </div>
 <div class="section" id="Exercises">
 <h2>Exercises<a class="headerlink" href="#Exercises" title="Permalink to this headline">¶</a></h2>
@@ -1823,7 +1951,7 @@ here)</li>
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 01 Aug 2018.
+      Last updated on 03 Aug 2018.
 
     </p>
   </div>
@@ -1845,7 +1973,7 @@ here)</li>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.8.dev6584',
+            VERSION:'0.8.dev6623',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

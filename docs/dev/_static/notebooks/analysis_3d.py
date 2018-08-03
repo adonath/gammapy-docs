@@ -49,6 +49,7 @@ data_store = DataStore.from_dir(
 )
 obs_ids = [110380, 111140, 111159]
 # obs_ids = [110380]
+obs_list = data_store.obs_list(obs_ids)
 
 
 # In[5]:
@@ -68,13 +69,13 @@ geom = WcsGeom.create(
 # In[6]:
 
 
-get_ipython().run_cell_magic('time', '', "maker = MapMaker(geom, 4. * u.deg)\n\nfor obs_id in obs_ids:\n    print('processing:', obs_id)\n    obs = data_store.obs(obs_id)\n    maker.process_obs(obs)\n\n# TODO: add this as a property `.results`? on the maker\nmaps = {\n    'counts': maker.count_map,\n    'background': maker.background_map,\n    'exposure': maker.exposure_map,\n}")
+get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, 4. * u.deg)\nmaps = maker.run(obs_list)')
 
 
 # In[7]:
 
 
-maps['counts'].sum_over_axes().smooth(radius=0.2*u.deg).plot();
+maps['counts'].sum_over_axes().smooth(radius=0.2*u.deg).plot(stretch='sqrt');
 
 
 # In[8]:
@@ -83,11 +84,19 @@ maps['counts'].sum_over_axes().smooth(radius=0.2*u.deg).plot();
 maps['background'].sum_over_axes().plot(stretch='sqrt');
 
 
+# In[9]:
+
+
+residual = maps['counts'].copy()
+residual.data -= maps['background'].data
+residual.sum_over_axes().smooth(5).plot(stretch='sqrt');
+
+
 # ## Compute PSF kernel
 # 
 # For the moment we rely on the ObservationList.make_mean_psf() method.
 
-# In[9]:
+# In[10]:
 
 
 obs_list = data_store.obs_list(obs_ids)
@@ -96,14 +105,14 @@ src_pos = SkyCoord(0, 0, unit='deg', frame='galactic')
 table_psf = obs_list.make_mean_psf(src_pos)
 psf_kernel = PSFKernel.from_table_psf(
     table_psf,
-    maker.exposure_map.geom,
-    max_radius='1 deg',
+    maps['exposure'].geom,
+    max_radius='0.3 deg',
 )
 
 
 # ## Compute energy dispersion
 
-# In[10]:
+# In[11]:
 
 
 energy_axis = geom.get_axis_by_name('energy')
@@ -123,7 +132,7 @@ edisp = obs_list.make_mean_edisp(position=src_pos, e_true=energy, e_reco=energy)
 # and then read them from your script that does the likelihood fitting without
 # having to run the precomputations again.
 
-# In[11]:
+# In[12]:
 
 
 # Write
@@ -136,7 +145,7 @@ psf_kernel.write(str(path / 'psf.fits'), overwrite=True)
 edisp.write(str(path / 'edisp.fits'), overwrite=True)
 
 
-# In[12]:
+# In[13]:
 
 
 # Read
@@ -149,13 +158,27 @@ psf_kernel = PSFKernel.read(str(path / 'psf.fits'))
 edisp = EnergyDispersion.read(str(path / 'edisp.fits'))
 
 
+# ## Cutout
+# 
+# Let's cut out only part of the map, so that we can have a faster fit
+
+# In[14]:
+
+
+cmaps = {
+    name: m.make_cutout(SkyCoord(0, 0, unit='deg', frame='galactic'), 1.5 * u.deg)[0]
+    for name, m in maps.items()
+}
+cmaps['counts'].sum_over_axes().plot(stretch='sqrt');
+
+
 # ## Model fit
 # 
 # - TODO: Add diffuse emission model? (it's 800 MB, maybe prepare a cutout)
 # - TODO: make it faster (less than 1 minute)
 # - TODO: compare against true model known for DC1
 
-# In[13]:
+# In[15]:
 
 
 spatial_model = SkyGaussian(
@@ -174,7 +197,7 @@ model = SkyModel(
 )
 
 
-# In[14]:
+# In[16]:
 
 
 # For now, users have to set initial step sizes
@@ -189,17 +212,17 @@ model.parameters.set_parameter_errors({
 
 # model.parameters['lon_0'].frozen = True
 # model.parameters['lat_0'].frozen = True
-model.parameters['sigma'].frozen = True
-model.parameters['sigma'].min = 0
+# model.parameters['sigma'].frozen = True
+# model.parameters['sigma'].min = 0
 
 
-# In[15]:
+# In[17]:
 
 
-get_ipython().run_cell_magic('time', '', "fit = MapFit(\n    model=model,\n    counts=maps['counts'],\n    exposure=maps['exposure'],\n    background=maps['background'],\n    psf=psf_kernel,\n#     edisp=edisp,\n)\n\nfit.fit()")
+get_ipython().run_cell_magic('time', '', "fit = MapFit(\n    model=model,\n    counts=cmaps['counts'],\n    exposure=cmaps['exposure'],\n    background=cmaps['background'],\n    psf=psf_kernel,\n#     edisp=edisp,\n)\n\nfit.fit()")
 
 
-# In[16]:
+# In[18]:
 
 
 print(model.parameters)
@@ -209,6 +232,34 @@ print(model.parameters)
 # 
 # - plot counts spectrum for some on region (e.g. the one used in 1D spec analysis, 0.2 deg)
 # - plot residual image for some energy band (e.g. the total one used here)
+
+# In[19]:
+
+
+# Parameter error are not synched back to
+# sub model components automatically yet
+spec = model.spectral_model.copy()
+print(spec)
+
+
+# In[20]:
+
+
+# For now, we can copy the parameter error manually
+spec.parameters.set_parameter_errors({
+    'index': model.parameters.error('index'),
+    'amplitude': model.parameters.error('amplitude'),
+})
+print(spec)
+
+
+# In[21]:
+
+
+energy_range = [0.1, 10] * u.TeV
+spec.plot(energy_range, energy_power=2)
+spec.plot_error(energy_range, energy_power=2)
+
 
 # ## Exercises
 # 

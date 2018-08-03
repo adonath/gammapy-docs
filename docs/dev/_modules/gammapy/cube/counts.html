@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.cube.counts &mdash; gammapy v0.8.dev6584</title>
+  <title>gammapy.cube.counts &mdash; gammapy v0.8.dev6623</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6584
+                0.8.dev6623
               </div>
             
           
@@ -197,6 +197,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Compute-PSF-kernel">Compute PSF kernel</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Compute-energy-dispersion">Compute energy dispersion</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Save-maps">Save maps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Cutout">Cutout</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Model-fit">Model fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Check-model-fit">Check model fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Exercises">Exercises</a></li>
@@ -1017,68 +1018,72 @@
   <h1>Source code for gammapy.cube.counts</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
-<span class="kn">from</span> <span class="nn">..maps</span> <span class="k">import</span> <span class="n">Map</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s1">&#39;fill_map_counts&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;make_map_counts&#39;</span><span class="p">,</span>
 <span class="p">]</span>
 
 
-<div class="viewcode-block" id="fill_map_counts"><a class="viewcode-back" href="../../../api/gammapy.cube.fill_map_counts.html#gammapy.cube.fill_map_counts">[docs]</a><span class="k">def</span> <span class="nf">fill_map_counts</span><span class="p">(</span><span class="n">count_map</span><span class="p">,</span> <span class="n">event_list</span><span class="p">):</span>
+<div class="viewcode-block" id="fill_map_counts"><a class="viewcode-back" href="../../../api/gammapy.cube.fill_map_counts.html#gammapy.cube.fill_map_counts">[docs]</a><span class="k">def</span> <span class="nf">fill_map_counts</span><span class="p">(</span><span class="n">counts_map</span><span class="p">,</span> <span class="n">events</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Fill events into a counts map.</span>
 
 <span class="sd">    The energy of the events is used for a non-spatial axis homogeneous to energy.</span>
-<span class="sd">    The other non-spatial axis names should have an entry in the column names of the ``EventList``</span>
+<span class="sd">    The other non-spatial axis names should have an entry in the column names of the event list.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    count_map : `~gammapy.maps.Map`</span>
+<span class="sd">    counts_map : `~gammapy.maps.Map`</span>
 <span class="sd">        Map object, will be filled by this function.</span>
-<span class="sd">    event_list : `~gammapy.data.EventList`</span>
+<span class="sd">    events : `~gammapy.data.EventList`</span>
 <span class="sd">        Event list</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">geom</span> <span class="o">=</span> <span class="n">count_map</span><span class="o">.</span><span class="n">geom</span>
 
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    To make a counts map, create an empty map with a geometry of your choice</span>
+<span class="sd">    and then fill it using this function::</span>
+
+<span class="sd">        from gammapy.maps import Map</span>
+<span class="sd">        from gammapy.data import EventList</span>
+<span class="sd">        from gammapy.cube import fill_map_counts</span>
+<span class="sd">        events = EventList.read(&#39;$GAMMAPY_EXTRA/datasets/cta-1dc/data/baseline/gps/gps_baseline_110380.fits&#39;)</span>
+<span class="sd">        counts = Map.create(coordsys=&#39;GAL&#39;, skydir=(0, 0), binsz=0.1, npix=(120, 100))</span>
+<span class="sd">        fill_map_counts(counts, events)</span>
+<span class="sd">        counts.plot()</span>
+
+<span class="sd">    If you have a given map already, and want to make a counts image</span>
+<span class="sd">    with the same geometry (not using the pixel data from the original map), do this:</span>
+
+<span class="sd">        from gammapy.maps import Map</span>
+<span class="sd">        from gammapy.data import EventList</span>
+<span class="sd">        from gammapy.cube import fill_map_counts</span>
+<span class="sd">        events = EventList.read(&#39;$GAMMAPY_EXTRA/datasets/fermi_2fhl/2fhl_events.fits.gz&#39;)</span>
+<span class="sd">        reference_map = Map.read(&#39;$GAMMAPY_EXTRA/datasets/fermi_2fhl/fermi_2fhl_gc.fits.gz&#39;)</span>
+<span class="sd">        counts = Map.from_geom(reference_map.geom)</span>
+<span class="sd">        fill_map_counts(counts, events)</span>
+<span class="sd">        counts.smooth(3).plot()</span>
+
+<span class="sd">    It works for IACT and Fermi-LAT events, for WCS or HEALPix map geometries,</span>
+<span class="sd">    and also for extra axes. Especially energy axes are automatically handled correctly.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Make a coordinate dictionary; skycoord is always added</span>
-    <span class="n">coord_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">skycoord</span><span class="o">=</span><span class="n">event_list</span><span class="o">.</span><span class="n">radec</span><span class="p">)</span>
+    <span class="n">coord_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">skycoord</span><span class="o">=</span><span class="n">events</span><span class="o">.</span><span class="n">radec</span><span class="p">)</span>
 
     <span class="c1"># Now add one coordinate for each extra map axis</span>
-    <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="n">counts_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">axis</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s1">&#39;energy&#39;</span><span class="p">:</span>
             <span class="c1"># This axis is the energy. We treat it differently because axis.name could be e.g. &#39;energy_reco&#39;</span>
-            <span class="n">coord_dict</span><span class="p">[</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">event_list</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
+            <span class="n">coord_dict</span><span class="p">[</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">events</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
         <span class="c1"># TODO: add proper extraction for time</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># We look for other axes name in the table column names (case insensitive)</span>
-            <span class="n">colnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">_</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">event_list</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">]</span>
+            <span class="n">colnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">_</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">events</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">]</span>
             <span class="k">if</span> <span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">in</span> <span class="n">colnames</span><span class="p">:</span>
-                <span class="n">column_name</span> <span class="o">=</span> <span class="n">event_list</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">[</span><span class="n">colnames</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">())]</span>
-                <span class="n">coord_dict</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">event_list</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">unit</span><span class="p">)})</span>
+                <span class="n">column_name</span> <span class="o">=</span> <span class="n">events</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">[</span><span class="n">colnames</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">())]</span>
+                <span class="n">coord_dict</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">unit</span><span class="p">)})</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot find MapGeom axis </span><span class="si">{!r}</span><span class="s2"> in EventList&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
 
-    <span class="n">count_map</span><span class="o">.</span><span class="n">fill_by_coord</span><span class="p">(</span><span class="n">coord_dict</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="make_map_counts"><a class="viewcode-back" href="../../../api/gammapy.cube.make_map_counts.html#gammapy.cube.make_map_counts">[docs]</a><span class="k">def</span> <span class="nf">make_map_counts</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">geom</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Make a counts map for a given geometry.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    events : `~gammapy.data.EventList`</span>
-<span class="sd">        Event list</span>
-<span class="sd">    geom : `~gammapy.maps.Geom`</span>
-<span class="sd">        Map geometry</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    counts_map : `~gammapy.maps.Map`</span>
-<span class="sd">        Counts map</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">counts_map</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span>
-    <span class="n">fill_map_counts</span><span class="p">(</span><span class="n">counts_map</span><span class="p">,</span> <span class="n">events</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">counts_map</span></div>
+    <span class="n">counts_map</span><span class="o">.</span><span class="n">fill_by_coord</span><span class="p">(</span><span class="n">coord_dict</span><span class="p">)</span></div>
 </pre></div>
 
            </div>
@@ -1092,7 +1097,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 01 Aug 2018.
+      Last updated on 03 Aug 2018.
 
     </p>
   </div>
@@ -1114,7 +1119,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6584',
+            VERSION:'0.8.dev6623',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

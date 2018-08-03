@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.detect.test_statistics &mdash; gammapy v0.8.dev6584</title>
+  <title>gammapy.detect.test_statistics &mdash; gammapy v0.8.dev6623</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6584
+                0.8.dev6623
               </div>
             
           
@@ -197,6 +197,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Compute-PSF-kernel">Compute PSF kernel</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Compute-energy-dispersion">Compute energy dispersion</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Save-maps">Save maps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Cutout">Cutout</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Model-fit">Model fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Check-model-fit">Check model fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/analysis_3d.html#Exercises">Exercises</a></li>
@@ -1306,7 +1307,7 @@
         <span class="k">if</span> <span class="s1">&#39;mask&#39;</span> <span class="ow">in</span> <span class="n">maps</span><span class="p">:</span>
             <span class="n">mask</span><span class="o">.</span><span class="n">data</span> <span class="o">&amp;=</span> <span class="n">maps</span><span class="p">[</span><span class="s1">&#39;mask&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
 
-        <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;root newton&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;threshold&#39;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">p</span><span class="p">[</span><span class="s1">&#39;method&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;root newton&#39;</span><span class="p">:</span>
             <span class="n">flux</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_default</span><span class="p">(</span><span class="n">maps</span><span class="p">,</span> <span class="n">kernel</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">flux</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1374,7 +1375,7 @@
 
         <span class="k">return</span> <span class="n">result</span></div>
 
-    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Info string.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1426,10 +1427,17 @@
 
     <span class="k">if</span> <span class="n">threshold</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">):</span>
-            <span class="n">c_1</span> <span class="o">=</span> <span class="n">f_cash</span><span class="p">(</span><span class="n">flux</span><span class="p">[</span><span class="n">position</span><span class="p">],</span> <span class="n">counts_</span><span class="p">,</span> <span class="n">background_</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+            <span class="n">amplitude</span> <span class="o">=</span> <span class="n">flux</span><span class="p">[</span><span class="n">position</span><span class="p">]</span>
+            <span class="n">c_1</span> <span class="o">=</span> <span class="n">f_cash</span><span class="p">(</span><span class="n">amplitude</span> <span class="o">/</span> <span class="n">FLUX_FACTOR</span><span class="p">,</span> <span class="n">counts_</span><span class="p">,</span> <span class="n">background_</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
         <span class="c1"># Don&#39;t fit if pixel significance is low</span>
         <span class="k">if</span> <span class="n">c_0</span> <span class="o">-</span> <span class="n">c_1</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">c_0</span> <span class="o">-</span> <span class="n">c_1</span><span class="p">,</span> <span class="n">flux</span><span class="p">[</span><span class="n">position</span><span class="p">]</span> <span class="o">*</span> <span class="n">FLUX_FACTOR</span><span class="p">,</span> <span class="mi">0</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">result</span><span class="p">[</span><span class="s1">&#39;ts&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">c_0</span> <span class="o">-</span> <span class="n">c_1</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">amplitude</span><span class="p">)</span>
+            <span class="n">result</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">amplitude</span>
+            <span class="n">result</span><span class="p">[</span><span class="s1">&#39;niter&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">result</span><span class="p">[</span><span class="s1">&#39;flux_err&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="n">result</span><span class="p">[</span><span class="s1">&#39;flux_ul&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            <span class="k">return</span> <span class="n">result</span>
 
     <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;root brentq&#39;</span><span class="p">:</span>
         <span class="n">amplitude</span><span class="p">,</span> <span class="n">niter</span> <span class="o">=</span> <span class="n">_root_amplitude_brentq</span><span class="p">(</span><span class="n">counts_</span><span class="p">,</span> <span class="n">background_</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">)</span>
@@ -1627,7 +1635,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 01 Aug 2018.
+      Last updated on 03 Aug 2018.
 
     </p>
   </div>
@@ -1649,7 +1657,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6584',
+            VERSION:'0.8.dev6623',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
