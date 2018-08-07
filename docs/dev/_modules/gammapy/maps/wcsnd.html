@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.maps.wcsnd &mdash; gammapy v0.8.dev6625</title>
+  <title>gammapy.maps.wcsnd &mdash; gammapy v0.8.dev6660</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6625
+                0.8.dev6660
               </div>
             
           
@@ -312,15 +312,17 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html">Fermi-LAT data with Gammapy</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Introduction">Introduction</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Setup">Setup</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#FermiLATDataset-class">FermiLATDataset class</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Events">Events</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#PSF">PSF</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Counts">Counts</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Exposure">Exposure</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Galactic-diffuse-background">Galactic diffuse background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Isotropic-diffuse-background">Isotropic diffuse background</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Estimating-basic-input-sky-images-for-high-level-analyses">Estimating basic input sky images for high level analyses</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#PSF">PSF</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Background">Background</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Excess-and-flux">Excess and flux</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Fit">Fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Exercises">Exercises</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#What-next?">What next?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Summary">Summary</a></li>
 </ul>
 </li>
 </ul>
@@ -1018,13 +1020,11 @@
   <h1>Source code for gammapy.maps.wcsnd</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
-<span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
 <span class="kn">from</span> <span class="nn">astropy.units</span> <span class="k">import</span> <span class="n">Quantity</span>
 <span class="kn">from</span> <span class="nn">astropy.nddata</span> <span class="k">import</span> <span class="n">Cutout2D</span>
-<span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
 <span class="kn">from</span> <span class="nn">astropy.convolution</span> <span class="k">import</span> <span class="n">Tophat2DKernel</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">unpack_seq</span>
 <span class="kn">from</span> <span class="nn">.geom</span> <span class="k">import</span> <span class="n">pix_tuple_to_idx</span><span class="p">,</span> <span class="n">axes_pix_to_coord</span>
@@ -1065,16 +1065,10 @@
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">):</span>
         <span class="c1"># TODO: Figure out how to mask pixels for integer data types</span>
 
-        <span class="c1"># Shape in WCS or FITS order is `shape`, in Numpy axis order is `shape_np`</span>
-        <span class="n">shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span> <span class="o">+</span>
-                      <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">nbin</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">])</span>
-        <span class="n">shape_np</span> <span class="o">=</span> <span class="n">shape</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">data_shape</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">data_shape</span>
 
         <span class="k">if</span> <span class="n">data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_default_data</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">shape_np</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">shape_np</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Wrong shape for input data array. Expected </span><span class="si">{}</span><span class="s1"> &#39;</span>
-                             <span class="s1">&#39;but got </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">shape_np</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_default_data</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)</span>
 
         <span class="nb">super</span><span class="p">(</span><span class="n">WcsNDMap</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meta</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
 
@@ -1225,20 +1219,13 @@
 
         <span class="k">return</span> <span class="n">vals</span>
 
-<div class="viewcode-block" id="WcsNDMap.interp_image"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.interp_image">[docs]</a>    <span class="k">def</span> <span class="nf">interp_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Operation only supported for maps with one or more &#39;</span>
-                             <span class="s1">&#39;non-spatial dimensions.&#39;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interp_image_cube</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">order</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
-
-    <span class="k">def</span> <span class="nf">_interp_image_cube</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Interpolate an image plane of a cube.&quot;&quot;&quot;</span>
-        <span class="c1"># TODO: consider re-writing to support maps with &gt; 3 dimensions</span>
-
+    <span class="c1"># Currently used by reproject.</span>
+    <span class="c1"># TODO: Consider replacing with `interp_by_coord`.</span>
+    <span class="k">def</span> <span class="nf">_interp_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
         <span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="k">import</span> <span class="n">interp1d</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Only support geometry with ndim=3 at the moment&#39;</span><span class="p">)</span>
 
         <span class="n">axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">idx</span> <span class="o">=</span> <span class="n">axis</span><span class="o">.</span><span class="n">coord_to_idx_interp</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
@@ -1253,8 +1240,6 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">kind</span> <span class="o">=</span> <span class="n">order</span>
             <span class="n">fill_value</span> <span class="o">=</span> <span class="kc">None</span>
-
-        <span class="c1"># TODO: Cache interpolating function?</span>
 
         <span class="n">fn</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">pix_vals</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
                       <span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">)</span>
@@ -1319,7 +1304,7 @@
                 <span class="n">img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">coords</span> <span class="o">=</span> <span class="n">axes_pix_to_coord</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
-                <span class="n">img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interp_image</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+                <span class="n">img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interp_image</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
 
             <span class="c1"># FIXME: This is a temporary solution for handling maps</span>
             <span class="c1"># with undefined pixels</span>
@@ -1366,7 +1351,7 @@
                 <span class="n">img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">coords</span> <span class="o">=</span> <span class="n">axes_pix_to_coord</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
-                <span class="n">img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interp_image</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+                <span class="n">img</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interp_image</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
 
             <span class="c1"># TODO: For partial-sky HPX we need to map from full- to</span>
             <span class="c1"># partial-sky indices</span>
@@ -1614,7 +1599,6 @@
 
             <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
 
-
 <div class="viewcode-block" id="WcsNDMap.smooth"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.smooth">[docs]</a>    <span class="k">def</span> <span class="nf">smooth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="s1">&#39;gauss&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Smooth the image (works on a 2D image and returns a copy).</span>
@@ -1677,7 +1661,6 @@
 <span class="sd">            a square region is extracted. For more options see also `~astropy.nddata.utils.Cutout2D`.</span>
 <span class="sd">        mode : {&#39;trim&#39;, &#39;partial&#39;, &#39;strict&#39;}</span>
 <span class="sd">            Mode option for Cutout2D, for details see `~astropy.nddata.utils.Cutout2D`.</span>
-
 <span class="sd">        copy : bool, optional</span>
 <span class="sd">               If False (default), then the cutout data will be a view into the original data  array.</span>
 <span class="sd">               If True, then the cutout data will hold a copy of the original data array.</span>
@@ -1688,7 +1671,6 @@
 <span class="sd">            The cutout map itself</span>
 <span class="sd">        cutout_slices : Tuple of slice objects (with dimension 1 less than that of the non-spatial axes of the map)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="n">idx</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span>
 
         <span class="n">cutout2d</span> <span class="o">=</span> <span class="n">Cutout2D</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">wcs</span><span class="p">,</span>
@@ -1717,7 +1699,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 03 Aug 2018.
+      Last updated on 07 Aug 2018.
 
     </p>
   </div>
@@ -1739,7 +1721,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6625',
+            VERSION:'0.8.dev6660',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

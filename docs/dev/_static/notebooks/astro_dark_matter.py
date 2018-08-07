@@ -5,7 +5,7 @@
 # 
 # ## Introduction 
 # 
-# Gammapy has some convenience methods for dark matter analyses. These include J-Factor computation and calculation the expected gamma flux for a number of annihilation channels. They are presented in this notebook. 
+# Gammapy has some convenience methods for dark matter analyses in [gammapy.astro.darkmatter](http://docs.gammapy.org/dev/astro/darkmatter/index.html). These include J-Factor computation and calculation the expected gamma flux for a number of annihilation channels. They are presented in this notebook. 
 # 
 # The basic concepts of indirect dark matter searches, however, are not explained. So this is aimed at people who already know what the want to do. A good introduction to indirect dark matter searches is given for example in https://arxiv.org/pdf/1012.4515.pdf (Chapter 1 and 5)
 
@@ -89,14 +89,14 @@ geom = WcsGeom.create(binsz=0.05, skydir=position, width=3.0, coordsys='GAL')
 # In[6]:
 
 
-jfactory = JFactory(ref_geom=geom, profile=profile, distance=profiles.DMProfile.DISTANCE_GC)
+jfactory = JFactory(geom=geom, profile=profile, distance=profiles.DMProfile.DISTANCE_GC)
 jfact = jfactory.compute_jfactor()
 
 
 # In[7]:
 
 
-jfact_map = WcsNDMap(geom=geom, data=jfact)
+jfact_map = WcsNDMap(geom=geom, data=jfact.value, unit=jfact.unit)
 fig, ax, im = jfact_map.plot(cmap='viridis', norm=LogNorm(), add_cbar=True)
 plt.title('J-Factor [{}]'.format(jfact_map.unit))
 
@@ -113,12 +113,11 @@ plt.legend()
 
 
 # NOTE: https://arxiv.org/abs/1607.08142 cite 2.67e21 without the the +/- 0.3 deg band around the plane
-
 mask = pix_reg.to_mask()
 data = mask.multiply(jfact.data)
 total_jfact = np.sum(data)
-print("The J-factor of a 1 deg circle around the GC assuming a {} is {:.3g}".format(
-    profile.__class__.__name__, total_jfact))
+print("J-factor in 1 deg circle around GC assuming a "
+      "{} is {:.3g}".format(profile.__class__.__name__, total_jfact))
 
 
 # ## Gamma-ray spectra at production
@@ -154,7 +153,7 @@ plt.subplots_adjust(hspace=0.5)
 
 # ## Flux maps
 # 
-# Finally flux maps can be produced like this|
+# Finally flux maps can be produced like this:
 
 # In[11]:
 
@@ -170,11 +169,13 @@ flux = map_maker.run()
 # In[12]:
 
 
-flux_map = WcsNDMap(geom=geom, data=flux)
+flux_map = WcsNDMap(geom=geom, data=flux.value, unit=flux.unit)
 
 fig, ax, im = flux_map.plot(cmap='viridis', norm=LogNorm(), add_cbar=True)
-plt.title('Flux [{}]\n m$_{{DM}}$={}\n channel={}'.format(
+plt.title(
+    'Flux [{}]\n m$_{{DM}}$={}, channel={}'.format(
     flux_map.unit, 
     fluxes.mDM.to('TeV'),
-    fluxes.channel))
+    fluxes.channel)
+);
 

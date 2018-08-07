@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Fermi-LAT data with Gammapy &mdash; gammapy v0.8.dev6625</title>
+  <title>Fermi-LAT data with Gammapy &mdash; gammapy v0.8.dev6660</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.8.dev6625
+                0.8.dev6660
               </div>
             
           
@@ -314,15 +314,17 @@
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Fermi-LAT data with Gammapy</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#Introduction">Introduction</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup">Setup</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#FermiLATDataset-class">FermiLATDataset class</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Events">Events</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#PSF">PSF</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Counts">Counts</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Exposure">Exposure</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Galactic-diffuse-background">Galactic diffuse background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Isotropic-diffuse-background">Isotropic diffuse background</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Estimating-basic-input-sky-images-for-high-level-analyses">Estimating basic input sky images for high level analyses</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PSF">PSF</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Background">Background</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Excess-and-flux">Excess and flux</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Fit">Fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Exercises">Exercises</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#What-next?">What next?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Summary">Summary</a></li>
 </ul>
 </li>
 </ul>
@@ -1236,82 +1238,64 @@ repository</a>.</li>
 <h1>Fermi-LAT data with Gammapy<a class="headerlink" href="#Fermi-LAT-data-with-Gammapy" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="Introduction">
 <h2>Introduction<a class="headerlink" href="#Introduction" title="Permalink to this headline">¶</a></h2>
-<p>This tutorial will show you how to work with pepared Fermi-LAT datasets.</p>
-<p>The main class to load and handle the data is:</p>
-<ul class="simple">
-<li><a class="reference external" href="../api/gammapy.datasets.FermiLATDataset.rst">gammapy.dataset.FermiLATDataset</a></li>
-</ul>
-<p>Additionally we will use objects of these types:</p>
-<ul class="simple">
-<li><a class="reference internal" href="../api/gammapy.data.EventList.html"><span class="doc">gammapy.data.EventList</span></a> for
-event lists.</li>
-<li><a class="reference internal" href="../api/gammapy.irf.EnergyDependentTablePSF.html"><span class="doc">gammapy.irf.EnergyDependentTablePSF</span></a>
-for the point spread function.</li>
-<li><a class="reference external" href="../api/gammapy.cube.SkyCube.rst">gammapy.cube.SkyCube</a> for the
-galactic diffuse background model.</li>
-<li><a class="reference external" href="../api/gammapy.cube.SkyCubeHPX.rst">gammapy.cube.SkyCubeHPX</a> for
-the exposure.</li>
-<li><a class="reference internal" href="../api/gammapy.spectrum.models.TableModel.html#gammapy.spectrum.models.TableModel"><span class="std std-ref">gammapy.spectrum.models.TableModel</span></a>
-for the isotropic diffuse model.</li>
-<li><a class="reference external" href="../api/gammapy.image.FermiLATBasicImageEstimator.rst">gammapy.image.FermiLATBasicImageEstimator</a>
-for generating a full WCS dataset, that can be used as an input for
-image based analyses.</li>
-</ul>
+<p>This tutorial will show you how to work with Fermi-LAT data with
+Gammapy. As an example, we will look at the Galactic center region using
+the high-energy dataset that was used for the 3FHL catalog, in the
+energy range 10 GeV to 2 TeV.</p>
+<p>We note that support for Fermi-LAT data analysis in Gammapy is very
+limited. For most tasks, we recommend you use
+<a class="reference external" href="http://fermipy.readthedocs.io/">Fermipy</a>, which is based on the
+<a class="reference external" href="https://fermi.gsfc.nasa.gov/ssc/data/analysis/software/">Fermi Science
+Tools</a>
+(Fermi ST).</p>
+<p>Using Gammapy with Fermi-LAT data could be an option for you if you want
+to do an analysis that is not easily possible with Fermipy and the Fermi
+Science Tools. For example a joint likelihood fit of Fermi-LAT data with
+data e.g.&nbsp;from H.E.S.S., MAGIC, VERITAS or some other instrument, or
+analysis of Fermi-LAT data with a complex spatial or spectral model that
+is not available in Fermipy or the Fermi ST.</p>
+<p>Besides Gammapy, you might want to look at are
+<a class="reference external" href="http://cxc.harvard.edu/sherpa/">Sherpa</a> or
+<a class="reference external" href="https://threeml.readthedocs.io/">3ML</a>. Or just using Python to roll
+your own analyis using several existing analysis packages. E.g. it it
+possible to use Fermipy and the Fermi ST to evaluate the likelihood on
+Fermi-LAT data, and Gammapy to evaluate it e.g.&nbsp;for IACT data, and to do
+a joint likelihood fit using e.g.
+<a class="reference external" href="http://iminuit.readthedocs.io/">iminuit</a> or
+<a class="reference external" href="http://dfm.io/emcee">emcee</a>.</p>
+<p>To use Fermi-LAT data with Gammapy, you first have to use the Fermi ST
+to prepare an event list (using <code class="docutils literal notranslate"><span class="pre">gtselect</span></code> and <code class="docutils literal notranslate"><span class="pre">gtmktime</span></code>, exposure
+cube (using <code class="docutils literal notranslate"><span class="pre">gtexpcube2</span></code> and PSF (using <code class="docutils literal notranslate"><span class="pre">gtpsf</span></code>). You can then use
+<a class="reference internal" href="../api/gammapy.data.EventList.html"><span class="doc">gammapy.data.EventList</span></a>,
+<a class="reference external" href="../maps/">gammapy.maps</a> and the
+<a class="reference external" href="http://docs.gammapy.org/dev/api/gammapy.irf.EnergyDependentTablePSF.rst">gammapy.irf.EnergyDependentTablePSF</a>
+to read the Fermi-LAT maps and PSF, i.e.&nbsp;support for these high-level
+analysis products from the Fermi ST is built in. To do a 3D map analyis,
+you can use <a class="reference internal" href="../api/gammapy.cube.MapFit.html"><span class="doc">MapFit</span></a> for Fermi-LAT
+data in the same way that it’s use for IACT data. This is illustrated in
+this notebook. A 1D region-based spectral analysis is also possible,
+this will be illustrated in a future tutorial. There you have to extract
+1D counts, exposure and background vectors and then pass them to
+<a class="reference internal" href="../api/gammapy.spectrum.SpectrumFit.html"><span class="doc">SpectrumFit</span></a>.</p>
 </div>
 <div class="section" id="Setup">
 <h2>Setup<a class="headerlink" href="#Setup" title="Permalink to this headline">¶</a></h2>
-<p><strong>IMPORTANT</strong>: For this notebook you have to get the prepared datasets
-provided in the
+<p><strong>IMPORTANT</strong>: For this notebook you have to get the prepared <code class="docutils literal notranslate"><span class="pre">3fhl</span></code>
+dataset provided in the
 <a class="reference external" href="https://github.com/gammapy/gammapy-fermi-lat-data">gammapy-fermi-lat-data</a>
 repository. Please follow the instructions
 <a class="reference external" href="https://github.com/gammapy/gammapy-fermi-lat-data#get-the-data">here</a>
 to download the data and setup your environment.</p>
-<div class="nbinput nblast docutils container">
+<p>Note that the <code class="docutils literal notranslate"><span class="pre">3fhl</span></code> dataset is high-energy only, ranging from 10 GeV
+to 2 TeV.</p>
+<div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="o">%</span><span class="k">matplotlib</span> inline
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
-</pre></div>
-</div>
-</div>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [2]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
-<span class="kn">from</span> <span class="nn">astropy.visualization</span> <span class="kn">import</span> <span class="n">simple_norm</span>
-<span class="kn">from</span> <span class="nn">gammapy.datasets</span> <span class="kn">import</span> <span class="n">FermiLATDataset</span>
-<span class="kn">from</span> <span class="nn">gammapy.image</span> <span class="kn">import</span> <span class="n">SkyImage</span><span class="p">,</span> <span class="n">FermiLATBasicImageEstimator</span>
-</pre></div>
-</div>
-</div>
-</div>
-<div class="section" id="FermiLATDataset-class">
-<h2>FermiLATDataset class<a class="headerlink" href="#FermiLATDataset-class" title="Permalink to this headline">¶</a></h2>
-<p>To access the prepared Fermi-LAT datasets Gammapy provides a convenience
-class called
-<a class="reference external" href="../api/gammapy.datasets.FermiLATDataset.rst#gammapy.datasets.FermiLATDataset">FermiLATDataset</a>.
-It is initialized with a path to an index configuration file, which
-tells the dataset class where to find the data. Once the object is
-initialized the data can be accessed as properties of this object, which
-return the corresponding Gammapy data objects for event lists, sky
-images and point spread functions (PSF).</p>
-<p>So let’s start with exploring the Fermi-LAT 2FHL dataset:</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [3]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># initialize dataset</span>
-<span class="n">dataset</span> <span class="o">=</span> <span class="n">FermiLATDataset</span><span class="p">(</span><span class="s1">&#39;$GAMMAPY_FERMI_LAT_DATA/2fhl/fermi_2fhl_data_config.yaml&#39;</span><span class="p">)</span>
-<span class="k">print</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+<span></span><span class="c1"># Check that you have the prepared Fermi-LAT dataset</span>
+<span class="o">!</span>ls -1 <span class="nv">$GAMMAPY_FERMI_LAT_DATA</span>/3fhl
 </pre></div>
 </div>
 </div>
@@ -1320,33 +1304,85 @@ images and point spread functions (PSF).</p>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Fermi-LAT 2FHL dataset
-======================
-Filenames:
-  counts  : fermi_2fhl_counts_cube_hpx.fits.gz
-  events  : fermi_2fhl_events.fits.gz
-  exposure: fermi_2fhl_exposure_cube_hpx.fits.gz
-  isodiff : ../isodiff/iso_P8R2_SOURCE_V6_v06.txt
-  livetime: fermi_2fhl_livetime_cube.fits.gz
-  psf     : fermi_2fhl_psf_gc.fits.gz
-
+README.md
+<span class="ansi-blue-fg">background_norm</span>
+fermi_3fhl_counts_cube_hpx.fits.gz
+fermi_3fhl_data_config.yaml
+<span class="ansi-red-fg">fermi_3fhl_data_prepare.sh</span>
+fermi_3fhl_events.fits.gz
+fermi_3fhl_events_selected.fits.gz
+fermi_3fhl_exposure_cube_hpx.fits.gz
+fermi_3fhl_livetime.fits.gz
+fermi_3fhl_psf_gc.fits.gz
 </pre></div></div>
 </div>
-</div>
-<div class="section" id="Events">
-<h2>Events<a class="headerlink" href="#Events" title="Permalink to this headline">¶</a></h2>
-<p>The first data member we will inspect in more detail is the event list.
-It can be accessed by the <code class="docutils literal notranslate"><span class="pre">dataset.events</span></code> property and returns an
-instance of the Gammapy
-<a class="reference internal" href="../api/gammapy.data.EventList.html"><span class="doc">gammapy.data.EventList</span></a> class:</p>
 <div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># We will use diffuse models from here</span>
+<span class="o">!</span>ls -1 <span class="nv">$GAMMAPY_EXTRA</span>/datasets/fermi_3fhl
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+README.md
+gll_iem_v06.fits
+gll_iem_v06_cutout.fits
+iso_P8R2_SOURCE_V6_v06.txt
+make.py
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># access events data member</span>
-<span class="n">events</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">events</span>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
+<span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">SkyCoord</span>
+<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span>
+<span class="kn">from</span> <span class="nn">astropy.visualization</span> <span class="kn">import</span> <span class="n">simple_norm</span>
+<span class="kn">from</span> <span class="nn">gammapy.data</span> <span class="kn">import</span> <span class="n">EventList</span>
+<span class="kn">from</span> <span class="nn">gammapy.irf</span> <span class="kn">import</span> <span class="n">EnergyDependentTablePSF</span>
+<span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">Map</span><span class="p">,</span> <span class="n">MapAxis</span><span class="p">,</span> <span class="n">WcsNDMap</span><span class="p">,</span> <span class="n">WcsGeom</span>
+<span class="kn">from</span> <span class="nn">gammapy.spectrum.models</span> <span class="kn">import</span> <span class="n">TableModel</span><span class="p">,</span> <span class="n">PowerLaw</span><span class="p">,</span> <span class="n">ConstantModel</span>
+<span class="kn">from</span> <span class="nn">gammapy.image.models</span> <span class="kn">import</span> <span class="n">SkyPointSource</span><span class="p">,</span> <span class="n">SkyDiffuseConstant</span>
+<span class="kn">from</span> <span class="nn">gammapy.cube.models</span> <span class="kn">import</span> <span class="n">SkyModel</span><span class="p">,</span> <span class="n">SkyDiffuseCube</span>
+<span class="kn">from</span> <span class="nn">gammapy.cube</span> <span class="kn">import</span> <span class="n">MapEvaluator</span><span class="p">,</span> <span class="n">MapFit</span><span class="p">,</span> <span class="n">PSFKernel</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Events">
+<h2>Events<a class="headerlink" href="#Events" title="Permalink to this headline">¶</a></h2>
+<p>To load up the Fermi-LAT event list, use the
+<a class="reference internal" href="../api/gammapy.data.EventList.html"><span class="doc">gammapy.data.EventList</span></a> class:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">events</span> <span class="o">=</span> <span class="n">EventList</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s1">&#39;$GAMMAPY_FERMI_LAT_DATA/3fhl/fermi_3fhl_events_selected.fits.gz&#39;</span><span class="p">)</span>
 <span class="k">print</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1357,78 +1393,94 @@ instance of the Gammapy
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 EventList info:
-- Number of events: 60275
-- Median energy: 80340.5078125 MeV
+- Number of events: 697317
+- Median energy: 15895.3505859375 MeV
 
 </pre></div></div>
 </div>
-<p>The full event data is available via the <code class="docutils literal notranslate"><span class="pre">EventList.table</span></code> property,
-which returns an
-<a class="reference external" href="http://docs.astropy.org/en/stable/api/astropy.table.Table.html#astropy.table.Table">astropy.table.Table</a>
-instance. In case of the Fermi-LAT event list this contains all the
+<p>The event data is stored in a
+<a class="reference external" href="http://docs.astropy.org/en/stable/api/astropy.table.Table.html">astropy.table.Table</a>
+object. In case of the Fermi-LAT event list this contains all the
 additional information on positon, zenith angle, earth azimuth angle,
-event class, event type etc. Execute the following cell to take a look
-at the event list table:</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [5]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">events</span><span class="o">.</span><span class="n">table</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>Out[5]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-&lt;Table length=60275&gt;
-<table id="table4628651928" class="table-striped table-bordered table-condensed">
-<thead><tr><th>ENERGY</th><th>RA</th><th>DEC</th><th>L</th><th>B</th><th>THETA</th><th>PHI</th><th>ZENITH_ANGLE</th><th>EARTH_AZIMUTH_ANGLE</th><th>TIME</th><th>EVENT_ID</th><th>RUN_ID</th><th>RECON_VERSION</th><th>CALIB_VERSION [3]</th><th>EVENT_CLASS [32]</th><th>EVENT_TYPE [32]</th><th>CONVERSION_TYPE</th><th>LIVETIME</th><th>DIFRSP0</th><th>DIFRSP1</th><th>DIFRSP2</th><th>DIFRSP3</th><th>DIFRSP4</th></tr></thead>
-<thead><tr><th>MeV</th><th>deg</th><th>deg</th><th>deg</th><th>deg</th><th>deg</th><th>deg</th><th>deg</th><th>deg</th><th>s</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th>s</th><th></th><th></th><th></th><th></th><th></th></tr></thead>
-<thead><tr><th>float32</th><th>float32</th><th>float32</th><th>float32</th><th>float32</th><th>float32</th><th>float32</th><th>float32</th><th>float32</th><th>float64</th><th>int32</th><th>int32</th><th>int16</th><th>int16</th><th>bool</th><th>bool</th><th>int16</th><th>float64</th><th>float32</th><th>float32</th><th>float32</th><th>float32</th><th>float32</th></tr></thead>
-<tr><td>145927.0</td><td>291.662</td><td>42.2341</td><td>74.5437</td><td>11.8678</td><td>38.0455</td><td>83.5358</td><td>55.6387</td><td>314.034</td><td>239561457.866</td><td>4851437</td><td>239559565</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. True</td><td>0</td><td>275.698088974</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-<tr><td>221273.0</td><td>46.9858</td><td>-40.6389</td><td>247.489</td><td>-58.8739</td><td>34.1051</td><td>224.209</td><td>68.2524</td><td>198.319</td><td>239562739.085</td><td>7521432</td><td>239559565</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. True</td><td>0</td><td>64.7974931598</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-<tr><td>57709.2</td><td>121.841</td><td>49.2288</td><td>169.868</td><td>32.3017</td><td>71.5636</td><td>34.2925</td><td>36.7173</td><td>25.5439</td><td>239563180.302</td><td>8690693</td><td>239559565</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. True</td><td>0</td><td>30.57218647</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-<tr><td>221224.0</td><td>83.5626</td><td>-4.21744</td><td>207.783</td><td>-19.0771</td><td>20.5089</td><td>92.1605</td><td>32.3033</td><td>239.141</td><td>239563382.213</td><td>9208424</td><td>239559565</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. True</td><td>0</td><td>27.4125095904</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-<tr><td>698997.0</td><td>320.895</td><td>-1.32789</td><td>51.2218</td><td>-33.9718</td><td>35.3621</td><td>158.741</td><td>12.0867</td><td>72.2029</td><td>239566572.951</td><td>2480483</td><td>239565645</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. True</td><td>0</td><td>106.475481123</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-<tr><td>119159.0</td><td>318.811</td><td>12.3028</td><td>62.6361</td><td>-24.416</td><td>26.5896</td><td>213.894</td><td>17.7156</td><td>23.9409</td><td>239572348.06</td><td>1725276</td><td>239571670</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. True</td><td>0</td><td>185.346427292</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-<tr><td>56175.6</td><td>279.251</td><td>47.8835</td><td>76.6915</td><td>22.0739</td><td>29.1034</td><td>61.0048</td><td>62.1731</td><td>321.104</td><td>239572763.431</td><td>76017</td><td>239572736</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. True</td><td>0</td><td>24.4507339597</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-<tr><td>1.41812e+06</td><td>100.311</td><td>-47.4481</td><td>256.468</td><td>-21.2641</td><td>61.2256</td><td>294.18</td><td>90.4753</td><td>144.149</td><td>239573788.813</td><td>1781569</td><td>239572736</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. True</td><td>0</td><td>68.271614641</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-<tr><td>62164.9</td><td>331.492</td><td>-41.2264</td><td>359.42</td><td>-53.4049</td><td>28.1408</td><td>229.927</td><td>52.0142</td><td>189.054</td><td>239578601.168</td><td>2000700</td><td>239577663</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. True</td><td>0</td><td>90.332262665</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-<tr><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td><td>...</td></tr>
-<tr><td>51296.8</td><td>79.0311</td><td>78.9327</td><td>133.868</td><td>22.2399</td><td>51.1726</td><td>267.814</td><td>99.7602</td><td>357.79</td><td>444418973.822</td><td>1284853</td><td>444418590</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. True</td><td>0</td><td>181.6889835</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-<tr><td>60315.7</td><td>243.681</td><td>-50.5669</td><td>332.43</td><td>0.28268</td><td>24.8501</td><td>255.683</td><td>74.8804</td><td>195.14</td><td>444421777.761</td><td>6582949</td><td>444418590</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. False</td><td>1</td><td>57.3358902931</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-<tr><td>90000.1</td><td>282.698</td><td>-33.1987</td><td>2.66219</td><td>-14.3339</td><td>8.49144</td><td>343.559</td><td>47.3965</td><td>191.033</td><td>444422182.738</td><td>7507466</td><td>444418590</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. True</td><td>0</td><td>187.602469146</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-<tr><td>61988.7</td><td>247.98</td><td>-48.1091</td><td>336.146</td><td>0.0220339</td><td>33.6499</td><td>144.271</td><td>80.3966</td><td>221.396</td><td>444422758.145</td><td>8699147</td><td>444418590</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. True</td><td>0</td><td>39.2098327279</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-<tr><td>54282.9</td><td>159.924</td><td>-58.3628</td><td>286.362</td><td>0.205554</td><td>24.1196</td><td>287.138</td><td>65.0847</td><td>177.524</td><td>444425794.794</td><td>2522237</td><td>444424619</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. True</td><td>0</td><td>196.209668875</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-<tr><td>146728.0</td><td>244.848</td><td>-46.5876</td><td>335.754</td><td>2.60326</td><td>45.2539</td><td>5.33644</td><td>91.871</td><td>137.032</td><td>444425911.819</td><td>2705210</td><td>444424619</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. False</td><td>1</td><td>65.6327857375</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-<tr><td>135433.0</td><td>83.5278</td><td>27.9053</td><td>179.529</td><td>-2.69106</td><td>17.4911</td><td>52.0858</td><td>53.306</td><td>313.822</td><td>444430968.968</td><td>939188</td><td>444430599</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. False</td><td>1</td><td>97.6446831226</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-<tr><td>61592.1</td><td>231.214</td><td>-5.45521</td><td>357.435</td><td>40.6473</td><td>46.6356</td><td>141.047</td><td>62.7584</td><td>256.631</td><td>444433607.906</td><td>5443944</td><td>444430599</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. False</td><td>1</td><td>28.7290657759</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-<tr><td>80480.8</td><td>228.244</td><td>-45.044</td><td>327.561</td><td>10.9528</td><td>37.3149</td><td>193.714</td><td>83.3882</td><td>221.57</td><td>444433702.069</td><td>5612443</td><td>444430599</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. False</td><td>1</td><td>122.891819298</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-<tr><td>124449.0</td><td>238.008</td><td>-51.0371</td><td>329.429</td><td>2.3006</td><td>32.4522</td><td>199.504</td><td>80.9768</td><td>214.48</td><td>444433764.433</td><td>5723361</td><td>444430599</td><td>0</td><td>0 .. 0</td><td>False .. True</td><td>False .. True</td><td>0</td><td>185.255487204</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td><td>0.0</td></tr>
-</table></div>
-</div>
-<p>As a short analysis example we will count the number of events above a
-certain minimum energy:</p>
+event class, event type etc.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># define energy thresholds</span>
-<span class="n">energies</span> <span class="o">=</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">400</span><span class="p">,</span> <span class="mi">800</span><span class="p">,</span> <span class="mi">1600</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">GeV</span>
-
-<span class="n">n_events_above_energy</span> <span class="o">=</span> <span class="p">[]</span>
-
-<span class="k">for</span> <span class="n">energy</span> <span class="ow">in</span> <span class="n">energies</span><span class="p">:</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">energy</span> <span class="o">&gt;</span> <span class="n">energy</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-    <span class="n">n_events_above_energy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
-    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Number of events above {0:4.0f}: {1:5.0f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+<span></span><span class="n">events</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">colnames</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>Out[6]:
+</pre></div>
+</div>
+<div class="output_area highlight-none notranslate"><div class="highlight"><pre>
+<span></span>[&#39;ENERGY&#39;,
+ &#39;RA&#39;,
+ &#39;DEC&#39;,
+ &#39;L&#39;,
+ &#39;B&#39;,
+ &#39;THETA&#39;,
+ &#39;PHI&#39;,
+ &#39;ZENITH_ANGLE&#39;,
+ &#39;EARTH_AZIMUTH_ANGLE&#39;,
+ &#39;TIME&#39;,
+ &#39;EVENT_ID&#39;,
+ &#39;RUN_ID&#39;,
+ &#39;RECON_VERSION&#39;,
+ &#39;CALIB_VERSION&#39;,
+ &#39;EVENT_CLASS&#39;,
+ &#39;EVENT_TYPE&#39;,
+ &#39;CONVERSION_TYPE&#39;,
+ &#39;LIVETIME&#39;,
+ &#39;DIFRSP0&#39;,
+ &#39;DIFRSP1&#39;,
+ &#39;DIFRSP2&#39;,
+ &#39;DIFRSP3&#39;,
+ &#39;DIFRSP4&#39;]
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">events</span><span class="o">.</span><span class="n">table</span><span class="p">[:</span><span class="mi">5</span><span class="p">][[</span><span class="s1">&#39;ENERGY&#39;</span><span class="p">,</span> <span class="s1">&#39;RA&#39;</span><span class="p">,</span> <span class="s1">&#39;DEC&#39;</span><span class="p">]]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>Out[7]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<i>Table length=5</i>
+<table id="table47819915728" class="table-striped table-bordered table-condensed">
+<thead><tr><th>ENERGY</th><th>RA</th><th>DEC</th></tr></thead>
+<thead><tr><th>MeV</th><th>deg</th><th>deg</th></tr></thead>
+<thead><tr><th>float32</th><th>float32</th><th>float32</th></tr></thead>
+<tr><td>12856.5205</td><td>139.64438</td><td>-9.93702</td></tr>
+<tr><td>14773.319</td><td>177.04454</td><td>60.55275</td></tr>
+<tr><td>23273.527</td><td>110.21325</td><td>37.002018</td></tr>
+<tr><td>41866.125</td><td>334.85287</td><td>17.577398</td></tr>
+<tr><td>42463.074</td><td>316.86676</td><td>48.152477</td></tr>
+</table></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">print</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">iso</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">iso</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1437,40 +1489,17 @@ certain minimum energy:</p>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Number of events above   50 GeV: 60275
-Number of events above  100 GeV: 21874
-Number of events above  200 GeV:  8028
-Number of events above  400 GeV:  2884
-Number of events above  800 GeV:   821
-Number of events above 1600 GeV:   113
+2008-08-04 15:49:26.782
+2015-07-30 11:00:41.226
 </pre></div></div>
 </div>
-<p>And plot it against energy:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [7]:
+<span></span>In [9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
-<span class="n">events_plot</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">energies</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">n_events_above_energy</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Fermi 2FHL events&#39;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">energies</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">n_events_above_energy</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">events_plot</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_color</span><span class="p">())</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">()</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Min. energy (GeV)&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Counts above min. energy&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mf">4E1</span><span class="p">,</span> <span class="mf">3E3</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mf">1E2</span><span class="p">,</span> <span class="mf">1E5</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>Out[7]:
-</pre></div>
-</div>
-<div class="output_area highlight-none notranslate"><div class="highlight"><pre>
-<span></span>&lt;matplotlib.legend.Legend at 0x113e3cb38&gt;
+<span></span><span class="n">events</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;stats&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1478,25 +1507,525 @@ Number of events above 1600 GeV:   113
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_data_fermi_lat_13_1.png" src="../_images/notebooks_data_fermi_lat_13_1.png" />
+<div class="highlight"><pre>
+mean = 28905.451171875 MeV
+std = 61051.7421875 MeV
+min = 10000.03125 MeV
+max = 1998482.75 MeV
+n_bad = 0
+length = 697317
+</pre></div></div>
+</div>
+<p>As a short analysis example we will count the number of events above a
+certain minimum energy:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">for</span> <span class="n">e_min</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1000</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">GeV</span><span class="p">:</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">energy</span> <span class="o">&gt;</span> <span class="n">e_min</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">&quot;Events above {0:4.0f}: {1:5.0f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e_min</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Events above   10 GeV: 697317
+Events above  100 GeV: 23628
+Events above 1000 GeV:   544
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Counts">
+<h2>Counts<a class="headerlink" href="#Counts" title="Permalink to this headline">¶</a></h2>
+<p>Let us start to prepare things for an 3D map analysis of the Galactic
+center region with Gammapy. The first thing we do is to define the map
+geometry. We chose a TAN projection centered on position
+<code class="docutils literal notranslate"><span class="pre">(glon,</span> <span class="pre">glat)</span> <span class="pre">=</span> <span class="pre">(0,</span> <span class="pre">0)</span></code> with pixel size 0.1 deg, and four energy bins.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">gc_pos</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;deg&#39;</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s1">&#39;galactic&#39;</span><span class="p">)</span>
+<span class="n">energy_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_edges</span><span class="p">(</span>
+    <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">2000</span><span class="p">],</span>
+    <span class="n">name</span><span class="o">=</span><span class="s1">&#39;energy&#39;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;GeV&#39;</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;log&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">counts</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">skydir</span><span class="o">=</span><span class="n">gc_pos</span><span class="p">,</span>
+    <span class="n">npix</span><span class="o">=</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">80</span><span class="p">),</span>
+    <span class="n">proj</span><span class="o">=</span><span class="s1">&#39;TAN&#39;</span><span class="p">,</span>
+    <span class="n">coordsys</span><span class="o">=</span><span class="s1">&#39;GAL&#39;</span><span class="p">,</span>
+    <span class="n">binsz</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">energy_axis</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="c1"># We put this call into the same Jupyter cell as the Map.create</span>
+<span class="c1"># because otherwise we could accidentally fill the counts</span>
+<span class="c1"># multiple times when executing the ``fill_by_coord`` multiple times.</span>
+<span class="n">counts</span><span class="o">.</span><span class="n">fill_by_coord</span><span class="p">({</span>
+    <span class="s1">&#39;skycoord&#39;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">radec</span><span class="p">,</span>
+    <span class="c1"># The coord-based interface doesn&#39;t use Quantity,</span>
+    <span class="c1"># so we need to pass energy in the same unit as</span>
+    <span class="c1"># used for the map axis</span>
+    <span class="s1">&#39;energy&#39;</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;GeV&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>Out[12]:
+</pre></div>
+</div>
+<div class="output_area highlight-none notranslate"><div class="highlight"><pre>
+<span></span>MapAxis
+
+    name     : energy
+    type     : energy
+    unit     : GeV
+    nbins    : 4
+    node type: edge
+    edge min : 1.0e+01 GeV
+    edge max : 2.0e+03 GeV
+    interp   : log
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">counts</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">()</span><span class="o">.</span><span class="n">smooth</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">stretch</span><span class="o">=</span><span class="s1">&#39;sqrt&#39;</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">30</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_data_fermi_lat_18_0.png" src="../_images/notebooks_data_fermi_lat_18_0.png" />
+</div>
+</div>
+</div>
+<div class="section" id="Exposure">
+<h2>Exposure<a class="headerlink" href="#Exposure" title="Permalink to this headline">¶</a></h2>
+<p>The Fermi-LAT datatset contains the energy-dependent exposure for the
+whole sky as a HEALPix map computed with <code class="docutils literal notranslate"><span class="pre">gtexpcube2</span></code>. This format is
+supported by <code class="docutils literal notranslate"><span class="pre">gammapy.maps</span></code> directly.</p>
+<p>Interpolating the exposure cube from the Fermi ST to get an exposure
+cube matching the spatial geometry and energy axis defined above with
+Gammapy is easy. The only point to watch out for is how exactly you want
+the energy axis and binning handled.</p>
+<p>Below we just use the default behaviour, which is linear interpolation
+in energy on the original exposure cube. Probably log interpolation
+would be better, but it doesn’t matter much here, because the energy
+binning is fine. Finally, we just copy the counts map geometry, which
+contains an energy axis with <code class="docutils literal notranslate"><span class="pre">node_type=&quot;edges&quot;</span></code>. This is non-ideal
+for exposure cubes, but again, acceptable because exposure doesn’t vary
+much from bin to bin, so the exact way interpolation occurs in later use
+of that exposure cube doesn’t matter a lot. Of course you could define
+any energy axis for your exposure cube that you like.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">exposure_hpx</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s1">&#39;$GAMMAPY_FERMI_LAT_DATA/3fhl/fermi_3fhl_exposure_cube_hpx.fits.gz&#39;</span><span class="p">)</span>
+<span class="c1"># Unit is not stored in the file, set it manually</span>
+<span class="n">exposure_hpx</span><span class="o">.</span><span class="n">unit</span> <span class="o">=</span> <span class="s1">&#39;cm2 s&#39;</span>
+<span class="k">print</span><span class="p">(</span><span class="n">exposure_hpx</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">exposure_hpx</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+HpxGeom
+
+        npix      : 12288 pix
+        nside     : 32
+        nested    : False
+        coordsys  : CEL
+        projection: HPX
+        center    : 0.0 deg, 0.0 deg
+        ndim      : 3
+        axes      : energy
+
+MapAxis
+
+        name     : energy
+        type     : any
+        unit     :
+        nbins    : 18
+        node type: center
+        edge min : 8.2e+03
+        edge max : 2.3e+06
+        interp   : lin
+
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">exposure_hpx</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_data_fermi_lat_21_0.png" src="../_images/notebooks_data_fermi_lat_21_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># For exposure, we choose a geometry with node_type=&#39;center&#39;,</span>
+<span class="c1"># whereas for counts it was node_type=&#39;edge&#39;</span>
+<span class="n">axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_nodes</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">center</span><span class="p">,</span>
+                          <span class="n">name</span><span class="o">=</span><span class="s1">&#39;energy&#39;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;GeV&#39;</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+<span class="n">geom</span> <span class="o">=</span> <span class="n">WcsGeom</span><span class="p">(</span><span class="n">wcs</span><span class="o">=</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">wcs</span><span class="p">,</span> <span class="n">npix</span><span class="o">=</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">npix</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">axis</span><span class="p">])</span>
+
+<span class="c1"># We need to manually adjust the energy coord unit,</span>
+<span class="c1"># which is MeV in the HPX exposure cube and GeV in our geom</span>
+<span class="n">coord</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">exposure_hpx</span><span class="o">.</span><span class="n">interp_by_coord</span><span class="p">({</span>
+    <span class="s1">&#39;skycoord&#39;</span><span class="p">:</span> <span class="n">coord</span><span class="o">.</span><span class="n">skycoord</span><span class="p">,</span>
+    <span class="s1">&#39;energy&#39;</span><span class="p">:</span> <span class="mi">1000</span> <span class="o">*</span> <span class="n">coord</span><span class="p">[</span><span class="s1">&#39;energy&#39;</span><span class="p">],</span>
+<span class="p">})</span>
+<span class="n">exposure</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">exposure_hpx</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
+<span class="n">exposure</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">node_type</span>
+<span class="k">print</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+WcsGeom
+
+        npix      : 100 x 80 pix
+        coordsys  : GAL
+        projection: TAN
+        center    : 0.0 deg, 0.0 deg
+        width     : 10.0 x 8.0 deg
+        ndim      : 3
+        axes      : energy
+
+MapAxis
+
+        name     : energy
+        type     : energy
+        unit     : GeV
+        nbins    : 4
+        node type: center
+        edge min : 9.7e+00 GeV
+        edge max : 1.6e+03 GeV
+        interp   : log
+
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Exposure is almost constant accross the field of view</span>
+<span class="n">exposure</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">({</span><span class="s1">&#39;energy&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">add_cbar</span><span class="o">=</span><span class="bp">True</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_data_fermi_lat_23_0.png" src="../_images/notebooks_data_fermi_lat_23_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Exposure varies very little with energy at these high energies</span>
+<span class="n">energy</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1000</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">GeV</span>
+<span class="n">exposure</span><span class="o">.</span><span class="n">get_by_coord</span><span class="p">({</span>
+    <span class="s1">&#39;skycoord&#39;</span><span class="p">:</span> <span class="n">gc_pos</span><span class="p">,</span>
+    <span class="s1">&#39;energy&#39;</span><span class="p">:</span> <span class="n">energy</span><span class="p">,</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>Out[18]:
+</pre></div>
+</div>
+<div class="output_area highlight-none notranslate"><div class="highlight"><pre>
+<span></span>array([3.21027571e+11, 3.27555383e+11, 3.02893154e+11])
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Galactic-diffuse-background">
+<h2>Galactic diffuse background<a class="headerlink" href="#Galactic-diffuse-background" title="Permalink to this headline">¶</a></h2>
+<p>The Fermi-LAT collaboration provides a galactic diffuse emission model,
+that can be used as a background model for Fermi-LAT source analysis.</p>
+<p>Diffuse model maps are very large (100s of MB), so as an example here,
+we just load one that represents a small cutout for the Galactic center
+region.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">diffuse_galactic_fermi</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s1">&#39;$GAMMAPY_EXTRA/datasets/fermi_3fhl/gll_iem_v06_cutout.fits&#39;</span><span class="p">)</span>
+<span class="c1"># Unit is not stored in the file, set it manually</span>
+<span class="n">diffuse_galactic_fermi</span><span class="o">.</span><span class="n">unit</span> <span class="o">=</span> <span class="s1">&#39;cm-2 s-1 MeV-1 sr-1&#39;</span>
+<span class="k">print</span><span class="p">(</span><span class="n">diffuse_galactic_fermi</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">diffuse_galactic_fermi</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+WcsGeom
+
+        npix      : 88 x 48 pix
+        coordsys  : GAL
+        projection: CAR
+        center    : 0.0 deg, -0.1 deg
+        width     : 11.0 x 6.0 deg
+        ndim      : 3
+        axes      : energy
+
+MapAxis
+
+        name     : energy
+        type     : energy
+        unit     : MeV
+        nbins    : 30
+        node type: center
+        edge min : 4.8e+01 MeV
+        edge max : 5.8e+05 MeV
+        interp   : lin
+
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Interpolate the diffuse emission model onto the counts geometry</span>
+<span class="c1"># The resolution of `diffuse_galactic_fermi` is low: bin size = 0.5 deg</span>
+<span class="c1"># We use ``interp=3`` which means cubic spline interpolation</span>
+<span class="n">coord</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">diffuse_galactic_fermi</span><span class="o">.</span><span class="n">interp_by_coord</span><span class="p">({</span>
+    <span class="s1">&#39;skycoord&#39;</span><span class="p">:</span> <span class="n">coord</span><span class="o">.</span><span class="n">skycoord</span><span class="p">,</span>
+    <span class="s1">&#39;energy&#39;</span><span class="p">:</span> <span class="mi">1000</span> <span class="o">*</span> <span class="n">coord</span><span class="p">[</span><span class="s1">&#39;energy&#39;</span><span class="p">],</span>
+<span class="p">},</span> <span class="n">interp</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">diffuse_galactic</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">diffuse_galactic_fermi</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">diffuse_galactic</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">diffuse_galactic</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+WcsGeom
+
+        npix      : 100 x 80 pix
+        coordsys  : GAL
+        projection: TAN
+        center    : 0.0 deg, 0.0 deg
+        width     : 10.0 x 8.0 deg
+        ndim      : 3
+        axes      : energy
+
+MapAxis
+
+        name     : energy
+        type     : energy
+        unit     : GeV
+        nbins    : 4
+        node type: center
+        edge min : 9.7e+00 GeV
+        edge max : 1.6e+03 GeV
+        interp   : log
+
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">diffuse_galactic</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">({</span><span class="s1">&#39;energy&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_data_fermi_lat_29_0.png" src="../_images/notebooks_data_fermi_lat_29_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Exposure varies very little with energy at these high energies</span>
+<span class="n">energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">GeV</span>
+<span class="n">dnde</span> <span class="o">=</span> <span class="n">diffuse_galactic</span><span class="o">.</span><span class="n">interp_by_coord</span><span class="p">({</span>
+    <span class="s1">&#39;skycoord&#39;</span><span class="p">:</span> <span class="n">gc_pos</span><span class="p">,</span>
+    <span class="s1">&#39;energy&#39;</span><span class="p">:</span> <span class="n">energy</span><span class="p">,</span>
+<span class="p">},</span> <span class="n">interp</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">energy</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">dnde</span><span class="p">,</span> <span class="s1">&#39;*&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Energy (GeV)&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Flux (cm-2 s-1 MeV-1 sr-1)&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>Out[22]:
+</pre></div>
+</div>
+<div class="output_area highlight-none notranslate"><div class="highlight"><pre>
+<span></span>Text(0,0.5,&#39;Flux (cm-2 s-1 MeV-1 sr-1)&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_data_fermi_lat_30_1.png" src="../_images/notebooks_data_fermi_lat_30_1.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [23]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># TODO: show how one can fix the extrapolate to high energy</span>
+<span class="c1"># by computing and padding an extra plane e.g. at 1e3 TeV</span>
+<span class="c1"># that corresponds to a linear extrapolation</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Isotropic-diffuse-background">
+<h2>Isotropic diffuse background<a class="headerlink" href="#Isotropic-diffuse-background" title="Permalink to this headline">¶</a></h2>
+<p>To load the isotropic diffuse model with Gammapy, use the
+<a class="reference internal" href="../api/gammapy.spectrum.models.TableModel.html"><span class="doc">gammapy.spectrum.models.TableModel</span></a>.
+That model is given as an ASCII table, which we read using
+<code class="docutils literal notranslate"><span class="pre">astropy.table.Table</span></code>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [24]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">gammapy.datasets</span> <span class="kn">import</span> <span class="n">gammapy_extra</span>
+<span class="n">table</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span>
+    <span class="nb">str</span><span class="p">(</span><span class="n">gammapy_extra</span><span class="o">.</span><span class="n">dir</span> <span class="o">/</span> <span class="s1">&#39;datasets/fermi_3fhl/iso_P8R2_SOURCE_V6_v06.txt&#39;</span><span class="p">),</span>
+    <span class="n">format</span><span class="o">=</span><span class="s1">&#39;ascii&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">diffuse_iso</span> <span class="o">=</span> <span class="n">TableModel</span><span class="p">(</span>
+    <span class="n">energy</span><span class="o">=</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;col1&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">MeV</span><span class="p">,</span>
+    <span class="n">values</span><span class="o">=</span><span class="n">table</span><span class="p">[</span><span class="s1">&#39;col2&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s1">&#39;cm-2 s-1 MeV-1 sr-1&#39;</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>We can plot the model in the energy range between 50 GeV and 2000 GeV:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [25]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">erange</span> <span class="o">=</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">2000</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">GeV</span>
+<span class="n">diffuse_iso</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">erange</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_data_fermi_lat_35_0.png" src="../_images/notebooks_data_fermi_lat_35_0.png" />
 </div>
 </div>
 </div>
 <div class="section" id="PSF">
 <h2>PSF<a class="headerlink" href="#PSF" title="Permalink to this headline">¶</a></h2>
-<p>Next we will tke a closer look at the PSF. The dataset contains a
-precomputed PSF model for one position of the sky (in this case the
-Galactic center). It can be accessed by the <code class="docutils literal notranslate"><span class="pre">dataset.psf</span></code> property and
-returns an instance of the Gammapy
+<p>Next we will tke a look at the PSF. It was computed using <code class="docutils literal notranslate"><span class="pre">gtpsf</span></code>, in
+this case for the Galactic center position. Note that generally for
+Fermi-LAT, the PSF only varies little within a given regions of the sky,
+especially at high energies like what we have here. We use the
 <a class="reference internal" href="../api/gammapy.irf.EnergyDependentTablePSF.html"><span class="doc">gammapy.irf.EnergyDependentTablePSF</span></a>
-class:</p>
+class to load the PSF and use some of it’s methods to get some
+information about it.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [8]:
+<span></span>In [26]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">psf</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">psf</span>
+<span></span><span class="n">psf</span> <span class="o">=</span> <span class="n">EnergyDependentTablePSF</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s1">&#39;$GAMMAPY_FERMI_LAT_DATA/3fhl/fermi_3fhl_psf_gc.fits.gz&#39;</span><span class="p">)</span>
 <span class="k">print</span><span class="p">(</span><span class="n">psf</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1510,14 +2039,13 @@ EnergyDependentTablePSF
 -----------------------
 
 Axis info:
-  offset         : size =   300, min =  0.000 deg, max =  9.933 deg
-  energy         : size =    17, min = 50.000 GeV, max = 2000.000 GeV
-  exposure       : size =    17, min = 184244434125.149 cm2 s, max = 308160738535.443 cm2 s
+  rad            : size =   300, min =  0.000 deg, max =  9.933 deg
+  energy         : size =    17, min = 10.000 GeV, max = 2000.000 GeV
 
 Containment info:
-  68.0% containment radius at  10 GeV: 0.10 deg
+  68.0% containment radius at  10 GeV: 0.16 deg
   68.0% containment radius at 100 GeV: 0.10 deg
-  95.0% containment radius at  10 GeV: 0.52 deg
+  95.0% containment radius at  10 GeV: 0.71 deg
   95.0% containment radius at 100 GeV: 0.43 deg
 
 </pre></div></div>
@@ -1527,12 +2055,12 @@ of the Fermi-LAT PSF vari with energy and different containment
 fractions:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [9]:
+<span></span>In [27]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
-<span class="n">psf</span><span class="o">.</span><span class="n">plot_containment_vs_energy</span><span class="p">(</span><span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fractions</span><span class="o">=</span><span class="p">[</span><span class="mf">0.68</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.99</span><span class="p">])</span>
+<span class="n">psf</span><span class="o">.</span><span class="n">plot_containment_vs_energy</span><span class="p">(</span><span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fractions</span><span class="o">=</span><span class="p">[</span><span class="mf">0.68</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">])</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">2000</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
@@ -1542,40 +2070,30 @@ fractions:</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_data_fermi_lat_17_0.png" src="../_images/notebooks_data_fermi_lat_17_0.png" />
+<img alt="../_images/notebooks_data_fermi_lat_39_0.png" src="../_images/notebooks_data_fermi_lat_39_0.png" />
 </div>
 </div>
 <p>In addition we can check how the actual shape of the PSF varies with
 energy and compare it against the mean PSF between 50 GeV and 2000 GeV:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [10]:
+<span></span>In [28]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
 
-<span class="k">for</span> <span class="n">energy</span> <span class="ow">in</span> <span class="n">energies</span><span class="p">:</span>
+<span class="k">for</span> <span class="n">energy</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">300</span><span class="p">,</span> <span class="mi">1000</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">GeV</span><span class="p">:</span>
     <span class="n">psf_at_energy</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">table_psf_at_energy</span><span class="p">(</span><span class="n">energy</span><span class="p">)</span>
-    <span class="n">psf_at_energy</span><span class="o">.</span><span class="n">plot_psf_vs_theta</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;PSF @ {:.0f}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">energy</span><span class="p">),</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">psf_at_energy</span><span class="o">.</span><span class="n">plot_psf_vs_rad</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;PSF @ {:.0f}&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">energy</span><span class="p">),</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
 <span class="n">erange</span> <span class="o">=</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">2000</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">GeV</span>
 <span class="n">psf_mean</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">table_psf_in_energy_band</span><span class="p">(</span><span class="n">energy_band</span><span class="o">=</span><span class="n">erange</span><span class="p">,</span> <span class="n">spectral_index</span><span class="o">=</span><span class="mf">2.3</span><span class="p">)</span>
-<span class="n">psf_mean</span><span class="o">.</span><span class="n">plot_psf_vs_theta</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;PSF Mean&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">)</span>
+<span class="n">psf_mean</span><span class="o">.</span><span class="n">plot_psf_vs_rad</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;PSF Mean&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">)</span>
 
-<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mf">1E-3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mf">1E2</span><span class="p">,</span> <span class="mf">1E7</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>Out[10]:
-</pre></div>
-</div>
-<div class="output_area highlight-none notranslate"><div class="highlight"><pre>
-<span></span>&lt;matplotlib.legend.Legend at 0x114256390&gt;
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="mf">1e-3</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mf">1e3</span><span class="p">,</span> <span class="mf">1e6</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
 </pre></div>
 </div>
 </div>
@@ -1583,306 +2101,31 @@ energy and compare it against the mean PSF between 50 GeV and 2000 GeV:</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_data_fermi_lat_19_1.png" src="../_images/notebooks_data_fermi_lat_19_1.png" />
+<img alt="../_images/notebooks_data_fermi_lat_41_0.png" src="../_images/notebooks_data_fermi_lat_41_0.png" />
 </div>
-</div>
-</div>
-<div class="section" id="Exposure">
-<h2>Exposure<a class="headerlink" href="#Exposure" title="Permalink to this headline">¶</a></h2>
-<p>The Fermi-LAT datatset contains the energy-dependent exposure for the
-whole sky stored using a HEALPIX pixelisation of the sphere. It can be
-accessed by the <code class="docutils literal notranslate"><span class="pre">dataset.exposure</span></code> property and returns an instance of
-the Gammapy <code class="docutils literal notranslate"><span class="pre">gammapy.cube.SkyCubeHPX</span></code> class:</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [11]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">exposure</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">exposure</span>
-<span class="k">print</span><span class="p">(</span><span class="n">exposure</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-Healpix sky cube exposure with shape=(18, 12288) and unit=cm2 s:
- n_pix:    12288  coord_type:    galactic         coord_unit:    deg
- n_energy:    18  unit_energy: MeV
-
-</pre></div></div>
 </div>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [12]:
+<span></span>In [29]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># define reference image using a cartesian projection</span>
-<span class="n">image_ref</span> <span class="o">=</span> <span class="n">SkyImage</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">nxpix</span><span class="o">=</span><span class="mi">360</span><span class="p">,</span> <span class="n">nypix</span><span class="o">=</span><span class="mi">180</span><span class="p">,</span> <span class="n">binsz</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">proj</span><span class="o">=</span><span class="s1">&#39;CAR&#39;</span><span class="p">)</span>
-
-<span class="c1"># reproject HEALPIC sky cube</span>
-<span class="n">exposure_reprojected</span> <span class="o">=</span> <span class="n">exposure</span><span class="o">.</span><span class="n">reproject</span><span class="p">(</span><span class="n">image_ref</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [13]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">exposure_reprojected</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_data_fermi_lat_23_0.png" src="../_images/notebooks_data_fermi_lat_23_0.png" />
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>Out[13]:
-</pre></div>
-</div>
-<div class="output_area highlight-none notranslate"><div class="highlight"><pre>
-<span></span>&lt;function gammapy.cube.core.SkyCube.show.&lt;locals&gt;.show_image&gt;
-</pre></div>
-</div>
-</div>
-<p>You can use the slider to slide through the different energy bands.</p>
-</div>
-<div class="section" id="Galactic-diffuse-background">
-<h2>Galactic diffuse background<a class="headerlink" href="#Galactic-diffuse-background" title="Permalink to this headline">¶</a></h2>
-<p>The Fermi-LAT collaboration provides a galactic diffuse emission model,
-that can be used as a background model for Fermi-LAT data analysis.
-Currently Gammapy only supports the latest model (<code class="docutils literal notranslate"><span class="pre">gll_iem_v06.fits</span></code>).
-It can be accessed by the <code class="docutils literal notranslate"><span class="pre">dataset.galactic_diffuse</span></code> property and
-returns an instance of the Gammapy
-<a class="reference external" href="../api/gammapy.cube.SkyCube.rst">gammapy.cube.SkyCube</a> class:</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [14]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">galactic_diffuse</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">galactic_diffuse</span>
-<span class="k">print</span><span class="p">(</span><span class="n">galactic_diffuse</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-Sky cube galactic diffuse with shape=(30, 1441, 2880) and unit=1 / (cm2 MeV s sr):
- n_lon:     2880  type_lon:    GLON-CAR         unit_lon:    deg
- n_lat:     1441  type_lat:    GLAT-CAR         unit_lat:    deg
- n_energy:    30  unit_energy: MeV
-
-</pre></div></div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [15]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">norm</span> <span class="o">=</span> <span class="n">simple_norm</span><span class="p">(</span><span class="n">image_ref</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">stretch</span><span class="o">=</span><span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="n">clip</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-<span class="n">galactic_diffuse</span><span class="o">.</span><span class="n">show</span><span class="p">(</span><span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_data_fermi_lat_28_0.png" src="../_images/notebooks_data_fermi_lat_28_0.png" />
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>Out[15]:
-</pre></div>
-</div>
-<div class="output_area highlight-none notranslate"><div class="highlight"><pre>
-<span></span>&lt;function gammapy.cube.core.SkyCube.show.&lt;locals&gt;.show_image&gt;
-</pre></div>
-</div>
-</div>
-<p>Again you can use the slider to slide through the different energy
-bands. E.g. note how the Fermi-Bubbles become more present at higher
-energies (higher value of idx).</p>
-</div>
-<div class="section" id="Isotropic-diffuse-background">
-<h2>Isotropic diffuse background<a class="headerlink" href="#Isotropic-diffuse-background" title="Permalink to this headline">¶</a></h2>
-<p>Additionally to the galactic diffuse model, there is an isotropic
-diffuse component. It can be accessed by the
-<code class="docutils literal notranslate"><span class="pre">dataset.isotropic_diffuse</span></code> property and returns an instance of the
-Gammapy
-<a class="reference internal" href="../api/gammapy.spectrum.models.TableModel.html#gammapy.spectrum.models.TableModel"><span class="std std-ref">gammapy.spectrum.models.TableModel</span></a>
-class:</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [16]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">isotropic_diffuse</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">isotropic_diffuse</span>
-<span class="k">print</span><span class="p">(</span><span class="n">isotropic_diffuse</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-TableModel
-ParameterList
-Parameter(name=&#39;amplitude&#39;, value=1, unit=&#39;&#39;, min=0, max=None, frozen=False)
-
-Covariance: None
-</pre></div></div>
-</div>
-<p>We can plot the model in the energy range between 50 GeV and 2000 GeV:</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [17]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">erange</span> <span class="o">=</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">2000</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">GeV</span>
-<span class="n">isotropic_diffuse</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">erange</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>Out[17]:
-</pre></div>
-</div>
-<div class="output_area highlight-none notranslate"><div class="highlight"><pre>
-<span></span>&lt;matplotlib.axes._subplots.AxesSubplot at 0x114e08be0&gt;
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_data_fermi_lat_33_1.png" src="../_images/notebooks_data_fermi_lat_33_1.png" />
-</div>
-</div>
-</div>
-<div class="section" id="Estimating-basic-input-sky-images-for-high-level-analyses">
-<h2>Estimating basic input sky images for high level analyses<a class="headerlink" href="#Estimating-basic-input-sky-images-for-high-level-analyses" title="Permalink to this headline">¶</a></h2>
-<p>Finally we’d like to use the prepared 2FHL dataset to generate a set of
-basic sky images, that a can be used as input for high level analyses,
-e.g.&nbsp;morphology fits, region based flux measurements, computation of
-significance images etc. For this purpose Gammapy provides a convenience
-class called
-<a class="reference external" href="../api/gammapy.image.FermiLATBasicImageEstimator.rst">gammapy.image.FermiLATBasicImageEstimator</a>.
-First we define a reference image, that specifies the region we’d like
-to analyse. In this case we choose the Vela region.</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [18]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">image_ref</span> <span class="o">=</span> <span class="n">SkyImage</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span>
-    <span class="n">nxpix</span><span class="o">=</span><span class="mi">360</span><span class="p">,</span> <span class="n">nypix</span><span class="o">=</span><span class="mi">180</span><span class="p">,</span>
-    <span class="n">binsz</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
-    <span class="n">xref</span><span class="o">=</span><span class="mi">265</span><span class="p">,</span> <span class="n">yref</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<span></span><span class="c1"># Let&#39;s compute a PSF kernel matching the pixel size of our map</span>
+<span class="n">psf_kernel</span> <span class="o">=</span> <span class="n">PSFKernel</span><span class="o">.</span><span class="n">from_table_psf</span><span class="p">(</span>
+    <span class="n">psf</span><span class="p">,</span>
+    <span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span>
+    <span class="n">max_radius</span><span class="o">=</span><span class="s1">&#39;0.5 deg&#39;</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<p>Next we choose the energy range and initialize the
-<code class="docutils literal notranslate"><span class="pre">FermiLATBasicImageEstimator</span></code> object:</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [19]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span> <span class="o">=</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">2000</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">GeV</span>
-<span class="n">image_estimator</span> <span class="o">=</span> <span class="n">FermiLATBasicImageEstimator</span><span class="p">(</span>
-    <span class="n">reference</span><span class="o">=</span><span class="n">image_ref</span><span class="p">,</span>
-    <span class="n">emin</span><span class="o">=</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="o">=</span><span class="n">emax</span><span class="p">,</span>
-<span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<p>Finally we run the image estimation by calling <code class="docutils literal notranslate"><span class="pre">.run()</span></code> and parsing
-the dataset object:</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [20]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">images_basic</span> <span class="o">=</span> <span class="n">image_estimator</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<p>The image estimator now computes a set of sky images for the reference
-region and energy range we defined above. The result <code class="docutils literal notranslate"><span class="pre">images_basic</span></code> is
-a <a class="reference external" href="../api/gammapy.image.SkyImageList.rst">gammapy.image.SkyImageList</a>
-object containing the following images:</p>
-<ul class="simple">
-<li><strong>counts</strong>: counts image containing the binned event list</li>
-<li><strong>background</strong>: predicted number of background counts computed from
-the sum of the galactic and isotropic diffuse model, given the
-exposure.</li>
-<li><strong>exposure</strong>: integrated exposure assuming a powerlaw with spectral
-index 2.3 in the given energy range</li>
-<li><strong>excess</strong>: backround substracted counts image</li>
-<li><strong>flux</strong>: measured flux, computed from excess divided by exposure</li>
-<li><strong>psf</strong>: sky image of the exposure weighted mean PSF in the given
-energy range</li>
-</ul>
-<p>You can check the contained images as following:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [21]:
+<span></span>In [30]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">images_basic</span><span class="o">.</span><span class="n">names</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>Out[21]:
-</pre></div>
-</div>
-<div class="output_area highlight-none notranslate"><div class="highlight"><pre>
-<span></span>[&#39;counts&#39;, &#39;background&#39;, &#39;exposure&#39;, &#39;excess&#39;, &#39;flux&#39;, &#39;psf&#39;]
-</pre></div>
-</div>
-</div>
-<p>To check whether the image estimation was succesfull we’ll take a look
-at the flux image, smoothing it in advance with a Gaussian kernel of 0.2
-deg:</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [22]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">smoothed_flux</span> <span class="o">=</span> <span class="n">images_basic</span><span class="p">[</span><span class="s1">&#39;flux&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">smooth</span><span class="p">(</span>
-    <span class="n">kernel</span><span class="o">=</span><span class="s1">&#39;gauss&#39;</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.2</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">)</span>
-<span class="n">smoothed_flux</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span></span><span class="n">psf_kernel</span><span class="o">.</span><span class="n">psf_kernel_map</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">stretch</span><span class="o">=</span><span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="n">add_cbar</span><span class="o">=</span><span class="bp">True</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -1894,21 +2137,364 @@ deg:</p>
 </div>
 </div>
 </div>
+<div class="section" id="Background">
+<h2>Background<a class="headerlink" href="#Background" title="Permalink to this headline">¶</a></h2>
+<p>Let’s compute a background cube, with predicted number of background
+events per pixel from the diffuse Galactic and isotropic model
+components. For this, we use the use the
+<a class="reference internal" href="../api/gammapy.cube.MapEvaluator.html"><span class="doc">gammapy.cube.MapEvaluator</span></a> to
+multiply with the exposure and apply the PSF. The Fermi-LAT energy
+dispersion at high energies is small, we neglect it here.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [31]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">SkyDiffuseCube</span><span class="p">(</span><span class="n">diffuse_galactic</span><span class="p">)</span>
+
+<span class="n">evaluator</span> <span class="o">=</span> <span class="n">MapEvaluator</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">exposure</span><span class="o">=</span><span class="n">exposure</span><span class="p">,</span>
+    <span class="n">psf</span><span class="o">=</span><span class="n">psf_kernel</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">background_gal</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">evaluator</span><span class="o">.</span><span class="n">compute_npred</span><span class="p">())</span>
+<span class="n">background_gal</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="s1">&#39;Background counts from Galactic diffuse: &#39;</span><span class="p">,</span> <span class="n">background_gal</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Background counts from Galactic diffuse:  13426.094
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_data_fermi_lat_45_1.png" src="../_images/notebooks_data_fermi_lat_45_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [32]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">SkyModel</span><span class="p">(</span><span class="n">SkyDiffuseConstant</span><span class="p">(),</span> <span class="n">diffuse_iso</span><span class="p">)</span>
+
+<span class="n">evaluator</span> <span class="o">=</span> <span class="n">MapEvaluator</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">exposure</span><span class="o">=</span><span class="n">exposure</span><span class="p">,</span>
+    <span class="n">psf</span><span class="o">=</span><span class="n">psf_kernel</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">background_iso</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">evaluator</span><span class="o">.</span><span class="n">compute_npred</span><span class="p">())</span>
+<span class="n">background_iso</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="s1">&#39;Background counts from isotropic diffuse: &#39;</span><span class="p">,</span> <span class="n">background_iso</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Background counts from isotropic diffuse:  406.99274
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_data_fermi_lat_46_1.png" src="../_images/notebooks_data_fermi_lat_46_1.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [33]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">background</span> <span class="o">=</span> <span class="n">background_gal</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">background</span><span class="o">.</span><span class="n">data</span> <span class="o">+=</span> <span class="n">background_iso</span><span class="o">.</span><span class="n">data</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Excess-and-flux">
+<h2>Excess and flux<a class="headerlink" href="#Excess-and-flux" title="Permalink to this headline">¶</a></h2>
+<p>Let’s compute an excess and flux image, by subtracting the background,
+and summing over the energy axis.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [34]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">excess</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">excess</span><span class="o">.</span><span class="n">data</span> <span class="o">-=</span> <span class="n">background</span><span class="o">.</span><span class="n">data</span>
+<span class="n">excess</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">()</span><span class="o">.</span><span class="n">smooth</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;coolwarm&#39;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=-</span><span class="mi">5</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">add_cbar</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s1">&#39;Excess counts: &#39;</span><span class="p">,</span> <span class="n">excess</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Excess counts:  1782.9133
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_data_fermi_lat_49_1.png" src="../_images/notebooks_data_fermi_lat_49_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [35]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">flux</span> <span class="o">=</span> <span class="n">excess</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">flux</span><span class="o">.</span><span class="n">data</span> <span class="o">/=</span> <span class="n">exposure</span><span class="o">.</span><span class="n">data</span>
+<span class="n">flux</span><span class="o">.</span><span class="n">unit</span> <span class="o">=</span> <span class="n">excess</span><span class="o">.</span><span class="n">unit</span> <span class="o">/</span> <span class="n">exposure</span><span class="o">.</span><span class="n">unit</span>
+<span class="n">flux</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">()</span><span class="o">.</span><span class="n">smooth</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">stretch</span><span class="o">=</span><span class="s1">&#39;sqrt&#39;</span><span class="p">,</span> <span class="n">add_cbar</span><span class="o">=</span><span class="bp">True</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_data_fermi_lat_50_0.png" src="../_images/notebooks_data_fermi_lat_50_0.png" />
+</div>
+</div>
+</div>
+<div class="section" id="Fit">
+<h2>Fit<a class="headerlink" href="#Fit" title="Permalink to this headline">¶</a></h2>
+<p>Finally, the big finale: let’s do a 3D map fit for the source at the
+Galactic center, to measure it’s position and spectrum.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
+<span></span>In [36]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">SkyModel</span><span class="p">(</span>
+    <span class="n">SkyPointSource</span><span class="p">(</span><span class="s1">&#39;0 deg&#39;</span><span class="p">,</span> <span class="s1">&#39;0 deg&#39;</span><span class="p">),</span>
+    <span class="n">PowerLaw</span><span class="p">(</span>
+        <span class="n">index</span><span class="o">=</span><span class="mf">2.5</span><span class="p">,</span>
+        <span class="n">amplitude</span><span class="o">=</span><span class="s1">&#39;1e-11 cm-2 s-1 TeV-1&#39;</span><span class="p">,</span>
+        <span class="n">reference</span><span class="o">=</span><span class="s1">&#39;100 GeV&#39;</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">set_parameter_errors</span><span class="p">({</span>
+    <span class="s1">&#39;amplitude&#39;</span><span class="p">:</span> <span class="s1">&#39;1e-12 cm-2 s-1 TeV-1&#39;</span><span class="p">,</span>
+<span class="p">})</span>
+<span class="n">fit</span> <span class="o">=</span> <span class="n">MapFit</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+    <span class="n">counts</span><span class="o">=</span><span class="n">counts</span><span class="p">,</span>
+    <span class="n">exposure</span><span class="o">=</span><span class="n">exposure</span><span class="p">,</span>
+    <span class="n">background</span><span class="o">=</span><span class="n">background</span><span class="p">,</span>
+    <span class="n">psf</span><span class="o">=</span><span class="n">psf_kernel</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<hr></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<table>
+    <tr>
+        <td title="Minimum value of function">FCN = 20215.511747407203</td>
+        <td title="Total number of call to FCN so far">TOTAL NCALL = 265</td>
+        <td title="Number of call in last migrad">NCALLS = 265</td>
+    </tr>
+    <tr>
+        <td title="Estimated distance to minimum">EDM = 1.3454307527951652e-05</td>
+        <td title="Maximum EDM definition of convergence">GOAL EDM = 1e-05</td>
+        <td title="Error def. Amount of increase in FCN to be defined as 1 standard deviation">
+        UP = 1.0</td>
+    </tr>
+</table>
+
+<table>
+    <tr>
+        <td align="center" title="Validity of the migrad call">Valid</td>
+        <td align="center" title="Validity of parameters">Valid Param</td>
+        <td align="center" title="Is Covariance matrix accurate?">Accurate Covar</td>
+        <td align="center" title="Positive definiteness of covariance matrix">PosDef</td>
+        <td align="center" title="Was covariance matrix made posdef by adding diagonal element">Made PosDef</td>
+    </tr>
+    <tr>
+        <td align="center" style="background-color:#92CCA6">True</td>
+        <td align="center" style="background-color:#92CCA6">True</td>
+        <td align="center" style="background-color:#92CCA6">True</td>
+        <td align="center" style="background-color:#92CCA6">True</td>
+        <td align="center" style="background-color:#92CCA6">False</td>
+    </tr>
+    <tr>
+        <td align="center" title="Was last hesse call fail?">Hesse Fail</td>
+        <td align="center" title="Validity of covariance">HasCov</td>
+        <td align="center" title="Is EDM above goal EDM?">Above EDM</td>
+        <td align="center"></td>
+        <td align="center" title="Did last migrad call reach max call limit?">Reach calllim</td>
+    </tr>
+    <tr>
+        <td align="center" style="background-color:#92CCA6">False</td>
+        <td align="center" style="background-color:#92CCA6">True</td>
+        <td align="center" style="background-color:#92CCA6">False</td>
+        <td align="center"></td>
+        <td align="center" style="background-color:#92CCA6">False</td>
+    </tr>
+</table></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+        <table>
+            <tr>
+                <td><a href="#" onclick="$('#payvQibgIb').toggle()">+</a></td>
+                <td title="Variable name">Name</td>
+                <td title="Value of parameter">Value</td>
+                <td title="Parabolic error">Parab Error</td>
+                <td title="Minos lower error">Minos Error-</td>
+                <td title="Minos upper error">Minos Error+</td>
+                <td title="Lower limit of the parameter">Limit-</td>
+                <td title="Upper limit of the parameter">Limit+</td>
+                <td title="Is the parameter fixed in the fit">FIXED</td>
+            </tr>
+
+            <tr>
+                <td>1</td>
+                <td>lon_0</td>
+                <td>-0.0247581</td>
+                <td>0.00406239</td>
+                <td>0</td>
+                <td>0</td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+
+            <tr>
+                <td>2</td>
+                <td>lat_0</td>
+                <td>-0.039641</td>
+                <td>0.00365308</td>
+                <td>0</td>
+                <td>0</td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+
+            <tr>
+                <td>3</td>
+                <td>index</td>
+                <td>2.69212</td>
+                <td>0.103435</td>
+                <td>0</td>
+                <td>0</td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+
+            <tr>
+                <td>4</td>
+                <td>amplitude</td>
+                <td>5.85945e-10</td>
+                <td>9.9159e-11</td>
+                <td>0</td>
+                <td>0</td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+
+            <tr>
+                <td>5</td>
+                <td>reference</td>
+                <td>100</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0</td>
+                <td>0.0</td>
+                <td></td>
+                <td>FIXED</td>
+            </tr>
+
+            </table>
+
+            <pre id="payvQibgIb" style="display:none;">
+            <textarea rows="16" cols="50" onclick="this.select()" readonly>\begin{tabular}{|c|r|r|r|r|r|r|r|c|}
+\hline
+ & Name & Value & Para Error & Error+ & Error- & Limit+ & Limit- & FIXED\\
+\hline
+1 & $lon_{0}$ & -2.476e-02 & 4.062e-03 &  &  &  &  & \\
+\hline
+2 & $lat_{0}$ & -3.964e-02 & 3.653e-03 &  &  &  &  & \\
+\hline
+3 & index & 2.692e+00 & 1.034e-01 &  &  &  &  & \\
+\hline
+4 & amplitude & 5.859e-10 & 9.916e-11 &  &  &  &  & \\
+\hline
+5 & reference & 1.000e+02 & 0.000e+00 &  &  & 0.000e+00 & 0.000e+00 & FIXED\\
+\hline
+\end{tabular}</textarea>
+            </pre></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<hr></div>
+</div>
+</div>
 <div class="section" id="Exercises">
 <h2>Exercises<a class="headerlink" href="#Exercises" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>Try to reproject the exposure using an <code class="docutils literal notranslate"><span class="pre">AIT</span></code> projection.</li>
-<li>Try to find the spectral index of the isotropic diffuse model using a
-method off the <code class="docutils literal notranslate"><span class="pre">TableModel</span></code> instance.</li>
-<li>Compute basic sky images for different regions (e.g.&nbsp;Galactic Center)
-and energy ranges</li>
+<li>Fit the position and spectrum of the source <a class="reference external" href="http://gamma-sky.net/#/cat/tev/110">SNR
+G0.9+0.1</a>.</li>
+<li>Make maps and fit the position and spectrum of the <a class="reference external" href="http://gamma-sky.net/#/cat/tev/25">Crab
+nebula</a>.</li>
 </ul>
 </div>
-<div class="section" id="What-next?">
-<h2>What next?<a class="headerlink" href="#What-next?" title="Permalink to this headline">¶</a></h2>
-<p>In this tutorial we have learned how to access and check Fermi-LAT data.</p>
-<p>Next you could do: * image analysis * spectral analysis * cube
-analysis * time analysis * source detection</p>
+<div class="section" id="Summary">
+<h2>Summary<a class="headerlink" href="#Summary" title="Permalink to this headline">¶</a></h2>
+<p>In this tutorial you have seen how to work with Fermi-LAT data with
+Gammapy. You have to use the Fermi ST to prepare the exposure cube and
+PSF, and then you can use Gammapy for any event or map analysis using
+the same methods that are used to analyse IACT data.</p>
+<p>This works very well at high energies (here above 10 GeV), where the
+exposure and PSF is almost constant spatially and only varies a little
+with energy. It is not expected to give good results for low-energy
+data, where the Fermi-LAT PSF is very large. If you are interested to
+help us validate down to what energy Fermi-LAT analysis with Gammapy
+works well (e.g.&nbsp;by re-computing results from 3FHL or other published
+analysis results), or to extend the Gammapy capabilities (e.g.&nbsp;to work
+with energy-dependent multi-resolution maps and PSF), that would be very
+welcome!</p>
 </div>
 </div>
 
@@ -1933,7 +2519,7 @@ analysis * time analysis * source detection</p>
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 03 Aug 2018.
+      Last updated on 07 Aug 2018.
 
     </p>
   </div>
@@ -1955,7 +2541,7 @@ analysis * time analysis * source detection</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.8.dev6625',
+            VERSION:'0.8.dev6660',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

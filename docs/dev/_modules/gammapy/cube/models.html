@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.cube.models &mdash; gammapy v0.8.dev6625</title>
+  <title>gammapy.cube.models &mdash; gammapy v0.8.dev6660</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6625
+                0.8.dev6660
               </div>
             
           
@@ -312,15 +312,17 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html">Fermi-LAT data with Gammapy</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Introduction">Introduction</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Setup">Setup</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#FermiLATDataset-class">FermiLATDataset class</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Events">Events</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#PSF">PSF</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Counts">Counts</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Exposure">Exposure</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Galactic-diffuse-background">Galactic diffuse background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Isotropic-diffuse-background">Isotropic diffuse background</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Estimating-basic-input-sky-images-for-high-level-analyses">Estimating basic input sky images for high level analyses</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#PSF">PSF</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Background">Background</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Excess-and-flux">Excess and flux</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Fit">Fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Exercises">Exercises</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#What-next?">What next?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Summary">Summary</a></li>
 </ul>
 </li>
 </ul>
@@ -1023,7 +1025,7 @@
 <span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
 <span class="kn">import</span> <span class="nn">operator</span>
 <span class="kn">from</span> <span class="nn">astropy.utils</span> <span class="k">import</span> <span class="n">lazyproperty</span>
-<span class="kn">from</span> <span class="nn">..utils.modeling</span> <span class="k">import</span> <span class="n">ParameterList</span>
+<span class="kn">from</span> <span class="nn">..utils.modeling</span> <span class="k">import</span> <span class="n">ParameterList</span><span class="p">,</span> <span class="n">Parameter</span>
 <span class="kn">from</span> <span class="nn">..utils.scripts</span> <span class="k">import</span> <span class="n">make_path</span>
 <span class="kn">from</span> <span class="nn">..maps</span> <span class="k">import</span> <span class="n">Map</span>
 
@@ -1032,6 +1034,7 @@
     <span class="s1">&#39;SkyModel&#39;</span><span class="p">,</span>
     <span class="s1">&#39;CompoundSkyModel&#39;</span><span class="p">,</span>
     <span class="s1">&#39;SumSkyModel&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;SkyDiffuseCube&#39;</span><span class="p">,</span>
     <span class="s1">&#39;MapEvaluator&#39;</span><span class="p">,</span>
 <span class="p">]</span>
 
@@ -1292,7 +1295,7 @@
         <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">:</span>
             <span class="n">n_par</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">component</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
-            <span class="n">component</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">idx</span><span class="p">:</span><span class="n">idx</span><span class="o">+</span><span class="n">n_par</span><span class="p">]</span>
+            <span class="n">component</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">parameters</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">idx</span><span class="p">:</span><span class="n">idx</span> <span class="o">+</span> <span class="n">n_par</span><span class="p">]</span>
             <span class="n">idx</span> <span class="o">+=</span> <span class="n">n_par</span>
 
 <div class="viewcode-block" id="SumSkyModel.evaluate"><a class="viewcode-back" href="../../../api/gammapy.cube.SumSkyModel.html#gammapy.cube.SumSkyModel.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">energy</span><span class="p">):</span>
@@ -1300,6 +1303,70 @@
         <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
             <span class="n">out</span> <span class="o">+=</span> <span class="n">component</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">energy</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">out</span></div></div>
+
+
+<div class="viewcode-block" id="SkyDiffuseCube"><a class="viewcode-back" href="../../../api/gammapy.cube.SkyDiffuseCube.html#gammapy.cube.SkyDiffuseCube">[docs]</a><span class="k">class</span> <span class="nc">SkyDiffuseCube</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Cube sky map template model (3D).</span>
+
+<span class="sd">    This is for a 3D map with an energy axis.</span>
+<span class="sd">    The map unit is assumed to be ``cm-2 s-1 MeV-1 sr-1``.</span>
+<span class="sd">    Use `~gammapy.image.models.SkyDiffuseMap` for 2D maps.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    map : `~gammapy.map.Map`</span>
+<span class="sd">        Map template</span>
+<span class="sd">    norm : float</span>
+<span class="sd">        Norm parameter (multiplied with map values)</span>
+<span class="sd">    meta : dict, optional</span>
+<span class="sd">        Meta information, meta[&#39;filename&#39;] will be used for serialization</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">map</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Need a map with an energy axis&#39;</span><span class="p">)</span>
+
+        <span class="n">axis</span> <span class="o">=</span> <span class="nb">map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">axis</span><span class="o">.</span><span class="n">name</span> <span class="o">!=</span> <span class="s1">&#39;energy&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Need a map with axis of name &quot;energy&quot;&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">axis</span><span class="o">.</span><span class="n">node_type</span> <span class="o">!=</span> <span class="s1">&#39;center&#39;</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Need a map with energy axis node_type=&quot;center&quot;&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">map</span> <span class="o">=</span> <span class="nb">map</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_interp_opts</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;fill_value&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;interp&#39;</span><span class="p">:</span> <span class="s1">&#39;linear&#39;</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">ParameterList</span><span class="p">([</span>
+            <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;norm&#39;</span><span class="p">,</span> <span class="n">norm</span><span class="p">),</span>
+        <span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">meta</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">meta</span>
+
+<div class="viewcode-block" id="SkyDiffuseCube.read"><a class="viewcode-back" href="../../../api/gammapy.cube.SkyDiffuseCube.html#gammapy.cube.SkyDiffuseCube.read">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Read map from FITS file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filename : str</span>
+<span class="sd">            FITS image filename.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">unit</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">unit</span> <span class="o">=</span> <span class="s1">&#39;cm-2 s-1 MeV-1 sr-1&#39;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">m</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SkyDiffuseCube.evaluate"><a class="viewcode-back" href="../../../api/gammapy.cube.SkyDiffuseCube.html#gammapy.cube.SkyDiffuseCube.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">energy</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate model.&quot;&quot;&quot;</span>
+        <span class="n">energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">energy</span><span class="p">)[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+        <span class="n">energy</span> <span class="o">=</span> <span class="n">energy</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+
+        <span class="n">coord</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;lon&#39;</span><span class="p">:</span> <span class="n">lon</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="s1">&#39;lat&#39;</span><span class="p">:</span> <span class="n">lat</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="s1">&#39;energy&#39;</span><span class="p">:</span> <span class="n">energy</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">interp_by_coord</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_interp_opts</span><span class="p">)</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;norm&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">return</span> <span class="n">norm</span> <span class="o">*</span> <span class="n">val</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s1">&#39;cm-2 s-1 MeV-1 sr-1&#39;</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="MapEvaluator"><a class="viewcode-back" href="../../../api/gammapy.cube.MapEvaluator.html#gammapy.cube.MapEvaluator">[docs]</a><span class="k">class</span> <span class="nc">MapEvaluator</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -1323,7 +1390,7 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    sky_model : `~gammapy.cube.models.SkyModel`</span>
+<span class="sd">    model : `~gammapy.cube.models.SkyModel`</span>
 <span class="sd">        Sky model</span>
 <span class="sd">    exposure : `~gammapy.maps.Map`</span>
 <span class="sd">        Exposure map</span>
@@ -1335,8 +1402,8 @@
 <span class="sd">        Energy dispersion</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sky_model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">background</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edisp</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sky_model</span> <span class="o">=</span> <span class="n">sky_model</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">background</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edisp</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">=</span> <span class="n">exposure</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">background</span> <span class="o">=</span> <span class="n">background</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">psf</span> <span class="o">=</span> <span class="n">psf</span>
@@ -1409,7 +1476,7 @@
 <span class="sd">            Units: ``cm-2 s-1 TeV-1 deg-2``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">coord</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_center</span><span class="p">)</span>
-        <span class="n">dnde</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sky_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="o">*</span><span class="n">coord</span><span class="p">)</span>
+        <span class="n">dnde</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="o">*</span><span class="n">coord</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">dnde</span></div>
 
 <div class="viewcode-block" id="MapEvaluator.compute_flux"><a class="viewcode-back" href="../../../api/gammapy.cube.MapEvaluator.html#gammapy.cube.MapEvaluator.compute_flux">[docs]</a>    <span class="k">def</span> <span class="nf">compute_flux</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1468,7 +1535,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 03 Aug 2018.
+      Last updated on 07 Aug 2018.
 
     </p>
   </div>
@@ -1490,7 +1557,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6625',
+            VERSION:'0.8.dev6660',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

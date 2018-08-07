@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.data.observations &mdash; gammapy v0.8.dev6625</title>
+  <title>gammapy.data.observations &mdash; gammapy v0.8.dev6660</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6625
+                0.8.dev6660
               </div>
             
           
@@ -312,15 +312,17 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html">Fermi-LAT data with Gammapy</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Introduction">Introduction</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Setup">Setup</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#FermiLATDataset-class">FermiLATDataset class</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Events">Events</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#PSF">PSF</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Counts">Counts</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Exposure">Exposure</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Galactic-diffuse-background">Galactic diffuse background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Isotropic-diffuse-background">Isotropic diffuse background</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Estimating-basic-input-sky-images-for-high-level-analyses">Estimating basic input sky images for high level analyses</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#PSF">PSF</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Background">Background</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Excess-and-flux">Excess and flux</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Fit">Fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Exercises">Exercises</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#What-next?">What next?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Summary">Summary</a></li>
 </ul>
 </li>
 </ul>
@@ -1022,6 +1024,7 @@
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="k">import</span> <span class="n">SkyCoord</span>
 <span class="kn">from</span> <span class="nn">astropy.units</span> <span class="k">import</span> <span class="n">Quantity</span>
 <span class="kn">from</span> <span class="nn">astropy.utils</span> <span class="k">import</span> <span class="n">lazyproperty</span>
@@ -1033,11 +1036,89 @@
 <span class="kn">from</span> <span class="nn">..utils.time</span> <span class="k">import</span> <span class="n">time_ref_from_dict</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;ObservationCTA&#39;</span><span class="p">,</span>
     <span class="s1">&#39;DataStoreObservation&#39;</span><span class="p">,</span>
     <span class="s1">&#39;ObservationList&#39;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="ObservationCTA"><a class="viewcode-back" href="../../../api/gammapy.data.ObservationCTA.html#gammapy.data.ObservationCTA">[docs]</a><span class="k">class</span> <span class="nc">ObservationCTA</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Container class for an CTA observation</span>
+
+<span class="sd">    Parameters follow loosely the &quot;Required columns&quot; here:</span>
+<span class="sd">    http://gamma-astro-data-formats.readthedocs.io/en/latest/data_storage/obs_index/index.html#required-columns</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    obs_id : int</span>
+<span class="sd">        Observation ID</span>
+<span class="sd">    gti : `~gammapy.data.GTI`</span>
+<span class="sd">        Good Time Intervals</span>
+<span class="sd">    events : `~gammapy.data.EventList`</span>
+<span class="sd">        Event list</span>
+<span class="sd">    aeff : `~gammapy.irf.EffectiveAreaTable2D`</span>
+<span class="sd">        Effective area</span>
+<span class="sd">    edisp : `~gammapy.irf.EnergyDispersion2D`</span>
+<span class="sd">        Energy dispersion</span>
+<span class="sd">    psf : `~gammapy.irf.PSF3D` or `~gammapy.irf.EnergyDependentMultiGaussPSF` or `~gammapy.irf.PSFKing`</span>
+<span class="sd">        Tabled Point Spread Function</span>
+<span class="sd">    bkg : `~gammapy.irf.Background2D` or `~gammapy.irf.Background3D`</span>
+<span class="sd">        Background rate</span>
+<span class="sd">    pointing_radec : `~astropy.coordinates.SkyCoord`</span>
+<span class="sd">        Pointing RA / DEC sky coordinates</span>
+<span class="sd">    observation_live_time_duration : `~astropy.units.Quantity`</span>
+<span class="sd">        Live-time duration in seconds</span>
+
+<span class="sd">        The dead-time-corrected observation time.</span>
+
+<span class="sd">        Computed as ``t_live = t_observation * (1 - f_dead)``</span>
+<span class="sd">        where ``f_dead`` is the dead-time fraction.</span>
+<span class="sd">    observation_dead_time_fraction : `float`</span>
+<span class="sd">        Dead-time fraction</span>
+
+<span class="sd">        Defined as dead-time over observation time.</span>
+
+<span class="sd">        Dead-time is defined as the time during the observation</span>
+<span class="sd">        where the detector did not record events:</span>
+<span class="sd">        https://en.wikipedia.org/wiki/Dead_time</span>
+<span class="sd">        https://adsabs.harvard.edu/abs/2004APh....22..285F</span>
+
+<span class="sd">        The dead-time fraction is used in the live-time computation,</span>
+<span class="sd">        which in turn is used in the exposure and flux computation.</span>
+<span class="sd">    meta : `~collections.OrderedDict`</span>
+<span class="sd">        Dictionary to store metadata</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">gti</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">events</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">aeff</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edisp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bkg</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">pointing_radec</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">observation_live_time_duration</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">observation_dead_time_fraction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs_id</span> <span class="o">=</span> <span class="n">obs_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gti</span> <span class="o">=</span> <span class="n">gti</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">events</span> <span class="o">=</span> <span class="n">events</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aeff</span> <span class="o">=</span> <span class="n">aeff</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span> <span class="o">=</span> <span class="n">edisp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">psf</span> <span class="o">=</span> <span class="n">psf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bkg</span> <span class="o">=</span> <span class="n">bkg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pointing_radec</span> <span class="o">=</span> <span class="n">pointing_radec</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observation_live_time_duration</span> <span class="o">=</span> <span class="n">observation_live_time_duration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observation_dead_time_fraction</span> <span class="o">=</span> <span class="n">observation_dead_time_fraction</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">meta</span><span class="p">:</span>
+            <span class="n">meta</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">meta</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Generate summary info string.&quot;&quot;&quot;</span>
+        <span class="n">ss</span> <span class="o">=</span> <span class="s1">&#39;Info for OBS_ID = </span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_id</span><span class="p">)</span>
+        <span class="n">ss</span> <span class="o">+=</span> <span class="s1">&#39;- Start time: </span><span class="si">{:.2f}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gti</span><span class="o">.</span><span class="n">time_start</span><span class="o">.</span><span class="n">fits</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gti</span> <span class="k">else</span> <span class="s1">&#39;None&#39;</span><span class="p">)</span>
+        <span class="n">ss</span> <span class="o">+=</span> <span class="s1">&#39;- Pointing pos: RA </span><span class="si">{:.2f}</span><span class="s1"> / Dec </span><span class="si">{:.2f}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pointing_radec</span><span class="o">.</span><span class="n">ra</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointing_radec</span> <span class="k">else</span> <span class="s1">&#39;None&#39;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pointing_radec</span><span class="o">.</span><span class="n">dec</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pointing_radec</span> <span class="k">else</span> <span class="s1">&#39;None&#39;</span><span class="p">)</span>
+        <span class="n">ss</span> <span class="o">+=</span> <span class="s1">&#39;- Observation duration: </span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gti</span><span class="o">.</span><span class="n">time_sum</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gti</span> <span class="k">else</span> <span class="s1">&#39;None&#39;</span><span class="p">)</span>
+        <span class="n">ss</span> <span class="o">+=</span> <span class="s1">&#39;- Dead-time fraction: </span><span class="si">{:5.3f}</span><span class="s1"> %</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="mi">100</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">observation_dead_time_fraction</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ss</span></div>
 
 
 <div class="viewcode-block" id="DataStoreObservation"><a class="viewcode-back" href="../../../api/gammapy.data.DataStoreObservation.html#gammapy.data.DataStoreObservation">[docs]</a><span class="k">class</span> <span class="nc">DataStoreObservation</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -1415,7 +1496,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 03 Aug 2018.
+      Last updated on 07 Aug 2018.
 
     </p>
   </div>
@@ -1437,7 +1518,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6625',
+            VERSION:'0.8.dev6660',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.image.models.new &mdash; gammapy v0.8.dev6625</title>
+  <title>gammapy.image.models.new &mdash; gammapy v0.8.dev6660</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6625
+                0.8.dev6660
               </div>
             
           
@@ -312,15 +312,17 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../../notebooks/data_fermi_lat.html">Fermi-LAT data with Gammapy</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/data_fermi_lat.html#Introduction">Introduction</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/data_fermi_lat.html#Setup">Setup</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/data_fermi_lat.html#FermiLATDataset-class">FermiLATDataset class</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/data_fermi_lat.html#Events">Events</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/data_fermi_lat.html#PSF">PSF</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/data_fermi_lat.html#Counts">Counts</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/data_fermi_lat.html#Exposure">Exposure</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/data_fermi_lat.html#Galactic-diffuse-background">Galactic diffuse background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/data_fermi_lat.html#Isotropic-diffuse-background">Isotropic diffuse background</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/data_fermi_lat.html#Estimating-basic-input-sky-images-for-high-level-analyses">Estimating basic input sky images for high level analyses</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/data_fermi_lat.html#PSF">PSF</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/data_fermi_lat.html#Background">Background</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/data_fermi_lat.html#Excess-and-flux">Excess and flux</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/data_fermi_lat.html#Fit">Fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/data_fermi_lat.html#Exercises">Exercises</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/data_fermi_lat.html#What-next?">What next?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/data_fermi_lat.html#Summary">Summary</a></li>
 </ul>
 </li>
 </ul>
@@ -1276,24 +1278,25 @@
 
 
 <div class="viewcode-block" id="SkyDiffuseMap"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyDiffuseMap.html#gammapy.image.models.SkyDiffuseMap">[docs]</a><span class="k">class</span> <span class="nc">SkyDiffuseMap</span><span class="p">(</span><span class="n">SkySpatialModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Spatial sky map template model.</span>
+    <span class="sd">&quot;&quot;&quot;Spatial sky map template model (2D).</span>
 
-<span class="sd">    At the moment only support 2D maps.</span>
-<span class="sd">    TODO: support maps with an energy axis here or in a separate class?</span>
-<span class="sd">    TODO: should we cache some interpolator object for efficiency?</span>
+<span class="sd">    This is for a 2D image.</span>
+<span class="sd">    The map unit is assumed to be ``sr-1``.</span>
+<span class="sd">    Use `~gammapy.cube.SkyDiffuseCube` for 3D cubes with an energy axis.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    map : `~gammapy.map.Map`</span>
 <span class="sd">        Map template</span>
-<span class="sd">    norm : `~astropy.units.Quantity`</span>
+<span class="sd">    norm : float</span>
 <span class="sd">        Norm parameter (multiplied with map values)</span>
 <span class="sd">    meta : dict, optional</span>
 <span class="sd">        Meta information, meta[&#39;filename&#39;] will be used for serialization</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">map</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_map</span> <span class="o">=</span> <span class="nb">map</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">map</span> <span class="o">=</span> <span class="nb">map</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_interp_opts</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;fill_value&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;interp&#39;</span><span class="p">:</span> <span class="s1">&#39;linear&#39;</span><span class="p">}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">ParameterList</span><span class="p">([</span>
             <span class="n">Parameter</span><span class="p">(</span><span class="s1">&#39;norm&#39;</span><span class="p">,</span> <span class="n">norm</span><span class="p">),</span>
         <span class="p">])</span>
@@ -1308,16 +1311,16 @@
 <span class="sd">        filename : str</span>
 <span class="sd">            FITS image filename.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">template</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">template</span><span class="p">)</span></div>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">m</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SkyDiffuseMap.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.image.models.SkyDiffuseMap.html#gammapy.image.models.SkyDiffuseMap.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">norm</span><span class="p">):</span>
-        <span class="n">coord</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-            <span class="n">lon</span><span class="o">=</span><span class="n">lon</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-            <span class="n">lat</span><span class="o">=</span><span class="n">lat</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_map</span><span class="o">.</span><span class="n">interp_by_coord</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="c1"># TODO: use map unit? self._map.unit</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate model.&quot;&quot;&quot;</span>
+        <span class="n">coord</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;lon&#39;</span><span class="p">:</span> <span class="n">lon</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="s1">&#39;lat&#39;</span><span class="p">:</span> <span class="n">lat</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;deg&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">interp_by_coord</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_interp_opts</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">norm</span> <span class="o">*</span> <span class="n">val</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s1">&#39;sr-1&#39;</span><span class="p">)</span></div></div>
 </pre></div>
 
@@ -1332,7 +1335,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 03 Aug 2018.
+      Last updated on 07 Aug 2018.
 
     </p>
   </div>
@@ -1354,7 +1357,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.8.dev6625',
+            VERSION:'0.8.dev6660',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

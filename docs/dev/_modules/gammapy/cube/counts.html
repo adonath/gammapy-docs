@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.cube.counts &mdash; gammapy v0.8.dev6625</title>
+  <title>gammapy.cube.counts &mdash; gammapy v0.8.dev6660</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev6625
+                0.8.dev6660
               </div>
             
           
@@ -312,15 +312,17 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html">Fermi-LAT data with Gammapy</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Introduction">Introduction</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Setup">Setup</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#FermiLATDataset-class">FermiLATDataset class</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Events">Events</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#PSF">PSF</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Counts">Counts</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Exposure">Exposure</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Galactic-diffuse-background">Galactic diffuse background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Isotropic-diffuse-background">Isotropic diffuse background</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Estimating-basic-input-sky-images-for-high-level-analyses">Estimating basic input sky images for high level analyses</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#PSF">PSF</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Background">Background</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Excess-and-flux">Excess and flux</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Fit">Fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Exercises">Exercises</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#What-next?">What next?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/data_fermi_lat.html#Summary">Summary</a></li>
 </ul>
 </li>
 </ul>
@@ -1018,6 +1020,7 @@
   <h1>Source code for gammapy.cube.counts</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
+<span class="kn">from</span> <span class="nn">astropy.units</span> <span class="k">import</span> <span class="n">Quantity</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s1">&#39;fill_map_counts&#39;</span><span class="p">,</span>
@@ -1069,6 +1072,8 @@
     <span class="n">coord_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">skycoord</span><span class="o">=</span><span class="n">events</span><span class="o">.</span><span class="n">radec</span><span class="p">)</span>
 
     <span class="c1"># Now add one coordinate for each extra map axis</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">events</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
     <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="n">counts_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">axis</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s1">&#39;energy&#39;</span><span class="p">:</span>
             <span class="c1"># This axis is the energy. We treat it differently because axis.name could be e.g. &#39;energy_reco&#39;</span>
@@ -1076,12 +1081,10 @@
         <span class="c1"># TODO: add proper extraction for time</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># We look for other axes name in the table column names (case insensitive)</span>
-            <span class="n">colnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">_</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">events</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">in</span> <span class="n">colnames</span><span class="p">:</span>
-                <span class="n">column_name</span> <span class="o">=</span> <span class="n">events</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">[</span><span class="n">colnames</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">())]</span>
-                <span class="n">coord_dict</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">events</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">unit</span><span class="p">)})</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot find MapGeom axis </span><span class="si">{!r}</span><span class="s2"> in EventList&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">coord_dict</span><span class="p">[</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="n">cols</span><span class="p">[</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()])</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Column not found in event list: </span><span class="si">{!r}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
 
     <span class="n">counts_map</span><span class="o">.</span><span class="n">fill_by_coord</span><span class="p">(</span><span class="n">coord_dict</span><span class="p">)</span></div>
 </pre></div>
@@ -1097,7 +1100,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 03 Aug 2018.
+      Last updated on 07 Aug 2018.
 
     </p>
   </div>
@@ -1119,7 +1122,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev6625',
+            VERSION:'0.8.dev6660',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

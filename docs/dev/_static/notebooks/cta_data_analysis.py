@@ -278,7 +278,7 @@ get_ipython().run_cell_magic('time', '', 'extract = SpectrumExtraction(\n    obs
 # In[25]:
 
 
-get_ipython().run_cell_magic('time', '', "model = models.PowerLaw(\n    index = 2,\n    amplitude = 1e-11 * u.Unit('cm-2 s-1 TeV-1'),\n    reference = 1 * u.TeV,\n)\n\nfit = SpectrumFit(observations, model)\nfit.fit()\nfit.est_errors()\nprint(fit.result[0])")
+get_ipython().run_cell_magic('time', '', "model = models.PowerLaw(\n    index = 2,\n    amplitude = 1e-11 * u.Unit('cm-2 s-1 TeV-1'),\n    reference = 1 * u.TeV,\n)\n\nmodel.parameters.set_parameter_errors({\n    'index': 0.1,\n    'amplitude': 1e-12 * u.Unit('cm-2 s-1 TeV-1')\n})\n\nfit = SpectrumFit(observations, model)\nfit.fit()\nfit.est_errors()\nprint(fit.result[0])")
 
 
 # ### Spectral points
@@ -295,7 +295,6 @@ print(stacked_obs)
 ebounds = EnergyBounds.equal_log_spacing(1, 40, 4, unit = u.TeV)
 
 seg = SpectrumEnergyGroupMaker(obs=stacked_obs)
-seg.compute_range_safe()
 seg.compute_groups_fixed(ebounds=ebounds)
 
 fpe = FluxPointEstimator(
@@ -312,7 +311,7 @@ fpe.flux_points.table
 # Let's plot the spectral model and points. You could do it directly, but there is a helper class.
 # Note that a spectral uncertainty band, a "butterfly" is drawn, but it is very thin, i.e. barely visible.
 
-# In[ ]:
+# In[27]:
 
 
 total_result = SpectrumResult(
@@ -337,7 +336,7 @@ total_result.plot(
 # * Change the target. Make a sky image and spectrum for your favourite source.
 #     * If you don't know any, the Crab nebula is the "hello world!" analysis of gamma-ray astronomy.
 
-# In[ ]:
+# In[28]:
 
 
 # print('hello world')
