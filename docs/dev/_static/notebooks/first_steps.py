@@ -41,7 +41,7 @@
 # 
 # 
 
-# In[ ]:
+# In[1]:
 
 
 import os
@@ -157,14 +157,14 @@ vela_2fhl_smoothed = vela_2fhl.smooth(kernel='gauss', radius=0.5 * u.deg)
 vela_2fhl_smoothed.plot();
 
 
-# The smoothed plot already looks much nicer, but still the image is rather large. As we are mostly interested in the inner part of the image, we will cut out a quadratic region of the size 9 deg x 9 deg around Vela. Therefore we use ``make_cutout`` to make a cutout map:
+# The smoothed plot already looks much nicer, but still the image is rather large. As we are mostly interested in the inner part of the image, we will cut out a quadratic region of the size 9 deg x 9 deg around Vela. Therefore we use ``Map.cutout`` to make a cutout map:
 
 # In[13]:
 
 
 # define center and size of the cutout region
 center = SkyCoord(265.0, -2.0, unit='deg', frame='galactic')
-vela_2fhl_cutout, _ = vela_2fhl_smoothed.make_cutout(center, 9 * u.deg)
+vela_2fhl_cutout = vela_2fhl_smoothed.cutout(center, 9 * u.deg)
 vela_2fhl_cutout.plot();
 
 
@@ -197,7 +197,7 @@ vela_wmap
 
 # reproject and cut out the part we're interested in:
 vela_wmap_reprojected = vela_wmap.reproject(vela_2fhl.geom)
-vela_wmap_reprojected_cutout, _ = vela_wmap_reprojected.make_cutout(center, 9 * u.deg)
+vela_wmap_reprojected_cutout = vela_wmap_reprojected.cutout(center, 9 * u.deg)
 vela_wmap_reprojected_cutout.plot(cmap='viridis', norm=norm);
 
 

@@ -9,8 +9,8 @@
 # 
 # We will be using the following Gammapy classes:
 # 
-# * [gammapy.scripts.CTAIrf](http://docs.gammapy.org/dev/api/gammapy.scripts.CTAIrf.html)
-# * [gammapy.scripts.SensitivityEstimator](http://docs.gammapy.org/dev/api/gammapy.scripts.SensitivityEstimator.html)
+# * [gammapy.irf.CTAIrf](http://docs.gammapy.org/dev/api/gammapy.irf.CTAIrf.html)
+# * [gammapy.spectrum.SensitivityEstimator](http://docs.gammapy.org/dev/api/gammapy.spectrum.SensitivityEstimator.html)
 
 # ## Setup
 # As usual, we'll start with some setup ...
@@ -24,7 +24,8 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 # In[2]:
 
 
-from gammapy.scripts import CTAPerf, SensitivityEstimator
+from gammapy.irf import CTAPerf
+from gammapy.spectrum import SensitivityEstimator
 
 
 # ## Load IRFs
@@ -76,4 +77,5 @@ sens.diff_sensi_table
 
 # ## Exercises
 # 
-# * tbd
+# * Also compute the sensitivity for a 20 hour observation
+# * Compare how the sensitivity differs between 5 and 20 hours by plotting the ratio as a function of energy.

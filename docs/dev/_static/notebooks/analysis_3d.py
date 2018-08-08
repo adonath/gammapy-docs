@@ -166,7 +166,7 @@ edisp = EnergyDispersion.read(str(path / 'edisp.fits'))
 
 
 cmaps = {
-    name: m.make_cutout(SkyCoord(0, 0, unit='deg', frame='galactic'), 1.5 * u.deg)[0]
+    name: m.cutout(SkyCoord(0, 0, unit='deg', frame='galactic'), 1.5 * u.deg)
     for name, m in maps.items()
 }
 cmaps['counts'].sum_over_axes().plot(stretch='sqrt');

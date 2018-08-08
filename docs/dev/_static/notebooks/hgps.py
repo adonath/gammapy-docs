@@ -705,7 +705,7 @@ _ = survey_map.plot(stretch='sqrt')
 # In[54]:
 
 
-image, _ = survey_map.make_cutout(pos, width=(2.5, 3.8)*u.deg)
+image = survey_map.cutout(pos, width=(2.5, 3.8)*u.deg)
 fig, ax, _ = image.plot(stretch='sqrt', cmap='inferno')
 [ax.coords[_].set_major_formatter('dd') for _ in (0, 1)]
 
@@ -744,7 +744,7 @@ from matplotlib.patches import Circle
 # Cutout and plot a nice image
 pos = SkyCoord(264.5, -2.5, unit='deg', frame='galactic')
 width = (4, 6) * u.deg
-image, _ = survey_map.make_cutout(pos, width=width)
+image = survey_map.cutout(pos, width=width)
 norm = simple_norm(image.data, stretch='sqrt', min_cut=0, max_cut=20)
 fig = plt.figure(figsize=(12, 8))
 fig, ax, _ = image.plot(fig=fig, norm=norm, cmap='inferno')

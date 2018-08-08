@@ -7,13 +7,7 @@
 # 
 # For a tutorial on how to do a 3D map analyse of existing data, see the `analysis_3d` tutorial.
 # 
-# This can be useful to do a performance / sensitivity study, or to evaluate the capabilities of Gammapy or a given analysis method.
-# 
-# In Gammapy we currently don't have an event sampler, i.e. unbinned analysis as in ctools is not available. Note that other science tools, e.g. Sherpa for Chandra, also just do binned simulations and analysis like we do here.
-# 
-# Warning: this is work in progress, several missing pieces: background, PSF, diffuse and point source models, model serialisation.
-# 
-# We aim to have a first usable version ready and documented here for the Gammapy v0.8 release on May 7, 2018.
+# This can be useful to do a performance / sensitivity study, or to evaluate the capabilities of Gammapy or a given analysis method. Note that is is a binned simulation as is e.g. done also in Sherpa for Chandra, not an event sampling and anbinned analysis as is done e.g. in the Fermi ST or ctools.
 
 # ## Imports and versions
 
@@ -30,19 +24,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
+from gammapy.utils.random import get_random_state
 from gammapy.irf import EffectiveAreaTable2D, EnergyDispersion2D, EnergyDependentMultiGaussPSF, Background3D
 from gammapy.maps import WcsGeom, MapAxis, WcsNDMap, Map
 from gammapy.spectrum.models import PowerLaw
 from gammapy.image.models import SkyGaussian
-from gammapy.utils.random import get_random_state
-from gammapy.cube import (
-    make_map_exposure_true_energy,
-    SkyModel,
-    MapFit,
-    MapEvaluator,
-    SourceLibrary,
-    PSFKernel,
-)
+from gammapy.cube.models import SkyModel, SkyModels
+from gammapy.cube import MapFit, MapEvaluator, PSFKernel
+from gammapy.cube import make_map_exposure_true_energy, make_map_background_irf
 
 
 # In[3]:
@@ -56,9 +45,8 @@ get_ipython().system('gammapy info --no-envvar --no-dependencies --no-system')
 # In[4]:
 
 
-# Load CTA IRFs
-
 def get_irfs():
+    """Load CTA IRFs"""
     filename = '$GAMMAPY_EXTRA/datasets/cta-1dc/caldb/data/cta//1dc/bcf/South_z20_50h/irf_file.fits'
     psf = EnergyDependentMultiGaussPSF.read(filename, hdu='POINT SPREAD FUNCTION')
     aeff = EffectiveAreaTable2D.read(filename, hdu='EFFECTIVE AREA')
@@ -83,7 +71,7 @@ os.environ['GAMMAPY_EXTRA']
 spatial_model = SkyGaussian(
     lon_0='0.2 deg',
     lat_0='0.1 deg',
-    sigma='0.5 deg',
+    sigma='0.3 deg',
 )
 spectral_model = PowerLaw(
     index=3,
@@ -102,10 +90,10 @@ print(sky_model)
 
 # Define map geometry
 axis = MapAxis.from_edges(
-    np.logspace(-1., 1., 10), unit='TeV',
+    np.logspace(-1., 1., 10), unit='TeV', name='energy',
 )
 geom = WcsGeom.create(
-    skydir=(0, 0), binsz=0.02, width=(9, 5),
+    skydir=(0, 0), binsz=0.02, width=(5, 4),
     coordsys='GAL', axes=[axis],
 )
 
@@ -125,49 +113,53 @@ offset = Angle('2 deg')
 # In[9]:
 
 
-# Compute maps, PSF and EDISP - just as you would for analysis of real data
-
-exposure_map = make_map_exposure_true_energy(
+exposure = make_map_exposure_true_energy(
     pointing=pointing,
     livetime=livetime,
     aeff=irfs['aeff'],
     geom=geom,
 )
-
-psf = irfs['psf'].to_energy_dependent_table_psf(theta=offset)
-psf_kernel = PSFKernel.from_table_psf(
-    psf,
-    geom,
-    max_radius=1 * u.deg,
-)
-
-edisp = irfs['edisp'].to_energy_dispersion(offset=offset)
-
-# Background: Assume constant background in FoV
-# TODO: Fill CTA background
-bkg = Map.from_geom(geom)
-bkg.quantity = np.ones(bkg.data.shape) * 1e-1
+exposure.slice_by_idx({'energy': 3}).plot(add_cbar=True);
 
 
 # In[10]:
 
 
-plt.imshow(exposure_map.data[2,:,:]);
+background = make_map_background_irf(
+    pointing=pointing,
+    livetime=livetime,
+    bkg=irfs['bkg'],
+    geom=geom,    
+)
+background.slice_by_idx({'energy': 3}).plot(add_cbar=True);
 
 
 # In[11]:
 
 
-plt.imshow(psf_kernel.psf_kernel_map.data[2,:,:]);
+psf = irfs['psf'].to_energy_dependent_table_psf(theta=offset)
+psf_kernel = PSFKernel.from_table_psf(
+    psf,
+    geom,
+    max_radius=0.3 * u.deg,
+)
+psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch='log');
 
 
 # In[12]:
 
 
-get_ipython().run_cell_magic('time', '', '# The idea is that we have this class that can compute `npred`\n# maps, i.e. "predicted counts per pixel" given the model and\n# the observation infos: exposure, background, PSF and EDISP\nevaluator = MapEvaluator(\n    sky_model=sky_model, \n    exposure=exposure_map,\n    psf=psf_kernel,\n    background=bkg,\n)')
+edisp = irfs['edisp'].to_energy_dispersion(offset=offset)
+edisp.plot_matrix();
 
 
 # In[13]:
+
+
+get_ipython().run_cell_magic('time', '', '# The idea is that we have this class that can compute `npred`\n# maps, i.e. "predicted counts per pixel" given the model and\n# the observation infos: exposure, background, PSF and EDISP\nevaluator = MapEvaluator(\n    model=sky_model, \n    exposure=exposure,\n    background=background,\n    psf=psf_kernel,\n)')
+
+
+# In[14]:
 
 
 # Accessing and saving a lot of the following maps is for debugging.
@@ -178,20 +170,20 @@ npred = evaluator.compute_npred()
 npred_map = WcsNDMap(geom, npred)
 
 
-# In[14]:
+# In[15]:
 
 
 npred_map.sum_over_axes().plot(add_cbar=True);
 
 
-# In[15]:
+# In[16]:
 
 
 # The npred map contains negative values, this is probably a bug in the PSFKernel application
 npred[npred<0] = 0
 
 
-# In[16]:
+# In[17]:
 
 
 # This one line is the core of how to simulate data when
@@ -203,7 +195,7 @@ counts = rng.poisson(npred)
 counts_map = WcsNDMap(geom, counts)
 
 
-# In[17]:
+# In[18]:
 
 
 counts_map.sum_over_axes().plot();
@@ -214,7 +206,7 @@ counts_map.sum_over_axes().plot();
 # Now let's analyse the simulated data.
 # Here we just fit it again with the same model we had before, but you could do any analysis you like here, e.g. fit a different model, or do a region-based analysis, ...
 
-# In[18]:
+# In[19]:
 
 
 # Define sky model to fit the data
@@ -246,20 +238,20 @@ print(model.parameters['sigma'])
 print(model)
 
 
-# In[19]:
-
-
-get_ipython().run_cell_magic('time', '', 'fit = MapFit(\n    model=model,\n    counts=counts_map,\n    exposure=exposure_map,\n    background=bkg,\n)\n\nfit.fit()')
-
-
 # In[20]:
+
+
+get_ipython().run_cell_magic('time', '', 'fit = MapFit(\n    model=model,\n    counts=counts_map,\n    exposure=exposure,\n    background=background,\n    psf=psf_kernel,\n)\n\nfit.fit()')
+
+
+# In[21]:
 
 
 print('True values:\n\n{}\n\n'.format(sky_model.parameters))
 print('Fit result:\n\n{}\n\n'.format(model.parameters))
 
 
-# In[21]:
+# In[22]:
 
 
 # TODO: show e.g. how to make a residual image
@@ -276,7 +268,7 @@ print('Fit result:\n\n{}\n\n'.format(model.parameters))
 # access to e.g. the covariance matrix, or can check a likelihood profile, or can run ``Minuit.minos()``
 # to compute asymmetric errors or ...
 
-# In[22]:
+# In[23]:
 
 
 # Check correlation between model parameters
@@ -286,10 +278,10 @@ print('Fit result:\n\n{}\n\n'.format(model.parameters))
 fit.minuit.print_matrix()
 
 
-# In[23]:
+# In[24]:
 
 
 # You can use likelihood profiles to check if your model is
 # well constrained or not, and if the fit really converged
-fit.minuit.draw_profile('sigma');
+fit.minuit.draw_profile('par_002_sigma');
 

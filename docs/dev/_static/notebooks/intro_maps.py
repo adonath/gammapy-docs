@@ -194,7 +194,7 @@ map4d_slice.plot()
 # In[20]:
 
 
-map4d_cutout, _ =map4d.make_cutout(position=source_pos,width=8.0*u.deg)
+map4d_cutout = map4d.cutout(position=source_pos, width=8.0*u.deg)
 
 
 # In[21]:
@@ -296,56 +296,13 @@ vela_2fhl
 vela_pos = vela_2fhl.geom.center_skydir
 
 
-# In[36]:
+# In[33]:
 
 
-vela_cutout, _ = vela_2fhl.make_cutout(vela_pos, width=9.0 * u.deg)
-vela_rep_cut, _ = vela_wmap_rep.make_cutout(vela_pos, width=9.0 * u.deg)
+vela_cutout = vela_2fhl.cutout(vela_pos, width=9.0 * u.deg)
+vela_rep_cut = vela_wmap_rep.cutout(vela_pos, width=9.0 * u.deg)
 fig, ax, _ = vela_cutout.smooth(kernel='gauss', radius=0.5 * u.deg).plot()
 ax.contour(vela_rep_cut.data, cmap='Blues')
-
-
-# # Combining multiple observations
-
-# Multiple observations can be combined, and, counts, background and exposure maps created using the MapMaker class
-
-# In[39]:
-
-
-obs_id=[110380, 111140, 111159]
-mmaker=MapMaker(geom3d,4.0*u.deg)
-for obsid in obs_id:
-    print(obsid)
-    mmaker.process_obs(ds.obs(obsid))
-
-
-# In[40]:
-
-
-mmaker.count_map.data.shape
-
-
-# In[41]:
-
-
-mmaker.exposure_map.geom.shape
-
-
-# In[42]:
-
-
-fig = plt.figure(figsize=(20,12))
-ax1=fig.add_subplot(131,projection=geom3d.wcs)
-mmaker.background_map.get_image_by_idx([2]).plot(ax=ax1)
-ax1.set_title("Background")
-
-ax2=fig.add_subplot(132,projection=geom3d.wcs)
-mmaker.count_map.get_image_by_idx([2]).smooth(radius=0.5*u.deg,kernel="gauss").plot(ax=ax2)
-ax2.set_title("Counts")
-
-ax3=fig.add_subplot(133,projection=geom3d.wcs)
-mmaker.exposure_map.get_image_by_idx([2]).plot(ax=ax3)
-ax3.set_title("Exposure")
 
 
 # # What next?

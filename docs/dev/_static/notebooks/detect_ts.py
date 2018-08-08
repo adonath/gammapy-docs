@@ -48,7 +48,7 @@ from gammapy.catalog import source_catalogs
 
 # ## Compute TS image
 
-# In[3]:
+# In[ ]:
 
 
 # Load data from files
@@ -60,7 +60,7 @@ maps = {
 }
 
 
-# In[4]:
+# In[ ]:
 
 
 get_ipython().run_cell_magic('time', '', "# Compute a source kernel (source template) in oversample mode,\n# PSF is not taken into account\nkernel = Gaussian2DKernel(2.5, mode='oversample')\nestimator = TSMapEstimator()\nimages = estimator.run(maps, kernel)")
@@ -68,21 +68,21 @@ get_ipython().run_cell_magic('time', '', "# Compute a source kernel (source temp
 
 # ## Plot images
 
-# In[5]:
+# In[ ]:
 
 
 plt.figure(figsize=(18, 4))
 images['sqrt_ts'].plot(vmin=0, vmax=10);
 
 
-# In[6]:
+# In[ ]:
 
 
 plt.figure(figsize=(18, 4))
 images['flux'].plot(vmin=0, vmax=1e-9, stretch='sqrt');
 
 
-# In[7]:
+# In[ ]:
 
 
 plt.figure(figsize=(18, 4))
@@ -93,7 +93,7 @@ images['niter'].plot(vmin=0, vmax=20);
 # 
 # Let's run a peak finder on the `sqrt_ts` image to get a list of sources (positions and peak `sqrt_ts` values).
 
-# In[8]:
+# In[ ]:
 
 
 sources = find_peaks(
@@ -104,14 +104,14 @@ sources = find_peaks(
 sources
 
 
-# In[9]:
+# In[ ]:
 
 
 # Plot sources on top of significance sky image
-images['sqrt_ts'].make_cutout(
+images['sqrt_ts'].cutout(
     position=SkyCoord(0, 0, unit='deg', frame='galactic'),
     width=(8*u.deg, 20*u.deg), mode='trim',
-)[0].plot()
+).plot()
 
 plt.gca().scatter(
     sources['icrs_ra_peak'], sources['icrs_dec_peak'],
@@ -124,7 +124,7 @@ plt.gca().scatter(
 # 
 # * TODO: show cutout for a few sources and some aperture photometry measurements (e.g. energy distribution, significance, flux)
 
-# In[10]:
+# In[ ]:
 
 
 # TODO
@@ -134,7 +134,7 @@ plt.gca().scatter(
 # 
 # TODO
 
-# In[11]:
+# In[ ]:
 
 
 fermi_2fhl = source_catalogs['2fhl']
@@ -145,7 +145,7 @@ fermi_2fhl.table[:5][['Source_Name', 'GLON', 'GLAT']]
 # 
 # TODO: put one or more exercises
 
-# In[12]:
+# In[ ]:
 
 
 # Start exercises here!

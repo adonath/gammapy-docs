@@ -20,7 +20,7 @@ from gammapy.astro.darkmatter import (
     profiles,
     JFactory,
     PrimaryFlux,
-    DMFluxMapMaker
+    compute_dm_flux,
 )
 
 from gammapy.maps import WcsGeom, WcsNDMap
@@ -103,9 +103,7 @@ plt.title('J-Factor [{}]'.format(jfact_map.unit))
 # 1 deg circle usually used in H.E.S.S. analyses
 sky_reg = CircleSkyRegion(center=position, radius=1 * u.deg)
 pix_reg = sky_reg.to_pixel(wcs=geom.wcs)
-
-print(type(ax))
-ax.add_patch(pix_reg.as_patch(facecolor='none', edgecolor='red', label='1 deg circle'))
+pix_reg.plot(ax=ax, facecolor='none', edgecolor='red', label='1 deg circle')
 plt.legend()
 
 
@@ -143,7 +141,7 @@ for mDM, ax in zip(mDMs, axes):
     ax.set_yscale('log')
     ax.set_ylabel('dN/dE')
     
-    for channel in ['\\[Tau]', '\\[Mu]', 'b', 'Z']:
+    for channel in ['tau', 'mu', 'b', 'Z']:
         fluxes.channel = channel
         fluxes.table_model.plot(energy_range=[mDM/100, mDM], ax=ax, label=channel)
     
@@ -158,12 +156,11 @@ plt.subplots_adjust(hspace=0.5)
 # In[11]:
 
 
-map_maker = DMFluxMapMaker(
+flux = compute_dm_flux(
     jfact=jfact,
     prim_flux=fluxes, 
     x_section='1e-26 cm3s-1', 
     energy_range=[0.1, 10] * u.TeV)
-flux = map_maker.run()
 
 
 # In[12]:
