@@ -40,7 +40,6 @@ import astropy.units as u
 from gammapy.irf import EnergyDispersion, EffectiveAreaTable
 from gammapy.spectrum import SpectrumSimulation, SpectrumFit
 from gammapy.spectrum.models import PowerLaw, SpectralModel
-from gammapy.utils.modeling import Parameter, ParameterList
 
 
 # ## Create detector

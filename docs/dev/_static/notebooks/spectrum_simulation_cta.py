@@ -29,7 +29,7 @@ import astropy.units as u
 from gammapy.irf import EnergyDispersion, EffectiveAreaTable
 from gammapy.spectrum import SpectrumSimulation, SpectrumFit
 from gammapy.spectrum.models import PowerLaw
-from gammapy.scripts import CTAIrf
+from gammapy.irf import CTAIrf
 
 
 # ## Simulation

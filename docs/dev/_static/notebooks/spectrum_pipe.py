@@ -27,11 +27,12 @@ import matplotlib.pyplot as plt
 
 from gammapy.data import DataStore
 from gammapy.scripts import SpectrumAnalysisIACT
+from gammapy.catalog import SourceCatalogGammaCat
 
 # Convenience classes to define analsys inputs
 # At some point we'll add a convenience layer to run the analysis starting from a plain text config file.
 from gammapy.utils.energy import EnergyBounds
-from gammapy.image import SkyImage
+from gammapy.maps import Map
 from gammapy.spectrum import models
 from regions import CircleSkyRegion
 from astropy.coordinates import SkyCoord
@@ -66,17 +67,33 @@ on_region = CircleSkyRegion(crab_pos, 0.15 * u.deg)
 
 model = models.LogParabola(
     alpha = 2.3,
-    beta = 0,
+    beta = 0.01,
     amplitude = 1e-11 * u.Unit('cm-2 s-1 TeV-1'),
     reference = 1 * u.TeV,
 )
 
 flux_point_binning = EnergyBounds.equal_log_spacing(0.7, 30, 5, u.TeV)
 
-exclusion_mask = SkyImage.read('$GAMMAPY_EXTRA/datasets/exclusion_masks/tevcat_exclusion.fits')
-
 
 # In[4]:
+
+
+exclusion_mask = Map.create(skydir=crab_pos, width=(10, 10), binsz=0.02)
+
+gammacat = SourceCatalogGammaCat()
+
+regions = []
+for source in gammacat:
+    if not exclusion_mask.geom.contains(source.position):
+        continue
+    region = CircleSkyRegion(source.position, 0.15 * u.deg)
+    regions.append(region)
+    
+exclusion_mask.data = exclusion_mask.geom.region_mask(regions, inside=False)
+exclusion_mask.plot()
+
+
+# In[5]:
 
 
 config = dict(
@@ -101,7 +118,7 @@ config = dict(
 # 
 # TODO: Clean up the log (partly done, get rid of remaining useless warnings)
 
-# In[5]:
+# In[6]:
 
 
 ana = SpectrumAnalysisIACT(
@@ -115,13 +132,13 @@ ana.run()
 # 
 # TODO: Nice summary page with all results
 
-# In[6]:
+# In[7]:
 
 
 print(ana.fit.result[0])
 
 
-# In[7]:
+# In[8]:
 
 
 ana.spectrum_result.plot(

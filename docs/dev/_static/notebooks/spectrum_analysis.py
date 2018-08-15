@@ -82,7 +82,7 @@ from gammapy.utils.energy import EnergyBounds
 from gammapy.spectrum import SpectrumExtraction, SpectrumObservation, SpectrumFit, SpectrumResult
 from gammapy.spectrum.models import PowerLaw, ExponentialCutoffPowerLaw, LogParabola
 from gammapy.spectrum import FluxPoints, SpectrumEnergyGroupMaker, FluxPointEstimator
-from gammapy.image import SkyImage
+from gammapy.maps import Map
 
 
 # ## Configure logger
@@ -143,15 +143,15 @@ exclusion_region = CircleSkyRegion(
     radius=0.5 * u.deg,
 )
 
-image_center = target_position.galactic
-exclusion_mask = SkyImage.empty(
-    nxpix=150, nypix=150, binsz=0.05,
-    xref=image_center.l.deg, yref=image_center.b.deg,
+skydir = target_position.galactic
+exclusion_mask = Map.create(
+    npix=(150, 150), binsz=0.05, skydir=skydir,
     proj='TAN', coordsys='GAL',
 )
 
-exclusion_mask = exclusion_mask.region_mask(exclusion_region)
-exclusion_mask.data = 1. - exclusion_mask.data
+mask = exclusion_mask.geom.region_mask([exclusion_region], inside=False)
+exclusion_mask.data = mask
+exclusion_mask.plot()
 
 
 # ## Estimate background
@@ -296,7 +296,6 @@ ebounds = [0.3, 1.1, 3, 10.1, 30] * u.TeV
 stacked_obs = extraction.observations.stack()
 
 seg = SpectrumEnergyGroupMaker(obs=stacked_obs)
-seg.compute_range_safe()
 seg.compute_groups_fixed(ebounds=ebounds)
 
 print(seg.groups)

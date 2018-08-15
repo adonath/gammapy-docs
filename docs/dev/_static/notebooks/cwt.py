@@ -36,41 +36,42 @@ print('Scipy version: ' + sp.__version__)
 
 # First of all we import the data which should be analysied.
 
-# In[3]:
+# In[12]:
 
 
 import os
 from astropy.io import fits
 from astropy.coordinates import Angle, SkyCoord
-from gammapy.image import SkyImage
+from gammapy.maps import Map
 
 filename = '$GAMMAPY_EXTRA/datasets/fermi_survey/all.fits.gz'
 
-image = SkyImage.read(filename=filename, hdu='COUNTS')
-background = SkyImage.read(filename=filename, hdu='BACKGROUND')
+counts = Map.read(filename=filename, hdu='COUNTS')
+background = Map.read(filename=filename, hdu='BACKGROUND')
 
-size = Angle([10, 20], 'deg')
-image = image.cutout(position=image.center, size=size)
-background = background.cutout(position=background.center, size=size)
+width = Angle([20, 10], 'deg')
+position = counts.geom.center_skydir
+counts = counts.cutout(position=position, width=width)
+background = background.cutout(position=position, width=width)
 
-data = dict(image=image, background=background)
+data = dict(counts=counts, background=background)
 
 
-# In[4]:
+# In[13]:
 
 
 fig = plt.figure(figsize=(15, 3))
 
-ax = fig.add_subplot(121, projection=data['image'].wcs)
-data['image'].plot(vmax=10, ax=ax, fig=fig)
+ax = fig.add_subplot(121, projection=data['counts'].geom.wcs)
+data['counts'].plot(vmax=10, ax=ax, fig=fig)
 
-ax = fig.add_subplot(122, projection=data['background'].wcs)
+ax = fig.add_subplot(122, projection=data['background'].geom.wcs)
 data['background'].plot(vmax=10, ax=ax, fig=fig)
 
 
 # Let's explore how CWT works. At first define parameters of the algorithm.  An imperative parameter is kernels (`detect.CWTKernels` object). So we should create it.
 
-# In[5]:
+# In[14]:
 
 
 # Input parameters for CWTKernels
@@ -79,7 +80,7 @@ MIN_SCALE = 6.  # First scale used.
 STEP_SCALE = 1.3  # Base scaling factor.
 
 
-# In[6]:
+# In[15]:
 
 
 from gammapy.detect import CWTKernels
@@ -94,7 +95,7 @@ print(cwt_kernels.info_table)
 
 # Other parameters are optional, in this demonstration define them all.
 
-# In[7]:
+# In[16]:
 
 
 MAX_ITER = 10  # The maximum number of iterations of the CWT algorithm.
@@ -107,7 +108,7 @@ KEEP_HISTORY = True # If you want to save images of all the iterations
 
 # Let's start to analyse input data. Import Logging module to see how the algorithm works during data analysis.
 
-# In[8]:
+# In[17]:
 
 
 from gammapy.detect import CWT
@@ -127,19 +128,19 @@ cwt = CWT(
 
 # In order to the algorithm was able to analyze source images, you need to convert them to a special format, i.e. create an CWTData object. Do this.
 
-# In[9]:
+# In[19]:
 
 
 from gammapy.detect import CWTKernels, CWTData
 
 cwt_data = CWTData(
-    counts=data['image'],
+    counts=data['counts'],
     background=data['background'],
     n_scale=N_SCALE,
 ) 
 
 
-# In[10]:
+# In[20]:
 
 
 # Start the algorithm  
@@ -150,7 +151,7 @@ cwt.analyze(cwt_data)
 # 
 # Look at the results of CWT algorithm. Print all the images.
 
-# In[11]:
+# In[22]:
 
 
 PLOT_VALUE_MAX = 5
@@ -159,14 +160,14 @@ FIG_SIZE = (15, 35)
 fig = plt.figure(figsize=FIG_SIZE)
 images = cwt_data.images()
 for index, (name, image) in enumerate(images.items()): 
-    ax = fig.add_subplot(len(images), 2, index + 1, projection=image.wcs)
+    ax = fig.add_subplot(len(images), 2, index + 1, projection=image.geom.wcs)
     image.plot(vmax=PLOT_VALUE_MAX, fig=fig, ax=ax)
     plt.title(name) # Maybe add a Name in SkyImage.plots?
 
 
 # As you can see in the implementation of CWT above, it has the parameter `keep_history`. If you set to it `True`-value, it means that CWT would save all the images from iterations. Algorithm keeps images of only last CWT start.  Let's do this in the demonstration.
 
-# In[12]:
+# In[23]:
 
 
 history = cwt.history
@@ -175,7 +176,7 @@ print('Number of iterations: {0}'.format(len(history) - 1)) # -1 because CWT sav
 
 # Let's have a look, what's happening with images after the first iteration.
 
-# In[13]:
+# In[25]:
 
 
 N_ITER = 1
@@ -185,14 +186,14 @@ data_iter = history[N_ITER]
 fig = plt.figure(figsize=FIG_SIZE)
 images_iter = data_iter.images()
 for index, (name, image) in enumerate(images_iter.items()): 
-    ax = fig.add_subplot(len(images_iter), 2, index + 1, projection=image.wcs)
+    ax = fig.add_subplot(len(images_iter), 2, index + 1, projection=image.geom.wcs)
     image.plot(vmax=PLOT_VALUE_MAX, fig=fig, ax=ax)
     plt.title(name) # Maybe add a Name in SkyImage.plots?
 
 
 # You can get the information about the one particular image in that way: 
 
-# In[14]:
+# In[26]:
 
 
 print(data_iter.image_info(name='approx_bkg'))
@@ -200,13 +201,13 @@ print(data_iter.image_info(name='approx_bkg'))
 
 # You can also get the information about cubes. Or information about all the data. 
 
-# In[15]:
+# In[27]:
 
 
 print(data_iter.cube_info(name='support', per_scale=True))
 
 
-# In[16]:
+# In[28]:
 
 
 print(data_iter.cube_info(name='support', per_scale=False))
@@ -214,39 +215,39 @@ print(data_iter.cube_info(name='support', per_scale=False))
 
 # Also you can see the difference betwen the iterations in that way:
 
-# In[17]:
+# In[29]:
 
 
 history = cwt.history # get list of 'CWTData' objects
 difference = history[1] - history[0] # get new `CWTData` obj, let's work with them
 
 
-# In[18]:
+# In[30]:
 
 
 print(difference.cube_info('support'))
 
 
-# In[19]:
+# In[31]:
 
 
 difference.info_table.show_in_notebook()
 
 
-# In[20]:
+# In[33]:
 
 
 fig = plt.figure(figsize=FIG_SIZE)
 images_diff = difference.images()
 for index, (name, image) in enumerate(images_diff.items()): 
-    ax = fig.add_subplot(len(images_diff), 2, index + 1, projection=image.wcs)
+    ax = fig.add_subplot(len(images_diff), 2, index + 1, projection=image.geom.wcs)
     image.plot(vmax=PLOT_VALUE_MAX, fig=fig, ax=ax)
     plt.title(name) # Maybe add a Name in SkyImage.plots?
 
 
 # You can save the results if you want
 
-# In[21]:
+# In[ ]:
 
 
 # cwt_data.write('test-cwt.fits', True)

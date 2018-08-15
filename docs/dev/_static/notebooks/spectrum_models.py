@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import astropy.units as u
 from gammapy.spectrum import models
-from gammapy.utils.modeling import Parameter, ParameterList
+from gammapy.utils.modeling import Parameter, Parameters
 
 
 # ## Create a model
@@ -157,7 +157,7 @@ print(integral)
 
 class UserModel(models.SpectralModel):
     def __init__(self, index, amplitude, reference, mean, width):
-        self.parameters = ParameterList([
+        self.parameters = Parameters([
                 Parameter('index', index, min=0),
                 Parameter('amplitude', amplitude, min=0),
                 Parameter('reference', reference, frozen=True),

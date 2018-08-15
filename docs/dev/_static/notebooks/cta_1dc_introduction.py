@@ -539,7 +539,7 @@ print(bkg)
 # In[44]:
 
 
-bkg.data.evaluate(energy='3 TeV', detx='1 deg', dety='0 deg')
+bkg.data.evaluate(energy='3 TeV', fov_lon='1 deg', fov_lat='0 deg')
 
 
 # ## Index files and DataStore

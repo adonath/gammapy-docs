@@ -60,7 +60,7 @@ evts.table.colnames
 
 binsz = 0.05 
 energy_axis = MapAxis.from_bounds(0.5,50.0,10,name='energy',unit='TeV',interp='log')
-mc_axis=MapAxis.from_edges([0,500,1000,1750], interp="lin", name='MC_ID', unit=None)
+mc_axis=MapAxis.from_edges([0,500,1000,1750], interp="lin", name='MC_ID')
 
 
 # A variable bin size can also be put on for different axis, in that case, binsize should be an array of the same dimension, eg:

@@ -116,8 +116,7 @@ flux_points = flux_points.drop_ul()
 
 fitter = FluxPointFitter(
     stat='chi2assym',
-    optimizer='simplex',
-    error_estimator='covar',
+    optimizer='minuit',
 )
 
 
@@ -181,7 +180,7 @@ ecpl = ExponentialCutoffPowerLaw(
     index=2. * u.Unit(''),
     amplitude=1e-12 * u.Unit('cm-2 s-1 TeV-1'),
     reference=1. * u.TeV,
-    lambda_=0. / u.TeV
+    lambda_=0.1 / u.TeV
 )
 
 
@@ -222,7 +221,7 @@ log_parabola = LogParabola(
     alpha=2. * u.Unit(''),
     amplitude=1e-12 * u.Unit('cm-2 s-1 TeV-1'),
     reference=1. * u.TeV,
-    beta=0. * u.Unit('')
+    beta=0.1 * u.Unit('')
 )
 
 

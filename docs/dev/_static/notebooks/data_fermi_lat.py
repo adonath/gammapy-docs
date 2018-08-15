@@ -136,7 +136,7 @@ counts.fill_by_coord({
     # The coord-based interface doesn't use Quantity,
     # so we need to pass energy in the same unit as
     # used for the map axis
-    'energy': events.energy.to('GeV').value,
+    'energy': events.energy,
 })
 
 
@@ -188,10 +188,7 @@ geom = WcsGeom(wcs=counts.geom.wcs, npix=counts.geom.npix, axes=[axis])
 # We need to manually adjust the energy coord unit,
 # which is MeV in the HPX exposure cube and GeV in our geom
 coord = counts.geom.get_coord()
-data = exposure_hpx.interp_by_coord({
-    'skycoord': coord.skycoord,
-    'energy': 1000 * coord['energy'],
-})
+data = exposure_hpx.interp_by_coord(coord)
 exposure = WcsNDMap(geom, data, unit=exposure_hpx.unit)
 exposure.geom.axes[0].node_type
 print(exposure.geom)
@@ -240,10 +237,12 @@ print(diffuse_galactic_fermi.geom.axes[0])
 # The resolution of `diffuse_galactic_fermi` is low: bin size = 0.5 deg
 # We use ``interp=3`` which means cubic spline interpolation
 coord = counts.geom.get_coord()
-data = diffuse_galactic_fermi.interp_by_coord({
-    'skycoord': coord.skycoord,
-    'energy': 1000 * coord['energy'],
-}, interp=3)
+
+data = diffuse_galactic_fermi.interp_by_coord(
+    {'skycoord': coord.skycoord,
+     'energy': coord['energy'] * counts.geom.get_axis_by_name('energy').unit},
+    interp=3
+)
 diffuse_galactic = WcsNDMap(exposure.geom, data, unit=diffuse_galactic_fermi.unit)
 
 print(diffuse_galactic.geom)
