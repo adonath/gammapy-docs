@@ -185,12 +185,9 @@ axis = MapAxis.from_nodes(counts.geom.axes[0].center,
                           name='energy', unit='GeV', interp='log')
 geom = WcsGeom(wcs=counts.geom.wcs, npix=counts.geom.npix, axes=[axis])
 
-# We need to manually adjust the energy coord unit,
-# which is MeV in the HPX exposure cube and GeV in our geom
 coord = counts.geom.get_coord()
 data = exposure_hpx.interp_by_coord(coord)
 exposure = WcsNDMap(geom, data, unit=exposure_hpx.unit)
-exposure.geom.axes[0].node_type
 print(exposure.geom)
 print(exposure.geom.axes[0])
 
@@ -280,20 +277,14 @@ plt.ylabel('Flux (cm-2 s-1 MeV-1 sr-1)')
 
 # ## Isotropic diffuse background
 # 
-# To load the isotropic diffuse model with Gammapy, use the [gammapy.spectrum.models.TableModel](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.TableModel.html). That model is given as an ASCII table, which we read using `astropy.table.Table`.
+# To load the isotropic diffuse model with Gammapy, use the [gammapy.spectrum.models.TableModel](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.TableModel.html). We are using `'fill_value': 'extrapolate'` to extrapolate the model above 500 GeV:
 
 # In[24]:
 
 
-from gammapy.datasets import gammapy_extra
-table = Table.read(
-    str(gammapy_extra.dir / 'datasets/fermi_3fhl/iso_P8R2_SOURCE_V6_v06.txt'),
-    format='ascii',
-)
-diffuse_iso = TableModel(
-    energy=table['col1'] * u.MeV,
-    values=table['col2'] * u.Unit('cm-2 s-1 MeV-1 sr-1'),
-)
+filename = '$GAMMAPY_FERMI_LAT_DATA/isodiff/iso_P8R2_SOURCE_V6_v06.txt'
+interp_kwargs = {'fill_value': 'extrapolate', 'kind': 'cubic'}
+diffuse_iso = TableModel.read_fermi_isotropic_model(filename=filename, interp_kwargs=interp_kwargs)
 
 
 # We can plot the model in the energy range between 50 GeV and 2000 GeV:
@@ -302,7 +293,7 @@ diffuse_iso = TableModel(
 
 
 erange = [50, 2000] * u.GeV
-diffuse_iso.plot(erange);
+diffuse_iso.plot(erange, flux_unit='1 / (cm2 MeV s sr)');
 
 
 # ## PSF

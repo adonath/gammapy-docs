@@ -11,7 +11,7 @@ finke = Absorption.read_builtin('finke').table_model(redshift)
 # start customised plot
 energy_range = [0.08, 3] * u.TeV
 ax = plt.gca()
-opts = dict(energy_range=energy_range, energy_unit='TeV', ax=ax)
+opts = dict(energy_range=energy_range, energy_unit='TeV', ax=ax, flux_unit='')
 franceschini.plot(label='Franceschini 2008', **opts)
 finke.plot(label='Finke 2010', **opts)
 dominguez.plot(label='Dominguez 2011', **opts)
