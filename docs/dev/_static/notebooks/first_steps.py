@@ -208,7 +208,7 @@ vela_wmap_reprojected_cutout.plot(cmap='viridis', norm=norm);
 
 
 fig, ax, _ = vela_2fhl_cutout.plot()
-ax.contour(vela_wmap_reprojected_cutout.data, cmap='Blues')
+ax.contour(vela_wmap_reprojected_cutout.data, cmap='Blues');
 
 
 # ### Exercises
@@ -471,7 +471,7 @@ crab_2fhl.flux_points.table
 ax = crab_2fhl.spectral_model.plot(
     energy_range=[50, 2000] * u.GeV, energy_power=2,
 )
-crab_2fhl.flux_points.plot(ax=ax, energy_power=2)
+crab_2fhl.flux_points.plot(ax=ax, energy_power=2);
 
 
 # ### Exercises

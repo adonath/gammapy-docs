@@ -17,9 +17,6 @@
 # * [gammapy.spectrum.SpectrumSimulation](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumSimulation.html)
 # * [gammapy.spectrum.SpectrumFit](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumFit.html)
 # * [gammapy.spectrum.models.PowerLaw](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html)
-# * [gammapy.spectrum.models.SpectralModel](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.SpectralModel.html)
-# 
-# Feedback welcome!
 
 # ## Setup
 # 
@@ -39,25 +36,25 @@ import numpy as np
 import astropy.units as u
 from gammapy.irf import EnergyDispersion, EffectiveAreaTable
 from gammapy.spectrum import SpectrumSimulation, SpectrumFit
-from gammapy.spectrum.models import PowerLaw, SpectralModel
+from gammapy.spectrum.models import PowerLaw
 
 
 # ## Create detector
 # 
-# For the sake of self consistency of this tutorial, we will simulate a simple detector. For a real application you would want to replace this part of the code with loading the IRFs or your detector (TODO: Link to IRFs tutorial)
+# For the sake of self consistency of this tutorial, we will simulate a simple detector. For a real application you would want to replace this part of the code with loading the IRFs or your detector.
 
 # In[3]:
 
 
 e_true = np.logspace(-2, 2.5, 109) * u.TeV
-e_reco = np.logspace(-2,2, 79) * u.TeV
+e_reco = np.logspace(-2, 2, 79) * u.TeV
 
 edisp = EnergyDispersion.from_gauss(e_true=e_true, e_reco=e_reco, sigma=0.2, bias=0)
 aeff = EffectiveAreaTable.from_parametrization(energy=e_true)
 
 fig, axes = plt.subplots(1, 2, figsize=(12, 6))
 edisp.plot_matrix(ax=axes[0])
-aeff.plot(ax=axes[1])
+aeff.plot(ax=axes[1]);
 
 
 # ## Power law
@@ -67,11 +64,11 @@ aeff.plot(ax=axes[1])
 # In[4]:
 
 
-index = 2.3
-amplitude = 1e-11 * u.Unit('cm-2 s-1 TeV-1')
-reference = 1 * u.TeV
-
-pwl = PowerLaw(index=index, amplitude=amplitude, reference=reference)
+pwl = PowerLaw(
+    index=2.3,
+    amplitude=1e-11 * u.Unit('cm-2 s-1 TeV-1'),
+    reference=1 * u.TeV,
+)
 print(pwl)
 
 
@@ -106,32 +103,17 @@ print(fit.result[0])
 # In[7]:
 
 
-bkg_index = 2.5
-bkg_amplitude = 1e-11 * u.Unit('cm-2 s-1 TeV-1')
-reference = 1 * u.TeV
-
-bkg_model = PowerLaw(index=bkg_index, amplitude=bkg_amplitude, reference=reference)
-alpha = 0.2
+bkg_model = PowerLaw(
+    index=2.5,
+    amplitude=1e-11 * u.Unit('cm-2 s-1 TeV-1'),
+    reference=1 * u.TeV,
+)
 
 
 # In[8]:
 
 
-n_obs = 10
-seeds = np.arange(n_obs)
-
-sim = SpectrumSimulation(
-    aeff=aeff,
-    edisp=edisp,
-    source_model=pwl,
-    livetime=livetime,
-    background_model=bkg_model,
-    alpha=alpha,
-)
-
-sim.run(seeds)
-print(sim.result)
-print(sim.result[0])
+get_ipython().run_cell_magic('time', '', 'n_obs = 30\nseeds = np.arange(n_obs)\n\nsim = SpectrumSimulation(\n    aeff=aeff,\n    edisp=edisp,\n    source_model=pwl,\n    livetime=livetime,\n    background_model=bkg_model,\n    alpha=0.2,\n)\n\nsim.run(seeds)\nprint(sim.result)\nprint(sim.result[0])')
 
 
 # Before moving on to the fit let's have a look at the simulated observations
@@ -149,32 +131,27 @@ axes[0].set_xlabel('n_on')
 axes[1].hist(n_off)
 axes[1].set_xlabel('n_off')
 axes[2].hist(excess)
-axes[2].set_xlabel('excess')
+axes[2].set_xlabel('excess');
 
 
 # In[10]:
 
 
-# pwl.parameters['index'].max = 10
-
-best_fit_index = []
-for obs in sim.result:
-    fit = SpectrumFit(obs, pwl.copy(), stat='wstat')
-    fit.fit()
-    best_fit_index.append(fit.result[0].model.parameters['index'].value)
+get_ipython().run_cell_magic('time', '', "results = []\nfor obs in sim.result:\n    fit = SpectrumFit(obs, pwl.copy(), stat='wstat')\n    fit.fit(opts_minuit={'print_level': 0})\n    results.append({\n        'index': fit.result[0].model.parameters['index'].value,\n        'amplitude': fit.result[0].model.parameters['amplitude'].value,\n    })")
 
 
 # In[11]:
 
 
-plt.hist(best_fit_index)
-print('best_fit_index:', best_fit_index)
+index = np.array([_['index'] for _ in results])
+plt.hist(index, bins=10)
+print('spectral index: {:.2f} +/- {:.2f}'.format(index.mean(), index.std()))
 
 
 # ## Exercises
 # 
 # * Fit a pure power law and the user define model to the observation you just simulated. You can start with the user defined model described in the [spectrum_models.ipynb](https://github.com/gammapy/gammapy-extra/blob/master/notebooks/spectrum_models.ipynb) notebook.
-# * Vary the observation lifetime and see when you can distinguish the two models (Hint: You get the final likelihood of a fit from fit.result[0].statval).
+# * Vary the observation lifetime and see when you can distinguish the two models (Hint: You get the final likelihood of a fit from `fit.result[0].statval`).
 
 # ## What's next
 # 

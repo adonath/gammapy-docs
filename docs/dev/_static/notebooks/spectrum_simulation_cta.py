@@ -3,7 +3,7 @@
 
 # # Spectrum simulation for CTA
 # 
-# A quick example how to simulate and fit a spectrum for the [Cherenkov Telescope Array (CTA)](https://www.cta-observatory.org)
+# A quick example how to simulate and fit a spectrum for the [Cherenkov Telescope Array (CTA)](https://www.cta-observatory.org).
 # 
 # We will use the following classes:
 # 
@@ -37,43 +37,52 @@ from gammapy.irf import CTAIrf
 # In[3]:
 
 
-# Define obs parameters
-livetime = 10 * u.h
-offset = 0.3 * u.deg
-lo_threshold = 0.1 * u.TeV
-hi_threshold = 60 * u.TeV
+# Define simulation parameters parameters
+livetime = 1 * u.h
+offset = 0.5 * u.deg
+# Energy from 0.1 to 100 TeV with 10 bins/decade
+energy = np.logspace(-1, 2, 31) * u.TeV
 
 
 # In[4]:
 
 
 # Define spectral model
-index = 2.3 * u.Unit('')
-amplitude = 2.5 * 1e-12 * u.Unit('cm-2 s-1 TeV-1')
-reference = 1 * u.TeV
-model = PowerLaw(index=index, amplitude=amplitude, reference=reference)
+model = PowerLaw(
+    index=2.1,
+    amplitude=2.5e-12 * u.Unit('cm-2 s-1 TeV-1'),
+    reference=1 * u.TeV,
+)
 
 
 # In[5]:
 
 
 # Load IRFs
-filename = '$GAMMAPY_EXTRA/datasets/cta/perf_prod2/South_5h/irf_file.fits.gz'
+filename = '$GAMMAPY_EXTRA/datasets/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits'
 cta_irf = CTAIrf.read(filename)
 
 
 # In[6]:
 
 
-aeff = cta_irf.aeff.to_effective_area_table(offset=offset)
+aeff = cta_irf.aeff.to_effective_area_table(
+    offset=offset,
+    energy=energy,
+)
 aeff.plot()
+plt.loglog()
 print(cta_irf.aeff.data)
 
 
 # In[7]:
 
 
-edisp = cta_irf.edisp.to_energy_dispersion(offset=offset)
+edisp = cta_irf.edisp.to_energy_dispersion(
+    offset=offset,
+    e_true=energy,
+    e_reco=energy,
+)
 edisp.plot_matrix()
 print(edisp.data)
 
@@ -82,8 +91,6 @@ print(edisp.data)
 
 
 # Simulate data
-aeff.lo_threshold = lo_threshold
-aeff.hi_threshold = hi_threshold
 sim = SpectrumSimulation(aeff=aeff, edisp=edisp, source_model=model, livetime=livetime)
 sim.simulate_obs(seed=42, obs_id=0)
 
@@ -120,7 +127,7 @@ print(result)
 energy_range = [0.1, 100] * u.TeV
 model.plot(energy_range=energy_range, energy_power=2)
 result.model.plot(energy_range=energy_range, energy_power=2)
-result.model.plot_error(energy_range=energy_range, energy_power=2)
+result.model.plot_error(energy_range=energy_range, energy_power=2);
 
 
 # ## Exercises

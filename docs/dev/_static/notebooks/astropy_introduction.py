@@ -73,24 +73,32 @@ d = 8 * u.kpc
 # then one can produce new Quantities
 flux = L / (4 * np.pi * d ** 2)
 
-# And convert its value to any (homogeneous) unit
-print(flux.to('erg cm-2 s-1'))
-print(flux.to('W/m2'))
-# print(flux.to('Ci')) would raise a UnitConversionError
-
-
-# More generally a Quantity is a numpy array with a unit.
 
 # In[5]:
 
 
+# And convert its value to an equivalent unit
+flux.to('erg cm-2 s-1')
+
+
+# In[6]:
+
+
+flux.to('W/m2')
+
+
+# More generally a Quantity is a numpy array with a unit.
+
+# In[7]:
+
+
 E = np.logspace(1, 4, 10) * u.GeV
-print(E.to('TeV'))
+E.to('TeV')
 
 
 # Here we compute the interaction time of protons.
 
-# In[6]:
+# In[8]:
 
 
 x_eff = 30 * u.mbarn
@@ -105,7 +113,7 @@ interaction_time.to('Myr')
 # 
 # We compute here the energy loss rate of an electron of kinetic energy E in magnetic field B. See formula (5B10) in this [lecture](http://www.cv.nrao.edu/course/astr534/SynchrotronPower.html)
 
-# In[7]:
+# In[9]:
 
 
 def electron_energy_loss_rate(B, E):
@@ -118,15 +126,20 @@ def electron_energy_loss_rate(B, E):
 
 print(electron_energy_loss_rate(1e-5 * u.G, 1 * u.TeV).to('erg/s'))
 
+
+# In[10]:
+
+
 # Now plot it
 E_elec = np.logspace(-1., 6, 100) * u.MeV
 B = 1 * u.G
-plt.loglog(E_elec,(E_elec / electron_energy_loss_rate(B, E_elec)).to('yr'))
+y = (E_elec / electron_energy_loss_rate(B, E_elec)).to('yr')
+plt.loglog(E_elec, y);
 
 
 # A frequent issue is homogeneity. One can use decorators to ensure it.
 
-# In[8]:
+# In[11]:
 
 
 # This ensures that B and E are homogeneous to magnetic field strength and energy
@@ -151,7 +164,7 @@ except u.UnitsError as message:
 # 
 # Note that SkyCoord are arrays of coordinates. We will see that in more detail in the next section.
 
-# In[9]:
+# In[12]:
 
 
 # Different ways to create a SkyCoord
@@ -162,9 +175,9 @@ c2 = SkyCoord(83.633083, 22.0145, unit='deg')
 # If you have internet access, you could also use this to define the `source_pos`:
 # c2 = SkyCoord.from_name("Crab")     # Get the name from CDS
 
-print(c1.ra,c2.dec)
-
-print('Distance to Crab: ', c1.separation(c2))    # separation returns an Angle object
+print(c1.ra, c2.dec)
+# separation returns an Angle object
+print('Distance to Crab: ', c1.separation(c2))
 print('Distance to Crab: ', c1.separation(c2).degree)
 
 
@@ -172,7 +185,7 @@ print('Distance to Crab: ', c1.separation(c2).degree)
 # 
 # How to change between coordinate frames. The Crab in Galactic coordinates.
 
-# In[10]:
+# In[13]:
 
 
 c2b = c2.galactic
@@ -184,7 +197,7 @@ print(c2b.l, c2b.b)
 # 
 # Is the Crab visible now?
 
-# In[11]:
+# In[14]:
 
 
 now = Time.now()
@@ -192,7 +205,7 @@ print(now)
 print(now.mjd)
 
 
-# In[12]:
+# In[15]:
 
 
 # define the location for the AltAz system
@@ -212,16 +225,16 @@ print(crab_altaz)
 # ### Accessing the table
 # First, we need to open the catalog in a Table. 
 
-# In[13]:
+# In[16]:
 
 
 # Open Fermi 3FGL from the repo
-table = Table.read("../datasets/catalogs/fermi/gll_psc_v16.fit.gz")
+table = Table.read("../datasets/catalogs/fermi/gll_psc_v16.fit.gz", hdu=1)
 # Alternatively, one can grab it from the server.
 #table = Table.read("http://fermi.gsfc.nasa.gov/ssc/data/access/lat/4yr_catalog/gll_psc_v16.fit")
 
 
-# In[14]:
+# In[17]:
 
 
 # Note that a single FITS file might contain different tables in different HDUs
@@ -235,27 +248,27 @@ extended_source_table = Table.read(filename, hdu='ExtendedSources')
 # ### General informations on the Table
 # 
 
-# In[15]:
+# In[18]:
 
 
 table.info()
 
 
-# In[16]:
+# In[19]:
 
 
 # Statistics on each column
 table.info('stats')
 
 
-# In[17]:
+# In[20]:
 
 
 ### list of column names
 table.colnames
 
 
-# In[18]:
+# In[21]:
 
 
 # HTML display
@@ -265,7 +278,7 @@ table.colnames
 
 # ### Accessing the table
 
-# In[19]:
+# In[22]:
 
 
 # The header keywords are stored as a dict
@@ -273,57 +286,62 @@ table.colnames
 table.meta['TSMIN']
 
 
-# In[20]:
+# In[23]:
 
 
 # First row
 table[0]
 
 
-# In[21]:
+# In[24]:
 
 
 # Spectral index of the 5 first entries
 table[:5]['Spectral_Index']
 
 
-# In[22]:
+# In[25]:
 
 
 # Which source has the lowest spectral index?
-min_index_row = table[np.argmin(table['Spectral_Index'])]
-print('Hardest source: ',min_index_row['Source_Name'], 
-                         min_index_row['CLASS1'],min_index_row['Spectral_Index'])
+row = table[np.argmin(table['Spectral_Index'])]
+print('Hardest source: ', row['Source_Name'], 
+      row['CLASS1'], row['Spectral_Index'])
 
 # Which source has the largest spectral index?
-max_index_row = table[np.argmax(table['Spectral_Index'])]
-print('Softest source: ',max_index_row['Source_Name'], 
-                         max_index_row['CLASS1'],max_index_row['Spectral_Index'])
+row = table[np.argmax(table['Spectral_Index'])]
+print('Softest source: ', row['Source_Name'], 
+      row['CLASS1'], row['Spectral_Index'])
 
 
 # ### Quantities and SkyCoords from a Table
 
-# In[23]:
+# In[26]:
 
 
 fluxes = table['nuFnu1000_3000'].quantity
-print(fluxes)
+fluxes
+
+
+# In[27]:
+
+
 coord = SkyCoord(table['GLON'],table['GLAT'],frame='galactic')
-print(coord.fk5)
+coord.fk5
 
 
 # ### Selections in a Table
 # 
 # Here we select Sources according to their class and do some whole sky chart
 
-# In[24]:
+# In[28]:
 
 
 # Get coordinates of FSRQs
 fsrq = np.where( np.logical_or(table['CLASS1']=='fsrq ',table['CLASS1']=='FSQR '))
 
 
-# In[25]:
+# In[29]:
 
 
 # This is here for plotting purpose...
@@ -340,7 +358,7 @@ ax.legend()
 # ax.invert_xaxis()  -> This does not work for projections...  
 
 
-# In[26]:
+# In[30]:
 
 
 # Now do it for a series of classes
@@ -362,7 +380,7 @@ for source_class in source_classes:
     )
 
 ax.grid(True)
-ax.legend()
+ax.legend();
 
 
 # ### Creating tables
@@ -371,7 +389,7 @@ ax.legend()
 # 
 # Here's one way to create a `Table` from scratch: put the data into a list of dicts, and then call the `Table` constructor with the `rows` option.
 
-# In[27]:
+# In[31]:
 
 
 rows = [
@@ -387,7 +405,7 @@ my_table
 # Writing tables to files is easy, you can just give the filename and format you want.
 # If you run a script repeatedly you might want to add `overwrite=True`.
 
-# In[28]:
+# In[32]:
 
 
 # Examples how to write a table in different formats
@@ -402,7 +420,7 @@ my_table
 # The `table.write` API doesn't support that directly yet.
 # Here's how you can currently write multiple tables to a FITS file: you have to convert the `astropy.table.Table` objects to `astropy.io.fits.BinTable` objects, and then store them in a `astropy.io.fits.HDUList` objects and call `HDUList.writeto`.
 
-# In[29]:
+# In[33]:
 
 
 my_table2 = Table(data=dict(a=[1, 2, 3]))
@@ -422,7 +440,7 @@ hdu_list = fits.HDUList([
 # 
 # We first create a circular region centered on a given SkyCoord with a given radius.
 
-# In[30]:
+# In[34]:
 
 
 from regions import CircleSkyRegion
@@ -438,13 +456,13 @@ circle_region = CircleSkyRegion(
 
 # We now use the contains method to search objects in this circular region in the sky.
 
-# In[31]:
+# In[35]:
 
 
 in_region = circle_region.contains(coord)
 
 
-# In[32]:
+# In[36]:
 
 
 fig = plt.figure(figsize=(14,10))
@@ -465,14 +483,14 @@ ax.scatter(coord[in_region].l.radian, coord[in_region].b.radian)
 # 
 # One little trick is needed when converting to a dataframe: we need to drop the multi-dimensional columns that the 3FGL catalog uses for a few columns (flux up/down errors, and lightcurves):
 
-# In[33]:
+# In[37]:
 
 
 scalar_colnames = tuple(name for name in table.colnames if len(table[name].shape) <= 1)
 data_frame = table[scalar_colnames].to_pandas()
 
 
-# In[34]:
+# In[38]:
 
 
 # If you want to have a quick-look at the dataframe:
@@ -481,7 +499,7 @@ data_frame = table[scalar_colnames].to_pandas()
 # data_frame.describe()
 
 
-# In[35]:
+# In[39]:
 
 
 # Just do demonstrate one of the useful DataFrame methods,

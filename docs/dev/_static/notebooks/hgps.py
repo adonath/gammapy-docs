@@ -650,7 +650,7 @@ spectral_model.integral_error(emin=1*u.TeV, emax=10*u.TeV)
 # Let's plot the spectrum
 source.spectral_model().plot(source.energy_range)
 source.spectral_model().plot_error(source.energy_range)
-source.flux_points.plot()
+source.flux_points.plot();
 
 
 # In[50]:
@@ -663,7 +663,7 @@ source.spectral_model().plot(source.energy_range, **opts)
 source.spectral_model().plot_error(source.energy_range, **opts)
 source.flux_points.plot(**opts)
 plt.ylabel('E^2 dN/dE (erg cm-2 s-1)')
-plt.title('Vela X HGPS spectrum')
+plt.title('Vela X HGPS spectrum');
 
 
 # In the next section we will see how to work with the HGPS survey maps from Gammapy, as well as work with other data from the catalog (position and morphology information).
@@ -684,7 +684,7 @@ survey_map = Map.read(path)
 
 # Map has a quick-look plot method, but it's not
 # very useful for a survey map that wide with default settings  
-survey_map.plot()
+survey_map.plot();
 
 
 # In[53]:
@@ -705,9 +705,10 @@ _ = survey_map.plot(stretch='sqrt')
 # In[54]:
 
 
-image = survey_map.cutout(pos, width=(2.5, 3.8)*u.deg)
+image = survey_map.cutout(pos, width=(3.8, 2.5)*u.deg)
 fig, ax, _ = image.plot(stretch='sqrt', cmap='inferno')
-[ax.coords[_].set_major_formatter('dd') for _ in (0, 1)]
+ax.coords[0].set_major_formatter('dd')
+ax.coords[1].set_major_formatter('dd')
 
 
 # Side comment: If you like, you can format stuff to make it a bit more pretty. With a few lines you can get nice plots, with a few dozen publication-quality images. This is using [matplotlib](https://matplotlib.org/) and [astropy.visualization](http://docs.astropy.org/en/stable/visualization/index.html). Both are pretty complex, but there's many examples available and there's not really another good alternative anyways for astronomical sky images at the moment, so you should just go ahead and learn those.
@@ -743,8 +744,7 @@ from matplotlib.patches import Circle
 
 # Cutout and plot a nice image
 pos = SkyCoord(264.5, -2.5, unit='deg', frame='galactic')
-width = (4, 6) * u.deg
-image = survey_map.cutout(pos, width=width)
+image = survey_map.cutout(pos, width=('6 deg', '4 deg'))
 norm = simple_norm(image.data, stretch='sqrt', min_cut=0, max_cut=20)
 fig = plt.figure(figsize=(12, 8))
 fig, ax, _ = image.plot(fig=fig, norm=norm, cmap='inferno')

@@ -104,16 +104,15 @@ pwl.plot(energy_range, energy_power=2, energy_unit='GeV')
 
 # ## Parameter errors
 # 
-# Parameters are stored internally as covariance matrix. There are, however, convenience methods to set individual parameter errors on ``ParameterList``.
+# Parameters are stored internally as covariance matrix. There are, however, convenience methods to set individual parameter errors.
 
 # In[8]:
 
 
-errors = dict(
-    index=0.2,
-    amplitude=0.1 * pwl.parameters['amplitude'].quantity
-)
-pwl.parameters.set_parameter_errors(errors)
+pwl.parameters.set_parameter_errors({
+    'index': 0.2,
+    'amplitude': 0.1 * pwl.parameters['amplitude'].quantity
+})
 print(pwl)
 
 
@@ -167,7 +166,7 @@ class UserModel(models.SpectralModel):
     @staticmethod
     def evaluate(energy, index, amplitude, reference, mean, width):
         pwl = models.PowerLaw.evaluate(energy=energy, index=index, amplitude=amplitude, reference=reference)
-        gauss = amplitude * np.exp(-1 *(energy - mean) ** 2/( 2 * width ** 2))
+        gauss = amplitude * np.exp(- (energy - mean) ** 2/( 2 * width ** 2))
         return pwl + gauss
 
 

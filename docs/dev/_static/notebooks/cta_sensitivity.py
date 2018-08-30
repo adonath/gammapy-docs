@@ -19,6 +19,7 @@
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
+import matplotlib.pyplot as plt
 
 
 # In[2]:
@@ -30,7 +31,7 @@ from gammapy.spectrum import SensitivityEstimator
 
 # ## Load IRFs
 # 
-# First import the CTA IRFs
+# First load the CTA IRFs.
 
 # In[3]:
 
@@ -46,33 +47,47 @@ irf = CTAPerf.read(filename)
 # In[4]:
 
 
-sens = SensitivityEstimator(
+sensitivity_estimator = SensitivityEstimator(
     irf=irf,
     livetime='5h',
 )
-sens.run()
+sensitivity_estimator.run()
 
 
-# ## Print and plot the results
+# ## Results
+# 
+# The results are given as an Astropy table.
 
 # In[5]:
 
 
-sens.print_results()
+# Show the results table
+sensitivity_estimator.results_table
 
 
 # In[6]:
 
 
-sens.plot()
+# Save it to file (could use e.g. format of CSV or ECSV or FITS)
+# sensitivity_estimator.results_table.write('sensitivity.ecsv', format='ascii.ecsv')
 
 
 # In[7]:
 
 
-# This will give you the results as an Astropy table,
-# which you can save to FITS or CSV or use for further analysis
-sens.diff_sensi_table
+# Plot the sensitivity curve
+t = sensitivity_estimator.results_table
+
+is_s = t['criterion'] == 'significance'
+plt.plot(t['energy'][is_s], t['e2dnde'][is_s], 's-', color='red', label='significance')
+
+is_g = t['criterion'] == 'gamma'
+plt.plot(t['energy'][is_g], t['e2dnde'][is_g], '*-', color='blue', label='gamma')
+
+plt.loglog()
+plt.xlabel('Energy ({})'.format(t['energy'].unit))
+plt.ylabel('Sensitivity ({})'.format(t['e2dnde'].unit))
+plt.legend();
 
 
 # ## Exercises

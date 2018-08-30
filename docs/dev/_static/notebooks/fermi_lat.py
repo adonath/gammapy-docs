@@ -95,7 +95,8 @@ print(events.time[-1].iso)
 # In[9]:
 
 
-events.energy.info('stats')
+energy = events.energy
+energy.info('stats')
 
 
 # As a short analysis example we will count the number of events above a certain minimum energy: 
@@ -435,9 +436,6 @@ model = SkyModel(
         reference='100 GeV',
     ),
 )
-model.parameters.set_parameter_errors({
-    'amplitude': '1e-12 cm-2 s-1 TeV-1',
-})
 fit = MapFit(
     model=model,
     counts=counts,

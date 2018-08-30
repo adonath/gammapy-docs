@@ -60,7 +60,7 @@ axis = MapAxis.from_edges(
     np.logspace(-1., 1., 10), unit='TeV', name='energy', interp='log',
 )
 geom = WcsGeom.create(
-    skydir=(0, 0), binsz=0.02, width=(15, 10),
+    skydir=(0, 0), binsz=0.02, width=(10, 8),
     coordsys='GAL', proj='CAR',
     axes=[axis],
 )
@@ -105,15 +105,7 @@ residual.smooth(5).plot(stretch='sqrt');
 # In[11]:
 
 
-obs_list = data_store.obs_list(obs_ids)
-src_pos = SkyCoord(0, 0, unit='deg', frame='galactic')
-
-table_psf = obs_list.make_mean_psf(src_pos)
-psf_kernel = PSFKernel.from_table_psf(
-    table_psf,
-    maps['exposure'].geom,
-    max_radius='0.3 deg',
-)
+get_ipython().run_cell_magic('time', '', "obs_list = data_store.obs_list(obs_ids)\nsrc_pos = SkyCoord(0, 0, unit='deg', frame='galactic')\n\ntable_psf = obs_list.make_mean_psf(src_pos)\npsf_kernel = PSFKernel.from_table_psf(\n    table_psf,\n    maps['exposure'].geom,\n    max_radius='0.3 deg',\n)")
 
 
 # ## Compute energy dispersion
@@ -121,9 +113,7 @@ psf_kernel = PSFKernel.from_table_psf(
 # In[12]:
 
 
-energy_axis = geom.get_axis_by_name('energy')
-energy = energy_axis.edges * energy_axis.unit
-edisp = obs_list.make_mean_edisp(position=src_pos, e_true=energy, e_reco=energy)
+get_ipython().run_cell_magic('time', '', "energy_axis = geom.get_axis_by_name('energy')\nenergy = energy_axis.edges * energy_axis.unit\nedisp = obs_list.make_mean_edisp(position=src_pos, e_true=energy, e_reco=energy)")
 
 
 # ## Save maps
@@ -190,7 +180,7 @@ mask = Map.from_geom(cmaps['counts'].geom)
 region = CircleSkyRegion(center=src_pos, radius=0.6 * u.deg)
 mask.data = mask.geom.region_mask([region])
 
-mask.get_image_by_idx((0,)).plot()
+mask.get_image_by_idx((0,)).plot();
 
 
 # In addition we also exclude the range below 0.3 TeV for the fit:

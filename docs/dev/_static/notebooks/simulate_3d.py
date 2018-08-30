@@ -24,7 +24,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
-from gammapy.utils.random import get_random_state
 from gammapy.irf import EffectiveAreaTable2D, EnergyDispersion2D, EnergyDependentMultiGaussPSF, Background3D
 from gammapy.maps import WcsGeom, MapAxis, WcsNDMap, Map
 from gammapy.spectrum.models import PowerLaw
@@ -60,13 +59,6 @@ irfs = get_irfs()
 # In[5]:
 
 
-import os
-os.environ['GAMMAPY_EXTRA']
-
-
-# In[6]:
-
-
 # Define sky model to simulate the data
 spatial_model = SkyGaussian(
     lon_0='0.2 deg',
@@ -85,12 +77,12 @@ sky_model = SkyModel(
 print(sky_model)
 
 
-# In[7]:
+# In[6]:
 
 
 # Define map geometry
 axis = MapAxis.from_edges(
-    np.logspace(-1., 1., 10), unit='TeV', name='energy',
+    np.logspace(-1., 1., 10), unit='TeV', name='energy', interp='log',
 )
 geom = WcsGeom.create(
     skydir=(0, 0), binsz=0.02, width=(5, 4),
@@ -98,7 +90,7 @@ geom = WcsGeom.create(
 )
 
 
-# In[8]:
+# In[7]:
 
 
 # Define some observation parameters
@@ -110,7 +102,7 @@ offset_max = 2 * u.deg
 offset = Angle('2 deg')
 
 
-# In[9]:
+# In[8]:
 
 
 exposure = make_map_exposure_true_energy(
@@ -122,7 +114,7 @@ exposure = make_map_exposure_true_energy(
 exposure.slice_by_idx({'energy': 3}).plot(add_cbar=True);
 
 
-# In[10]:
+# In[9]:
 
 
 background = make_map_background_irf(
@@ -134,7 +126,7 @@ background = make_map_background_irf(
 background.slice_by_idx({'energy': 3}).plot(add_cbar=True);
 
 
-# In[11]:
+# In[10]:
 
 
 psf = irfs['psf'].to_energy_dependent_table_psf(theta=offset)
@@ -146,20 +138,20 @@ psf_kernel = PSFKernel.from_table_psf(
 psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch='log');
 
 
-# In[12]:
+# In[11]:
 
 
 edisp = irfs['edisp'].to_energy_dispersion(offset=offset)
 edisp.plot_matrix();
 
 
-# In[13]:
+# In[12]:
 
 
 get_ipython().run_cell_magic('time', '', '# The idea is that we have this class that can compute `npred`\n# maps, i.e. "predicted counts per pixel" given the model and\n# the observation infos: exposure, background, PSF and EDISP\nevaluator = MapEvaluator(\n    model=sky_model, \n    exposure=exposure,\n    background=background,\n    psf=psf_kernel,\n)')
 
 
-# In[14]:
+# In[13]:
 
 
 # Accessing and saving a lot of the following maps is for debugging.
@@ -170,32 +162,25 @@ npred = evaluator.compute_npred()
 npred_map = WcsNDMap(geom, npred)
 
 
-# In[15]:
+# In[14]:
 
 
 npred_map.sum_over_axes().plot(add_cbar=True);
 
 
-# In[16]:
-
-
-# The npred map contains negative values, this is probably a bug in the PSFKernel application
-npred[npred<0] = 0
-
-
-# In[17]:
+# In[15]:
 
 
 # This one line is the core of how to simulate data when
 # using binned simulation / analysis: you Poisson fluctuate
 # npred to obtain simulated observed counts.
 # Compute counts as a Poisson fluctuation
-rng = get_random_state(42)
+rng = np.random.RandomState(seed=42)
 counts = rng.poisson(npred)
 counts_map = WcsNDMap(geom, counts)
 
 
-# In[18]:
+# In[16]:
 
 
 counts_map.sum_over_axes().plot();
@@ -206,7 +191,7 @@ counts_map.sum_over_axes().plot();
 # Now let's analyse the simulated data.
 # Here we just fit it again with the same model we had before, but you could do any analysis you like here, e.g. fit a different model, or do a region-based analysis, ...
 
-# In[19]:
+# In[17]:
 
 
 # Define sky model to fit the data
@@ -224,34 +209,23 @@ model = SkyModel(
     spatial_model=spatial_model,
     spectral_model=spectral_model,
 )
-
-model.parameters.set_parameter_errors({
-    'lon_0': '0.1 deg',
-    'lat_0': '0.1 deg',
-    'sigma': '0.1 deg',
-    'index': '0.1',
-    'amplitude': '1e-12 cm-2 s-1 TeV-1',
-})
-
-# model.parameters['sigma'].min = 0
-print(model.parameters['sigma'])
 print(model)
 
 
-# In[20]:
+# In[18]:
 
 
 get_ipython().run_cell_magic('time', '', 'fit = MapFit(\n    model=model,\n    counts=counts_map,\n    exposure=exposure,\n    background=background,\n    psf=psf_kernel,\n)\n\nfit.fit()')
 
 
-# In[21]:
+# In[19]:
 
 
 print('True values:\n\n{}\n\n'.format(sky_model.parameters))
 print('Fit result:\n\n{}\n\n'.format(model.parameters))
 
 
-# In[22]:
+# In[20]:
 
 
 # TODO: show e.g. how to make a residual image
@@ -268,7 +242,7 @@ print('Fit result:\n\n{}\n\n'.format(model.parameters))
 # access to e.g. the covariance matrix, or can check a likelihood profile, or can run ``Minuit.minos()``
 # to compute asymmetric errors or ...
 
-# In[23]:
+# In[21]:
 
 
 # Check correlation between model parameters
@@ -278,7 +252,7 @@ print('Fit result:\n\n{}\n\n'.format(model.parameters))
 fit.minuit.print_matrix()
 
 
-# In[24]:
+# In[22]:
 
 
 # You can use likelihood profiles to check if your model is

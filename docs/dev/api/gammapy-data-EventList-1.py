@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
-from gammapy.data import DataStore
+from gammapy.data import EventList
 
-ds = DataStore.from_dir('$GAMMAPY_EXTRA/datasets/hess-crab4-hd-hap-prod2')
-events = ds.obs(obs_id=23523).events
+events = EventList.read('$GAMMAPY_EXTRA/datasets/hess-dl3-dr1//data/hess_dl3_dr1_obs_id_023523.fits.gz')
 events.plot_time()
 plt.show()
