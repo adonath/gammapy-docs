@@ -18,9 +18,9 @@
 # 
 # We will work with the following functions and classes:
 # 
-# * [photutils](http://photutils.readthedocs.io/en/latest/) and specifically the [photutils.detection.find_peaks](http://photutils.readthedocs.io/en/latest/api/photutils.detection.find_peaks.html) function.
 # * [gammapy.maps.WcsNDMap](http://docs.gammapy.org/dev/api/gammapy.maps.WcsNDMap.html)
 # * [gammapy.detect.TSMapEstimator](http://docs.gammapy.org/dev/api/gammapy.detect.TSMapEstimator.html)
+# * [gammapy.detect.find_peaks](http://docs.gammapy.org/dev/api/gammapy.detect.find_peaks.html)
 
 # ## Setup
 # 
@@ -40,27 +40,27 @@ import numpy as np
 from astropy import units as u
 from astropy.convolution import Gaussian2DKernel
 from astropy.coordinates import SkyCoord
-from photutils.detection import find_peaks
 from gammapy.maps import Map
-from gammapy.detect import TSMapEstimator
+from gammapy.detect import TSMapEstimator, find_peaks
 from gammapy.catalog import source_catalogs
 
 
 # ## Compute TS image
 
-# In[ ]:
+# In[3]:
 
 
 # Load data from files
 filename = '../datasets/fermi_survey/all.fits.gz'
+opts = {'position': SkyCoord(0, 0, unit='deg', frame='galactic'), 'width': (20, 8)}
 maps = {
-    'counts': Map.read(filename, hdu='COUNTS'),
-    'background': Map.read(filename, hdu='BACKGROUND'),
-    'exposure': Map.read(filename, hdu='EXPOSURE'),
+    'counts': Map.read(filename, hdu='COUNTS').cutout(**opts),
+    'background': Map.read(filename, hdu='BACKGROUND').cutout(**opts),
+    'exposure': Map.read(filename, hdu='EXPOSURE').cutout(**opts),
 }
 
 
-# In[ ]:
+# In[4]:
 
 
 get_ipython().run_cell_magic('time', '', "# Compute a source kernel (source template) in oversample mode,\n# PSF is not taken into account\nkernel = Gaussian2DKernel(2.5, mode='oversample')\nestimator = TSMapEstimator()\nimages = estimator.run(maps, kernel)")
@@ -68,55 +68,50 @@ get_ipython().run_cell_magic('time', '', "# Compute a source kernel (source temp
 
 # ## Plot images
 
-# In[ ]:
+# In[5]:
 
 
-plt.figure(figsize=(18, 4))
-images['sqrt_ts'].plot(vmin=0, vmax=10);
+plt.figure(figsize=(15, 5))
+images['sqrt_ts'].plot();
 
 
-# In[ ]:
+# In[6]:
 
 
-plt.figure(figsize=(18, 4))
-images['flux'].plot(vmin=0, vmax=1e-9, stretch='sqrt');
+plt.figure(figsize=(15, 5))
+images['flux'].plot(add_cbar=True);
 
 
-# In[ ]:
+# In[7]:
 
 
-plt.figure(figsize=(18, 4))
-images['niter'].plot(vmin=0, vmax=20);
+plt.figure(figsize=(15, 5))
+images['niter'].plot(add_cbar=True);
 
 
 # ## Source catalog
 # 
 # Let's run a peak finder on the `sqrt_ts` image to get a list of sources (positions and peak `sqrt_ts` values).
 
-# In[ ]:
+# In[8]:
 
 
-sources = find_peaks(
-    data=np.nan_to_num(images['sqrt_ts'].data),
-    threshold=8,
-    wcs=images['sqrt_ts'].geom.wcs,
-)
+sources = find_peaks(images['sqrt_ts'], threshold=8)
 sources
 
 
-# In[ ]:
+# In[9]:
 
 
 # Plot sources on top of significance sky image
-images['sqrt_ts'].cutout(
-    position=SkyCoord(0, 0, unit='deg', frame='galactic'),
-    width=(8*u.deg, 20*u.deg), mode='trim',
-).plot()
+plt.figure(figsize=(15, 5))
+
+images['sqrt_ts'].plot()
 
 plt.gca().scatter(
-    sources['icrs_ra_peak'], sources['icrs_dec_peak'],
+    sources['ra'], sources['dec'],
     transform=plt.gca().get_transform('icrs'),
-    color='none', edgecolor='white', marker='o', s=600, lw=1.5,
+    color='none', edgecolor='black', marker='o', s=600, lw=1.5,
 );
 
 
@@ -124,7 +119,7 @@ plt.gca().scatter(
 # 
 # * TODO: show cutout for a few sources and some aperture photometry measurements (e.g. energy distribution, significance, flux)
 
-# In[ ]:
+# In[10]:
 
 
 # TODO
@@ -134,7 +129,7 @@ plt.gca().scatter(
 # 
 # TODO
 
-# In[ ]:
+# In[11]:
 
 
 fermi_2fhl = source_catalogs['2fhl']
@@ -145,7 +140,7 @@ fermi_2fhl.table[:5][['Source_Name', 'GLON', 'GLAT']]
 # 
 # TODO: put one or more exercises
 
-# In[ ]:
+# In[12]:
 
 
 # Start exercises here!

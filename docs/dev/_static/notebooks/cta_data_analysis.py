@@ -38,7 +38,6 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 from astropy.convolution import Gaussian2DKernel
 from regions import CircleSkyRegion
-from photutils.detection import find_peaks
 from gammapy.utils.energy import EnergyBounds
 from gammapy.data import DataStore
 from gammapy.spectrum import (
@@ -52,7 +51,7 @@ from gammapy.spectrum import (
 from gammapy.maps import Map, MapAxis, WcsNDMap, WcsGeom
 from gammapy.cube import MapMaker
 from gammapy.background import ReflectedRegionsBackgroundEstimator
-from gammapy.detect import TSMapEstimator
+from gammapy.detect import TSMapEstimator, find_peaks
 
 
 # In[4]:
@@ -192,7 +191,7 @@ images['excess'].smooth(3).plot(vmax=2);
 
 # ## Source Detection
 # 
-# Use the class [TSImageEstimator](http://docs.gammapy.org/dev/api/gammapy.detect.compute_ts_image.html#gammapy.detect.TSImageEstimator.html) and [photutils.find_peaks](http://photutils.readthedocs.io/en/stable/api/photutils.find_peaks.html) to detect sources on the images:
+# Use the class [gammapy.detect.TSMapEstimator](http://docs.gammapy.org/dev/api/gammapy.detect.TSMapEstimator.html) and [gammapy.detect.find_peaks](http://docs.gammapy.org/dev/api/gammapy.detect.find_peaks.html) to detect sources on the images:
 
 # In[17]:
 
@@ -210,20 +209,14 @@ get_ipython().run_cell_magic('time', '', 'ts_image_estimator = TSMapEstimator()\
 # In[19]:
 
 
-get_ipython().run_cell_magic('time', '', "sources = find_peaks(\n    data=images_ts['sqrt_ts'].data,\n    threshold=8,\n    wcs=images_ts['sqrt_ts'].geom.wcs,\n)\nprint('Number of sources:', len(sources))")
+sources = find_peaks(images_ts['sqrt_ts'], threshold=8)
+sources
 
 
 # In[20]:
 
 
-# photutils changed the way to report the position
-# the following code makes it work in both old and new versions
-try:
-    # photutils 0.5 or newer
-    source_pos = sources['skycoord_peak']
-except KeyError:
-    # photutils 0.4 or older
-    source_pos = SkyCoord(sources['icrs_ra_peak'], sources['icrs_dec_peak'])
+source_pos = SkyCoord(sources['ra'], sources['dec'])
 source_pos
 
 

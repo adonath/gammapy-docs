@@ -1,317 +1,569 @@
 
 # coding: utf-8
 
-# # Basic introduction to working with maps
+# # Gammapy Maps
+# 
+# ![Gammapy Maps Illustration](images/gammapy_maps.png)
+# 
+# ## Introduction
+# The [gammapy.maps](http://docs.gammapy.org/dev/maps/index.html) submodule contains classes for representing **sky images** with an **arbitrary number of non-spatial dimensions** such as energy, time, event class or any possible user-defined dimension (illustrated in the image above). The main `Map` data structure features a **uniform API** for [WCS](https://fits.gsfc.nasa.gov/fits_wcs.html) as well as [HEALPix](https://en.wikipedia.org/wiki/HEALPix) based images. The API also generalizes simple image based operations such as smoothing, interpolation and reprojection to the arbitrary extra dimensions and makes working with (2 + N)-dimensional hypercubes **as easy as working with a simple 2D image**. Further information is also provided on the [gammpy.maps](http://docs.gammapy.org/dev/maps/index.html) docs page.
+# 
+# 
+# In the following introduction we will **learn all the basics** of working with WCS based maps. HEALPix based maps will be covered in a future tutorial. We will cover the following topics in order:
+# 
+# 1. [Creating WCS Maps](#1.-Creating-WCS-Maps)
+# 1. [Accessing and Modifying Data](#2.-Accessing-and-Modifying-Data)
+# 1. [Reading and Writing](#3.-Reading-and-Writing)
+# 1. [Visualizing and Plotting](#4.-Visualizing-and-Plotting)
+# 1. [Reprojecting, Interpolating and Miscellaneous](#5.-Reprojecting,-Interpolating-and-Miscellaneous)
+# 
+# 
+# Make sure you have worked through he [First Steps with Gammapy](fits_steps.ipynb) and [Astropy Introduction](astropy_introduction.ipynb) notebooks, because a solid knowledge about working with `SkyCoords` and `Quantity` objects as well as [Numpy](http://www.numpy.org/) is required for this tutorial.
+# 
+# **Note:** This notebook is rather lengthy, but getting to know the `Map` data structure in detail is **essential for working with Gammapy** and will allow you to fulfill **complex analysis tasks with very few and simple code** in future!
 
-# # Introduction
-# 
-# This tutorial gives a basic introduction to working with gammapy maps, how to fill and visualise data. `gammapy.maps` contains classes to deal with representing pixelized data structures with at least two spatial dimensions representing coordinates on a sphere (e.g. an image in celestial coordinates). This can deal with images (2D), cubes (3D) and hyercubes (3+D).
-# 
-# More options to be added as the structure is developed; please see http://docs.gammapy.org/dev/maps/index.html for the latest developments
-
-# # Setup
-# 
-# Import the required packages
+# ## 0. Setup
+# --------------
 
 # In[1]:
 
 
+get_ipython().run_line_magic('matplotlib', 'inline')
 import numpy as np
 import matplotlib.pyplot as plt
-from gammapy.data import DataStore
-from astropy.coordinates import SkyCoord
-from gammapy.maps import Map, MapAxis, WcsGeom, WcsNDMap, MapCoord
-import astropy.units as u
-from gammapy.cube import fill_map_counts, MapMaker
 
-
-# # Data selection
-# 
-# We will use one Sgr A* run from the gammapy extra dataset.
 
 # In[2]:
 
 
-#source_pos = SkyCoord.from_name("Sgr A*")
-source_pos = SkyCoord(266.41681663, -29.00782497, unit="deg")
-ds=DataStore.from_dir("$GAMMAPY_EXTRA/datasets/cta-1dc/index/gps/")
-obs=ds.obs(110380)
-evts=obs.events
+from astropy import units as u
+from astropy.io import fits
+from astropy.table import Table
+from astropy.coordinates import SkyCoord
+from gammapy.maps import Map, MapAxis, WcsGeom
 
 
-# The available columns in the event file can be easily seen. The axes of the maps should be chosen from among these names.
+# ## 1. Creating WCS Maps
+# ---------------------------------
+# 
+# ### 1.1 Using Factory Methods
+# 
+# Maps are most easily created using the `Map.create()` factory method:
 
 # In[3]:
 
 
-evts.table.colnames
+m_allsky = Map.create()
 
 
-# # Instantiating the Map geometry
-
-# The most common use case is likely to be 3D maps, maps with 2 spatial and one energy dimension. However, there can be many other axes as well, eg: time, phase, telescope type, etc. 
-# 
-# Here, we will create one 3D map, and, just for example, one 4D map (with energy and MC_ID as the non-spatial dimension)
-# 
-# The MapAxis class is used to to create the map axis.
+# Calling `Map.create()` without any further arguments creates by default an allsky WCS map using a CAR projection, ICRS coordinates and a pixel size of 1 deg. This can be easily checked by printing the `.geom` attribute of the map:
 
 # In[4]:
 
 
-binsz = 0.05 
-energy_axis = MapAxis.from_bounds(0.5,50.0,10,name='energy',unit='TeV',interp='log')
-mc_axis=MapAxis.from_edges([0,500,1000,1750], interp="lin", name='MC_ID')
+print(m_allsky.geom)
 
 
-# A variable bin size can also be put on for different axis, in that case, binsize should be an array of the same dimension, eg:
+# The `.geom` attribute is a `MapGeom` object, that defines the basic geometry of the map, such as size of the pixels, width and height of the image, coordinate system etc., but we will learn more about this object later.
+# 
+# Besides the `.geom` attribute the map has also a `.data` attribute, which is just a plain `numpy.ndarray` and stores the data associated with this map:
 
 # In[5]:
 
 
-binsz_var = np.sqrt((3.0*(energy_axis.center/100.)**-0.8)**2 + 0.1**2)
+m_allsky.data
 
 
-# The WcsGeom class will create the required wcs geometry, a geom object
+# By default maps are filled with zeros.
+# 
+# Here is a second example that creates a WCS map centered on the Galactic center and now uses Galactic coordinates:
 
 # In[6]:
 
 
-geom3d = WcsGeom.create(binsz=binsz, skydir=source_pos, width=15.0,
-                       axes=[energy_axis])
-geom4d = WcsGeom.create(binsz=binsz, skydir=source_pos, width=(20.0, 15), axes=[energy_axis, mc_axis])
+skydir = SkyCoord(0, 0, frame='galactic', unit='deg')
+m_gc = Map.create(binsz=0.02, width=(10, 5), skydir=skydir, coordsys='GAL', proj='TAN')
+print(m_gc.geom)
 
 
-# The axes details can be accessed from within the geom object, and the map coordinates for each pixel using the get_coord()
+# In addition we have defined a TAN projection, a pixel size of `0.02` deg and a width of the map of `10 deg x 5 deg`. The `width` argument also takes scalar value instead of a tuple, which is interpreted as both the width and height of the map, so that a quadratic map is created.
+
+# ### 1.2 Creating from a Map Geometry
+# 
+# As we have seen in the first examples, the `Map` object couples the data (stored as a `numpy.ndarray`) with a `MapGeom` object. The `MapGeom` object can be seen as a generalization of an `astropy.wcs.WCS` object, providing the information on how the data maps to physical coordinate systems. In some cases e.g. when creating many maps with the same WCS geometry it can be advantegeous to first create the map geometry independent of the map object itsself: 
 
 # In[7]:
 
 
-[_.name for _ in geom4d.axes]
+wcs_geom = WcsGeom.create(binsz=0.02, width=(10, 5), skydir=(0, 0), coordsys='GAL')
 
+
+# And then create the map objects from the `wcs_geom` geometry specification:
 
 # In[8]:
 
 
-map4d_coord=geom4d.get_coord()
+maps = {}
 
+for name in ['counts', 'background']:
+    maps[name] = Map.from_geom(wcs_geom)
+
+
+# The `MapGeom` object also has a few helpful methods. E.g. we can check whether a given position on the sky is contained in the map geometry:
 
 # In[9]:
 
 
-lat_cord=map4d_coord.lat
+# define the position of the Galactic center and anti-center
+positions = SkyCoord([0, 180], [0, 0], frame='galactic', unit='deg')
+wcs_geom.contains(positions)
 
 
-# # Filling the Map 
-
-# Now, we create a map object and fill it the events
+# Or get the image center of the map:
 
 # In[10]:
 
 
-map3d = WcsNDMap.from_geom(geom=geom3d,unit='')
-map4d = WcsNDMap.from_geom(geom=geom4d,unit='')
+wcs_geom.center_skydir
 
+
+# Or we can also retrieve the solid angle per pixel of the map:
 
 # In[11]:
 
 
-fill_map_counts(map3d,evts)
-fill_map_counts(map4d,evts)
+wcs_geom.solid_angle()
 
 
-# # Exploring maps
-
-# A `repr` of the maps can be easily obtained
+# ### 1.3 Adding Non-Spatial Axes
+# 
+# In many analysis scenarios we would like to add extra dimension to the maps to study e.g. energy or time dependency of the data. Those non-spatial dimensions are handled with the `MapAxis` object. Let us first define an energy axis, with 4 bins:
 
 # In[12]:
 
 
-map4d.geom
+energy_axis = MapAxis.from_bounds(1, 100, nbin=4, unit='TeV', name='energy', interp='log')
+print(energy_axis)
 
 
-# For a given source pos, the pixel position in the map can be obtained using 
-# coord_to_pix(). The geom.to_image() will give create a 2D geometry by dropping all non-spatial dimensions of this
-# geometry.
+# Where `interp='log'` specifies that a logarithmic spacing is used between the bins, equivalent to `np.logspace(0, 2, 4)`. This `MapAxis` object we can now pass to `Map.create()` using the `axes=` argument:
 
 # In[13]:
 
 
-pix_lon,pix_lat=map4d.geom.to_image().coord_to_pix(source_pos)
+m_cube = Map.create(binsz=0.02, width=(10, 5), coordsys='GAL', axes=[energy_axis])
+print(m_cube.geom)
 
 
-# The map has (N+2)D dimensions, where the last 2 dimensions are the spatial ones. The shape of the the rest N dimensions in the geom object can be seen using the shape parameter
+# Now we see that besides `lon` and `lat` the map has an additional axes named `energy` with 4 bins. The total dimension of the map is now `ndim=3`.
+# 
+# We can also add further axes by passing a list of `MapAxis` objects. To demonstrate this we create a time axis with
+# linearly spaced bins and pass both axes to `Map.create()`:
 
 # In[14]:
 
 
-geom4d.shape
+time_axis = MapAxis.from_bounds(0, 24, nbin=24, unit='hour', name='time', interp='lin')
+
+m_4d = Map.create(binsz=0.02, width=(10, 5), coordsys='GAL', axes=[energy_axis, time_axis])
+print(m_4d.geom)
 
 
-# In the map object, the non spatial dimensions are transposed
+# The `MapAxis` object internally stores the coordinates or "position values" associated with every map axis bin or "node". We distinguish between two node types: `edges` and `center`. The node type `edges`(which is also the default) specifies that the data associated with this axis is integrated between the edges of the bin (e.g. counts data). The node type `center` specifies that the data is given at the center of the bin (e.g. exposure or differential fluxes).
+# 
+# The edges of the bins can be checked with `.edges` attribute:
 
 # In[15]:
 
 
-map4d.data.shape
+energy_axis.edges
 
 
-# This is because the data members have a column major ordering following the FITS convention (making it easier to read and write files using astropy.io.fits. On the other hand, the accessor methods have a row major ordering according to the convention is astrophy.wcs. Thus, the map geometry has the last two axes as the spatial ones in (lon, lat) whereas the map has the spatial axes ordered as (lat, lon). Note that the spatial axes are always the last 2 axes.
+# The numbers are given in the units we specified above, which can be checked again with:
 
 # In[16]:
 
 
-map4d.geom
+energy_axis.unit
 
+
+# The centers of the axis bins can be checked with the `.center` attribute:
 
 # In[17]:
 
 
-map4d
+energy_axis.center
 
 
-# Each spatial slice can be extracted in a variety of ways
-# (i) by specifying the slice indices - get_image_by_idx()
-# (ii) by specifying the values at which the slice is required - get_image_by_coord
-# (iii) by specifying the pixels - get_image_by_pix()
+# ## 2. Accessing and Modifying Data
+# ----------------------------------------------
+# 
+# ### 2.1 Accessing Map Data Values
+# 
+# All map objects have a set of accessor methods, which can be used to access or update the contents of the map irrespective of its underlying representation. Those accessor methods accept as their first argument a coordinate `tuple` containing scalars, `list`, or `numpy.ndarray` with one tuple element for each dimension. Some methods additionally accept a `dict` or `MapCoord` argument, of which both allow to assign coordinates by axis name.
+# 
+# Let us first begin with the `.get_by_idx()` method, that accepts a tuple of indices. The order of the indices corresponds to the axis order of the map: 
 
 # In[18]:
 
 
-map4d_slice = map4d.get_image_by_idx([0,0])
-map4d_slice = map4d.get_image_by_coord({'energy': '500 GeV', 'MC_ID': '2'})
+m_gc.get_by_idx((50, 30))
 
 
-# The images can then be plotted
+# **Important:** Gammapy uses a reversed index order in the map API with the longitude axes first. To achieve the same by directly indexing into the numpy array we have to call:  
 
 # In[19]:
 
 
-map4d_slice.plot()
+m_gc.data[([30], [50])]
 
 
-# This map does not really convey a lot, so we will first make a spatial cutout on our region of interest, and then smooth before plotting for a better visualisation 
+# To check the order of the axes you can always print the `.geom` attribute:
 
 # In[20]:
 
 
-map4d_cutout = map4d.cutout(position=source_pos, width=8.0*u.deg)
+print(m_gc.geom)
 
+
+# To access values directly by sky coordinates we can use the `.get_by_coord()` method. This time we pass in a `dict`, specifying the axes names corresponding to the given coordinates:
 
 # In[21]:
 
 
-map4d_cutout
+m_gc.get_by_coord({'lon': [0, 180], 'lat': [0, 0]})
 
+
+# The units of the coordinates are assumed to be in degrees in the coordinate system used by the map. If the coordinates do not correspond to the exact pixel center, the value of the nearest pixel center will be returned. For positions outside the map geometry `np.nan` is returned.
+# 
+# The coordinate or idx arrays follow normal [Numpy broadcasting rules](https://jakevdp.github.io/PythonDataScienceHandbook/02.05-computation-on-arrays-broadcasting.html). So the following works as expected:
+# 
+# 
 
 # In[22]:
 
 
-map4d_slice=map4d_cutout.get_image_by_coord({'energy': '500 GeV', 'MC_ID': '2'})
-map4d_slice.smooth(radius=0.2*u.deg,kernel="gauss").plot(add_cbar=True)
+lons = np.linspace(-4, 4, 10) 
+m_gc.get_by_coord({'lon': lons, 'lat': 0})
 
 
-# # Reprojecting maps onto a different geometry
-
-# It is often useful to reproject the maps onto different geometries. Here, we will reproject our map onto a Galactic Coordinate system
+# Or as an even more advanced example, we can provide `lats` as column vector and broadcasting to a 2D result array will be applied:
 
 # In[23]:
 
 
-geom_rep = WcsGeom.create(binsz=binsz, skydir=source_pos,coordsys="GAL", width=15.0,axes=[energy_axis, mc_axis])
-map_rep = map4d.reproject(geom_rep)
+lons = np.linspace(-4, 4, 8)
+lats = np.linspace(-4, 4, 8).reshape(-1, 1)
+m_gc.get_by_coord({'lon': lons, 'lat': lats})
 
+
+# ### 2.2 Modifying Map Data Values
+# 
+# To modify and set map data values the `Map` object features as well a `.set_by_idx()` method: 
+# 
 
 # In[24]:
 
 
-fig = plt.figure(figsize=(30,20))
-ax1=fig.add_subplot(121,projection=geom4d.wcs)
-map4d.get_image_by_coord({'energy': '500 GeV', 'MC_ID': '2'}).smooth(radius=0.2*u.deg,kernel="gauss").plot(ax=ax1)
+m_cube.set_by_idx(idx=(10, 20, 3), vals=42)
 
-ax2=fig.add_subplot(122,projection=geom_rep.wcs)
-map_rep.get_image_by_coord({'energy': '500 GeV', 'MC_ID': '2'}).smooth(radius=0.2*u.deg,kernel="gauss").plot(ax=ax2)
-
-
-# # Reading images from fits files
-
-# It is very simple to read fits files from already prepared data sets as well.
-# As an example, we will read a FITS file from a prepared Fermi-LAT 2FHL dataset:
 
 # In[25]:
 
 
-vela_2fhl = WcsNDMap.read("$GAMMAPY_EXTRA/datasets/fermi_2fhl/fermi_2fhl_vela.fits.gz", hdu='COUNTS')
+m_cube.get_by_idx((10, 20, 3))
 
 
-# We can see the geometry and the shape of the map
+# Of course there is also a `.set_by_coord()` method, which allows to set map data values in physical coordinates. 
 
 # In[26]:
 
 
-vela_2fhl
+m_cube.set_by_coord({'lon': 0, 'lat': 0, 'energy': 2 * u.TeV}, vals=42)
 
+
+# Again the `lon` and `lat` values are assumed to be given in degrees in the coordinate system used by the map. For the energy axis, the unit is the one specified on the axis (use `m_cube.geom.axes[0].unit` to check if needed...)
+# 
+# All `.xxx_by_coord()` methods accept `SkyCoord` objects as well. In this case we have to use the `skycoord` keyword instead of `lon` and `lat`:
 
 # In[27]:
 
 
-vela_2fhl.geom
+skycoords = SkyCoord([1.2, 3.4], [-0.5, 1.1], frame='galactic', unit='deg')
+m_cube.set_by_coord({'skycoord': skycoords, 'energy': 2 * u.TeV}, vals=42)
 
 
-# Since this is a 2D map in the first place, we can make some nice plots (no slicing required)
+# ### 2.3 Indexing and Slicing Sub-Maps
+# 
+# When you have worked with Numpy arrays in the past you are probably familiar with the concept of indexing and slicing
+# into data arrays. To support slicing of non-spatial axes of `Map` objects, the `Map` object has a `.slice_by_idx()` method, which allows to extract sub-maps from a larger map.
+# 
+# The following example demonstrates how to get the map at the energy bin number 3:  
 
 # In[28]:
 
 
-vela_2fhl.smooth(kernel='gauss', radius=0.5 * u.deg).plot()
+m_sub = m_cube.slice_by_idx({'energy': 3})
+print(m_sub)
 
 
-# # Plotting contours
-
-# Lets try to plot some contours now! We will read a second image containing WMAP data from the same region, and overlay WMAP contours on top of the Fermi image. 
+# Note that the returned object is again a `Map` with updated axes information. In this case, because we extracted only a single image, the energy axes is dropped from the map.
+# 
+# To extract a sub-cube with a sliced energy axes we can use a normal `slice()` object:
 
 # In[29]:
 
 
-vela_wmap = WcsNDMap.read("$GAMMAPY_EXTRA/datasets/images/Vela_region_WMAP_K.fits")
-vela_wmap.geom
+m_sub = m_cube.slice_by_idx({'energy': slice(1, 3)})
+print(m_sub)
 
 
-# As you can see, these two images have a different geometry. This is where reprojection comes in handy
+# Note that the returned object is also a `Map` object, but this time with updated energy axis specification.
+# 
+# Slicing of multiple dimensions is supported by adding further entries to the dict passed to `.slice_by_idx()`
 
 # In[30]:
 
 
-vela_wmap_rep = vela_wmap.reproject(vela_2fhl.geom)
+m_sub = m_4d.slice_by_idx({'energy': slice(1, 3), 'time': slice(4, 10)})
+print(m_sub)
 
+
+# For convenience there is also a `.get_image_by_coord()` method which allows to access image planes at given non-spatial physical coordinates. This method also supports `Quantity` objects:
 
 # In[31]:
 
 
-vela_2fhl
+image = m_4d.get_image_by_coord({'energy': 4 * u.TeV, 'time': 5 * u.h})
+print(image.geom)
 
+
+# ## 3. Reading and Writing
+# ---------------------------------
+# 
+# Gammapy `Map` objects are serialized using the Flexible Image Transport Format (FITS). Depending on the pixelisation scheme (HEALPix or WCS) and presence of non-spatial dimensions the actual convention to write the FITS file is different.
+# By default Gammpy uses a generic convention named `gadf`, which will support WCS and HEALPix formats as well as an arbitrary number of non-spatial axes. The convention is documented in detail on the [Gamma Astro Data Formats](https://gamma-astro-data-formats.readthedocs.io/en/latest/skymaps/index.html) page.
+# 
+# Other conventions required by specific software (e.g. the Fermi Science Tools) are supported as well. At the moment those are the following
+# * `fgst-ccube`: Fermi counts cube format.
+# * `fgst-ltcube`: Fermi livetime cube format.
+# * `fgst-bexpcube`: Fermi exposure cube format
+# * `fgst-template`: Fermi Galactic diffuse and source template format. 
+# * `fgst-srcmap` and `fgst-srcmap-sparse`: Fermi source map and sparse source map format.
+# 
+# The conventions listed above only support an additional energy axis. 
+# 
+# ### 3.1 Reading Maps
+# 
+# Reading FITS files is mainly exposed via the `Map.read()` method.Let us take a look at a first example: 
 
 # In[32]:
 
 
-vela_pos = vela_2fhl.geom.center_skydir
+filename = '$GAMMAPY_EXTRA/datasets/fermi_2fhl/fermi_2fhl_gc.fits.gz'
+m_2fhl_gc = Map.read(filename)
+print(m_2fhl_gc)
 
+
+# By default `Map.read()` will try to find the first valid data hdu in the filename and read the data from there. If mutliple HDUs are present in the FITS file, the desired one can be chosen with the additional `hdu=` argument:
 
 # In[33]:
 
 
-vela_cutout = vela_2fhl.cutout(vela_pos, width=9.0 * u.deg)
-vela_rep_cut = vela_wmap_rep.cutout(vela_pos, width=9.0 * u.deg)
-fig, ax, _ = vela_cutout.smooth(kernel='gauss', radius=0.5 * u.deg).plot()
-ax.contour(vela_rep_cut.data, cmap='Blues')
+m_2fhl_gc = Map.read(filename, hdu='background')
+print(m_2fhl_gc)
 
 
-# # What next?
+# In rare cases e.g. when the FITS file is not valid or meta data is missing from the header it can be necessary to modify the header of a certain HDU before creating the `Map` object. In this case we can use `astropy.io.fits` directly to read the FITS file:
 
-# The tutorial `simulate_3d` shows how to simulate and fit maps simultaneously with spatial and spectral models
+# In[34]:
 
-# For more details on maps, eg: working with HEALPix maps, visit the documentation at http://docs.gammapy.org/dev/maps/index.html
 
-# # Exercises
+hdulist = fits.open('../datasets/fermi_survey/all.fits.gz')
+hdulist.info()
 
-# 1. Play around with the 3D map we created - take a cutout, reproject onto different geometries, smooth and plot.
-# 2. Make a map with a variable binsize
+
+# And then modify the header keyword and use `Map.from_hdulist()` to create the `Map` object after:
+
+# In[35]:
+
+
+hdulist['exposure'].header['BUNIT'] = 'cm2 s'
+Map.from_hdulist(hdulist=hdulist, hdu='exposure')
+
+
+# ### 3.2 Writing Maps
+# 
+# Writing FITS files is mainoy exposure via the `Map.write()` method. Here is a first example:
+
+# In[36]:
+
+
+m_cube.write('example_cube.fits', overwrite=True)
+
+
+# By default Gammapy does not overwrite files. In this example we set `overwrite=True` in case the cell gets executed multiple times. Now we can read back the cube from disk using `Map.read()`:
+
+# In[37]:
+
+
+m_cube = Map.read('example_cube.fits')
+print(m_cube)
+
+
+# We can also choose a different FITS convention to write the example cube in a format compatible to the Fermi Galactic diffuse background model:
+
+# In[38]:
+
+
+m_cube.write('example_cube_fgst.fits', conv='fgst-template', overwrite=True)
+
+
+# To understand a little bit better the generic `gadf` convention we use `Map.to_hdulist()` to generate a list of FITS HDUs first:   
+
+# In[39]:
+
+
+hdulist = m_4d.to_hdulist(conv='gadf')
+hdulist.info()
+
+
+# As we can see the `HDUList` object contains to HDUs. The first one named `PRIMARY` contains the data array with shape corresponding to our data and the WCS information stored in the header:
+
+# In[40]:
+
+
+hdulist['PRIMARY'].header
+
+
+# The second HDU is a `BinTableHDU` named `PRIMARY_BANDS` contains the information on the non-spatial axes such as name, order, unit, min, max and center values of the axis bins. We use an `astropy.table.Table` to show the information:
+
+# In[41]:
+
+
+Table.read(hdulist["PRIMARY_BANDS"])
+
+
+# ## 4. Visualizing and Plotting
+# -------------------------------------
+# 
+# ### 4.1 Plotting 
+# 
+# For debugging and inspecting the map data it is useful to plot ot visualize the images planes contained in the map. 
+
+# In[42]:
+
+
+filename = '$GAMMAPY_EXTRA/datasets/fermi_2fhl/fermi_2fhl_gc.fits.gz'
+m_2fhl_gc = Map.read(filename, hdu='counts')
+
+
+# After reading the map we can now plot it on the screen by calling the `.plot()` method:
+
+# In[43]:
+
+
+m_2fhl_gc.plot();
+
+
+# We can easily improve the plot by calling `Map.smooth()` first and providing additional arguments to `.plot()`. Most of them are passed further to [plt.imshow()](https://matplotlib.org/api/_as_gen/matplotlib.pyplot.imshow.html):
+
+# In[44]:
+
+
+smoothed = m_2fhl_gc.smooth(radius=0.2 * u.deg, kernel='gauss')
+smoothed.plot(stretch='sqrt', add_cbar=True, vmax=4, cmap='inferno');
+
+
+# We can use the [plt.rc_context()](https://matplotlib.org/api/_as_gen/matplotlib.pyplot.rc_context.html) context manager to further tweak the plot by adapting the figure and font size:
+
+# In[45]:
+
+
+rc_params = {'figure.figsize': (12, 5.4), 'font.size': 12}
+with plt.rc_context(rc=rc_params):
+    smoothed = m_2fhl_gc.smooth(radius=0.2 * u.deg, kernel='gauss')
+    smoothed.plot(stretch='sqrt', add_cbar=True, vmax=4);
+
+
+# ### 4.2 Interactive Plotting 
+# 
+# For maps with non-spatial dimensions the `Map` object features an interactive plotting method, that works in jupyter notebooks only (**Note:** it requires the package `ipywidgets` to be installed). We first read a small example cutout from the Fermi Galactic diffuse model and display the data cube by calling `.plot_interactive()`:
+
+# In[46]:
+
+
+filename = '$GAMMAPY_EXTRA/datasets/fermi_3fhl/gll_iem_v06_cutout.fits'
+m_iem_gc = Map.read(filename)
+
+rc_params = {'figure.figsize': (12, 5.4), 'font.size': 12, 'axes.formatter.limits': (2, -2)}
+m_iem_gc.plot_interactive(add_cbar=True, stretch='sqrt', rc_params=rc_params)
+
+
+# Now you can use the interactive slider to select an energy range and the corresponding image is diplayed on the screen. You can also use the radio buttons to select your preferred image stretching. We have passed additional keywords using the `rc_params` argument to improve the figure and font size. Those keywords are directly passed to the [plt.rc_context()](https://matplotlib.org/api/_as_gen/matplotlib.pyplot.rc_context.html) context manager.
+
+# ## 5. Reprojecting, Interpolating and Miscellaneous
+# ------------------------------------------------------------------
+# 
+# ### 5.1 Reprojecting to Different Map Geometries
+# 
+# The example map `m_iem_gc` is given in Galactic coordinates:
+
+# In[47]:
+
+
+print(m_iem_gc.geom)
+
+
+# As an example we will now extract the image at `~10 GeV` and reproject it to ICRS coordinates. For this we first define the target map WCS geometry. As `.reproject()` only applies to the spatial axes, we do not have to specify any additional non-spatial axes:
+
+# In[48]:
+
+
+skydir = SkyCoord(266.4, -28.9, frame='icrs', unit='deg')
+wcs_geom_cel = WcsGeom.create(skydir=skydir, binsz=0.1, coordsys='CEL', width=(8, 4))
+
+
+# Then we extract the image at `~10 GeV`, reproject to the target geometry and plot the result:
+
+# In[49]:
+
+
+m_iem = m_iem_gc.get_image_by_coord({'energy': 10 * u.GeV})
+m_iem_cel = m_iem.reproject(wcs_geom_cel)
+m_iem_cel.plot(add_cbar=True, vmin=0,  vmax=2.5e-9)
+
+
+# ### 5.2 Interpolating Map Values
+# 
+# While for the reprojection example above we used `.get_image_by_coord()` to extract the closest image to `~10 GeV`, we can use the more general method `.interp_by_coord()` to interpolate in the energy axis as well. For this we first define again the target map geometry:
+
+# In[50]:
+
+
+m_iem_10GeV = Map.from_geom(wcs_geom_cel)
+coords = m_iem_10GeV.geom.get_coord()
+
+m_iem_10GeV.data = m_iem_gc.interp_by_coord(
+    {'skycoord': coords.skycoord, 'energy': 10 * u.GeV},
+    interp='linear',
+    fill_value=np.nan
+)
+m_iem_10GeV.plot(add_cbar=True, vmin=0, vmax=2.5e-9);
+
+
+# ### 5.3 Making Cutouts
+# 
+# The `WCSNDMap` objects features a `.cutout()` method, which allows you to cut out a smaller part of a larger map. This can be useful, e.g. when working with allsky diffuse maps. Here is an example: 
+
+# In[51]:
+
+
+position = SkyCoord(0, 0, frame='galactic', unit='deg')
+m_iem_cutout = m_iem_gc.cutout(position=position, width=(4 * u.deg, 2 * u.deg))
+
+rc_params = {'figure.figsize': (12, 5.4), 'font.size': 12, 'axes.formatter.limits': (2, -2)}
+m_iem_cutout.plot_interactive(add_cbar=True, rc_params=rc_params, stretch='linear')
+
+
+# The returned object is again a `Map` object with udpated WCS information and data size. As one can see the cutout is automatically applied to all the non-spatial axes as well. The cutout width is given in the order of `(lon, lat)` and can be specified with units that will be handled correctly. 
