@@ -41,9 +41,17 @@ import matplotlib.pyplot as plt
 
 
 from astropy import units as u
-from gammapy.spectrum.models import PowerLaw, ExponentialCutoffPowerLaw, LogParabola
+from gammapy.spectrum.models import (
+    PowerLaw,
+    ExponentialCutoffPowerLaw,
+    LogParabola,
+)
 from gammapy.spectrum import FluxPointFitter, FluxPoints
-from gammapy.catalog import SourceCatalog3FGL, SourceCatalogGammaCat, SourceCatalog3FHL
+from gammapy.catalog import (
+    SourceCatalog3FGL,
+    SourceCatalogGammaCat,
+    SourceCatalog3FHL,
+)
 
 
 # ## Load spectral points
@@ -61,9 +69,9 @@ gammacat = SourceCatalogGammaCat()
 # In[4]:
 
 
-source_gammacat =  gammacat['HESS J1507-622']
-source_fermi_3fgl = fermi_3fgl['3FGL J1506.6-6219']
-source_fermi_3fhl = fermi_3fhl['3FHL J1507.9-6228e']
+source_gammacat = gammacat["HESS J1507-622"]
+source_fermi_3fgl = fermi_3fgl["3FGL J1506.6-6219"]
+source_fermi_3fhl = fermi_3fhl["3FHL J1507.9-6228e"]
 
 
 # The corresponding flux points data can be accessed with `.flux_points` attribute:
@@ -81,12 +89,10 @@ flux_points_gammacat.table
 
 
 flux_points_3fgl = source_fermi_3fgl.flux_points.to_sed_type(
-    sed_type='dnde',
-    model=source_fermi_3fgl.spectral_model,
+    sed_type="dnde", model=source_fermi_3fgl.spectral_model
 )
 flux_points_3fhl = source_fermi_3fhl.flux_points.to_sed_type(
-    sed_type='dnde',
-    model=source_fermi_3fhl.spectral_model,
+    sed_type="dnde", model=source_fermi_3fhl.spectral_model
 )
 
 
@@ -96,11 +102,9 @@ flux_points_3fhl = source_fermi_3fhl.flux_points.to_sed_type(
 
 
 # stack flux point tables
-flux_points = FluxPoints.stack([
-    flux_points_gammacat,
-    flux_points_3fhl,
-    flux_points_3fgl
-])
+flux_points = FluxPoints.stack(
+    [flux_points_gammacat, flux_points_3fhl, flux_points_3fgl]
+)
 
 # drop the flux upper limit values
 flux_points = flux_points.drop_ul()
@@ -113,10 +117,7 @@ flux_points = flux_points.drop_ul()
 # In[10]:
 
 
-fitter = FluxPointFitter(
-    stat='chi2assym',
-    optimizer='minuit',
-)
+fitter = FluxPointFitter(stat="chi2assym", optimizer="minuit", opts_minuit={'print_level':1})
 
 
 # ## Power Law Fit
@@ -127,9 +128,7 @@ fitter = FluxPointFitter(
 
 
 pwl = PowerLaw(
-    index=2,
-    amplitude=1e-12 * u.Unit('cm-2 s-1 TeV-1'),
-    reference=1. * u.TeV
+    index=2, amplitude=1e-12 * u.Unit("cm-2 s-1 TeV-1"), reference=1. * u.TeV
 )
 
 
@@ -146,7 +145,7 @@ result_pwl = fitter.run(flux_points, pwl)
 # In[14]:
 
 
-print(result_pwl['best-fit-model'])
+print(result_pwl["best-fit-model"])
 
 
 # As a quick check we print the value of the fit statistics per degrees of freedom as well:
@@ -154,7 +153,7 @@ print(result_pwl['best-fit-model'])
 # In[15]:
 
 
-print(result_pwl['statval/dof'])
+print(result_pwl["statval/dof"])
 
 
 # Finally we plot the data points and the best fit model:
@@ -163,8 +162,12 @@ print(result_pwl['statval/dof'])
 
 
 ax = flux_points.plot(energy_power=2)
-result_pwl['best-fit-model'].plot(energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2)
-result_pwl['best-fit-model'].plot_error(energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2)
+result_pwl["best-fit-model"].plot(
+    energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
+)
+result_pwl["best-fit-model"].plot_error(
+    energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
+)
 ax.set_ylim(1e-13, 1e-11);
 
 
@@ -177,7 +180,7 @@ ax.set_ylim(1e-13, 1e-11);
 
 ecpl = ExponentialCutoffPowerLaw(
     index=2,
-    amplitude=1e-12 * u.Unit('cm-2 s-1 TeV-1'),
+    amplitude=1e-12 * u.Unit("cm-2 s-1 TeV-1"),
     reference=1. * u.TeV,
     lambda_=0.1 / u.TeV,
 )
@@ -189,13 +192,13 @@ ecpl = ExponentialCutoffPowerLaw(
 
 
 result_ecpl = fitter.run(flux_points, ecpl)
-print(result_ecpl['best-fit-model'])
+print(result_ecpl["best-fit-model"])
 
 
 # In[20]:
 
 
-print(result_ecpl['statval/dof'])
+print(result_ecpl["statval/dof"])
 
 
 # We plot the data and best fit model:
@@ -204,8 +207,12 @@ print(result_ecpl['statval/dof'])
 
 
 ax = flux_points.plot(energy_power=2)
-result_ecpl['best-fit-model'].plot(energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2)
-result_ecpl['best-fit-model'].plot_error(energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2)
+result_ecpl["best-fit-model"].plot(
+    energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
+)
+result_ecpl["best-fit-model"].plot_error(
+    energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
+)
 ax.set_ylim(1e-13, 1e-11)
 
 
@@ -218,9 +225,9 @@ ax.set_ylim(1e-13, 1e-11)
 
 log_parabola = LogParabola(
     alpha=2,
-    amplitude=1e-12 * u.Unit('cm-2 s-1 TeV-1'),
+    amplitude=1e-12 * u.Unit("cm-2 s-1 TeV-1"),
     reference=1. * u.TeV,
-    beta=0.1 * u.Unit('')
+    beta=0.1 * u.Unit(""),
 )
 
 
@@ -228,21 +235,25 @@ log_parabola = LogParabola(
 
 
 result_log_parabola = fitter.run(flux_points, log_parabola)
-print(result_log_parabola['best-fit-model'])
+print(result_log_parabola["best-fit-model"])
 
 
 # In[24]:
 
 
-print(result_log_parabola['statval/dof'])
+print(result_log_parabola["statval/dof"])
 
 
 # In[26]:
 
 
 ax = flux_points.plot(energy_power=2)
-result_log_parabola['best-fit-model'].plot(energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2)
-result_log_parabola['best-fit-model'].plot_error(energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2)
+result_log_parabola["best-fit-model"].plot(
+    energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
+)
+result_log_parabola["best-fit-model"].plot_error(
+    energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
+)
 ax.set_ylim(1e-13, 1e-11);
 
 

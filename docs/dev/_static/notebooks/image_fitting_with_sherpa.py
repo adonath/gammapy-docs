@@ -44,6 +44,7 @@ import astropy.units as u
 from astropy.io import fits
 from astropy.wcs import WCS
 from gammapy.maps import Map, WcsNDMap, WcsGeom
+
 # Warnings about XSPEC or DS9 can be ignored here
 import sherpa.astro.ui as sh
 
@@ -75,7 +76,7 @@ bkg.ampl = 1
 sh.freeze(bkg)
 
 resid = Map.read("G300-0_test_counts.fits")
-resid.data = sh.get_data_image().y -  sh.get_model_image().y
+resid.data = sh.get_data_image().y - sh.get_model_image().y
 resid_smooth = resid.smooth(radius=6)
 resid_smooth.plot();
 
@@ -86,18 +87,24 @@ resid_smooth.plot();
 # In[4]:
 
 
-yp, xp = np.unravel_index(np.nanargmax(resid_smooth.data), resid_smooth.data.shape)
+yp, xp = np.unravel_index(
+    np.nanargmax(resid_smooth.data), resid_smooth.data.shape
+)
 ampl = resid_smooth.get_by_pix((xp, yp))[0]
 
-sh.set_full_model(bkg + psf(sh.gauss2d.g0) * expo) # creates g0 as a gauss2d instance
+sh.set_full_model(
+    bkg + psf(sh.gauss2d.g0) * expo
+)  # creates g0 as a gauss2d instance
 g0.xpos, g0.ypos = xp, yp
-sh.freeze(g0.xpos, g0.ypos) # fix the position in the initial fitting step
+sh.freeze(g0.xpos, g0.ypos)  # fix the position in the initial fitting step
 
-expo.ampl = 1e-9 # fix exposure amplitude so that typical exposure is of order unity
+expo.ampl = (
+    1e-9
+)  # fix exposure amplitude so that typical exposure is of order unity
 sh.freeze(expo)
-sh.thaw(g0.fwhm, g0.ampl) # in case frozen in a previous iteration
+sh.thaw(g0.fwhm, g0.ampl)  # in case frozen in a previous iteration
 
-g0.fwhm = 10 # give some reasonable initial values
+g0.fwhm = 10  # give some reasonable initial values
 g0.ampl = ampl
 
 
@@ -116,9 +123,9 @@ sh.thaw(g0.xpos, g0.ypos)
 sh.fit()
 sh.freeze(g0)
 
-resid.data = sh.get_data_image().y -  sh.get_model_image().y
+resid.data = sh.get_data_image().y - sh.get_model_image().y
 resid_smooth = resid.smooth(radius=6)
-resid_smooth.plot(vmin=-0.5, vmax = 1);
+resid_smooth.plot(vmin=-0.5, vmax=1);
 
 
 # ### Iteratively find and fit additional sources
@@ -128,8 +135,8 @@ resid_smooth.plot(vmin=-0.5, vmax = 1);
 
 
 # initialize components with fixed, zero amplitude
-for i in range(1,6):
-    model = sh.create_model_component('gauss2d', 'g' + str(i))
+for i in range(1, 6):
+    model = sh.create_model_component("gauss2d", "g" + str(i))
     model.ampl = 0
     sh.freeze(model)
 
@@ -140,7 +147,7 @@ sh.set_full_model(bkg + psf(g0 + g1 + g2 + g3 + g4 + g5) * expo)
 # In[8]:
 
 
-get_ipython().run_cell_magic('time', '', 'for i in range(1, len(gs)) :\n    yp, xp = np.unravel_index(np.nanargmax(resid_smooth.data), resid_smooth.data.shape)\n    ampl = resid_smooth.get_by_pix((xp, yp))[0]\n    gs[i].xpos, gs[i].ypos = xp, yp\n    gs[i].fwhm = 10\n    gs[i].ampl = ampl\n\n    sh.thaw(gs[i].fwhm)\n    sh.thaw(gs[i].ampl)\n    sh.fit()\n\n    sh.thaw(gs[i].xpos)\n    sh.thaw(gs[i].ypos)\n    sh.fit()\n    sh.freeze(gs[i])\n\n    resid.data = sh.get_data_image().y -  sh.get_model_image().y\n    resid_smooth = resid.smooth(radius=6)\n    resid_smooth.plot(vmin=-0.5, vmax=1)')
+get_ipython().run_cell_magic('time', '', 'for i in range(1, len(gs)):\n    yp, xp = np.unravel_index(\n        np.nanargmax(resid_smooth.data), resid_smooth.data.shape\n    )\n    ampl = resid_smooth.get_by_pix((xp, yp))[0]\n    gs[i].xpos, gs[i].ypos = xp, yp\n    gs[i].fwhm = 10\n    gs[i].ampl = ampl\n\n    sh.thaw(gs[i].fwhm)\n    sh.thaw(gs[i].ampl)\n    sh.fit()\n\n    sh.thaw(gs[i].xpos)\n    sh.thaw(gs[i].ypos)\n    sh.fit()\n    sh.freeze(gs[i])\n\n    resid.data = sh.get_data_image().y - sh.get_model_image().y\n    resid_smooth = resid.smooth(radius=6)\n    resid_smooth.plot(vmin=-0.5, vmax=1)')
 
 
 # ### Generating output table and Test Statistics estimation
@@ -164,21 +171,18 @@ for g in gs:
     g.ampl = ampl
     statf = sh.get_stat_info()[0].statval
     delstat = stati - statf
-    
+
     geom = resid.geom
     coord = geom.pix_to_coord((g.xpos.val, g.ypos.val))
     pix_scale = geom.pixel_scales.mean().deg
     sigma = g.fwhm.val * pix_scale * gaussian_fwhm_to_sigma
-    rows.append(dict(
-        delstat=delstat,
-        glon=coord[0],
-        glat=coord[1],
-        sigma=sigma ,
-    ))
+    rows.append(
+        dict(delstat=delstat, glon=coord[0], glat=coord[1], sigma=sigma)
+    )
 
 table = Table(rows=rows, names=rows[0])
 for name in table.colnames:
-    table[name].format = '.5g'
+    table[name].format = ".5g"
 table
 
 

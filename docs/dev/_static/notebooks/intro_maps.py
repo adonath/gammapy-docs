@@ -18,12 +18,11 @@
 # 1. [Reprojecting, Interpolating and Miscellaneous](#5.-Reprojecting,-Interpolating-and-Miscellaneous)
 # 
 # 
-# Make sure you have worked through he [First Steps with Gammapy](fits_steps.ipynb) and [Astropy Introduction](astropy_introduction.ipynb) notebooks, because a solid knowledge about working with `SkyCoords` and `Quantity` objects as well as [Numpy](http://www.numpy.org/) is required for this tutorial.
+# Make sure you have worked through he [First Steps with Gammapy](first_steps.ipynb) and [Astropy Introduction](astropy_introduction.ipynb) notebooks, because a solid knowledge about working with `SkyCoords` and `Quantity` objects as well as [Numpy](http://www.numpy.org/) is required for this tutorial.
 # 
 # **Note:** This notebook is rather lengthy, but getting to know the `Map` data structure in detail is **essential for working with Gammapy** and will allow you to fulfill **complex analysis tasks with very few and simple code** in future!
 
-# ## 0. Setup
-# --------------
+# ##  0. Setup
 
 # In[1]:
 
@@ -44,7 +43,6 @@ from gammapy.maps import Map, MapAxis, WcsGeom
 
 
 # ## 1. Creating WCS Maps
-# ---------------------------------
 # 
 # ### 1.1 Using Factory Methods
 # 
@@ -81,8 +79,10 @@ m_allsky.data
 # In[6]:
 
 
-skydir = SkyCoord(0, 0, frame='galactic', unit='deg')
-m_gc = Map.create(binsz=0.02, width=(10, 5), skydir=skydir, coordsys='GAL', proj='TAN')
+skydir = SkyCoord(0, 0, frame="galactic", unit="deg")
+m_gc = Map.create(
+    binsz=0.02, width=(10, 5), skydir=skydir, coordsys="GAL", proj="TAN"
+)
 print(m_gc.geom)
 
 
@@ -95,7 +95,9 @@ print(m_gc.geom)
 # In[7]:
 
 
-wcs_geom = WcsGeom.create(binsz=0.02, width=(10, 5), skydir=(0, 0), coordsys='GAL')
+wcs_geom = WcsGeom.create(
+    binsz=0.02, width=(10, 5), skydir=(0, 0), coordsys="GAL"
+)
 
 
 # And then create the map objects from the `wcs_geom` geometry specification:
@@ -105,7 +107,7 @@ wcs_geom = WcsGeom.create(binsz=0.02, width=(10, 5), skydir=(0, 0), coordsys='GA
 
 maps = {}
 
-for name in ['counts', 'background']:
+for name in ["counts", "background"]:
     maps[name] = Map.from_geom(wcs_geom)
 
 
@@ -115,7 +117,7 @@ for name in ['counts', 'background']:
 
 
 # define the position of the Galactic center and anti-center
-positions = SkyCoord([0, 180], [0, 0], frame='galactic', unit='deg')
+positions = SkyCoord([0, 180], [0, 0], frame="galactic", unit="deg")
 wcs_geom.contains(positions)
 
 
@@ -142,7 +144,9 @@ wcs_geom.solid_angle()
 # In[12]:
 
 
-energy_axis = MapAxis.from_bounds(1, 100, nbin=4, unit='TeV', name='energy', interp='log')
+energy_axis = MapAxis.from_bounds(
+    1, 100, nbin=4, unit="TeV", name="energy", interp="log"
+)
 print(energy_axis)
 
 
@@ -151,7 +155,9 @@ print(energy_axis)
 # In[13]:
 
 
-m_cube = Map.create(binsz=0.02, width=(10, 5), coordsys='GAL', axes=[energy_axis])
+m_cube = Map.create(
+    binsz=0.02, width=(10, 5), coordsys="GAL", axes=[energy_axis]
+)
 print(m_cube.geom)
 
 
@@ -163,9 +169,13 @@ print(m_cube.geom)
 # In[14]:
 
 
-time_axis = MapAxis.from_bounds(0, 24, nbin=24, unit='hour', name='time', interp='lin')
+time_axis = MapAxis.from_bounds(
+    0, 24, nbin=24, unit="hour", name="time", interp="lin"
+)
 
-m_4d = Map.create(binsz=0.02, width=(10, 5), coordsys='GAL', axes=[energy_axis, time_axis])
+m_4d = Map.create(
+    binsz=0.02, width=(10, 5), coordsys="GAL", axes=[energy_axis, time_axis]
+)
 print(m_4d.geom)
 
 
@@ -195,8 +205,7 @@ energy_axis.unit
 energy_axis.center
 
 
-# ## 2. Accessing and Modifying Data
-# ----------------------------------------------
+# ##  2. Accessing and Modifying Data
 # 
 # ### 2.1 Accessing Map Data Values
 # 
@@ -231,7 +240,7 @@ print(m_gc.geom)
 # In[21]:
 
 
-m_gc.get_by_coord({'lon': [0, 180], 'lat': [0, 0]})
+m_gc.get_by_coord({"lon": [0, 180], "lat": [0, 0]})
 
 
 # The units of the coordinates are assumed to be in degrees in the coordinate system used by the map. If the coordinates do not correspond to the exact pixel center, the value of the nearest pixel center will be returned. For positions outside the map geometry `np.nan` is returned.
@@ -243,8 +252,8 @@ m_gc.get_by_coord({'lon': [0, 180], 'lat': [0, 0]})
 # In[22]:
 
 
-lons = np.linspace(-4, 4, 10) 
-m_gc.get_by_coord({'lon': lons, 'lat': 0})
+lons = np.linspace(-4, 4, 10)
+m_gc.get_by_coord({"lon": lons, "lat": 0})
 
 
 # Or as an even more advanced example, we can provide `lats` as column vector and broadcasting to a 2D result array will be applied:
@@ -254,7 +263,7 @@ m_gc.get_by_coord({'lon': lons, 'lat': 0})
 
 lons = np.linspace(-4, 4, 8)
 lats = np.linspace(-4, 4, 8).reshape(-1, 1)
-m_gc.get_by_coord({'lon': lons, 'lat': lats})
+m_gc.get_by_coord({"lon": lons, "lat": lats})
 
 
 # ### 2.2 Modifying Map Data Values
@@ -279,7 +288,7 @@ m_cube.get_by_idx((10, 20, 3))
 # In[26]:
 
 
-m_cube.set_by_coord({'lon': 0, 'lat': 0, 'energy': 2 * u.TeV}, vals=42)
+m_cube.set_by_coord({"lon": 0, "lat": 0, "energy": 2 * u.TeV}, vals=42)
 
 
 # Again the `lon` and `lat` values are assumed to be given in degrees in the coordinate system used by the map. For the energy axis, the unit is the one specified on the axis (use `m_cube.geom.axes[0].unit` to check if needed...)
@@ -289,8 +298,8 @@ m_cube.set_by_coord({'lon': 0, 'lat': 0, 'energy': 2 * u.TeV}, vals=42)
 # In[27]:
 
 
-skycoords = SkyCoord([1.2, 3.4], [-0.5, 1.1], frame='galactic', unit='deg')
-m_cube.set_by_coord({'skycoord': skycoords, 'energy': 2 * u.TeV}, vals=42)
+skycoords = SkyCoord([1.2, 3.4], [-0.5, 1.1], frame="galactic", unit="deg")
+m_cube.set_by_coord({"skycoord": skycoords, "energy": 2 * u.TeV}, vals=42)
 
 
 # ### 2.3 Indexing and Slicing Sub-Maps
@@ -303,7 +312,7 @@ m_cube.set_by_coord({'skycoord': skycoords, 'energy': 2 * u.TeV}, vals=42)
 # In[28]:
 
 
-m_sub = m_cube.slice_by_idx({'energy': 3})
+m_sub = m_cube.slice_by_idx({"energy": 3})
 print(m_sub)
 
 
@@ -314,7 +323,7 @@ print(m_sub)
 # In[29]:
 
 
-m_sub = m_cube.slice_by_idx({'energy': slice(1, 3)})
+m_sub = m_cube.slice_by_idx({"energy": slice(1, 3)})
 print(m_sub)
 
 
@@ -325,7 +334,7 @@ print(m_sub)
 # In[30]:
 
 
-m_sub = m_4d.slice_by_idx({'energy': slice(1, 3), 'time': slice(4, 10)})
+m_sub = m_4d.slice_by_idx({"energy": slice(1, 3), "time": slice(4, 10)})
 print(m_sub)
 
 
@@ -334,12 +343,11 @@ print(m_sub)
 # In[31]:
 
 
-image = m_4d.get_image_by_coord({'energy': 4 * u.TeV, 'time': 5 * u.h})
+image = m_4d.get_image_by_coord({"energy": 4 * u.TeV, "time": 5 * u.h})
 print(image.geom)
 
 
-# ## 3. Reading and Writing
-# ---------------------------------
+# ##  3. Reading and Writing
 # 
 # Gammapy `Map` objects are serialized using the Flexible Image Transport Format (FITS). Depending on the pixelisation scheme (HEALPix or WCS) and presence of non-spatial dimensions the actual convention to write the FITS file is different.
 # By default Gammpy uses a generic convention named `gadf`, which will support WCS and HEALPix formats as well as an arbitrary number of non-spatial axes. The convention is documented in detail on the [Gamma Astro Data Formats](https://gamma-astro-data-formats.readthedocs.io/en/latest/skymaps/index.html) page.
@@ -360,7 +368,7 @@ print(image.geom)
 # In[32]:
 
 
-filename = '$GAMMAPY_EXTRA/datasets/fermi_2fhl/fermi_2fhl_gc.fits.gz'
+filename = "$GAMMAPY_EXTRA/datasets/fermi_2fhl/fermi_2fhl_gc.fits.gz"
 m_2fhl_gc = Map.read(filename)
 print(m_2fhl_gc)
 
@@ -370,7 +378,7 @@ print(m_2fhl_gc)
 # In[33]:
 
 
-m_2fhl_gc = Map.read(filename, hdu='background')
+m_2fhl_gc = Map.read(filename, hdu="background")
 print(m_2fhl_gc)
 
 
@@ -379,7 +387,7 @@ print(m_2fhl_gc)
 # In[34]:
 
 
-hdulist = fits.open('../datasets/fermi_survey/all.fits.gz')
+hdulist = fits.open("../datasets/fermi_survey/all.fits.gz")
 hdulist.info()
 
 
@@ -388,8 +396,8 @@ hdulist.info()
 # In[35]:
 
 
-hdulist['exposure'].header['BUNIT'] = 'cm2 s'
-Map.from_hdulist(hdulist=hdulist, hdu='exposure')
+hdulist["exposure"].header["BUNIT"] = "cm2 s"
+Map.from_hdulist(hdulist=hdulist, hdu="exposure")
 
 
 # ### 3.2 Writing Maps
@@ -399,7 +407,7 @@ Map.from_hdulist(hdulist=hdulist, hdu='exposure')
 # In[36]:
 
 
-m_cube.write('example_cube.fits', overwrite=True)
+m_cube.write("example_cube.fits", overwrite=True)
 
 
 # By default Gammapy does not overwrite files. In this example we set `overwrite=True` in case the cell gets executed multiple times. Now we can read back the cube from disk using `Map.read()`:
@@ -407,7 +415,7 @@ m_cube.write('example_cube.fits', overwrite=True)
 # In[37]:
 
 
-m_cube = Map.read('example_cube.fits')
+m_cube = Map.read("example_cube.fits")
 print(m_cube)
 
 
@@ -416,7 +424,7 @@ print(m_cube)
 # In[38]:
 
 
-m_cube.write('example_cube_fgst.fits', conv='fgst-template', overwrite=True)
+m_cube.write("example_cube_fgst.fits", conv="fgst-template", overwrite=True)
 
 
 # To understand a little bit better the generic `gadf` convention we use `Map.to_hdulist()` to generate a list of FITS HDUs first:   
@@ -424,7 +432,7 @@ m_cube.write('example_cube_fgst.fits', conv='fgst-template', overwrite=True)
 # In[39]:
 
 
-hdulist = m_4d.to_hdulist(conv='gadf')
+hdulist = m_4d.to_hdulist(conv="gadf")
 hdulist.info()
 
 
@@ -433,7 +441,7 @@ hdulist.info()
 # In[40]:
 
 
-hdulist['PRIMARY'].header
+hdulist["PRIMARY"].header
 
 
 # The second HDU is a `BinTableHDU` named `PRIMARY_BANDS` contains the information on the non-spatial axes such as name, order, unit, min, max and center values of the axis bins. We use an `astropy.table.Table` to show the information:
@@ -444,8 +452,7 @@ hdulist['PRIMARY'].header
 Table.read(hdulist["PRIMARY_BANDS"])
 
 
-# ## 4. Visualizing and Plotting
-# -------------------------------------
+# ##  4. Visualizing and Plotting
 # 
 # ### 4.1 Plotting 
 # 
@@ -454,8 +461,8 @@ Table.read(hdulist["PRIMARY_BANDS"])
 # In[42]:
 
 
-filename = '$GAMMAPY_EXTRA/datasets/fermi_2fhl/fermi_2fhl_gc.fits.gz'
-m_2fhl_gc = Map.read(filename, hdu='counts')
+filename = "$GAMMAPY_EXTRA/datasets/fermi_2fhl/fermi_2fhl_gc.fits.gz"
+m_2fhl_gc = Map.read(filename, hdu="counts")
 
 
 # After reading the map we can now plot it on the screen by calling the `.plot()` method:
@@ -471,8 +478,8 @@ m_2fhl_gc.plot();
 # In[44]:
 
 
-smoothed = m_2fhl_gc.smooth(radius=0.2 * u.deg, kernel='gauss')
-smoothed.plot(stretch='sqrt', add_cbar=True, vmax=4, cmap='inferno');
+smoothed = m_2fhl_gc.smooth(radius=0.2 * u.deg, kernel="gauss")
+smoothed.plot(stretch="sqrt", add_cbar=True, vmax=4, cmap="inferno");
 
 
 # We can use the [plt.rc_context()](https://matplotlib.org/api/_as_gen/matplotlib.pyplot.rc_context.html) context manager to further tweak the plot by adapting the figure and font size:
@@ -480,10 +487,10 @@ smoothed.plot(stretch='sqrt', add_cbar=True, vmax=4, cmap='inferno');
 # In[45]:
 
 
-rc_params = {'figure.figsize': (12, 5.4), 'font.size': 12}
+rc_params = {"figure.figsize": (12, 5.4), "font.size": 12}
 with plt.rc_context(rc=rc_params):
-    smoothed = m_2fhl_gc.smooth(radius=0.2 * u.deg, kernel='gauss')
-    smoothed.plot(stretch='sqrt', add_cbar=True, vmax=4);
+    smoothed = m_2fhl_gc.smooth(radius=0.2 * u.deg, kernel="gauss")
+    smoothed.plot(stretch="sqrt", add_cbar=True, vmax=4);
 
 
 # ### 4.2 Interactive Plotting 
@@ -493,17 +500,20 @@ with plt.rc_context(rc=rc_params):
 # In[46]:
 
 
-filename = '$GAMMAPY_EXTRA/datasets/fermi_3fhl/gll_iem_v06_cutout.fits'
+filename = "$GAMMAPY_EXTRA/datasets/fermi_3fhl/gll_iem_v06_cutout.fits"
 m_iem_gc = Map.read(filename)
 
-rc_params = {'figure.figsize': (12, 5.4), 'font.size': 12, 'axes.formatter.limits': (2, -2)}
-m_iem_gc.plot_interactive(add_cbar=True, stretch='sqrt', rc_params=rc_params)
+rc_params = {
+    "figure.figsize": (12, 5.4),
+    "font.size": 12,
+    "axes.formatter.limits": (2, -2),
+}
+m_iem_gc.plot_interactive(add_cbar=True, stretch="sqrt", rc_params=rc_params)
 
 
 # Now you can use the interactive slider to select an energy range and the corresponding image is diplayed on the screen. You can also use the radio buttons to select your preferred image stretching. We have passed additional keywords using the `rc_params` argument to improve the figure and font size. Those keywords are directly passed to the [plt.rc_context()](https://matplotlib.org/api/_as_gen/matplotlib.pyplot.rc_context.html) context manager.
 
-# ## 5. Reprojecting, Interpolating and Miscellaneous
-# ------------------------------------------------------------------
+# ##  5. Reprojecting, Interpolating and Miscellaneous
 # 
 # ### 5.1 Reprojecting to Different Map Geometries
 # 
@@ -520,8 +530,10 @@ print(m_iem_gc.geom)
 # In[48]:
 
 
-skydir = SkyCoord(266.4, -28.9, frame='icrs', unit='deg')
-wcs_geom_cel = WcsGeom.create(skydir=skydir, binsz=0.1, coordsys='CEL', width=(8, 4))
+skydir = SkyCoord(266.4, -28.9, frame="icrs", unit="deg")
+wcs_geom_cel = WcsGeom.create(
+    skydir=skydir, binsz=0.1, coordsys="CEL", width=(8, 4)
+)
 
 
 # Then we extract the image at `~10 GeV`, reproject to the target geometry and plot the result:
@@ -529,9 +541,9 @@ wcs_geom_cel = WcsGeom.create(skydir=skydir, binsz=0.1, coordsys='CEL', width=(8
 # In[49]:
 
 
-m_iem = m_iem_gc.get_image_by_coord({'energy': 10 * u.GeV})
+m_iem = m_iem_gc.get_image_by_coord({"energy": 10 * u.GeV})
 m_iem_cel = m_iem.reproject(wcs_geom_cel)
-m_iem_cel.plot(add_cbar=True, vmin=0,  vmax=2.5e-9)
+m_iem_cel.plot(add_cbar=True, vmin=0, vmax=2.5e-9)
 
 
 # ### 5.2 Interpolating Map Values
@@ -545,9 +557,9 @@ m_iem_10GeV = Map.from_geom(wcs_geom_cel)
 coords = m_iem_10GeV.geom.get_coord()
 
 m_iem_10GeV.data = m_iem_gc.interp_by_coord(
-    {'skycoord': coords.skycoord, 'energy': 10 * u.GeV},
-    interp='linear',
-    fill_value=np.nan
+    {"skycoord": coords.skycoord, "energy": 10 * u.GeV},
+    interp="linear",
+    fill_value=np.nan,
 )
 m_iem_10GeV.plot(add_cbar=True, vmin=0, vmax=2.5e-9);
 
@@ -559,11 +571,17 @@ m_iem_10GeV.plot(add_cbar=True, vmin=0, vmax=2.5e-9);
 # In[51]:
 
 
-position = SkyCoord(0, 0, frame='galactic', unit='deg')
+position = SkyCoord(0, 0, frame="galactic", unit="deg")
 m_iem_cutout = m_iem_gc.cutout(position=position, width=(4 * u.deg, 2 * u.deg))
 
-rc_params = {'figure.figsize': (12, 5.4), 'font.size': 12, 'axes.formatter.limits': (2, -2)}
-m_iem_cutout.plot_interactive(add_cbar=True, rc_params=rc_params, stretch='linear')
+rc_params = {
+    "figure.figsize": (12, 5.4),
+    "font.size": 12,
+    "axes.formatter.limits": (2, -2),
+}
+m_iem_cutout.plot_interactive(
+    add_cbar=True, rc_params=rc_params, stretch="linear"
+)
 
 
 # The returned object is again a `Map` object with udpated WCS information and data size. As one can see the cutout is automatically applied to all the non-spatial axes as well. The cutout width is given in the order of `(lon, lat)` and can be specified with units that will be handled correctly. 

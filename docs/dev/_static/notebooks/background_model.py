@@ -14,11 +14,7 @@
 # We will mainly be using the following classes:
 #         
 # * [gammapy.data.DataStore](http://docs.gammapy.org/dev/api/gammapy.data.DataStore.html) to load the runs to use to build the bkg model.
-# * [gammapy.data.ObservationGroupAxis](http://docs.gammapy.org/dev/api/gammapy.data.ObservationGroupAxis.html) and [gammapy.data.ObservationGroups](http://docs.gammapy.org/dev/api/gammapy.data.ObservationGroups.html) to group the runs
-# * [gammapy.background.OffDataBackgroundMaker](http://docs.gammapy.org/dev/api/gammapy.background.OffDataBackgroundMaker.html) to compute the background model
-# * [gammapy.background.EnergyOffsetBackgroundModel](http://docs.gammapy.org/dev/api/gammapy.background.EnergyOffsetBackgroundModel.html) to represent and write the background model
-# 
-# 
+# * [gammapy.irf.Background2D](http://docs.gammapy.org/dev/api/gammapy.irf.Background2D.html) to represent and write the background model.
 
 # ## Setup
 # 
@@ -69,7 +65,7 @@ from gammapy.catalog import SourceCatalogGammaCat
 
 
 def make_fresh_dir(path):
-    """Make a fresh directory. Delete first if exists"""    
+    """Make a fresh directory. Delete first if exists"""
     path = Path(path)
     if path.is_dir():
         shutil.rmtree(str(path))
@@ -80,7 +76,7 @@ def make_fresh_dir(path):
 # In[5]:
 
 
-scratch_dir = make_fresh_dir('background')
+scratch_dir = make_fresh_dir("background")
 scratch_dir
 
 
@@ -92,23 +88,27 @@ scratch_dir
 
 
 # Create a background model from the 4 Crab runs for the counts ouside the exclusion region so here outside the Crab
-data_store = DataStore.from_dir("$GAMMAPY_EXTRA/datasets/hess-crab4-hd-hap-prod2")
+data_store = DataStore.from_dir(
+    "$GAMMAPY_EXTRA/datasets/hess-crab4-hd-hap-prod2"
+)
 
 # Define the grouping you want to use to group the obervations to make the acceptance curves
 # Here we use 2 Zenith angle bins only, you can also add efficiency bins for example etc...
-axes = [ObservationGroupAxis('ZEN_PNT', [0, 49, 90], fmt='edges')]
+axes = [ObservationGroupAxis("ZEN_PNT", [0, 49, 90], fmt="edges")]
 
 # Create the ObservationGroups object
 obs_groups = ObservationGroups(axes)
 # write it to file
-filename = str(scratch_dir / 'group-def.fits')
+filename = str(scratch_dir / "group-def.fits")
 obs_groups.obs_groups_table.write(filename, overwrite=True)
 
 # Create a new ObservationTable with the column group_id
-# You give the runs list you want to use to produce the background model that are in your obs table. 
+# You give the runs list you want to use to produce the background model that are in your obs table.
 # Here very simple only the 4 Crab runs...
 list_ids = [23523, 23526, 23559, 23592]
-obs_table_with_group_id = obs_groups.apply(data_store.obs_table.select_obs_id(list_ids))
+obs_table_with_group_id = obs_groups.apply(
+    data_store.obs_table.select_obs_id(list_ids)
+)
 
 
 # ### Make table of known gamma-ray sources to exclude
@@ -120,11 +120,11 @@ obs_table_with_group_id = obs_groups.apply(data_store.obs_table.select_obs_id(li
 
 cat = SourceCatalogGammaCat()
 exclusion_table = cat.table.copy()
-exclusion_table.rename_column('ra', 'RA')
-exclusion_table.rename_column('dec', 'DEC')
-radius = exclusion_table['morph_sigma'].data
+exclusion_table.rename_column("ra", "RA")
+exclusion_table.rename_column("dec", "DEC")
+radius = exclusion_table["morph_sigma"].data
 radius[np.isnan(radius)] = 0.3
-exclusion_table['Radius'] = radius * u.deg
+exclusion_table["Radius"] = radius * u.deg
 exclusion_table = Table(exclusion_table)
 
 
@@ -145,7 +145,7 @@ bgmaker = OffDataBackgroundMaker(
 )
 
 # Define the energy and offset binning to use
-ebounds = EnergyBounds.equal_log_spacing(0.1, 100, 15, 'TeV')
+ebounds = EnergyBounds.equal_log_spacing(0.1, 100, 15, "TeV")
 offset = sqrt_space(start=0, stop=2.5, num=100) * u.deg
 
 # Make the model (i.e. stack counts and livetime)
@@ -166,7 +166,7 @@ bgmaker.save_models(modeltype="2D", smooth=True)
 # In[9]:
 
 
-[path.name for path in scratch_dir.glob('*')]
+[path.name for path in scratch_dir.glob("*")]
 
 
 # ## Inspect the background model
@@ -184,7 +184,7 @@ bgmaker.save_models(modeltype="2D", smooth=True)
 
 
 # Read one of the background models from file
-filename = scratch_dir / 'smooth_background_2D_group_000_table.fits.gz'
+filename = scratch_dir / "smooth_background_2D_group_000_table.fits.gz"
 model = EnergyOffsetBackgroundModel.read(str(filename))
 
 
@@ -192,13 +192,19 @@ model = EnergyOffsetBackgroundModel.read(str(filename))
 
 
 offset = model.bg_rate.offset_bin_center
-energies = model.bg_rate.energy  
+energies = model.bg_rate.energy
 iE = 6
 
 x = offset
-y = model.bg_rate.data[iE,:]
+y = model.bg_rate.data[iE, :]
 plt.plot(x, y, label="bkg model smooth")
-title = "energy band: "+str("%.2f"%energies[iE].value)+"-"+str("%.2f"%energies[iE+1].value)+" TeV"
+title = (
+    "energy band: "
+    + str("%.2f" % energies[iE].value)
+    + "-"
+    + str("%.2f" % energies[iE + 1].value)
+    + " TeV"
+)
 plt.title(title)
 plt.xlabel("Offset (degree)")
 plt.ylabel("Bkg rate (MeV-1 s-1 sr-1)")
@@ -211,9 +217,9 @@ plt.legend()
 
 
 x = energies.log_centers
-y = model.bg_rate.data[:,10]
+y = model.bg_rate.data[:, 10]
 plt.loglog(x, y, label="bkg model smooth")
-plt.title("offset: "+str("%.2f"%offset[10].value)+" deg")
+plt.title("offset: " + str("%.2f" % offset[10].value) + " deg")
 plt.xlabel("Energy (TeV)")
 plt.ylabel("Bkg rate (MeV-1 s-1 sr-1)")
 
@@ -239,7 +245,7 @@ model.bg_rate.plot()
 
 
 # Make a new hdu table in your dataset directory that contains the link to the acceptance curve to use to build the bkg model in your cube analysis
-data_dir = make_fresh_dir('data')
+data_dir = make_fresh_dir("data")
 
 
 # In[15]:
@@ -263,23 +269,23 @@ data_store.hdu_table
 # In[17]:
 
 
-#Copy the background directory in the one where is located the hdu table, here data
+# Copy the background directory in the one where is located the hdu table, here data
 shutil.move(str(scratch_dir), str(data_dir))
 
 # Create the new hdu table with a link to the background model
-group_filename = data_dir / 'background/group-def.fits'
+group_filename = data_dir / "background/group-def.fits"
 
-#relat_path= (scratch_dir.absolute()).relative_to(data_dir.absolute())
+# relat_path= (scratch_dir.absolute()).relative_to(data_dir.absolute())
 hdu_index_table = bgmaker.make_total_index_table(
     data_store=data_store,
-    modeltype='2D',
+    modeltype="2D",
     out_dir_background_model=scratch_dir,
     filename_obs_group_table=str(group_filename),
     smooth=False,
 )
 
 # Write the new hdu table
-filename = data_dir / 'hdu-index.fits.gz'
+filename = data_dir / "hdu-index.fits.gz"
 hdu_index_table.write(str(filename), overwrite=True)
 
 

@@ -36,7 +36,7 @@ from gammapy.spectrum import SensitivityEstimator
 # In[3]:
 
 
-filename = '$GAMMAPY_EXTRA/datasets/cta/perf_prod2/point_like_non_smoothed/South_5h.fits.gz'
+filename = "$GAMMAPY_EXTRA/datasets/cta/perf_prod2/point_like_non_smoothed/South_5h.fits.gz"
 irf = CTAPerf.read(filename)
 
 
@@ -47,10 +47,7 @@ irf = CTAPerf.read(filename)
 # In[4]:
 
 
-sensitivity_estimator = SensitivityEstimator(
-    irf=irf,
-    livetime='5h',
-)
+sensitivity_estimator = SensitivityEstimator(irf=irf, livetime="5h")
 sensitivity_estimator.run()
 
 
@@ -78,15 +75,23 @@ sensitivity_estimator.results_table
 # Plot the sensitivity curve
 t = sensitivity_estimator.results_table
 
-is_s = t['criterion'] == 'significance'
-plt.plot(t['energy'][is_s], t['e2dnde'][is_s], 's-', color='red', label='significance')
+is_s = t["criterion"] == "significance"
+plt.plot(
+    t["energy"][is_s],
+    t["e2dnde"][is_s],
+    "s-",
+    color="red",
+    label="significance",
+)
 
-is_g = t['criterion'] == 'gamma'
-plt.plot(t['energy'][is_g], t['e2dnde'][is_g], '*-', color='blue', label='gamma')
+is_g = t["criterion"] == "gamma"
+plt.plot(
+    t["energy"][is_g], t["e2dnde"][is_g], "*-", color="blue", label="gamma"
+)
 
 plt.loglog()
-plt.xlabel('Energy ({})'.format(t['energy'].unit))
-plt.ylabel('Sensitivity ({})'.format(t['e2dnde'].unit))
+plt.xlabel("Energy ({})".format(t["energy"].unit))
+plt.ylabel("Sensitivity ({})".format(t["e2dnde"].unit))
 plt.legend();
 
 

@@ -16,9 +16,10 @@
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
-plt.style.use('ggplot')
 
-import glob   # to list files
+plt.style.use("ggplot")
+
+import glob  # to list files
 from os.path import expandvars
 from sherpa.astro.datastack import DataStack
 import sherpa.astro.datastack as sh
@@ -28,18 +29,19 @@ import sherpa.astro.datastack as sh
 
 
 import sherpa
-print('sherpa:', sherpa.__version__)
+
+print("sherpa:", sherpa.__version__)
 
 
 # In[3]:
 
 
 ds = DataStack()
-ANALYSIS_DIR = expandvars('$GAMMAPY_EXTRA/datasets/hess-crab4_pha/')
-filenames = glob.glob(ANALYSIS_DIR + 'pha_obs*.fits')
+ANALYSIS_DIR = expandvars("$GAMMAPY_EXTRA/datasets/hess-crab4_pha/")
+filenames = glob.glob(ANALYSIS_DIR + "pha_obs*.fits")
 for filename in filenames:
     sh.load_data(ds, filename)
-    
+
 # see what is stored
 ds.show_stack()
 
@@ -56,12 +58,12 @@ ds.show_stack()
 # Define the source model
 ds.set_source("powlaw1d.p1")
 
-# Change reference energy of the model 
-p1.ref = 1e9   # 1 TeV = 1e9 keV
+# Change reference energy of the model
+p1.ref = 1e9  # 1 TeV = 1e9 keV
 p1.gamma = 2.0
 p1.ampl = 1e-20  # in cm**-2 s**-1 keV**-1
 
-# View parameters 
+# View parameters
 print(p1)
 
 

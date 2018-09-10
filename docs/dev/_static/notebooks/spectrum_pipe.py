@@ -47,9 +47,9 @@ import astropy.units as u
 
 
 # TODO: Replace with public data release
-store_dir = '$GAMMAPY_EXTRA/datasets/hess-crab4-hd-hap-prod2'
+store_dir = "$GAMMAPY_EXTRA/datasets/hess-crab4-hd-hap-prod2"
 data_store = DataStore.from_dir(store_dir)
-obs_id = data_store.obs_table['OBS_ID'].data
+obs_id = data_store.obs_table["OBS_ID"].data
 print("Use observations {}".format(obs_id))
 
 obs_list = data_store.obs_list(obs_id)
@@ -62,14 +62,14 @@ obs_list = data_store.obs_list(obs_id)
 # In[3]:
 
 
-crab_pos = SkyCoord.from_name('crab')
+crab_pos = SkyCoord.from_name("crab")
 on_region = CircleSkyRegion(crab_pos, 0.15 * u.deg)
 
 model = models.LogParabola(
-    alpha = 2.3,
-    beta = 0.01,
-    amplitude = 1e-11 * u.Unit('cm-2 s-1 TeV-1'),
-    reference = 1 * u.TeV,
+    alpha=2.3,
+    beta=0.01,
+    amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"),
+    reference=1 * u.TeV,
 )
 
 flux_point_binning = EnergyBounds.equal_log_spacing(0.7, 30, 5, u.TeV)
@@ -88,7 +88,7 @@ for source in gammacat:
         continue
     region = CircleSkyRegion(source.position, 0.15 * u.deg)
     regions.append(region)
-    
+
 exclusion_mask.data = exclusion_mask.geom.region_mask(regions, inside=False)
 exclusion_mask.plot()
 
@@ -97,20 +97,20 @@ exclusion_mask.plot()
 
 
 config = dict(
-    outdir = None,
-    background = dict(
+    outdir=None,
+    background=dict(
         on_region=on_region,
         exclusion_mask=exclusion_mask,
-        min_distance = 0.1 * u.rad,
+        min_distance=0.1 * u.rad,
     ),
-    extraction = dict(containment_correction=False),
-    fit = dict(
+    extraction=dict(containment_correction=False),
+    fit=dict(
         model=model,
-        stat='wstat',
+        stat="wstat",
         forward_folded=True,
-        fit_range = flux_point_binning[[0, -1]]
+        fit_range=flux_point_binning[[0, -1]],
     ),
-    fp_binning=flux_point_binning
+    fp_binning=flux_point_binning,
 )
 
 
@@ -121,11 +121,8 @@ config = dict(
 # In[6]:
 
 
-ana = SpectrumAnalysisIACT(
-    observations=obs_list,
-    config=config,
-)
-ana.run()
+ana = SpectrumAnalysisIACT(observations=obs_list, config=config)
+ana.run(opts_minuit={'print_level':1})
 
 
 # ## Check out the results
@@ -144,8 +141,8 @@ print(ana.fit.result[0])
 ana.spectrum_result.plot(
     energy_range=ana.fit.fit_range,
     energy_power=2,
-    flux_unit='erg-1 cm-2 s-1',
-    fig_kwargs=dict(figsize = (8,8)),
+    flux_unit="erg-1 cm-2 s-1",
+    fig_kwargs=dict(figsize=(8, 8)),
 )
 
 

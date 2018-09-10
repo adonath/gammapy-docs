@@ -60,8 +60,9 @@ from gammapy.detect import TSMapEstimator, find_peaks
 # Configure the logger, so that the spectral analysis
 # isn't so chatty about what it's doing.
 import logging
+
 logging.basicConfig()
-log = logging.getLogger('gammapy.spectrum')
+log = logging.getLogger("gammapy.spectrum")
 log.setLevel(logging.ERROR)
 
 
@@ -75,7 +76,7 @@ log.setLevel(logging.ERROR)
 
 
 # data_store = DataStore.from_dir('$CTADATA/index/gps')
-data_store = DataStore.from_dir('$GAMMAPY_EXTRA/datasets/cta-1dc/index/gps/')
+data_store = DataStore.from_dir("$GAMMAPY_EXTRA/datasets/cta-1dc/index/gps/")
 
 
 # In[6]:
@@ -102,7 +103,7 @@ obs_list = data_store.obs_list(obs_id)
 # In[8]:
 
 
-obs_cols = ['OBS_ID', 'GLON_PNT', 'GLAT_PNT', 'LIVETIME']
+obs_cols = ["OBS_ID", "GLON_PNT", "GLAT_PNT", "LIVETIME"]
 data_store.obs_table.select_obs_id(obs_id)[obs_cols]
 
 
@@ -116,15 +117,10 @@ data_store.obs_table.select_obs_id(obs_id)[obs_cols]
 
 
 axis = MapAxis.from_edges(
-    np.logspace(-1., 1., 10), unit='TeV',
-    name='energy', interp='log',
+    np.logspace(-1., 1., 10), unit="TeV", name="energy", interp="log"
 )
 geom = WcsGeom.create(
-    skydir=(0, 0),
-    npix=(500, 400),
-    binsz=0.02,
-    coordsys='GAL',
-    axes=[axis]
+    skydir=(0, 0), npix=(500, 400), binsz=0.02, coordsys="GAL", axes=[axis]
 )
 geom
 
@@ -136,7 +132,7 @@ geom
 # In[10]:
 
 
-target_position = SkyCoord(0, 0, unit='deg', frame='galactic')
+target_position = SkyCoord(0, 0, unit="deg", frame="galactic")
 on_radius = 0.2 * u.deg
 on_region = CircleSkyRegion(center=target_position, radius=on_radius)
 
@@ -152,7 +148,7 @@ exclusion_mask.plot();
 # In[12]:
 
 
-get_ipython().run_cell_magic('time', '', "maker = MapMaker(geom, offset_max='2 deg')\nmaps = maker.run(obs_list)\nprint(maps.keys())")
+get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, offset_max="2 deg")\nmaps = maker.run(obs_list)\nprint(maps.keys())')
 
 
 # In[13]:
@@ -162,9 +158,9 @@ get_ipython().run_cell_magic('time', '', "maker = MapMaker(geom, offset_max='2 d
 # Let's also make some images:
 images = maker.make_images()
 
-excess = images['counts'].copy()
-excess.data -= images['background'].data
-images['excess'] = excess
+excess = images["counts"].copy()
+excess.data -= images["background"].data
+images["excess"] = excess
 
 
 # ### Show images
@@ -174,19 +170,19 @@ images['excess'] = excess
 # In[14]:
 
 
-images['counts'].smooth(2).plot(vmax=5);
+images["counts"].smooth(2).plot(vmax=5);
 
 
 # In[15]:
 
 
-images['background'].plot(vmax=5);
+images["background"].plot(vmax=5);
 
 
 # In[16]:
 
 
-images['excess'].smooth(3).plot(vmax=2);
+images["excess"].smooth(3).plot(vmax=2);
 
 
 # ## Source Detection
@@ -196,7 +192,7 @@ images['excess'].smooth(3).plot(vmax=2);
 # In[17]:
 
 
-kernel = Gaussian2DKernel(1, mode='oversample').array
+kernel = Gaussian2DKernel(1, mode="oversample").array
 plt.imshow(kernel);
 
 
@@ -209,14 +205,14 @@ get_ipython().run_cell_magic('time', '', 'ts_image_estimator = TSMapEstimator()\
 # In[19]:
 
 
-sources = find_peaks(images_ts['sqrt_ts'], threshold=8)
+sources = find_peaks(images_ts["sqrt_ts"], threshold=8)
 sources
 
 
 # In[20]:
 
 
-source_pos = SkyCoord(sources['ra'], sources['dec'])
+source_pos = SkyCoord(sources["ra"], sources["dec"])
 source_pos
 
 
@@ -224,12 +220,17 @@ source_pos
 
 
 # Plot sources on top of significance sky image
-images_ts['sqrt_ts'].plot(add_cbar=True)
+images_ts["sqrt_ts"].plot(add_cbar=True)
 
 plt.gca().scatter(
-    source_pos.ra.deg, source_pos.dec.deg,
-    transform=plt.gca().get_transform('icrs'),
-    color='none', edgecolor='white', marker='o', s=200, lw=1.5,
+    source_pos.ra.deg,
+    source_pos.dec.deg,
+    transform=plt.gca().get_transform("icrs"),
+    color="none",
+    edgecolor="white",
+    marker="o",
+    s=200,
+    lw=1.5,
 );
 
 
@@ -249,13 +250,13 @@ plt.gca().scatter(
 # In[22]:
 
 
-get_ipython().run_cell_magic('time', '', 'bkg_estimator = ReflectedRegionsBackgroundEstimator(\n    obs_list=obs_list,\n    on_region=on_region,\n    exclusion_mask=exclusion_mask,\n)\nbkg_estimator.run()\nbkg_estimate = bkg_estimator.result\nbkg_estimator.plot();')
+get_ipython().run_cell_magic('time', '', 'bkg_estimator = ReflectedRegionsBackgroundEstimator(\n    obs_list=obs_list, on_region=on_region, exclusion_mask=exclusion_mask\n)\nbkg_estimator.run()\nbkg_estimate = bkg_estimator.result\nbkg_estimator.plot();')
 
 
 # In[23]:
 
 
-get_ipython().run_cell_magic('time', '', 'extract = SpectrumExtraction(\n    obs_list=obs_list,\n    bkg_estimate=bkg_estimate,\n)\nextract.run()\nobservations = extract.observations')
+get_ipython().run_cell_magic('time', '', 'extract = SpectrumExtraction(obs_list=obs_list, bkg_estimate=bkg_estimate)\nextract.run()\nobservations = extract.observations')
 
 
 # ### Model fit
@@ -265,7 +266,7 @@ get_ipython().run_cell_magic('time', '', 'extract = SpectrumExtraction(\n    obs
 # In[24]:
 
 
-get_ipython().run_cell_magic('time', '', "model = models.PowerLaw(\n    index = 2,\n    amplitude = 1e-11 * u.Unit('cm-2 s-1 TeV-1'),\n    reference = 1 * u.TeV,\n)\nfit = SpectrumFit(observations, model)\nfit.fit()\nfit.est_errors()\nprint(fit.result[0])")
+get_ipython().run_cell_magic('time', '', 'model = models.PowerLaw(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\nfit = SpectrumFit(observations, model)\nfit.fit()\nfit.est_errors()\nprint(fit.result[0])')
 
 
 # ### Spectral points
@@ -283,15 +284,13 @@ print(stacked_obs)
 # In[26]:
 
 
-ebounds = EnergyBounds.equal_log_spacing(1, 40, 4, unit = u.TeV)
+ebounds = EnergyBounds.equal_log_spacing(1, 40, 4, unit=u.TeV)
 
 seg = SpectrumEnergyGroupMaker(obs=stacked_obs)
 seg.compute_groups_fixed(ebounds=ebounds)
 
 fpe = FluxPointEstimator(
-    obs=stacked_obs,
-    groups=seg.groups,
-    model=fit.result[0].model,
+    obs=stacked_obs, groups=seg.groups, model=fit.result[0].model
 )
 fpe.compute_points()
 fpe.flux_points.table
@@ -306,14 +305,13 @@ fpe.flux_points.table
 
 
 total_result = SpectrumResult(
-    model=fit.result[0].model,
-    points=fpe.flux_points,
+    model=fit.result[0].model, points=fpe.flux_points
 )
 
 total_result.plot(
-    energy_range = [1, 40] * u.TeV,
-    fig_kwargs=dict(figsize=(8,8)),
-    point_kwargs=dict(color='green'),
+    energy_range=[1, 40] * u.TeV,
+    fig_kwargs=dict(figsize=(8, 8)),
+    point_kwargs=dict(color="green"),
 );
 
 

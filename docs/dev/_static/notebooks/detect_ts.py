@@ -51,19 +51,22 @@ from gammapy.catalog import source_catalogs
 
 
 # Load data from files
-filename = '../datasets/fermi_survey/all.fits.gz'
-opts = {'position': SkyCoord(0, 0, unit='deg', frame='galactic'), 'width': (20, 8)}
+filename = "../datasets/fermi_survey/all.fits.gz"
+opts = {
+    "position": SkyCoord(0, 0, unit="deg", frame="galactic"),
+    "width": (20, 8),
+}
 maps = {
-    'counts': Map.read(filename, hdu='COUNTS').cutout(**opts),
-    'background': Map.read(filename, hdu='BACKGROUND').cutout(**opts),
-    'exposure': Map.read(filename, hdu='EXPOSURE').cutout(**opts),
+    "counts": Map.read(filename, hdu="COUNTS").cutout(**opts),
+    "background": Map.read(filename, hdu="BACKGROUND").cutout(**opts),
+    "exposure": Map.read(filename, hdu="EXPOSURE").cutout(**opts),
 }
 
 
 # In[4]:
 
 
-get_ipython().run_cell_magic('time', '', "# Compute a source kernel (source template) in oversample mode,\n# PSF is not taken into account\nkernel = Gaussian2DKernel(2.5, mode='oversample')\nestimator = TSMapEstimator()\nimages = estimator.run(maps, kernel)")
+get_ipython().run_cell_magic('time', '', '# Compute a source kernel (source template) in oversample mode,\n# PSF is not taken into account\nkernel = Gaussian2DKernel(2.5, mode="oversample")\nestimator = TSMapEstimator()\nimages = estimator.run(maps, kernel)')
 
 
 # ## Plot images
@@ -72,21 +75,21 @@ get_ipython().run_cell_magic('time', '', "# Compute a source kernel (source temp
 
 
 plt.figure(figsize=(15, 5))
-images['sqrt_ts'].plot();
+images["sqrt_ts"].plot();
 
 
 # In[6]:
 
 
 plt.figure(figsize=(15, 5))
-images['flux'].plot(add_cbar=True);
+images["flux"].plot(add_cbar=True);
 
 
 # In[7]:
 
 
 plt.figure(figsize=(15, 5))
-images['niter'].plot(add_cbar=True);
+images["niter"].plot(add_cbar=True);
 
 
 # ## Source catalog
@@ -96,7 +99,7 @@ images['niter'].plot(add_cbar=True);
 # In[8]:
 
 
-sources = find_peaks(images['sqrt_ts'], threshold=8)
+sources = find_peaks(images["sqrt_ts"], threshold=8)
 sources
 
 
@@ -106,12 +109,17 @@ sources
 # Plot sources on top of significance sky image
 plt.figure(figsize=(15, 5))
 
-images['sqrt_ts'].plot()
+images["sqrt_ts"].plot()
 
 plt.gca().scatter(
-    sources['ra'], sources['dec'],
-    transform=plt.gca().get_transform('icrs'),
-    color='none', edgecolor='black', marker='o', s=600, lw=1.5,
+    sources["ra"],
+    sources["dec"],
+    transform=plt.gca().get_transform("icrs"),
+    color="none",
+    edgecolor="black",
+    marker="o",
+    s=600,
+    lw=1.5,
 );
 
 
@@ -132,8 +140,8 @@ plt.gca().scatter(
 # In[11]:
 
 
-fermi_2fhl = source_catalogs['2fhl']
-fermi_2fhl.table[:5][['Source_Name', 'GLON', 'GLAT']]
+fermi_2fhl = source_catalogs["2fhl"]
+fermi_2fhl.table[:5][["Source_Name", "GLON", "GLAT"]]
 
 
 # ## Exercises

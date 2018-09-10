@@ -45,9 +45,7 @@ get_ipython().system('gammapy info --no-envvar --no-dependencies --no-system')
 
 
 # Define which data to use
-data_store = DataStore.from_dir(
-    '$GAMMAPY_EXTRA/datasets/cta-1dc/index/gps/'
-)
+data_store = DataStore.from_dir("$GAMMAPY_EXTRA/datasets/cta-1dc/index/gps/")
 obs_ids = [110380, 111140, 111159]
 obs_list = data_store.obs_list(obs_ids)
 
@@ -57,11 +55,14 @@ obs_list = data_store.obs_list(obs_ids)
 
 # Define map geometry (spatial and energy binning)
 axis = MapAxis.from_edges(
-    np.logspace(-1., 1., 10), unit='TeV', name='energy', interp='log',
+    np.logspace(-1., 1., 10), unit="TeV", name="energy", interp="log"
 )
 geom = WcsGeom.create(
-    skydir=(0, 0), binsz=0.02, width=(10, 8),
-    coordsys='GAL', proj='CAR',
+    skydir=(0, 0),
+    binsz=0.02,
+    width=(10, 8),
+    coordsys="GAL",
+    proj="CAR",
     axes=[axis],
 )
 
@@ -81,21 +82,21 @@ get_ipython().run_cell_magic('time', '', '# Make 2D images (for plotting, analys
 # In[8]:
 
 
-images['counts'].smooth(radius=0.2*u.deg).plot(stretch='sqrt');
+images["counts"].smooth(radius=0.2 * u.deg).plot(stretch="sqrt");
 
 
 # In[9]:
 
 
-images['background'].plot(stretch='sqrt');
+images["background"].plot(stretch="sqrt");
 
 
 # In[10]:
 
 
-residual = images['counts'].copy()
-residual.data -= images['background'].data
-residual.smooth(5).plot(stretch='sqrt');
+residual = images["counts"].copy()
+residual.data -= images["background"].data
+residual.smooth(5).plot(stretch="sqrt");
 
 
 # ## Compute PSF kernel
@@ -105,7 +106,7 @@ residual.smooth(5).plot(stretch='sqrt');
 # In[11]:
 
 
-get_ipython().run_cell_magic('time', '', "obs_list = data_store.obs_list(obs_ids)\nsrc_pos = SkyCoord(0, 0, unit='deg', frame='galactic')\n\ntable_psf = obs_list.make_mean_psf(src_pos)\npsf_kernel = PSFKernel.from_table_psf(\n    table_psf,\n    maps['exposure'].geom,\n    max_radius='0.3 deg',\n)")
+get_ipython().run_cell_magic('time', '', 'obs_list = data_store.obs_list(obs_ids)\nsrc_pos = SkyCoord(0, 0, unit="deg", frame="galactic")\n\ntable_psf = obs_list.make_mean_psf(src_pos)\npsf_kernel = PSFKernel.from_table_psf(\n    table_psf, maps["exposure"].geom, max_radius="0.3 deg"\n)')
 
 
 # ## Compute energy dispersion
@@ -113,7 +114,7 @@ get_ipython().run_cell_magic('time', '', "obs_list = data_store.obs_list(obs_ids
 # In[12]:
 
 
-get_ipython().run_cell_magic('time', '', "energy_axis = geom.get_axis_by_name('energy')\nenergy = energy_axis.edges * energy_axis.unit\nedisp = obs_list.make_mean_edisp(position=src_pos, e_true=energy, e_reco=energy)")
+get_ipython().run_cell_magic('time', '', 'energy_axis = geom.get_axis_by_name("energy")\nenergy = energy_axis.edges * energy_axis.unit\nedisp = obs_list.make_mean_edisp(\n    position=src_pos, e_true=energy, e_reco=energy\n)')
 
 
 # ## Save maps
@@ -132,13 +133,13 @@ get_ipython().run_cell_magic('time', '', "energy_axis = geom.get_axis_by_name('e
 
 
 # Write
-path = Path('analysis_3d')
+path = Path("analysis_3d")
 path.mkdir(exist_ok=True)
-maps['counts'].write(str(path / 'counts.fits'), overwrite=True)
-maps['background'].write(str(path / 'background.fits'), overwrite=True)
-maps['exposure'].write(str(path / 'exposure.fits'), overwrite=True)
-psf_kernel.write(str(path / 'psf.fits'), overwrite=True)
-edisp.write(str(path / 'edisp.fits'), overwrite=True)
+maps["counts"].write(str(path / "counts.fits"), overwrite=True)
+maps["background"].write(str(path / "background.fits"), overwrite=True)
+maps["exposure"].write(str(path / "exposure.fits"), overwrite=True)
+psf_kernel.write(str(path / "psf.fits"), overwrite=True)
+edisp.write(str(path / "edisp.fits"), overwrite=True)
 
 
 # In[14]:
@@ -146,12 +147,12 @@ edisp.write(str(path / 'edisp.fits'), overwrite=True)
 
 # Read
 maps = {
-    'counts': Map.read(str(path / 'counts.fits')),
-    'background': Map.read(str(path / 'background.fits')),
-    'exposure': Map.read(str(path / 'exposure.fits')),
+    "counts": Map.read(str(path / "counts.fits")),
+    "background": Map.read(str(path / "background.fits")),
+    "exposure": Map.read(str(path / "exposure.fits")),
 }
-psf_kernel = PSFKernel.read(str(path / 'psf.fits'))
-edisp = EnergyDispersion.read(str(path / 'edisp.fits'))
+psf_kernel = PSFKernel.read(str(path / "psf.fits"))
+edisp = EnergyDispersion.read(str(path / "edisp.fits"))
 
 
 # ## Cutout
@@ -162,10 +163,10 @@ edisp = EnergyDispersion.read(str(path / 'edisp.fits'))
 
 
 cmaps = {
-    name: m.cutout(SkyCoord(0, 0, unit='deg', frame='galactic'), 1.5 * u.deg)
+    name: m.cutout(SkyCoord(0, 0, unit="deg", frame="galactic"), 1.5 * u.deg)
     for name, m in maps.items()
 }
-cmaps['counts'].sum_over_axes().plot(stretch='sqrt');
+cmaps["counts"].sum_over_axes().plot(stretch="sqrt");
 
 
 # ## Fit mask
@@ -175,7 +176,7 @@ cmaps['counts'].sum_over_axes().plot(stretch='sqrt');
 # In[16]:
 
 
-mask = Map.from_geom(cmaps['counts'].geom)
+mask = Map.from_geom(cmaps["counts"].geom)
 
 region = CircleSkyRegion(center=src_pos, radius=0.6 * u.deg)
 mask.data = mask.geom.region_mask([region])
@@ -189,7 +190,7 @@ mask.get_image_by_idx((0,)).plot();
 
 
 coords = mask.geom.get_coord()
-mask.data &= (coords['energy'] > 0.3)
+mask.data &= coords["energy"] > 0.3
 
 
 # ## Model fit
@@ -200,25 +201,17 @@ mask.data &= (coords['energy'] > 0.3)
 # In[18]:
 
 
-spatial_model = SkyPointSource(
-    lon_0='0.01 deg',
-    lat_0='0.01 deg',
-)
+spatial_model = SkyPointSource(lon_0="0.01 deg", lat_0="0.01 deg")
 spectral_model = PowerLaw(
-    index=2.2,
-    amplitude='3e-12 cm-2 s-1 TeV-1',
-    reference='1 TeV',
+    index=2.2, amplitude="3e-12 cm-2 s-1 TeV-1", reference="1 TeV"
 )
-model = SkyModel(
-    spatial_model=spatial_model,
-    spectral_model=spectral_model,
-)
+model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
 
 
 # In[19]:
 
 
-get_ipython().run_cell_magic('time', '', "fit = MapFit(\n    model=model,\n    counts=cmaps['counts'],\n    exposure=cmaps['exposure'],\n    background=cmaps['background'],\n    mask=mask,\n    psf=psf_kernel,\n    edisp=edisp,\n)\n\nfit.fit()")
+get_ipython().run_cell_magic('time', '', 'fit = MapFit(\n    model=model,\n    counts=cmaps["counts"],\n    exposure=cmaps["exposure"],\n    background=cmaps["background"],\n    mask=mask,\n    psf=psf_kernel,\n    edisp=edisp,\n)\n\nfit.fit(opts_minuit={\'print_level\':1})')
 
 
 # ## Check model fit
@@ -239,10 +232,12 @@ print(spec)
 
 
 # For now, we can copy the parameter error manually
-spec.parameters.set_parameter_errors({
-    'index': model.parameters.error('index'),
-    'amplitude': model.parameters.error('amplitude'),
-})
+spec.parameters.set_parameter_errors(
+    {
+        "index": model.parameters.error("index"),
+        "amplitude": model.parameters.error("amplitude"),
+    }
+)
 print(spec)
 
 

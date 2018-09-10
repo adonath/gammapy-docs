@@ -61,11 +61,11 @@ import astropy
 import regions
 import sherpa
 
-print('gammapy:', gammapy.__version__)
-print('numpy:', np.__version__)
-print('astropy', astropy.__version__)
-print('regions', regions.__version__)
-print('sherpa', sherpa.__version__)
+print("gammapy:", gammapy.__version__)
+print("numpy:", np.__version__)
+print("astropy", astropy.__version__)
+print("regions", regions.__version__)
+print("sherpa", sherpa.__version__)
 
 
 # In[3]:
@@ -79,9 +79,22 @@ from gammapy.data import DataStore, ObservationList
 from gammapy.data import ObservationStats, ObservationSummary
 from gammapy.background.reflected import ReflectedRegionsBackgroundEstimator
 from gammapy.utils.energy import EnergyBounds
-from gammapy.spectrum import SpectrumExtraction, SpectrumObservation, SpectrumFit, SpectrumResult
-from gammapy.spectrum.models import PowerLaw, ExponentialCutoffPowerLaw, LogParabola
-from gammapy.spectrum import FluxPoints, SpectrumEnergyGroupMaker, FluxPointEstimator
+from gammapy.spectrum import (
+    SpectrumExtraction,
+    SpectrumObservation,
+    SpectrumFit,
+    SpectrumResult,
+)
+from gammapy.spectrum.models import (
+    PowerLaw,
+    ExponentialCutoffPowerLaw,
+    LogParabola,
+)
+from gammapy.spectrum import (
+    FluxPoints,
+    SpectrumEnergyGroupMaker,
+    FluxPointEstimator,
+)
 from gammapy.maps import Map
 
 
@@ -94,8 +107,9 @@ from gammapy.maps import Map
 
 # Setup the logger
 import logging
+
 logging.basicConfig()
-log = logging.getLogger('gammapy.spectrum')
+log = logging.getLogger("gammapy.spectrum")
 log.setLevel(logging.WARNING)
 
 
@@ -108,7 +122,7 @@ log.setLevel(logging.WARNING)
 # In[5]:
 
 
-DATA_DIR = '$GAMMAPY_EXTRA/datasets/hess-crab4-hd-hap-prod2'
+DATA_DIR = "$GAMMAPY_EXTRA/datasets/hess-crab4-hd-hap-prod2"
 
 datastore = DataStore.from_dir(DATA_DIR)
 obs_ids = [23523, 23526, 23559, 23592]
@@ -123,8 +137,8 @@ obs_list = datastore.obs_list(obs_ids)
 # In[6]:
 
 
-target_position = SkyCoord(ra=83.63, dec=22.01, unit='deg', frame='icrs')
-on_region_radius = Angle('0.11 deg')
+target_position = SkyCoord(ra=83.63, dec=22.01, unit="deg", frame="icrs")
+on_region_radius = Angle("0.11 deg")
 on_region = CircleSkyRegion(center=target_position, radius=on_region_radius)
 
 
@@ -139,14 +153,13 @@ on_region = CircleSkyRegion(center=target_position, radius=on_region_radius)
 
 
 exclusion_region = CircleSkyRegion(
-    center=SkyCoord(183.604, -8.708, unit='deg', frame='galactic'),
+    center=SkyCoord(183.604, -8.708, unit="deg", frame="galactic"),
     radius=0.5 * u.deg,
 )
 
 skydir = target_position.galactic
 exclusion_mask = Map.create(
-    npix=(150, 150), binsz=0.05, skydir=skydir,
-    proj='TAN', coordsys='GAL',
+    npix=(150, 150), binsz=0.05, skydir=skydir, proj="TAN", coordsys="GAL"
 )
 
 mask = exclusion_mask.geom.region_mask([exclusion_region], inside=False)
@@ -162,9 +175,8 @@ exclusion_mask.plot()
 
 
 background_estimator = ReflectedRegionsBackgroundEstimator(
-    obs_list=obs_list,
-    on_region=on_region,
-    exclusion_mask = exclusion_mask)
+    obs_list=obs_list, on_region=on_region, exclusion_mask=exclusion_mask
+)
 
 background_estimator.run()
 
@@ -178,7 +190,7 @@ background_estimator.run()
 # In[10]:
 
 
-plt.figure(figsize=(8,8))
+plt.figure(figsize=(8, 8))
 background_estimator.plot()
 
 
@@ -192,15 +204,15 @@ background_estimator.plot()
 stats = []
 for obs, bkg in zip(obs_list, background_estimator.result):
     stats.append(ObservationStats.from_obs(obs, bkg))
-    
+
 print(stats[1])
 
 obs_summary = ObservationSummary(stats)
-fig = plt.figure(figsize=(10,6))
-ax1=fig.add_subplot(121)
+fig = plt.figure(figsize=(10, 6))
+ax1 = fig.add_subplot(121)
 
 obs_summary.plot_excess_vs_livetime(ax=ax1)
-ax2=fig.add_subplot(122)
+ax2 = fig.add_subplot(122)
 obs_summary.plot_significance_vs_livetime(ax=ax2)
 
 
@@ -211,8 +223,8 @@ obs_summary.plot_significance_vs_livetime(ax=ax2)
 # In[12]:
 
 
-e_reco = EnergyBounds.equal_log_spacing(0.1, 40, 40, unit='TeV')
-e_true = EnergyBounds.equal_log_spacing(0.05, 100., 200, unit='TeV')
+e_reco = EnergyBounds.equal_log_spacing(0.1, 40, 40, unit="TeV")
+e_true = EnergyBounds.equal_log_spacing(0.05, 100., 200, unit="TeV")
 
 
 # Instantiate a [SpectrumExtraction](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumExtraction.html) object that will do the extraction. The containment_correction parameter is there to allow for PSF leakage correction if one is working with full enclosure IRFs. We also compute a threshold energy and store the result in OGIP compliant files (pha, rmf, arf). This last step might be omitted though.
@@ -220,7 +232,7 @@ e_true = EnergyBounds.equal_log_spacing(0.05, 100., 200, unit='TeV')
 # In[13]:
 
 
-ANALYSIS_DIR = 'crab_analysis'
+ANALYSIS_DIR = "crab_analysis"
 
 extraction = SpectrumExtraction(
     obs_list=obs_list,
@@ -230,7 +242,7 @@ extraction = SpectrumExtraction(
 extraction.run()
 
 # Add a condition on correct energy range in case it is not set by default
-extraction.compute_energy_threshold(method_lo='area_max', area_percent_lo=10.0)
+extraction.compute_energy_threshold(method_lo="area_max", area_percent_lo=10.0)
 
 print(extraction.observations[0])
 # Write output in the form of OGIP files: PHA, ARF, RMF, BKG
@@ -239,16 +251,16 @@ print(extraction.observations[0])
 
 # ## Look at observations
 # 
-# Now we will look at the files we just created. We will use the [SpectrumObservation](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumObservation.html) object that are still in memory from the extraction step. Note, however, that you could also read them from disk if you have written them in the step above . The ``ANALYSIS_DIR`` folder contains 4 ``FITS`` files for each observation. These files are described in detail at https://gamma-astro-data-formats.readthedocs.io/en/latest/ogip/index.html. In short they correspond to the on vector, the off vector, the effectie area, and the energy dispersion.
+# Now we will look at the files we just created. We will use the [SpectrumObservation](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumObservation.html) object that are still in memory from the extraction step. Note, however, that you could also read them from disk if you have written them in the step above . The ``ANALYSIS_DIR`` folder contains 4 ``FITS`` files for each observation. These files are described in detail [here](https://gamma-astro-data-formats.readthedocs.io/en/latest/spectra/ogip/index.html). In short, they correspond to the on vector, the off vector, the effectie area, and the energy dispersion.
 
 # In[14]:
 
 
-#filename = ANALYSIS_DIR + '/ogip_data/pha_obs23523.fits'
-#obs = SpectrumObservation.read(filename)
+# filename = ANALYSIS_DIR + '/ogip_data/pha_obs23523.fits'
+# obs = SpectrumObservation.read(filename)
 
 # Requires IPython widgets
-#_ = extraction.observations.peek()
+# _ = extraction.observations.peek()
 
 extraction.observations[0].peek()
 
@@ -261,16 +273,14 @@ extraction.observations[0].peek()
 
 
 model = PowerLaw(
-    index=2 * u.Unit(''),
-    amplitude=2e-11 * u.Unit('cm-2 s-1 TeV-1'),
-    reference=1 * u.TeV,
+    index=2, amplitude=2e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV
 )
 
 joint_fit = SpectrumFit(obs_list=extraction.observations, model=model)
 
 joint_fit.fit()
 joint_fit.est_errors()
-#fit.run(outdir = ANALYSIS_DIR)
+# fit.run(outdir = ANALYSIS_DIR)
 
 joint_result = joint_fit.result
 
@@ -278,7 +288,7 @@ joint_result = joint_fit.result
 # In[16]:
 
 
-ax0, ax1 = joint_result[0].plot(figsize=(8,8))
+ax0, ax1 = joint_result[0].plot(figsize=(8, 8))
 ax0.set_ylim(0, 20)
 print(joint_result[0])
 
@@ -305,9 +315,7 @@ print(seg.groups)
 
 
 fpe = FluxPointEstimator(
-    obs=stacked_obs,
-    groups=seg.groups,
-    model=joint_result[0].model,
+    obs=stacked_obs, groups=seg.groups, model=joint_result[0].model
 )
 fpe.compute_points()
 
@@ -321,18 +329,18 @@ fpe.flux_points.table
 
 # The final plot with the best fit model and the flux points can be quickly made like this
 
-# In[20]:
+# In[27]:
 
 
 spectrum_result = SpectrumResult(
-    points=fpe.flux_points,
-    model=joint_result[0].model,
+    points=fpe.flux_points, model=joint_result[0].model
 )
 ax0, ax1 = spectrum_result.plot(
     energy_range=joint_fit.result[0].fit_range,
-    energy_power=2, flux_unit='erg-1 cm-2 s-1',
-    fig_kwargs=dict(figsize=(8,8)),
-    point_kwargs=dict(color='navy')
+    energy_power=2,
+    flux_unit="erg-1 cm-2 s-1",
+    fig_kwargs=dict(figsize=(8, 8)),
+    point_kwargs=dict(color="red"),
 )
 
 ax0.set_xlim(0.4, 50)
@@ -342,7 +350,7 @@ ax0.set_xlim(0.4, 50)
 # 
 # And alternative approach to fitting the spectrum is stacking all observations first and the fitting a model to the stacked observation. This works as follows. A comparison to the joint likelihood fit is also printed.
 
-# In[21]:
+# In[23]:
 
 
 stacked_obs = extraction.observations.stack()
@@ -352,15 +360,24 @@ stacked_fit.fit()
 stacked_fit.est_errors()
 
 
+# In[24]:
+
+
 stacked_result = stacked_fit.result
 print(stacked_result[0])
 
-stacked_table = stacked_result[0].to_table(format='.3g')
-stacked_table['method'] = 'stacked'
-joint_table = joint_result[0].to_table(format='.3g')
-joint_table['method'] = 'joint'
+
+# In[25]:
+
+
+stacked_table = stacked_result[0].to_table(format=".3g")
+stacked_table["method"] = "stacked"
+joint_table = joint_result[0].to_table(format=".3g")
+joint_table["method"] = "joint"
 total_table = vstack_table([stacked_table, joint_table])
-print(total_table['method', 'index', 'index_err', 'amplitude', 'amplitude_err'])
+print(
+    total_table["method", "index", "index_err", "amplitude", "amplitude_err"]
+)
 
 
 # ## Exercises
@@ -387,5 +404,3 @@ print(total_table['method', 'index', 'index_err', 'amplitude', 'amplitude_err'])
 # 
 # * if you want think this is way too complicated and just want to run a quick analysis check out [this notebook](spectrum_pipe.ipynb)
 # * if you interested in available fit statistics checkout [gammapy.stats](http://docs.gammapy.org/dev/stats/index.html)
-# * if you want to simulate spectral look at [this tutorial](http://docs.gammapy.org/dev/spectrum/simulation.html)
-# * if you want to compare your spectra to e.g. Fermi spectra published in catalogs have a look at [this](http://docs.gammapy.org/dev/spectrum/plotting_fermi_spectra.html)

@@ -24,7 +24,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
-from gammapy.irf import EffectiveAreaTable2D, EnergyDispersion2D, EnergyDependentMultiGaussPSF, Background3D
+from gammapy.irf import (
+    EffectiveAreaTable2D,
+    EnergyDispersion2D,
+    EnergyDependentMultiGaussPSF,
+    Background3D,
+)
 from gammapy.maps import WcsGeom, MapAxis, WcsNDMap, Map
 from gammapy.spectrum.models import PowerLaw
 from gammapy.image.models import SkyGaussian
@@ -46,12 +51,15 @@ get_ipython().system('gammapy info --no-envvar --no-dependencies --no-system')
 
 def get_irfs():
     """Load CTA IRFs"""
-    filename = '$GAMMAPY_EXTRA/datasets/cta-1dc/caldb/data/cta//1dc/bcf/South_z20_50h/irf_file.fits'
-    psf = EnergyDependentMultiGaussPSF.read(filename, hdu='POINT SPREAD FUNCTION')
-    aeff = EffectiveAreaTable2D.read(filename, hdu='EFFECTIVE AREA')
-    edisp = EnergyDispersion2D.read(filename, hdu='ENERGY DISPERSION')
-    bkg = Background3D.read(filename, hdu='BACKGROUND')
+    filename = "$GAMMAPY_EXTRA/datasets/cta-1dc/caldb/data/cta//1dc/bcf/South_z20_50h/irf_file.fits"
+    psf = EnergyDependentMultiGaussPSF.read(
+        filename, hdu="POINT SPREAD FUNCTION"
+    )
+    aeff = EffectiveAreaTable2D.read(filename, hdu="EFFECTIVE AREA")
+    edisp = EnergyDispersion2D.read(filename, hdu="ENERGY DISPERSION")
+    bkg = Background3D.read(filename, hdu="BACKGROUND")
     return dict(psf=psf, aeff=aeff, edisp=edisp, bkg=bkg)
+
 
 irfs = get_irfs()
 
@@ -60,19 +68,12 @@ irfs = get_irfs()
 
 
 # Define sky model to simulate the data
-spatial_model = SkyGaussian(
-    lon_0='0.2 deg',
-    lat_0='0.1 deg',
-    sigma='0.3 deg',
-)
+spatial_model = SkyGaussian(lon_0="0.2 deg", lat_0="0.1 deg", sigma="0.3 deg")
 spectral_model = PowerLaw(
-    index=3,
-    amplitude='1e-11 cm-2 s-1 TeV-1',
-    reference='1 TeV',
+    index=3, amplitude="1e-11 cm-2 s-1 TeV-1", reference="1 TeV"
 )
 sky_model = SkyModel(
-    spatial_model=spatial_model,
-    spectral_model=spectral_model,
+    spatial_model=spatial_model, spectral_model=spectral_model
 )
 print(sky_model)
 
@@ -82,11 +83,10 @@ print(sky_model)
 
 # Define map geometry
 axis = MapAxis.from_edges(
-    np.logspace(-1., 1., 10), unit='TeV', name='energy', interp='log',
+    np.logspace(-1., 1., 10), unit="TeV", name="energy", interp="log"
 )
 geom = WcsGeom.create(
-    skydir=(0, 0), binsz=0.02, width=(5, 4),
-    coordsys='GAL', axes=[axis],
+    skydir=(0, 0), binsz=0.02, width=(5, 4), coordsys="GAL", axes=[axis]
 )
 
 
@@ -96,59 +96,49 @@ geom = WcsGeom.create(
 # Define some observation parameters
 # Here we just have a single observation,
 # we are not simulating many pointings / observations
-pointing = SkyCoord(1, 0.5, unit='deg', frame='galactic')
+pointing = SkyCoord(1, 0.5, unit="deg", frame="galactic")
 livetime = 1 * u.hour
 offset_max = 2 * u.deg
-offset = Angle('2 deg')
+offset = Angle("2 deg")
 
 
 # In[8]:
 
 
 exposure = make_map_exposure_true_energy(
-    pointing=pointing,
-    livetime=livetime,
-    aeff=irfs['aeff'],
-    geom=geom,
+    pointing=pointing, livetime=livetime, aeff=irfs["aeff"], geom=geom
 )
-exposure.slice_by_idx({'energy': 3}).plot(add_cbar=True);
+exposure.slice_by_idx({"energy": 3}).plot(add_cbar=True);
 
 
 # In[9]:
 
 
 background = make_map_background_irf(
-    pointing=pointing,
-    livetime=livetime,
-    bkg=irfs['bkg'],
-    geom=geom,    
+    pointing=pointing, livetime=livetime, bkg=irfs["bkg"], geom=geom
 )
-background.slice_by_idx({'energy': 3}).plot(add_cbar=True);
+background.slice_by_idx({"energy": 3}).plot(add_cbar=True);
 
 
 # In[10]:
 
 
-psf = irfs['psf'].to_energy_dependent_table_psf(theta=offset)
-psf_kernel = PSFKernel.from_table_psf(
-    psf,
-    geom,
-    max_radius=0.3 * u.deg,
-)
-psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch='log');
+psf = irfs["psf"].to_energy_dependent_table_psf(theta=offset)
+psf_kernel = PSFKernel.from_table_psf(psf, geom, max_radius=0.3 * u.deg)
+psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch="log");
 
 
 # In[11]:
 
 
-edisp = irfs['edisp'].to_energy_dispersion(offset=offset)
+edisp = irfs["edisp"].to_energy_dispersion(offset=offset)
 edisp.plot_matrix();
 
 
 # In[12]:
 
 
-get_ipython().run_cell_magic('time', '', '# The idea is that we have this class that can compute `npred`\n# maps, i.e. "predicted counts per pixel" given the model and\n# the observation infos: exposure, background, PSF and EDISP\nevaluator = MapEvaluator(\n    model=sky_model, \n    exposure=exposure,\n    background=background,\n    psf=psf_kernel,\n)')
+get_ipython().run_cell_magic('time', '', '# The idea is that we have this class that can compute `npred`\n# maps, i.e. "predicted counts per pixel" given the model and\n# the observation infos: exposure, background, PSF and EDISP\nevaluator = MapEvaluator(\n    model=sky_model, exposure=exposure, background=background, psf=psf_kernel\n)')
 
 
 # In[13]:
@@ -195,34 +185,25 @@ counts_map.sum_over_axes().plot();
 
 
 # Define sky model to fit the data
-spatial_model = SkyGaussian(
-    lon_0='0 deg',
-    lat_0='0 deg',
-    sigma='1 deg',
-)
+spatial_model = SkyGaussian(lon_0="0 deg", lat_0="0 deg", sigma="1 deg")
 spectral_model = PowerLaw(
-    index=2,
-    amplitude='1e-11 cm-2 s-1 TeV-1',
-    reference='1 TeV',
+    index=2, amplitude="1e-11 cm-2 s-1 TeV-1", reference="1 TeV"
 )
-model = SkyModel(
-    spatial_model=spatial_model,
-    spectral_model=spectral_model,
-)
+model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
 print(model)
 
 
 # In[18]:
 
 
-get_ipython().run_cell_magic('time', '', 'fit = MapFit(\n    model=model,\n    counts=counts_map,\n    exposure=exposure,\n    background=background,\n    psf=psf_kernel,\n)\n\nfit.fit()')
+get_ipython().run_cell_magic('time', '', "fit = MapFit(\n    model=model,\n    counts=counts_map,\n    exposure=exposure,\n    background=background,\n    psf=psf_kernel,\n)\n\nfit.fit(opts_minuit={'print_level':1})")
 
 
 # In[19]:
 
 
-print('True values:\n\n{}\n\n'.format(sky_model.parameters))
-print('Fit result:\n\n{}\n\n'.format(model.parameters))
+print("True values:\n\n{}\n\n".format(sky_model.parameters))
+print("Fit result:\n\n{}\n\n".format(model.parameters))
 
 
 # In[20]:
@@ -257,5 +238,5 @@ fit.minuit.print_matrix()
 
 # You can use likelihood profiles to check if your model is
 # well constrained or not, and if the fit really converged
-fit.minuit.draw_profile('par_002_sigma');
+fit.minuit.draw_profile("par_002_sigma");
 

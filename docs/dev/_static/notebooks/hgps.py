@@ -72,6 +72,7 @@ from astropy.table import Table
 from astropy.wcs import WCS
 
 import astropy
+
 print(astropy.__version__)
 
 
@@ -82,6 +83,7 @@ from gammapy.maps import Map
 from gammapy.catalog import SourceCatalogHGPS
 
 import gammapy
+
 print(gammapy.__version__)
 
 
@@ -92,6 +94,7 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 
 import matplotlib
+
 print(matplotlib.__version__)
 
 
@@ -142,13 +145,13 @@ from urllib.request import urlretrieve
 # Download HGPS data used in this tutorial to a folder of your choice
 # The default `hgps_data` used here is a sub-folder in your current
 # working directory (where you started the notebook)
-hgps_data_path = Path('hgps_data')
+hgps_data_path = Path("hgps_data")
 
 # In this notebook we will only be working with the following files
 # so we only download what is needed.
 hgps_filenames = [
-    'hgps_catalog_v1.fits.gz',
-    'hgps_map_significance_0.1deg_v1.fits.gz',
+    "hgps_catalog_v1.fits.gz",
+    "hgps_map_significance_0.1deg_v1.fits.gz",
 ]
 
 
@@ -156,20 +159,21 @@ hgps_filenames = [
 
 
 def hgps_data_download():
-    base_url = 'https://www.mpi-hd.mpg.de/hfm/HESS/hgps/data/'    
+    base_url = "https://www.mpi-hd.mpg.de/hfm/HESS/hgps/data/"
     for filename in hgps_filenames:
         url = base_url + filename
         path = hgps_data_path / filename
         if path.exists():
-            print('Already downloaded: {}'.format(path))
+            print("Already downloaded: {}".format(path))
         else:
-            print('Downloading {} to {}'.format(url, path))
+            print("Downloading {} to {}".format(url, path))
             urlretrieve(url, str(path))
+
 
 hgps_data_path.mkdir(parents=True, exist_ok=True)
 hgps_data_download()
 
-print('\n\nFiles at {} :\n'.format(hgps_data_path.absolute()))
+print("\n\nFiles at {} :\n".format(hgps_data_path.absolute()))
 for path in hgps_data_path.iterdir():
     print(path)
 
@@ -186,7 +190,7 @@ for path in hgps_data_path.iterdir():
 # In[9]:
 
 
-path = hgps_data_path / 'hgps_catalog_v1.fits.gz'
+path = hgps_data_path / "hgps_catalog_v1.fits.gz"
 hdu_list = fits.open(str(path))
 
 
@@ -208,7 +212,7 @@ hdu_list.info()
 # In[11]:
 
 
-table = Table.read(hdu_list['HGPS_SOURCES'])
+table = Table.read(hdu_list["HGPS_SOURCES"])
 
 # Alternatively, reading from file directly would work like this:
 # table = Table.read(str(path), hdu='HGPS_SOURCES')
@@ -241,14 +245,14 @@ table[0][table.colnames[:5]]
 # Columns are accessed by indexing into the table
 # with a column name string
 # Then you can slice the column to get the rows you want
-table['Source_Name'][:5]
+table["Source_Name"][:5]
 
 
 # In[15]:
 
 
 # Accessing a given element of the table like this
-table['Source_Name'][5]
+table["Source_Name"][5]
 
 
 # In[16]:
@@ -262,7 +266,7 @@ table['Source_Name'][5]
 # In[17]:
 
 
-set(table['Spatial_Model'])
+set(table["Spatial_Model"])
 
 
 # ### Convert formats
@@ -290,19 +294,19 @@ set(table['Spatial_Model'])
 # In[18]:
 
 
-lines = ['global color=red']
+lines = ["global color=red"]
 for row in table[:3]:
-    fmt = 'fk5;point({:.5f},{:.5f})# point=cross text={{{}}}'
-    vals = row['RAJ2000'], row['DEJ2000'], row['Source_Name']
+    fmt = "fk5;point({:.5f},{:.5f})# point=cross text={{{}}}"
+    vals = row["RAJ2000"], row["DEJ2000"], row["Source_Name"]
     lines.append(fmt.format(*vals))
-txt = '\n'.join(lines)
+txt = "\n".join(lines)
 
 
 # In[19]:
 
 
 # To save it to a DS9 region text file
-path = hgps_data_path / 'hgps_my_format.reg'
+path = hgps_data_path / "hgps_my_format.reg"
 path.write_text(txt)
 
 # Print content of the file to check
@@ -335,14 +339,16 @@ print(path.read_text())
 
 
 # This is the problematic header key
-table.meta['comments']
+table.meta["comments"]
 
 
 # In[21]:
 
 
 # These are the array-valued columns
-array_colnames = tuple(name for name in table.colnames if len(table[name].shape) > 1)
+array_colnames = tuple(
+    name for name in table.colnames if len(table[name].shape) > 1
+)
 for name in array_colnames:
     print(name, table[name].shape)
 
@@ -355,8 +361,8 @@ for name in array_colnames:
 # Knowing this, you could work with the spectral points directly.
 # We won't give an example here; but instead show how to work
 # with HGPS spectra in the Gammapy section below, because it's easier.
-print(table['Flux_Points_Energy'][0])
-print(table['Flux_Points_Flux'][0])
+print(table["Flux_Points_Energy"][0])
+print(table["Flux_Points_Flux"][0])
 
 
 # Let's get back to our actual goal of converting part of the HGPS catalog table data to CSV format.
@@ -365,11 +371,13 @@ print(table['Flux_Points_Flux'][0])
 # In[23]:
 
 
-scalar_colnames = tuple(name for name in table.colnames if len(table[name].shape) <= 1)
+scalar_colnames = tuple(
+    name for name in table.colnames if len(table[name].shape) <= 1
+)
 table2 = table[scalar_colnames]
 table2.meta = {}
-path = hgps_data_path / 'hgps_my_format.csv'
-table2.write(str(path), format='ascii.csv', overwrite=True)
+path = hgps_data_path / "hgps_my_format.csv"
+table2.write(str(path), format="ascii.csv", overwrite=True)
 
 
 # The Astropy ASCII writer and reader supports many variants.
@@ -379,13 +387,13 @@ table2.write(str(path), format='ascii.csv', overwrite=True)
 # In[24]:
 
 
-table2 = table['Source_Name', 'GLON', 'GLAT'][:3]
+table2 = table["Source_Name", "GLON", "GLAT"][:3]
 table2.meta = {}
-table2['Source_Name'].format = '<20s'
-table2['GLON'].format = '>8.3f'
-table2['GLAT'].format = '>8.3f'
-path = hgps_data_path / 'hgps_my_format.csv'
-table2.write(str(path), format='ascii.fixed_width', overwrite=True)
+table2["Source_Name"].format = "<20s"
+table2["GLON"].format = ">8.3f"
+table2["GLAT"].format = ">8.3f"
+path = hgps_data_path / "hgps_my_format.csv"
+table2.write(str(path), format="ascii.fixed_width", overwrite=True)
 
 # Print the CSV file contents to check what we have
 print(path.read_text())
@@ -406,7 +414,7 @@ print(path.read_text())
 # In[25]:
 
 
-path = hgps_data_path / 'hgps_map_significance_0.1deg_v1.fits.gz'
+path = hgps_data_path / "hgps_map_significance_0.1deg_v1.fits.gz"
 hdu_list = fits.open(str(path))
 hdu_list.info()
 
@@ -457,7 +465,7 @@ wcs
 
 
 # pos = SkyCoord.from_name('Sgr A*')
-pos = SkyCoord(266.416826, -29.007797, unit='deg')
+pos = SkyCoord(266.416826, -29.007797, unit="deg")
 pos
 
 
@@ -555,7 +563,7 @@ pos
 # In[39]:
 
 
-path = hgps_data_path / 'hgps_catalog_v1.fits.gz'
+path = hgps_data_path / "hgps_catalog_v1.fits.gz"
 cat = SourceCatalogHGPS(path)
 
 
@@ -567,13 +575,13 @@ cat = SourceCatalogHGPS(path)
 # In[40]:
 
 
-cat.table.meta['EXTNAME']
+cat.table.meta["EXTNAME"]
 
 
 # In[41]:
 
 
-cat.table_components.meta['EXTNAME']
+cat.table_components.meta["EXTNAME"]
 
 
 # ### Source
@@ -590,8 +598,8 @@ source = cat[0]
 # the content from one of these columns:
 # `Source_Name` or `Identified_Object`
 # which in this case are "HESS J0835-455" and "Vela X"
-source = cat['HESS J0835-455']
-source = cat['Vela X']
+source = cat["HESS J0835-455"]
+source = cat["Vela X"]
 source
 
 
@@ -607,7 +615,7 @@ print(source)
 
 
 # You can also more selectively print subsets of info:
-print(source.info('map'))
+print(source.info("map"))
 
 
 # In[45]:
@@ -616,7 +624,7 @@ print(source.info('map'))
 # All of the data for this source is available
 # via the `source.data` dictionary if you want
 # to do some computations
-source.data['Flux_Spec_Int_1TeV']
+source.data["Flux_Spec_Int_1TeV"]
 
 
 # In[46]:
@@ -641,7 +649,7 @@ print(spectral_model)
 # One common task is to compute integral fluxes
 # The error is computed using the covariance matrix
 # (off-diagonal info not given in HGPS, i.e. this is an approximation)
-spectral_model.integral_error(emin=1*u.TeV, emax=10*u.TeV)
+spectral_model.integral_error(emin=1 * u.TeV, emax=10 * u.TeV)
 
 
 # In[49]:
@@ -658,12 +666,12 @@ source.flux_points.plot();
 
 # Or let's make the same plot in the common
 # format with y = E^2 * dnde
-opts = dict(energy_power=2, flux_unit='erg-1 cm-2 s-1')
+opts = dict(energy_power=2, flux_unit="erg-1 cm-2 s-1")
 source.spectral_model().plot(source.energy_range, **opts)
 source.spectral_model().plot_error(source.energy_range, **opts)
 source.flux_points.plot(**opts)
-plt.ylabel('E^2 dN/dE (erg cm-2 s-1)')
-plt.title('Vela X HGPS spectrum');
+plt.ylabel("E^2 dN/dE (erg cm-2 s-1)")
+plt.title("Vela X HGPS spectrum");
 
 
 # In the next section we will see how to work with the HGPS survey maps from Gammapy, as well as work with other data from the catalog (position and morphology information).
@@ -675,7 +683,7 @@ plt.title('Vela X HGPS spectrum');
 # In[51]:
 
 
-path = hgps_data_path / 'hgps_map_significance_0.1deg_v1.fits.gz'
+path = hgps_data_path / "hgps_map_significance_0.1deg_v1.fits.gz"
 survey_map = Map.read(path)
 
 
@@ -683,7 +691,7 @@ survey_map = Map.read(path)
 
 
 # Map has a quick-look plot method, but it's not
-# very useful for a survey map that wide with default settings  
+# very useful for a survey map that wide with default settings
 survey_map.plot();
 
 
@@ -691,8 +699,8 @@ survey_map.plot();
 
 
 # This is a little better
-fig = plt.figure(figsize=(15,3))
-_ = survey_map.plot(stretch='sqrt')
+fig = plt.figure(figsize=(15, 3))
+_ = survey_map.plot(stretch="sqrt")
 # Note that we also assign the return value (a tuple)
 # from the plot method call to a variable called `_`
 # This is to avoid Jupyter printing it like in the last cell,
@@ -705,10 +713,10 @@ _ = survey_map.plot(stretch='sqrt')
 # In[54]:
 
 
-image = survey_map.cutout(pos, width=(3.8, 2.5)*u.deg)
-fig, ax, _ = image.plot(stretch='sqrt', cmap='inferno')
-ax.coords[0].set_major_formatter('dd')
-ax.coords[1].set_major_formatter('dd')
+image = survey_map.cutout(pos, width=(3.8, 2.5) * u.deg)
+fig, ax, _ = image.plot(stretch="sqrt", cmap="inferno")
+ax.coords[0].set_major_formatter("dd")
+ax.coords[1].set_major_formatter("dd")
 
 
 # Side comment: If you like, you can format stuff to make it a bit more pretty. With a few lines you can get nice plots, with a few dozen publication-quality images. This is using [matplotlib](https://matplotlib.org/) and [astropy.visualization](http://docs.astropy.org/en/stable/visualization/index.html). Both are pretty complex, but there's many examples available and there's not really another good alternative anyways for astronomical sky images at the moment, so you should just go ahead and learn those.
@@ -719,7 +727,7 @@ ax.coords[1].set_major_formatter('dd')
 # In[55]:
 
 
-pos = SkyCoord(266.416826, -29.007797, unit='deg')
+pos = SkyCoord(266.416826, -29.007797, unit="deg")
 survey_map.get_by_coord(pos)
 
 
@@ -743,31 +751,35 @@ from astropy.visualization import simple_norm
 from matplotlib.patches import Circle
 
 # Cutout and plot a nice image
-pos = SkyCoord(264.5, -2.5, unit='deg', frame='galactic')
-image = survey_map.cutout(pos, width=('6 deg', '4 deg'))
-norm = simple_norm(image.data, stretch='sqrt', min_cut=0, max_cut=20)
+pos = SkyCoord(264.5, -2.5, unit="deg", frame="galactic")
+image = survey_map.cutout(pos, width=("6 deg", "4 deg"))
+norm = simple_norm(image.data, stretch="sqrt", min_cut=0, max_cut=20)
 fig = plt.figure(figsize=(12, 8))
-fig, ax, _ = image.plot(fig=fig, norm=norm, cmap='inferno')
-transform = ax.get_transform('galactic')
+fig, ax, _ = image.plot(fig=fig, norm=norm, cmap="inferno")
+transform = ax.get_transform("galactic")
 
 # Overplot the pulsar
 # print(SkyCoord.from_name('Vela pulsar').galactic)
-ax.scatter(263.551, -2.787, transform=transform, s=500, color='cyan')
+ax.scatter(263.551, -2.787, transform=transform, s=500, color="cyan")
 
 # Overplot the circle that was used for the HGPS spectral measurement of Vela X
 # It is centered on the centroid of the emission and has a radius of 0.5 deg
-x = source.data['GLON'].value
-y = source.data['GLAT'].value
-r = source.data['RSpec'].value
-c = Circle((x, y), r, transform=transform, edgecolor='white', facecolor='none', lw=4)
+x = source.data["GLON"].value
+y = source.data["GLAT"].value
+r = source.data["RSpec"].value
+c = Circle(
+    (x, y), r, transform=transform, edgecolor="white", facecolor="none", lw=4
+)
 ax.add_patch(c)
 
 # Overplot circles that represent the components
 for c in source.components:
-    x = c.data['GLON'].value
-    y = c.data['GLAT'].value
-    r = c.data['Size'].value
-    c = Circle((x, y), r, transform=transform, edgecolor='0.7', facecolor='none', lw=3)
+    x = c.data["GLON"].value
+    y = c.data["GLAT"].value
+    r = c.data["Size"].value
+    c = Circle(
+        (x, y), r, transform=transform, edgecolor="0.7", facecolor="none", lw=3
+    )
     ax.add_patch(c)
 
 

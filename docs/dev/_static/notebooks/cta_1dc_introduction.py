@@ -61,9 +61,9 @@ import numpy as np
 import astropy
 import gammapy
 
-print('numpy:', np.__version__)
-print('astropy:', astropy.__version__)
-print('gammapy:', gammapy.__version__)
+print("numpy:", np.__version__)
+print("astropy:", astropy.__version__)
+print("gammapy:", gammapy.__version__)
 
 
 # ## Getting the 1DC data
@@ -157,7 +157,8 @@ get_ipython().system('du -hs $CTADATA/data/baseline/gps')
 
 
 from gammapy.data import EventList
-events = EventList.read('$CTADATA/data/baseline/gps/gps_baseline_110000.fits')
+
+events = EventList.read("$CTADATA/data/baseline/gps/gps_baseline_110000.fits")
 print(type(events))
 print(type(events.table))
 
@@ -222,7 +223,7 @@ print(type(events.table.meta))
 
 
 # E.g. to get the observation pointing position in degrees:
-events.table.meta['RA_PNT'], events.table.meta['DEC_PNT']
+events.table.meta["RA_PNT"], events.table.meta["DEC_PNT"]
 
 
 # ## EVENT analysis example
@@ -240,14 +241,15 @@ events.table.meta['RA_PNT'], events.table.meta['DEC_PNT']
 
 
 # Event positions
-pos = events.galactic[::300] # sub-sample every 100th event
-plt.scatter(pos.l.wrap_at('180 deg').deg, pos.b.deg, s=10)
+pos = events.galactic[::300]  # sub-sample every 100th event
+plt.scatter(pos.l.wrap_at("180 deg").deg, pos.b.deg, s=10)
 # Pointing position
 pos_pnt = events.pointing_radec.galactic
-plt.scatter(pos_pnt.l.wrap_at('180 deg').deg, pos_pnt.b.deg,
-            marker='*', s=400, c='red')
-plt.xlabel('Galactic longitude (deg)')
-plt.ylabel('Galactic latitude (deg)')
+plt.scatter(
+    pos_pnt.l.wrap_at("180 deg").deg, pos_pnt.b.deg, marker="*", s=400, c="red"
+)
+plt.xlabel("Galactic longitude (deg)")
+plt.ylabel("Galactic latitude (deg)")
 pos_pnt
 
 
@@ -258,12 +260,12 @@ pos_pnt
 # In[21]:
 
 
-energy = events.table['ENERGY'].data
+energy = events.table["ENERGY"].data
 energy_bins = np.logspace(-2, 2, num=100)
 plt.hist(energy, bins=energy_bins)
 plt.semilogx()
-plt.xlabel('Event energy (TeV)')
-plt.ylabel('Number of events')
+plt.xlabel("Event energy (TeV)")
+plt.ylabel("Number of events")
 
 
 # A double-peak, at ~ 30 GeV and ~ 100 GeV? .... let's try to find out what's going on ...
@@ -276,23 +278,23 @@ plt.ylabel('Number of events')
 # In[22]:
 
 
-is_gamma = events.table['MC_ID'] != 1
-print('Number of events: ', len(events.table))
-print('Number of gammas: ', is_gamma.sum())
-print('Number of hadrons: ', len(events.table) - is_gamma.sum())
+is_gamma = events.table["MC_ID"] != 1
+print("Number of events: ", len(events.table))
+print("Number of gammas: ", is_gamma.sum())
+print("Number of hadrons: ", len(events.table) - is_gamma.sum())
 
 
 # In[23]:
 
 
-energy = events.table['ENERGY'].data
+energy = events.table["ENERGY"].data
 energy_bins = np.logspace(-2, 2, num=100)
-opts = dict(bins=energy_bins, normed=True, histtype='step')
-plt.hist(energy[~is_gamma], label='hadron', **opts)
-plt.hist(energy[is_gamma], label='gamma', **opts)
+opts = dict(bins=energy_bins, normed=True, histtype="step")
+plt.hist(energy[~is_gamma], label="hadron", **opts)
+plt.hist(energy[is_gamma], label="gamma", **opts)
 plt.loglog()
-plt.xlabel('Event energy (TeV)')
-plt.ylabel('Number of events')
+plt.xlabel("Event energy (TeV)")
+plt.ylabel("Number of events")
 plt.legend()
 
 
@@ -323,19 +325,18 @@ energy_bins = 10 ** np.linspace(-2, 2, 100)
 offset_bins = np.arange(0, 5, 0.1)
 
 t = events.table
-offset = np.sqrt(t['DETX'] ** 2 + t['DETY'] ** 2)
+offset = np.sqrt(t["DETX"] ** 2 + t["DETY"] ** 2)
 hist = np.histogram2d(
-    x=t['ENERGY'], y=offset,
-    bins=(energy_bins, offset_bins),
+    x=t["ENERGY"], y=offset, bins=(energy_bins, offset_bins)
 )[0].T
 
 from matplotlib.colors import LogNorm
-plt.pcolormesh(energy_bins, offset_bins,
-               hist, norm=LogNorm())
+
+plt.pcolormesh(energy_bins, offset_bins, hist, norm=LogNorm())
 plt.semilogx()
 plt.colorbar()
-plt.xlabel('Energy (TeV)')
-plt.ylabel('Offset (deg)')
+plt.xlabel("Energy (TeV)")
+plt.ylabel("Offset (deg)")
 
 
 # So the CTA field of view increases with energy in steps. The energy distribution we saw before was the combination of the energy distribution at all offsets. Even at a single offset, the double energy-threshold at ~ 30 GeV and ~ 100 GeV is present.
@@ -353,30 +354,34 @@ import os
 from astropy.table import Table
 from astropy.table import vstack as table_vstack
 
-filename = os.path.join(os.environ['CTADATA'], 'data/baseline/gps/gps_baseline_110000.fits')
-t1 = Table.read(filename, hdu='EVENTS')
+filename = os.path.join(
+    os.environ["CTADATA"], "data/baseline/gps/gps_baseline_110000.fits"
+)
+t1 = Table.read(filename, hdu="EVENTS")
 
-filename = os.path.join(os.environ['CTADATA'], 'data/baseline/gps/gps_baseline_110001.fits')
-t2 = Table.read(filename, hdu='EVENTS')
+filename = os.path.join(
+    os.environ["CTADATA"], "data/baseline/gps/gps_baseline_110001.fits"
+)
+t2 = Table.read(filename, hdu="EVENTS")
 tables = [t1, t2]
-table = table_vstack(tables, metadata_conflicts='silent')
+table = table_vstack(tables, metadata_conflicts="silent")
 
 
 # In[26]:
 
 
-print('Number of events: ', len(table))
+print("Number of events: ", len(table))
 
 
 # In[27]:
 
 
 # Let's select gamma rays with energy above 10 TeV
-mask_mc_id = table['MC_ID'] != 1
-mask_energy = table['ENERGY'] > 10
+mask_mc_id = table["MC_ID"] != 1
+mask_energy = table["ENERGY"] > 10
 mask = mask_mc_id & mask_energy
 table2 = table[mask]
-print('Number of events after selection:', len(table2))
+print("Number of events after selection:", len(table2))
 
 
 # When processing a lot or all of the 1DC events, you would write a for loop, and apply the event selection before putting the table in the list of tables, or you might run out of memory. An example is [here](https://github.com/gammasky/cta-dc/blob/master/data/cta_1dc_make_allsky_images.py).
@@ -405,8 +410,11 @@ get_ipython().system('(cd $CTADATA && tree caldb)')
 # Let's look at the content of one of the IRF FITS files.
 # IRFs are stored in `BinTable` HDUs in a weird format
 # that you don't need to care about because it's implemented in Gammapy
-irf_filename = os.path.join(os.environ['CTADATA'], 'caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits')
+irf_filename = os.path.join(
+    os.environ["CTADATA"], "caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
+)
 from astropy.io import fits
+
 hdu_list = fits.open(irf_filename)
 hdu_list.info()
 
@@ -419,7 +427,8 @@ hdu_list.info()
 
 
 from gammapy.irf import EffectiveAreaTable2D
-aeff = EffectiveAreaTable2D.read(irf_filename, hdu='EFFECTIVE AREA')
+
+aeff = EffectiveAreaTable2D.read(irf_filename, hdu="EFFECTIVE AREA")
 print(type(aeff))
 print(type(aeff.data))
 
@@ -440,7 +449,7 @@ aeff.peek()
 
 
 # What is the on-axis effective area at 10 TeV?
-aeff.data.evaluate(energy='10 TeV', offset='0 deg').to('km2')
+aeff.data.evaluate(energy="10 TeV", offset="0 deg").to("km2")
 
 
 # In[34]:
@@ -448,7 +457,7 @@ aeff.data.evaluate(energy='10 TeV', offset='0 deg').to('km2')
 
 # This is how you slice out an `EffectiveAreaTable` object
 # at a given field of view offset for analysis
-aeff.to_effective_area_table(offset='1 deg')
+aeff.to_effective_area_table(offset="1 deg")
 
 
 # ### Energy dispersion
@@ -464,7 +473,8 @@ aeff.to_effective_area_table(offset='1 deg')
 
 
 from gammapy.irf import EnergyDispersion2D
-edisp = EnergyDispersion2D.read(irf_filename, hdu='ENERGY DISPERSION')
+
+edisp = EnergyDispersion2D.read(irf_filename, hdu="ENERGY DISPERSION")
 print(type(edisp))
 print(type(edisp.data))
 
@@ -486,7 +496,7 @@ edisp.peek()
 
 # This is how for analysis you could slice out an `EnergyDispersion`
 # object at a given offset:
-edisp.to_energy_dispersion(offset='0 deg')
+edisp.to_energy_dispersion(offset="0 deg")
 
 
 # ### Point spread function
@@ -497,7 +507,10 @@ edisp.to_energy_dispersion(offset='0 deg')
 
 
 from gammapy.irf import EnergyDependentMultiGaussPSF
-psf = EnergyDependentMultiGaussPSF.read(irf_filename, hdu='POINT SPREAD FUNCTION')
+
+psf = EnergyDependentMultiGaussPSF.read(
+    irf_filename, hdu="POINT SPREAD FUNCTION"
+)
 print(psf.info())
 
 
@@ -512,7 +525,7 @@ psf.peek()
 
 # This is how for analysis you could slice out the PSF
 # at a given field of view offset
-psf.to_energy_dependent_table_psf('1 deg')
+psf.to_energy_dependent_table_psf("1 deg")
 
 
 # ### Background
@@ -525,7 +538,8 @@ psf.to_energy_dependent_table_psf('1 deg')
 
 
 from gammapy.irf import Background3D
-bkg = Background3D.read(irf_filename, hdu='BACKGROUND')
+
+bkg = Background3D.read(irf_filename, hdu="BACKGROUND")
 print(bkg)
 
 
@@ -539,7 +553,7 @@ print(bkg)
 # In[44]:
 
 
-bkg.data.evaluate(energy='3 TeV', fov_lon='1 deg', fov_lat='0 deg')
+bkg.data.evaluate(energy="3 TeV", fov_lon="1 deg", fov_lat="0 deg")
 
 
 # ## Index files and DataStore
@@ -579,7 +593,8 @@ get_ipython().system('(cd $CTADATA && tree index)')
 
 
 from gammapy.data import DataStore
-data_store = DataStore.from_dir('$CTADATA/index/gps')
+
+data_store = DataStore.from_dir("$CTADATA/index/gps")
 
 
 # In[47]:
@@ -593,9 +608,12 @@ data_store.info()
 
 
 # The observation index is loaded as a table
-print('Number of observations: ', len(data_store.obs_table))
+print("Number of observations: ", len(data_store.obs_table))
 print(data_store.obs_table.colnames)
-print('Total observation time (hours): ', data_store.obs_table['ONTIME'].sum() / 3600)
+print(
+    "Total observation time (hours): ",
+    data_store.obs_table["ONTIME"].sum() / 3600,
+)
 
 
 # In[49]:
@@ -630,27 +648,30 @@ print(data_store.hdu_table.colnames)
 
 
 from astropy.coordinates import SkyCoord
+
 table = data_store.obs_table
-pos_obs = SkyCoord(table['GLON_PNT'], table['GLAT_PNT'], frame='galactic', unit='deg')
-pos_target = SkyCoord(0, 0, frame='galactic', unit='deg')
+pos_obs = SkyCoord(
+    table["GLON_PNT"], table["GLAT_PNT"], frame="galactic", unit="deg"
+)
+pos_target = SkyCoord(0, 0, frame="galactic", unit="deg")
 offset = pos_target.separation(pos_obs).deg
 mask = (1 < offset) & (offset < 2)
 table = table[mask]
-print('Number of selected observations: ', len(table))
+print("Number of selected observations: ", len(table))
 
 
 # In[52]:
 
 
 # Look at the first few
-table[['OBS_ID', 'GLON_PNT', 'GLAT_PNT', 'IRF']][:5]
+table[["OBS_ID", "GLON_PNT", "GLAT_PNT", "IRF"]][:5]
 
 
 # In[53]:
 
 
 # Check which IRFs were used ... it's all south and 20 deg zenith angle
-set(table['IRF'])
+set(table["IRF"])
 
 
 # In[54]:
@@ -659,9 +680,12 @@ set(table['IRF'])
 # Check the pointing positions
 # The grid pointing positions at GLAT = +- 1.2 deg are visible
 from astropy.coordinates import Angle
-plt.scatter(Angle(table['GLON_PNT'], unit='deg').wrap_at('180 deg'), table['GLAT_PNT'])
-plt.xlabel('Galactic longitude (deg)')
-plt.ylabel('Galactic latitude (deg)')
+
+plt.scatter(
+    Angle(table["GLON_PNT"], unit="deg").wrap_at("180 deg"), table["GLAT_PNT"]
+)
+plt.xlabel("Galactic longitude (deg)")
+plt.ylabel("Galactic latitude (deg)")
 
 
 # ## Load data
@@ -760,10 +784,11 @@ get_ipython().system('tail -n 20 $CTADATA/models/models_gps.xml')
 
 # Read XML file and access spectrum parameters
 from gammapy.extern import xmltodict
-filename = os.path.join(os.environ['CTADATA'], 'models/models_gps.xml')
+
+filename = os.path.join(os.environ["CTADATA"], "models/models_gps.xml")
 data = xmltodict.parse(open(filename).read())
-data = data['source_library']['source'][-1]
-data = data['spectrum']['parameter']
+data = data["source_library"]["source"][-1]
+data = data["spectrum"]["parameter"]
 data
 
 
@@ -773,11 +798,12 @@ data
 # Create a spectral model the the right units
 from astropy import units as u
 from gammapy.spectrum.models import PowerLaw
-par_to_val = lambda par: float(par['@value']) * float(par['@scale'])
+
+par_to_val = lambda par: float(par["@value"]) * float(par["@scale"])
 spec = PowerLaw(
-    amplitude=par_to_val(data[0]) * u.Unit('cm-2 s-1 MeV-1'),
+    amplitude=par_to_val(data[0]) * u.Unit("cm-2 s-1 MeV-1"),
     index=par_to_val(data[1]),
-    reference=par_to_val(data[2]) * u.Unit('MeV'),
+    reference=par_to_val(data[2]) * u.Unit("MeV"),
 )
 print(spec)
 

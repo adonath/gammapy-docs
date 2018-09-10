@@ -40,8 +40,9 @@ import matplotlib.pyplot as plt
 # most even with Astropy 1.0
 import numpy as np
 import astropy
-print('numpy:', np.__version__)
-print('astropy:', astropy.__version__)
+
+print("numpy:", np.__version__)
+print("astropy:", astropy.__version__)
 
 
 # In[3]:
@@ -66,7 +67,7 @@ from astropy.time import Time
 
 
 # One can create a Quantity like this
-L = Quantity(1e35, unit='erg/s')
+L = Quantity(1e35, unit="erg/s")
 # or like this
 d = 8 * u.kpc
 
@@ -78,13 +79,13 @@ flux = L / (4 * np.pi * d ** 2)
 
 
 # And convert its value to an equivalent unit
-flux.to('erg cm-2 s-1')
+flux.to("erg cm-2 s-1")
 
 
 # In[6]:
 
 
-flux.to('W/m2')
+flux.to("W/m2")
 
 
 # More generally a Quantity is a numpy array with a unit.
@@ -93,7 +94,7 @@ flux.to('W/m2')
 
 
 E = np.logspace(1, 4, 10) * u.GeV
-E.to('TeV')
+E.to("TeV")
 
 
 # Here we compute the interaction time of protons.
@@ -102,11 +103,11 @@ E.to('TeV')
 
 
 x_eff = 30 * u.mbarn
-density = 1 * u.cm ** -3 
+density = 1 * u.cm ** -3
 
 interaction_time = (density * x_eff * cst.c) ** -1
 
-interaction_time.to('Myr')
+interaction_time.to("Myr")
 
 
 # ### Use Quantities in functions
@@ -120,11 +121,14 @@ def electron_energy_loss_rate(B, E):
     """ energy loss rate of an electron of kinetic energy E in magnetic field B
     """
     U_B = B ** 2 / (2 * cst.mu0)
-    gamma = E / (cst.m_e * cst.c ** 2) + 1   # note that this works only because E/(cst.m_e*cst.c**2) is dimensionless
+    gamma = (
+        E / (cst.m_e * cst.c ** 2) + 1
+    )  # note that this works only because E/(cst.m_e*cst.c**2) is dimensionless
     beta = np.sqrt(1 - 1 / gamma ** 2)
     return 4. / 3. * cst.sigma_T * cst.c * gamma ** 2 * beta ** 2 * U_B
 
-print(electron_energy_loss_rate(1e-5 * u.G, 1 * u.TeV).to('erg/s'))
+
+print(electron_energy_loss_rate(1e-5 * u.G, 1 * u.TeV).to("erg/s"))
 
 
 # In[10]:
@@ -133,7 +137,7 @@ print(electron_energy_loss_rate(1e-5 * u.G, 1 * u.TeV).to('erg/s'))
 # Now plot it
 E_elec = np.logspace(-1., 6, 100) * u.MeV
 B = 1 * u.G
-y = (E_elec / electron_energy_loss_rate(B, E_elec)).to('yr')
+y = (E_elec / electron_energy_loss_rate(B, E_elec)).to("yr")
 plt.loglog(E_elec, y);
 
 
@@ -144,20 +148,23 @@ plt.loglog(E_elec, y);
 
 # This ensures that B and E are homogeneous to magnetic field strength and energy
 # If not will raise a UnitError exception
-@u.quantity_input(B=u.T,E=u.J)     
+@u.quantity_input(B=u.T, E=u.J)
 def electron_energy_loss_rate(B, E):
     """ energy loss rate of an electron of kinetic energy E in magnetic field B
     """
     U_B = B ** 2 / (2 * cst.mu0)
-    gamma = E / (cst.m_e * cst.c ** 2) + 1   # note that this works only because E/(cst.m_e*cst.c**2) is dimensionless
+    gamma = (
+        E / (cst.m_e * cst.c ** 2) + 1
+    )  # note that this works only because E/(cst.m_e*cst.c**2) is dimensionless
     beta = np.sqrt(1 - 1 / gamma ** 2)
     return 4. / 3. * cst.sigma_T * cst.c * gamma ** 2 * beta ** 2 * U_B
 
+
 # Now try it
 try:
-    print(electron_energy_loss_rate(1e-5 * u.G, 1 * u.Hz).to('erg/s'))
+    print(electron_energy_loss_rate(1e-5 * u.G, 1 * u.Hz).to("erg/s"))
 except u.UnitsError as message:
-    print('Incorrect unit: '+ str(message))
+    print("Incorrect unit: " + str(message))
 
 
 # ## Coordinates
@@ -168,17 +175,17 @@ except u.UnitsError as message:
 
 
 # Different ways to create a SkyCoord
-c1 = SkyCoord(10.625, 41.2, frame='icrs', unit='deg')
-c1 = SkyCoord('00h42m30s', '+41d12m00s', frame='icrs')
+c1 = SkyCoord(10.625, 41.2, frame="icrs", unit="deg")
+c1 = SkyCoord("00h42m30s", "+41d12m00s", frame="icrs")
 
-c2 = SkyCoord(83.633083, 22.0145, unit='deg')
+c2 = SkyCoord(83.633083, 22.0145, unit="deg")
 # If you have internet access, you could also use this to define the `source_pos`:
 # c2 = SkyCoord.from_name("Crab")     # Get the name from CDS
 
 print(c1.ra, c2.dec)
 # separation returns an Angle object
-print('Distance to Crab: ', c1.separation(c2))
-print('Distance to Crab: ', c1.separation(c2).degree)
+print("Distance to Crab: ", c1.separation(c2))
+print("Distance to Crab: ", c1.separation(c2).degree)
 
 
 # ### Coordinate transformations
@@ -210,9 +217,10 @@ print(now.mjd)
 
 # define the location for the AltAz system
 from astropy.coordinates import EarthLocation, AltAz
-paris = EarthLocation(lat=48.8567 * u.deg, lon=2.3508 * u.deg )
- 
-# calculate the horizontal coordinates 
+
+paris = EarthLocation(lat=48.8567 * u.deg, lon=2.3508 * u.deg)
+
+# calculate the horizontal coordinates
 crab_altaz = c2.transform_to(AltAz(obstime=now, location=paris))
 
 print(crab_altaz)
@@ -231,18 +239,18 @@ print(crab_altaz)
 # Open Fermi 3FGL from the repo
 table = Table.read("../datasets/catalogs/fermi/gll_psc_v16.fit.gz", hdu=1)
 # Alternatively, one can grab it from the server.
-#table = Table.read("http://fermi.gsfc.nasa.gov/ssc/data/access/lat/4yr_catalog/gll_psc_v16.fit")
+# table = Table.read("http://fermi.gsfc.nasa.gov/ssc/data/access/lat/4yr_catalog/gll_psc_v16.fit")
 
 
 # In[17]:
 
 
 # Note that a single FITS file might contain different tables in different HDUs
-filename = "../datasets/catalogs/fermi/gll_psc_v16.fit.gz" 
+filename = "../datasets/catalogs/fermi/gll_psc_v16.fit.gz"
 # You can load a `fits.HDUList` and check the extension names
 print([_.name for _ in fits.open(filename)])
 # Then you can load by name or integer index via the `hdu` option
-extended_source_table = Table.read(filename, hdu='ExtendedSources')
+extended_source_table = Table.read(filename, hdu="ExtendedSources")
 
 
 # ### General informations on the Table
@@ -258,7 +266,7 @@ table.info()
 
 
 # Statistics on each column
-table.info('stats')
+table.info("stats")
 
 
 # In[20]:
@@ -283,7 +291,7 @@ table.colnames
 
 # The header keywords are stored as a dict
 # table.meta
-table.meta['TSMIN']
+table.meta["TSMIN"]
 
 
 # In[23]:
@@ -297,21 +305,29 @@ table[0]
 
 
 # Spectral index of the 5 first entries
-table[:5]['Spectral_Index']
+table[:5]["Spectral_Index"]
 
 
 # In[25]:
 
 
 # Which source has the lowest spectral index?
-row = table[np.argmin(table['Spectral_Index'])]
-print('Hardest source: ', row['Source_Name'], 
-      row['CLASS1'], row['Spectral_Index'])
+row = table[np.argmin(table["Spectral_Index"])]
+print(
+    "Hardest source: ",
+    row["Source_Name"],
+    row["CLASS1"],
+    row["Spectral_Index"],
+)
 
 # Which source has the largest spectral index?
-row = table[np.argmax(table['Spectral_Index'])]
-print('Softest source: ', row['Source_Name'], 
-      row['CLASS1'], row['Spectral_Index'])
+row = table[np.argmax(table["Spectral_Index"])]
+print(
+    "Softest source: ",
+    row["Source_Name"],
+    row["CLASS1"],
+    row["Spectral_Index"],
+)
 
 
 # ### Quantities and SkyCoords from a Table
@@ -319,14 +335,14 @@ print('Softest source: ', row['Source_Name'],
 # In[26]:
 
 
-fluxes = table['nuFnu1000_3000'].quantity
+fluxes = table["nuFnu1000_3000"].quantity
 fluxes
 
 
 # In[27]:
 
 
-coord = SkyCoord(table['GLON'],table['GLAT'],frame='galactic')
+coord = SkyCoord(table["GLON"], table["GLAT"], frame="galactic")
 coord.fk5
 
 
@@ -338,43 +354,50 @@ coord.fk5
 
 
 # Get coordinates of FSRQs
-fsrq = np.where( np.logical_or(table['CLASS1']=='fsrq ',table['CLASS1']=='FSQR '))
+fsrq = np.where(
+    np.logical_or(table["CLASS1"] == "fsrq ", table["CLASS1"] == "FSQR ")
+)
 
 
 # In[29]:
 
 
 # This is here for plotting purpose...
-#glon = glon.wrap_at(180*u.degree)
+# glon = glon.wrap_at(180*u.degree)
 
 # Open figure
-fig = plt.figure(figsize=(14,8))
+fig = plt.figure(figsize=(14, 8))
 ax = fig.add_subplot(111, projection="aitoff")
-ax.scatter(coord[fsrq].l.wrap_at(180*u.degree).radian, 
-           coord[fsrq].b.radian, 
-           color = 'k', label='FSRQ')
+ax.scatter(
+    coord[fsrq].l.wrap_at(180 * u.degree).radian,
+    coord[fsrq].b.radian,
+    color="k",
+    label="FSRQ",
+)
 ax.grid(True)
 ax.legend()
-# ax.invert_xaxis()  -> This does not work for projections...  
+# ax.invert_xaxis()  -> This does not work for projections...
 
 
 # In[30]:
 
 
 # Now do it for a series of classes
-fig = plt.figure(figsize=(14,10))
+fig = plt.figure(figsize=(14, 10))
 ax = fig.add_subplot(111, projection="aitoff")
 
-source_classes = ['','psr','spp', 'fsrq', 'bll', 'bin']
+source_classes = ["", "psr", "spp", "fsrq", "bll", "bin"]
 
 for source_class in source_classes:
     # We select elements with correct class in upper or lower characters
-    index = np.array([_.strip().lower() == source_class for _ in table['CLASS1']])
-    
-    label = source_class if source_class else 'unid'
-    
+    index = np.array(
+        [_.strip().lower() == source_class for _ in table["CLASS1"]]
+    )
+
+    label = source_class if source_class else "unid"
+
     ax.scatter(
-        coord[index].l.wrap_at(180*u.degree).radian, 
+        coord[index].l.wrap_at(180 * u.degree).radian,
         coord[index].b.radian,
         label=label,
     )
@@ -392,10 +415,7 @@ ax.legend();
 # In[31]:
 
 
-rows = [
-    dict(a=42, b='spam'),
-    dict(a=43, b='ham'),
-]
+rows = [dict(a=42, b="spam"), dict(a=43, b="ham")]
 my_table = Table(rows=rows)
 my_table
 
@@ -424,50 +444,14 @@ my_table
 
 
 my_table2 = Table(data=dict(a=[1, 2, 3]))
-hdu_list = fits.HDUList([
-    fits.PrimaryHDU(), # need an empty primary HDU
-    fits.table_to_hdu(my_table),
-    fits.table_to_hdu(my_table2),
-])
-# hdu_list.writeto('tables.fits')
-
-
-# ## Using regions
-# 
-# Let's try to find sources inside a circular region in the sky.
-# 
-# For this we will rely on the [region package](http://astropy-regions.readthedocs.io/en/latest/index.html)
-# 
-# We first create a circular region centered on a given SkyCoord with a given radius.
-
-# In[34]:
-
-
-from regions import CircleSkyRegion
-
-#center = SkyCoord.from_name("M31")
-center = SkyCoord(ra='0h42m44.31s', dec='41d16m09.4s')
-
-circle_region = CircleSkyRegion(
-    center=center,
-    radius=Angle(50, 'deg')
+hdu_list = fits.HDUList(
+    [
+        fits.PrimaryHDU(),  # need an empty primary HDU
+        fits.table_to_hdu(my_table),
+        fits.table_to_hdu(my_table2),
+    ]
 )
-
-
-# We now use the contains method to search objects in this circular region in the sky.
-
-# In[35]:
-
-
-in_region = circle_region.contains(coord)
-
-
-# In[36]:
-
-
-fig = plt.figure(figsize=(14,10))
-ax = fig.add_subplot(111, projection="aitoff")
-ax.scatter(coord[in_region].l.radian, coord[in_region].b.radian)
+# hdu_list.writeto('tables.fits')
 
 
 # ### Tables and pandas
@@ -483,14 +467,16 @@ ax.scatter(coord[in_region].l.radian, coord[in_region].b.radian)
 # 
 # One little trick is needed when converting to a dataframe: we need to drop the multi-dimensional columns that the 3FGL catalog uses for a few columns (flux up/down errors, and lightcurves):
 
-# In[37]:
+# In[34]:
 
 
-scalar_colnames = tuple(name for name in table.colnames if len(table[name].shape) <= 1)
+scalar_colnames = tuple(
+    name for name in table.colnames if len(table[name].shape) <= 1
+)
 data_frame = table[scalar_colnames].to_pandas()
 
 
-# In[38]:
+# In[35]:
 
 
 # If you want to have a quick-look at the dataframe:
@@ -499,12 +485,12 @@ data_frame = table[scalar_colnames].to_pandas()
 # data_frame.describe()
 
 
-# In[39]:
+# In[36]:
 
 
 # Just do demonstrate one of the useful DataFrame methods,
 # this is how you can count the number of sources in each class:
-data_frame['CLASS1'].value_counts()
+data_frame["CLASS1"].value_counts()
 
 
 # If you'd like to learn more about pandas, have a look [here](http://pandas.pydata.org/pandas-docs/stable/10min.html) or [here](http://nbviewer.jupyter.org/github/jakevdp/PythonDataScienceHandbook/blob/master/notebooks/03.00-Introduction-to-Pandas.ipynb).

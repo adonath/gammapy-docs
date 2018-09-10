@@ -58,13 +58,14 @@ for profile in profiles.DMProfile.__subclasses__():
     plt.plot(radii, p(radii), label=p.__class__.__name__)
 
 plt.loglog()
-plt.axvline(8.5, linestyle='dashed', color='black', label='local density')
+plt.axvline(8.5, linestyle="dashed", color="black", label="local density")
 plt.legend()
 
-print('The assumed local density is {} at a distance to the GC of {}'.format(
-    profiles.DMProfile.LOCAL_DENSITY,
-    profiles.DMProfile.DISTANCE_GC,
-))
+print(
+    "The assumed local density is {} at a distance to the GC of {}".format(
+        profiles.DMProfile.LOCAL_DENSITY, profiles.DMProfile.DISTANCE_GC
+    )
+)
 
 
 # ## J Factors
@@ -78,18 +79,20 @@ profile = profiles.NFWProfile()
 
 # Adopt standard values used in HESS
 profiles.DMProfile.DISTANCE_GC = 8.5 * u.kpc
-profiles.DMProfile.LOCAL_DENSITY = 0.39 * u.Unit('GeV / cm3')
+profiles.DMProfile.LOCAL_DENSITY = 0.39 * u.Unit("GeV / cm3")
 
 profile.scale_to_local_density()
 
-position = SkyCoord(0.0, 0.0, frame='galactic', unit='deg')
-geom = WcsGeom.create(binsz=0.05, skydir=position, width=3.0, coordsys='GAL')
+position = SkyCoord(0.0, 0.0, frame="galactic", unit="deg")
+geom = WcsGeom.create(binsz=0.05, skydir=position, width=3.0, coordsys="GAL")
 
 
 # In[6]:
 
 
-jfactory = JFactory(geom=geom, profile=profile, distance=profiles.DMProfile.DISTANCE_GC)
+jfactory = JFactory(
+    geom=geom, profile=profile, distance=profiles.DMProfile.DISTANCE_GC
+)
 jfact = jfactory.compute_jfactor()
 
 
@@ -97,13 +100,13 @@ jfact = jfactory.compute_jfactor()
 
 
 jfact_map = WcsNDMap(geom=geom, data=jfact.value, unit=jfact.unit)
-fig, ax, im = jfact_map.plot(cmap='viridis', norm=LogNorm(), add_cbar=True)
-plt.title('J-Factor [{}]'.format(jfact_map.unit))
+fig, ax, im = jfact_map.plot(cmap="viridis", norm=LogNorm(), add_cbar=True)
+plt.title("J-Factor [{}]".format(jfact_map.unit))
 
 # 1 deg circle usually used in H.E.S.S. analyses
 sky_reg = CircleSkyRegion(center=position, radius=1 * u.deg)
 pix_reg = sky_reg.to_pixel(wcs=geom.wcs)
-pix_reg.plot(ax=ax, facecolor='none', edgecolor='red', label='1 deg circle')
+pix_reg.plot(ax=ax, facecolor="none", edgecolor="red", label="1 deg circle")
 plt.legend()
 
 
@@ -114,8 +117,10 @@ plt.legend()
 mask = pix_reg.to_mask()
 data = mask.multiply(jfact.data)
 total_jfact = np.sum(data)
-print("J-factor in 1 deg circle around GC assuming a "
-      "{} is {:.3g}".format(profile.__class__.__name__, total_jfact))
+print(
+    "J-factor in 1 deg circle around GC assuming a "
+    "{} is {:.3g}".format(profile.__class__.__name__, total_jfact)
+)
 
 
 # ## Gamma-ray spectra at production
@@ -125,26 +130,31 @@ print("J-factor in 1 deg circle around GC assuming a "
 # In[9]:
 
 
-fluxes = PrimaryFlux(mDM='1 TeV', channel='eL')
+fluxes = PrimaryFlux(mDM="1 TeV", channel="eL")
 print(fluxes.allowed_channels)
 
 
 # In[10]:
 
 
-fig, axes = plt.subplots(4,1, figsize=(6,16))
+fig, axes = plt.subplots(4, 1, figsize=(6, 16))
 mDMs = [0.01, 0.1, 1, 10] * u.TeV
 
 for mDM, ax in zip(mDMs, axes):
     fluxes.mDM = mDM
-    ax.set_title(r'm$_{{\mathrm{{DM}}}}$ = {}'.format(mDM))
-    ax.set_yscale('log')
-    ax.set_ylabel('dN/dE')
-    
-    for channel in ['tau', 'mu', 'b', 'Z']:
+    ax.set_title(r"m$_{{\mathrm{{DM}}}}$ = {}".format(mDM))
+    ax.set_yscale("log")
+    ax.set_ylabel("dN/dE")
+
+    for channel in ["tau", "mu", "b", "Z"]:
         fluxes.channel = channel
-        fluxes.table_model.plot(energy_range=[mDM/100, mDM], ax=ax, label=channel)
-    
+        fluxes.table_model.plot(
+            energy_range=[mDM / 100, mDM],
+            ax=ax,
+            label=channel,
+            flux_unit="1/GeV",
+        )
+
 axes[0].legend()
 plt.subplots_adjust(hspace=0.5)
 
@@ -158,9 +168,10 @@ plt.subplots_adjust(hspace=0.5)
 
 flux = compute_dm_flux(
     jfact=jfact,
-    prim_flux=fluxes, 
-    x_section='1e-26 cm3s-1', 
-    energy_range=[0.1, 10] * u.TeV)
+    prim_flux=fluxes,
+    x_section="1e-26 cm3s-1",
+    energy_range=[0.1, 10] * u.TeV,
+)
 
 
 # In[12]:
@@ -168,11 +179,10 @@ flux = compute_dm_flux(
 
 flux_map = WcsNDMap(geom=geom, data=flux.value, unit=flux.unit)
 
-fig, ax, im = flux_map.plot(cmap='viridis', norm=LogNorm(), add_cbar=True)
+fig, ax, im = flux_map.plot(cmap="viridis", norm=LogNorm(), add_cbar=True)
 plt.title(
-    'Flux [{}]\n m$_{{DM}}$={}, channel={}'.format(
-    flux_map.unit, 
-    fluxes.mDM.to('TeV'),
-    fluxes.channel)
+    "Flux [{}]\n m$_{{DM}}$={}, channel={}".format(
+        flux_map.unit, fluxes.mDM.to("TeV"), fluxes.channel
+    )
 );
 

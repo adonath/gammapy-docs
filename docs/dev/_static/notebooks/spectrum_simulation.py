@@ -49,7 +49,9 @@ from gammapy.spectrum.models import PowerLaw
 e_true = np.logspace(-2, 2.5, 109) * u.TeV
 e_reco = np.logspace(-2, 2, 79) * u.TeV
 
-edisp = EnergyDispersion.from_gauss(e_true=e_true, e_reco=e_reco, sigma=0.2, bias=0)
+edisp = EnergyDispersion.from_gauss(
+    e_true=e_true, e_reco=e_reco, sigma=0.2, bias=0
+)
 aeff = EffectiveAreaTable.from_parametrization(energy=e_true)
 
 fig, axes = plt.subplots(1, 2, figsize=(12, 6))
@@ -65,9 +67,7 @@ aeff.plot(ax=axes[1]);
 
 
 pwl = PowerLaw(
-    index=2.3,
-    amplitude=1e-11 * u.Unit('cm-2 s-1 TeV-1'),
-    reference=1 * u.TeV,
+    index=2.3, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV
 )
 print(pwl)
 
@@ -77,10 +77,7 @@ print(pwl)
 
 livetime = 2 * u.h
 sim = SpectrumSimulation(
-    aeff=aeff,
-    edisp=edisp,
-    source_model=pwl,
-    livetime=livetime,
+    aeff=aeff, edisp=edisp, source_model=pwl, livetime=livetime
 )
 sim.simulate_obs(seed=2309, obs_id=1)
 print(sim.obs)
@@ -89,7 +86,7 @@ print(sim.obs)
 # In[6]:
 
 
-fit = SpectrumFit(obs_list=sim.obs, model=pwl.copy(), stat='cash')
+fit = SpectrumFit(obs_list=sim.obs, model=pwl.copy(), stat="cash")
 fit.fit_range = [1, 10] * u.TeV
 fit.fit()
 fit.est_errors()
@@ -104,9 +101,7 @@ print(fit.result[0])
 
 
 bkg_model = PowerLaw(
-    index=2.5,
-    amplitude=1e-11 * u.Unit('cm-2 s-1 TeV-1'),
-    reference=1 * u.TeV,
+    index=2.5, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV
 )
 
 
@@ -125,27 +120,27 @@ n_on = [obs.total_stats.n_on for obs in sim.result]
 n_off = [obs.total_stats.n_off for obs in sim.result]
 excess = [obs.total_stats.excess for obs in sim.result]
 
-fix, axes = plt.subplots(1,3, figsize=(12, 4))
+fix, axes = plt.subplots(1, 3, figsize=(12, 4))
 axes[0].hist(n_on)
-axes[0].set_xlabel('n_on')
+axes[0].set_xlabel("n_on")
 axes[1].hist(n_off)
-axes[1].set_xlabel('n_off')
+axes[1].set_xlabel("n_off")
 axes[2].hist(excess)
-axes[2].set_xlabel('excess');
+axes[2].set_xlabel("excess");
 
 
 # In[10]:
 
 
-get_ipython().run_cell_magic('time', '', "results = []\nfor obs in sim.result:\n    fit = SpectrumFit(obs, pwl.copy(), stat='wstat')\n    fit.fit(opts_minuit={'print_level': 0})\n    results.append({\n        'index': fit.result[0].model.parameters['index'].value,\n        'amplitude': fit.result[0].model.parameters['amplitude'].value,\n    })")
+get_ipython().run_cell_magic('time', '', 'results = []\nfor obs in sim.result:\n    fit = SpectrumFit(obs, pwl.copy(), stat="wstat")\n    fit.fit(opts_minuit={"print_level": 0})\n    results.append(\n        {\n            "index": fit.result[0].model.parameters["index"].value,\n            "amplitude": fit.result[0].model.parameters["amplitude"].value,\n        }\n    )')
 
 
 # In[11]:
 
 
-index = np.array([_['index'] for _ in results])
+index = np.array([_["index"] for _ in results])
 plt.hist(index, bins=10)
-print('spectral index: {:.2f} +/- {:.2f}'.format(index.mean(), index.std()))
+print("spectral index: {:.2f} +/- {:.2f}".format(index.mean(), index.std()))
 
 
 # ## Exercises

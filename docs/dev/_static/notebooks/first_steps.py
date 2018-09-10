@@ -46,12 +46,12 @@
 
 import os
 
-path = os.path.expandvars('$GAMMAPY_EXTRA/datasets')
+path = os.path.expandvars("$GAMMAPY_EXTRA/datasets")
 
 if not os.path.exists(path):
-    raise Exception('gammapy-extra repository not found!')
+    raise Exception("gammapy-extra repository not found!")
 else:
-    print('Great your setup is correct!')
+    print("Great your setup is correct!")
 
 
 # In case you encounter an error, you can un-comment and execute the following cell to continue. But we recommend to set up your enviroment correctly as decribed [here](http://docs.gammapy.org/dev/datasets/index.html#gammapy-extra) after you are done with this notebook.
@@ -59,7 +59,7 @@ else:
 # In[2]:
 
 
-#os.environ['GAMMAPY_EXTRA'] = os.path.join(os.getcwd(), '..')
+# os.environ['GAMMAPY_EXTRA'] = os.path.join(os.getcwd(), '..')
 
 
 # Now we can continue with the usual IPython notebooks and Python imports:
@@ -96,7 +96,10 @@ from astropy.visualization import simple_norm
 
 
 from gammapy.maps import Map
-vela_2fhl = Map.read("$GAMMAPY_EXTRA/datasets/fermi_2fhl/fermi_2fhl_vela.fits.gz", hdu='COUNTS')
+
+vela_2fhl = Map.read(
+    "$GAMMAPY_EXTRA/datasets/fermi_2fhl/fermi_2fhl_vela.fits.gz", hdu="COUNTS"
+)
 
 
 # As the FITS file `fermi_2fhl_vela.fits.gz` contains mutiple image extensions and a map can only represent a single image, we explicitely specify to read the extension called 'COUNTS'.
@@ -132,7 +135,9 @@ vela_2fhl.data
 # In[9]:
 
 
-print('Total number of counts in the image: {:.0f}'.format(vela_2fhl.data.sum()))
+print(
+    "Total number of counts in the image: {:.0f}".format(vela_2fhl.data.sum())
+)
 
 
 # To show the image on the screen we can use the ``plot`` method. It basically calls [plt.imshow](http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.imshow), passing the `vela_2fhl.data` attribute but in addition handles axis with world coordinates using [wcsaxes](https://wcsaxes.readthedocs.io/en/latest/) and defines some defaults for nicer plots (e.g. the colormap 'afmhot'):
@@ -148,7 +153,7 @@ vela_2fhl.plot();
 # In[11]:
 
 
-vela_2fhl_smoothed = vela_2fhl.smooth(kernel='gauss', radius=0.5 * u.deg)
+vela_2fhl_smoothed = vela_2fhl.smooth(kernel="gauss", radius=0.5 * u.deg)
 
 
 # In[12]:
@@ -163,7 +168,7 @@ vela_2fhl_smoothed.plot();
 
 
 # define center and size of the cutout region
-center = SkyCoord(265.0, -2.0, unit='deg', frame='galactic')
+center = SkyCoord(265.0, -2.0, unit="deg", frame="galactic")
 vela_2fhl_cutout = vela_2fhl_smoothed.cutout(center, 9 * u.deg)
 vela_2fhl_cutout.plot();
 
@@ -176,8 +181,8 @@ vela_2fhl_cutout.plot();
 vela_wmap = Map.read("$GAMMAPY_EXTRA/datasets/images/Vela_region_WMAP_K.fits")
 
 # define a norm to stretch the data, so it is better visible
-norm = simple_norm(vela_wmap.data, stretch='sqrt', max_percent=99.9)
-vela_wmap.plot(cmap='viridis', norm=norm);
+norm = simple_norm(vela_wmap.data, stretch="sqrt", max_percent=99.9)
+vela_wmap.plot(cmap="viridis", norm=norm);
 
 
 # In order to make the structures in the data better visible we used the [simple_norm()](http://docs.astropy.org/en/stable/api/astropy.visualization.mpl_normalize.simple_norm.html#astropy.visualization.mpl_normalize.simple_norm) method, which allows to stretch the data for plotting. This is very similar to the methods that e.g. `ds9` provides. In addition we used a different colormap called 'viridis'. An overview of different colomaps can be found [here](http://matplotlib.org/examples/color/colormaps_reference.html). 
@@ -198,7 +203,7 @@ vela_wmap
 # reproject and cut out the part we're interested in:
 vela_wmap_reprojected = vela_wmap.reproject(vela_2fhl.geom)
 vela_wmap_reprojected_cutout = vela_wmap_reprojected.cutout(center, 9 * u.deg)
-vela_wmap_reprojected_cutout.plot(cmap='viridis', norm=norm);
+vela_wmap_reprojected_cutout.plot(cmap="viridis", norm=norm);
 
 
 # Finally we will combine both images in single plot, by plotting WMAP contours on top of the smoothed Fermi-LAT 2FHL image:
@@ -208,7 +213,7 @@ vela_wmap_reprojected_cutout.plot(cmap='viridis', norm=norm);
 
 
 fig, ax, _ = vela_2fhl_cutout.plot()
-ax.contour(vela_wmap_reprojected_cutout.data, cmap='Blues');
+ax.contour(vela_wmap_reprojected_cutout.data, cmap="Blues");
 
 
 # ### Exercises
@@ -238,7 +243,9 @@ from gammapy.data import EventList
 # In[19]:
 
 
-events_2fhl = EventList.read('$GAMMAPY_EXTRA/datasets/fermi_2fhl/2fhl_events.fits.gz')
+events_2fhl = EventList.read(
+    "$GAMMAPY_EXTRA/datasets/fermi_2fhl/2fhl_events.fits.gz"
+)
 
 
 # This time the actual data is stored as an [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html#astropy.table.Table) object. It can be accessed with `.table` attribute: 
@@ -255,7 +262,7 @@ events_2fhl.table
 # In[21]:
 
 
-print('Total number of events: {}'.format(len(events_2fhl.table)))
+print("Total number of events: {}".format(len(events_2fhl.table)))
 
 
 # Because Gammapy objects don't redefine properties, that are accessible from the underlying Astropy of Numpy data object.
@@ -265,7 +272,7 @@ print('Total number of events: {}'.format(len(events_2fhl.table)))
 # In[22]:
 
 
-print('Total number of events: {}'.format(len(events_2fhl.table)))
+print("Total number of events: {}".format(len(events_2fhl.table)))
 
 
 # And we can access any other attribute of the `Table` object as well:
@@ -281,14 +288,14 @@ events_2fhl.table.colnames
 # In[24]:
 
 
-events_2fhl.energy.to('GeV')
+events_2fhl.energy.to("GeV")
 
 
 # In[25]:
 
 
 events_2fhl.galactic
-#events_2fhl.radec
+# events_2fhl.radec
 
 
 # In[26]:
@@ -303,13 +310,15 @@ events_2fhl.time
 
 
 # select all events within a radius of 0.5 deg around center
-events_vela_2fhl = events_2fhl.select_sky_cone(center=center, radius=0.5 * u.deg)
+events_vela_2fhl = events_2fhl.select_sky_cone(
+    center=center, radius=0.5 * u.deg
+)
 
 # sort events by energy
-events_vela_2fhl.table.sort('ENERGY')
+events_vela_2fhl.table.sort("ENERGY")
 
 # and show highest energy photon
-events_vela_2fhl.energy[-1].to('GeV')
+events_vela_2fhl.energy[-1].to("GeV")
 
 
 # ### Exercises
@@ -339,7 +348,9 @@ from gammapy.catalog import SourceCatalog2FHL
 # In[29]:
 
 
-fermi_2fhl = SourceCatalog2FHL('$GAMMAPY_EXTRA/datasets/catalogs/fermi/gll_psch_v08.fit.gz')
+fermi_2fhl = SourceCatalog2FHL(
+    "$GAMMAPY_EXTRA/datasets/catalogs/fermi/gll_psch_v08.fit.gz"
+)
 fermi_2fhl.table
 
 
@@ -351,13 +362,13 @@ fermi_2fhl.table
 
 
 # sort table by TS
-fermi_2fhl.table.sort('TS')
+fermi_2fhl.table.sort("TS")
 
-# invert the order to find the highest values and take the top 5 
+# invert the order to find the highest values and take the top 5
 top_five_TS_2fhl = fermi_2fhl.table[::-1][:5]
 
 # print the top five significant sources with association and source class
-top_five_TS_2fhl[['Source_Name', 'ASSOC', 'CLASS']]
+top_five_TS_2fhl[["Source_Name", "ASSOC", "CLASS"]]
 
 
 # If you are interested in the data of an individual source you can access the information from catalog using the name of the source or any alias source name that is defined in the catalog:
@@ -365,11 +376,11 @@ top_five_TS_2fhl[['Source_Name', 'ASSOC', 'CLASS']]
 # In[31]:
 
 
-mkn_421_2fhl = fermi_2fhl['2FHL J1104.4+3812']
+mkn_421_2fhl = fermi_2fhl["2FHL J1104.4+3812"]
 
 # or use any alias source name that is defined in the catalog
-mkn_421_2fhl = fermi_2fhl['Mkn 421']
-print(mkn_421_2fhl.data['TS'])
+mkn_421_2fhl = fermi_2fhl["Mkn 421"]
+print(mkn_421_2fhl.data["TS"])
 
 
 # ### Exercises
@@ -392,7 +403,7 @@ print(mkn_421_2fhl.data['TS'])
 # In[32]:
 
 
-crab_2fhl = fermi_2fhl['Crab']
+crab_2fhl = fermi_2fhl["Crab"]
 print(crab_2fhl.spectral_model)
 
 
@@ -404,7 +415,8 @@ print(crab_2fhl.spectral_model)
 
 
 ax_crab_2fhl = crab_2fhl.spectral_model.plot(
-    energy_range=[50, 2000] * u.GeV, energy_power=0)
+    energy_range=[50, 2000] * u.GeV, energy_power=0
+)
 
 
 # We assign the return axes object to variable called `ax_crab_2fhl`, because we will re-use it later to plot the flux points on top.
@@ -414,7 +426,7 @@ ax_crab_2fhl = crab_2fhl.spectral_model.plot(
 # In[34]:
 
 
-crab_2fhl.spectral_model(100 * u.GeV).to('cm-2 s-1 GeV-1')
+crab_2fhl.spectral_model(100 * u.GeV).to("cm-2 s-1 GeV-1")
 
 
 # Next we can compute the integral flux of the Crab between 50 GeV and 2000 GeV:
@@ -422,9 +434,9 @@ crab_2fhl.spectral_model(100 * u.GeV).to('cm-2 s-1 GeV-1')
 # In[35]:
 
 
-crab_2fhl.spectral_model.integral(
-    emin=50 * u.GeV, emax=2000 * u.GeV,
-).to('cm-2 s-1')
+crab_2fhl.spectral_model.integral(emin=50 * u.GeV, emax=2000 * u.GeV).to(
+    "cm-2 s-1"
+)
 
 
 # We can easily convince ourself, that it corresponds to the value given in the Fermi-LAT 2FHL catalog:
@@ -432,7 +444,7 @@ crab_2fhl.spectral_model.integral(
 # In[36]:
 
 
-crab_2fhl.data['Flux50']
+crab_2fhl.data["Flux50"]
 
 
 # In addition we can compute the energy flux between 50 GeV and 2000 GeV:
@@ -440,9 +452,9 @@ crab_2fhl.data['Flux50']
 # In[37]:
 
 
-crab_2fhl.spectral_model.energy_flux(
-    emin=50 * u.GeV, emax=2000 * u.GeV,
-).to('erg cm-2 s-1')
+crab_2fhl.spectral_model.energy_flux(emin=50 * u.GeV, emax=2000 * u.GeV).to(
+    "erg cm-2 s-1"
+)
 
 
 # Next we will access the flux points data of the Crab:
@@ -469,7 +481,7 @@ crab_2fhl.flux_points.table
 
 
 ax = crab_2fhl.spectral_model.plot(
-    energy_range=[50, 2000] * u.GeV, energy_power=2,
+    energy_range=[50, 2000] * u.GeV, energy_power=2
 )
 crab_2fhl.flux_points.plot(ax=ax, energy_power=2);
 

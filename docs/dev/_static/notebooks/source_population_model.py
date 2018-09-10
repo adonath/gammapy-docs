@@ -47,8 +47,8 @@ n_sources = int(1e5)
 
 table = population.make_base_catalog_galactic(
     n_sources=n_sources,
-    rad_dis='L06',
-    vel_dis='F06B',
+    rad_dis="L06",
+    vel_dis="F06B",
     max_age=1e6 * u.yr,
     spiralarms=True,
 )
@@ -65,13 +65,8 @@ table = population.make_base_catalog_galactic(
 
 # Source luminosity (ph s^-1)
 
-luminosity = sample_powerlaw(
-    x_min=1e34,
-    x_max=1e37,
-    gamma=1.5,
-    size=n_sources,
-)
-table['luminosity'] = luminosity
+luminosity = sample_powerlaw(x_min=1e34, x_max=1e37, gamma=1.5, size=n_sources)
+table["luminosity"] = luminosity
 
 
 # ## Compute observable parameters
@@ -92,43 +87,43 @@ table.info()
 # In[6]:
 
 
-plt.scatter(table['x'][:1000], table['y'][:1000]);
+plt.scatter(table["x"][:1000], table["y"][:1000]);
 
 
 # In[7]:
 
 
-plt.hist(table['GLON'], bins=100);
+plt.hist(table["GLON"], bins=100);
 
 
 # In[8]:
 
 
-plt.hist(table['GLAT'], bins=100, log=True);
+plt.hist(table["GLAT"], bins=100, log=True);
 
 
 # In[9]:
 
 
-plt.scatter(table['GLON'][:1000], table['GLAT'][:1000]);
+plt.scatter(table["GLON"][:1000], table["GLAT"][:1000]);
 
 
 # In[10]:
 
 
-plt.hist(table['distance'], bins=100, log=True);
+plt.hist(table["distance"], bins=100, log=True);
 
 
 # In[11]:
 
 
-plt.hist(np.log10(table['luminosity']), bins=100, log=True);
+plt.hist(np.log10(table["luminosity"]), bins=100, log=True);
 
 
 # In[12]:
 
 
-plt.hist(np.log10(table['flux']), bins=100, log=True);
+plt.hist(np.log10(table["flux"]), bins=100, log=True);
 
 
 # In[13]:

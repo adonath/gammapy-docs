@@ -67,7 +67,9 @@ from gammapy.cube import MapEvaluator, MapFit, PSFKernel
 # In[5]:
 
 
-events = EventList.read('$GAMMAPY_FERMI_LAT_DATA/3fhl/fermi_3fhl_events_selected.fits.gz')
+events = EventList.read(
+    "$GAMMAPY_FERMI_LAT_DATA/3fhl/allsky/fermi_3fhl_events_selected.fits.gz"
+)
 print(events)
 
 
@@ -82,7 +84,7 @@ events.table.colnames
 # In[7]:
 
 
-events.table[:5][['ENERGY', 'RA', 'DEC']]
+events.table[:5][["ENERGY", "RA", "DEC"]]
 
 
 # In[8]:
@@ -96,7 +98,7 @@ print(events.time[-1].iso)
 
 
 energy = events.energy
-energy.info('stats')
+energy.info("stats")
 
 
 # As a short analysis example we will count the number of events above a certain minimum energy: 
@@ -116,29 +118,30 @@ for e_min in [10, 100, 1000] * u.GeV:
 # In[11]:
 
 
-gc_pos = SkyCoord(0, 0, unit='deg', frame='galactic')
+gc_pos = SkyCoord(0, 0, unit="deg", frame="galactic")
 energy_axis = MapAxis.from_edges(
-    [10, 30, 100, 300, 2000],
-    name='energy', unit='GeV', interp='log',
+    [10, 30, 100, 300, 2000], name="energy", unit="GeV", interp="log"
 )
 counts = Map.create(
     skydir=gc_pos,
     npix=(100, 80),
-    proj='TAN',
-    coordsys='GAL',
+    proj="TAN",
+    coordsys="GAL",
     binsz=0.1,
     axes=[energy_axis],
 )
 # We put this call into the same Jupyter cell as the Map.create
 # because otherwise we could accidentally fill the counts
 # multiple times when executing the ``fill_by_coord`` multiple times.
-counts.fill_by_coord({
-    'skycoord': events.radec,
-    # The coord-based interface doesn't use Quantity,
-    # so we need to pass energy in the same unit as
-    # used for the map axis
-    'energy': events.energy,
-})
+counts.fill_by_coord(
+    {
+        "skycoord": events.radec,
+        # The coord-based interface doesn't use Quantity,
+        # so we need to pass energy in the same unit as
+        # used for the map axis
+        "energy": events.energy,
+    }
+)
 
 
 # In[12]:
@@ -150,7 +153,7 @@ counts.geom.axes[0]
 # In[13]:
 
 
-counts.sum_over_axes().smooth(2).plot(stretch='sqrt', vmax=30);
+counts.sum_over_axes().smooth(2).plot(stretch="sqrt", vmax=30);
 
 
 # ## Exposure
@@ -164,9 +167,11 @@ counts.sum_over_axes().smooth(2).plot(stretch='sqrt', vmax=30);
 # In[14]:
 
 
-exposure_hpx = Map.read('$GAMMAPY_FERMI_LAT_DATA/3fhl/fermi_3fhl_exposure_cube_hpx.fits.gz')
+exposure_hpx = Map.read(
+    "$GAMMAPY_FERMI_LAT_DATA/3fhl/allsky/fermi_3fhl_exposure_cube_hpx.fits.gz"
+)
 # Unit is not stored in the file, set it manually
-exposure_hpx.unit = 'cm2 s'
+exposure_hpx.unit = "cm2 s"
 print(exposure_hpx.geom)
 print(exposure_hpx.geom.axes[0])
 
@@ -182,8 +187,9 @@ exposure_hpx.plot();
 
 # For exposure, we choose a geometry with node_type='center',
 # whereas for counts it was node_type='edge'
-axis = MapAxis.from_nodes(counts.geom.axes[0].center,
-                          name='energy', unit='GeV', interp='log')
+axis = MapAxis.from_nodes(
+    counts.geom.axes[0].center, name="energy", unit="GeV", interp="log"
+)
 geom = WcsGeom(wcs=counts.geom.wcs, npix=counts.geom.npix, axes=[axis])
 
 coord = counts.geom.get_coord()
@@ -197,7 +203,7 @@ print(exposure.geom.axes[0])
 
 
 # Exposure is almost constant accross the field of view
-exposure.slice_by_idx({'energy': 0}).plot(add_cbar=True);
+exposure.slice_by_idx({"energy": 0}).plot(add_cbar=True);
 
 
 # In[18]:
@@ -205,10 +211,7 @@ exposure.slice_by_idx({'energy': 0}).plot(add_cbar=True);
 
 # Exposure varies very little with energy at these high energies
 energy = [10, 100, 1000] * u.GeV
-exposure.get_by_coord({
-    'skycoord': gc_pos,
-    'energy': energy,
-})
+exposure.get_by_coord({"skycoord": gc_pos, "energy": energy})
 
 
 # ## Galactic diffuse background
@@ -221,9 +224,11 @@ exposure.get_by_coord({
 # In[19]:
 
 
-diffuse_galactic_fermi = Map.read('$GAMMAPY_EXTRA/datasets/fermi_3fhl/gll_iem_v06_cutout.fits')
+diffuse_galactic_fermi = Map.read(
+    "$GAMMAPY_EXTRA/datasets/fermi_3fhl/gll_iem_v06_cutout.fits"
+)
 # Unit is not stored in the file, set it manually
-diffuse_galactic_fermi.unit = 'cm-2 s-1 MeV-1 sr-1'
+diffuse_galactic_fermi.unit = "cm-2 s-1 MeV-1 sr-1"
 print(diffuse_galactic_fermi.geom)
 print(diffuse_galactic_fermi.geom.axes[0])
 
@@ -237,11 +242,16 @@ print(diffuse_galactic_fermi.geom.axes[0])
 coord = counts.geom.get_coord()
 
 data = diffuse_galactic_fermi.interp_by_coord(
-    {'skycoord': coord.skycoord,
-     'energy': coord['energy'] * counts.geom.get_axis_by_name('energy').unit},
-    interp=3
+    {
+        "skycoord": coord.skycoord,
+        "energy": coord["energy"]
+        * counts.geom.get_axis_by_name("energy").unit,
+    },
+    interp=3,
 )
-diffuse_galactic = WcsNDMap(exposure.geom, data, unit=diffuse_galactic_fermi.unit)
+diffuse_galactic = WcsNDMap(
+    exposure.geom, data, unit=diffuse_galactic_fermi.unit
+)
 
 print(diffuse_galactic.geom)
 print(diffuse_galactic.geom.axes[0])
@@ -250,7 +260,7 @@ print(diffuse_galactic.geom.axes[0])
 # In[21]:
 
 
-diffuse_galactic.slice_by_idx({'energy': 0}).plot();
+diffuse_galactic.slice_by_idx({"energy": 0}).plot();
 
 
 # In[22]:
@@ -258,14 +268,13 @@ diffuse_galactic.slice_by_idx({'energy': 0}).plot();
 
 # Exposure varies very little with energy at these high energies
 energy = np.logspace(1, 3, 10) * u.GeV
-dnde = diffuse_galactic.interp_by_coord({
-    'skycoord': gc_pos,
-    'energy': energy,
-}, interp='linear', fill_value=None)
-plt.plot(energy.value, dnde, '*')
+dnde = diffuse_galactic.interp_by_coord(
+    {"skycoord": gc_pos, "energy": energy}, interp="linear", fill_value=None
+)
+plt.plot(energy.value, dnde, "*")
 plt.loglog()
-plt.xlabel('Energy (GeV)')
-plt.ylabel('Flux (cm-2 s-1 MeV-1 sr-1)')
+plt.xlabel("Energy (GeV)")
+plt.ylabel("Flux (cm-2 s-1 MeV-1 sr-1)")
 
 
 # In[23]:
@@ -283,9 +292,11 @@ plt.ylabel('Flux (cm-2 s-1 MeV-1 sr-1)')
 # In[24]:
 
 
-filename = '$GAMMAPY_FERMI_LAT_DATA/isodiff/iso_P8R2_SOURCE_V6_v06.txt'
-interp_kwargs = {'fill_value': 'extrapolate', 'kind': 'cubic'}
-diffuse_iso = TableModel.read_fermi_isotropic_model(filename=filename, interp_kwargs=interp_kwargs)
+filename = "$GAMMAPY_FERMI_LAT_DATA/isodiff/iso_P8R2_SOURCE_V6_v06.txt"
+interp_kwargs = {"fill_value": "extrapolate", "kind": "cubic"}
+diffuse_iso = TableModel.read_fermi_isotropic_model(
+    filename=filename, interp_kwargs=interp_kwargs
+)
 
 
 # We can plot the model in the energy range between 50 GeV and 2000 GeV:
@@ -294,7 +305,7 @@ diffuse_iso = TableModel.read_fermi_isotropic_model(filename=filename, interp_kw
 
 
 erange = [50, 2000] * u.GeV
-diffuse_iso.plot(erange, flux_unit='1 / (cm2 MeV s sr)');
+diffuse_iso.plot(erange, flux_unit="1 / (cm2 MeV s sr)");
 
 
 # ## PSF
@@ -304,7 +315,9 @@ diffuse_iso.plot(erange, flux_unit='1 / (cm2 MeV s sr)');
 # In[26]:
 
 
-psf = EnergyDependentTablePSF.read('$GAMMAPY_FERMI_LAT_DATA/3fhl/fermi_3fhl_psf_gc.fits.gz')
+psf = EnergyDependentTablePSF.read(
+    "$GAMMAPY_FERMI_LAT_DATA/3fhl/allsky/fermi_3fhl_psf_gc.fits.gz"
+)
 print(psf)
 
 
@@ -328,12 +341,12 @@ plt.figure(figsize=(8, 5))
 
 for energy in [100, 300, 1000] * u.GeV:
     psf_at_energy = psf.table_psf_at_energy(energy)
-    psf_at_energy.plot_psf_vs_rad(label='PSF @ {:.0f}'.format(energy), lw=2)
+    psf_at_energy.plot_psf_vs_rad(label="PSF @ {:.0f}".format(energy), lw=2)
 
 erange = [50, 2000] * u.GeV
 psf_mean = psf.table_psf_in_energy_band(energy_band=erange, spectral_index=2.3)
-psf_mean.plot_psf_vs_rad(label='PSF Mean', lw=4, c="k", ls='--')
-    
+psf_mean.plot_psf_vs_rad(label="PSF Mean", lw=4, c="k", ls="--")
+
 plt.xlim(1e-3, 0.3)
 plt.ylim(1e3, 1e6)
 plt.legend();
@@ -343,17 +356,13 @@ plt.legend();
 
 
 # Let's compute a PSF kernel matching the pixel size of our map
-psf_kernel = PSFKernel.from_table_psf(
-    psf,
-    counts.geom,
-    max_radius='0.5 deg',
-)
+psf_kernel = PSFKernel.from_table_psf(psf, counts.geom, max_radius="0.5 deg")
 
 
 # In[30]:
 
 
-psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch='log', add_cbar=True);
+psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch="log", add_cbar=True);
 
 
 # ## Background
@@ -365,15 +374,11 @@ psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch='log', add_cbar=True);
 
 model = SkyDiffuseCube(diffuse_galactic)
 
-evaluator = MapEvaluator(
-    model=model,
-    exposure=exposure,
-    psf=psf_kernel,
-)
+evaluator = MapEvaluator(model=model, exposure=exposure, psf=psf_kernel)
 
 background_gal = counts.copy(data=evaluator.compute_npred())
 background_gal.sum_over_axes().plot()
-print('Background counts from Galactic diffuse: ', background_gal.data.sum())
+print("Background counts from Galactic diffuse: ", background_gal.data.sum())
 
 
 # In[32]:
@@ -381,15 +386,11 @@ print('Background counts from Galactic diffuse: ', background_gal.data.sum())
 
 model = SkyModel(SkyDiffuseConstant(), diffuse_iso)
 
-evaluator = MapEvaluator(
-    model=model,
-    exposure=exposure,
-    psf=psf_kernel,
-)
+evaluator = MapEvaluator(model=model, exposure=exposure, psf=psf_kernel)
 
 background_iso = counts.copy(data=evaluator.compute_npred())
 background_iso.sum_over_axes().plot()
-print('Background counts from isotropic diffuse: ', background_iso.data.sum())
+print("Background counts from isotropic diffuse: ", background_iso.data.sum())
 
 
 # In[33]:
@@ -408,8 +409,10 @@ background.data += background_iso.data
 
 excess = counts.copy()
 excess.data -= background.data
-excess.sum_over_axes().smooth(2).plot(cmap='coolwarm', vmin=-5, vmax=5, add_cbar=True)
-print('Excess counts: ', excess.data.sum())
+excess.sum_over_axes().smooth(2).plot(
+    cmap="coolwarm", vmin=-5, vmax=5, add_cbar=True
+)
+print("Excess counts: ", excess.data.sum())
 
 
 # In[35]:
@@ -418,7 +421,7 @@ print('Excess counts: ', excess.data.sum())
 flux = excess.copy()
 flux.data /= exposure.data
 flux.unit = excess.unit / exposure.unit
-flux.sum_over_axes().smooth(2).plot(stretch='sqrt', add_cbar=True);
+flux.sum_over_axes().smooth(2).plot(stretch="sqrt", add_cbar=True);
 
 
 # ## Fit
@@ -429,12 +432,8 @@ flux.sum_over_axes().smooth(2).plot(stretch='sqrt', add_cbar=True);
 
 
 model = SkyModel(
-    SkyPointSource('0 deg', '0 deg'),
-    PowerLaw(
-        index=2.5,
-        amplitude='1e-11 cm-2 s-1 TeV-1',
-        reference='100 GeV',
-    ),
+    SkyPointSource("0 deg", "0 deg"),
+    PowerLaw(index=2.5, amplitude="1e-11 cm-2 s-1 TeV-1", reference="100 GeV"),
 )
 fit = MapFit(
     model=model,

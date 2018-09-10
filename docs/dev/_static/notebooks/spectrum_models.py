@@ -11,7 +11,7 @@
 # 
 # * [gammapy.spectrum.models.PowerLaw](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html)
 # * [gammapy.utils.modelling.Parameter](http://docs.gammapy.org/dev/api/gammapy.utils.modeling.Parameter.html)
-# * [gammapy.utils.modelling.ParameterList](http://docs.gammapy.org/dev/api/gammapy.utils.modeling.ParameterList.html)
+# * [gammapy.utils.modelling.Parameters](http://docs.gammapy.org/dev/api/gammapy.utils.modeling.Parameters.html)
 # * [gammapy.spectrum.models.SpectralModel](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.SpectralModel.html)
 
 # ## Setup
@@ -50,13 +50,11 @@ print(pwl)
 # Usually you will want to specify the parameters on object creation.
 # One way to do this is to pass `astropy.utils.Quantity` objects like this:
 
-# In[4]:
+# In[27]:
 
 
 pwl = models.PowerLaw(
-    index=2.3,
-    amplitude=1e-12 * u.Unit('cm-2 s-1 TeV-1'),
-    reference=1 * u.TeV,
+    index=2.3, amplitude=1e-12 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV
 )
 print(pwl)
 
@@ -65,20 +63,28 @@ print(pwl)
 
 # ## Get and set model parameters
 # 
-# The model parameters are stored as ``ParameterList`` on the spectal model. Each model parameter is ``Parameter`` instance. It has a ``value`` and a ``unit`` attribute, as well as a ``quantity`` property for convenience.
+# The model parameters are stored in the ``Parameters`` object on the spectal model. Each model parameter is a ``Parameter`` instance. It has a ``value`` and a ``unit`` attribute, as well as a ``quantity`` property for convenience.
 
-# In[5]:
+# In[28]:
 
 
 print(pwl.parameters)
 
-print(pwl.parameters['index'])
-pwl.parameters['index'].value = 2.6
-print(pwl.parameters['index'])
 
-print(pwl.parameters['amplitude'])
-pwl.parameters['amplitude'].quantity = 2e-12 * u.Unit('m-2 TeV-1 s-1')
-print(pwl.parameters['amplitude'])
+# In[29]:
+
+
+print(pwl.parameters["index"])
+pwl.parameters["index"].value = 2.6
+print(pwl.parameters["index"])
+
+
+# In[30]:
+
+
+print(pwl.parameters["amplitude"])
+pwl.parameters["amplitude"].quantity = 2e-12 * u.Unit("m-2 TeV-1 s-1")
+print(pwl.parameters["amplitude"])
 
 
 # ## List available models
@@ -99,30 +105,34 @@ models.SpectralModel.__subclasses__()
 
 
 energy_range = [0.1, 10] * u.TeV
-pwl.plot(energy_range, energy_power=2, energy_unit='GeV')
+pwl.plot(energy_range, energy_power=2, energy_unit="GeV")
 
 
 # ## Parameter errors
 # 
 # Parameters are stored internally as covariance matrix. There are, however, convenience methods to set individual parameter errors.
 
-# In[8]:
+# In[19]:
 
 
-pwl.parameters.set_parameter_errors({
-    'index': 0.2,
-    'amplitude': 0.1 * pwl.parameters['amplitude'].quantity
-})
+pwl.parameters.set_parameter_errors(
+    {"index": 0.2, "amplitude": 0.1 * pwl.parameters["amplitude"].quantity}
+)
 print(pwl)
 
 
 # You can access the parameter errors like this
 
-# In[9]:
+# In[16]:
 
 
-print(pwl.parameters.covariance)
-print(pwl.parameters.error('index'))
+pwl.parameters.covariance
+
+
+# In[17]:
+
+
+pwl.parameters.error("index")
 
 
 # You can plot the butterfly using the ``plot_error`` method.
@@ -130,24 +140,23 @@ print(pwl.parameters.error('index'))
 # In[10]:
 
 
-ax = pwl.plot_error(energy_range, color='blue', alpha=0.2)
-pwl.plot(energy_range, ax=ax, color='blue')
+ax = pwl.plot_error(energy_range, color="blue", alpha=0.2)
+pwl.plot(energy_range, ax=ax, color="blue");
 
 
 # ## Integral fluxes
 # 
 # You've probably asked yourself already, if it's possible to integrated models. Yes, it is. Where analytical solutions are available, these are used by default. Otherwise, a numerical integration is performed.
 
-# In[11]:
+# In[15]:
 
 
-integral = pwl.integral(emin=1 * u.TeV, emax= 10*u.TeV)
-print(integral)
+pwl.integral(emin=1 * u.TeV, emax=10 * u.TeV)
 
 
 # ## User-defined model
 # 
-# Now we'll see how you can define a custom model. To do that you need to subclass ``SpectralModel``. All ``SpectralModel`` subclasses need to have an ``__init__`` function, which sets up the ``ParameterList`` of the model and a ``static`` function called ``evaluate`` where the mathematical expression for the model is defined.
+# Now we'll see how you can define a custom model. To do that you need to subclass ``SpectralModel``. All ``SpectralModel`` subclasses need to have an ``__init__`` function, which sets up the ``Parameters`` of the model and a ``static`` function called ``evaluate`` where the mathematical expression for the model is defined.
 # 
 # As an example we will use a PowerLaw plus a Gaussian (with fixed width).
 
@@ -156,17 +165,25 @@ print(integral)
 
 class UserModel(models.SpectralModel):
     def __init__(self, index, amplitude, reference, mean, width):
-        self.parameters = Parameters([
-                Parameter('index', index, min=0),
-                Parameter('amplitude', amplitude, min=0),
-                Parameter('reference', reference, frozen=True),
-                Parameter('mean', mean, min=0),
-                Parameter('width', width, min=0, frozen=True)
-            ])
+        self.parameters = Parameters(
+            [
+                Parameter("index", index, min=0),
+                Parameter("amplitude", amplitude, min=0),
+                Parameter("reference", reference, frozen=True),
+                Parameter("mean", mean, min=0),
+                Parameter("width", width, min=0, frozen=True),
+            ]
+        )
+
     @staticmethod
     def evaluate(energy, index, amplitude, reference, mean, width):
-        pwl = models.PowerLaw.evaluate(energy=energy, index=index, amplitude=amplitude, reference=reference)
-        gauss = amplitude * np.exp(- (energy - mean) ** 2/( 2 * width ** 2))
+        pwl = models.PowerLaw.evaluate(
+            energy=energy,
+            index=index,
+            amplitude=amplitude,
+            reference=reference,
+        )
+        gauss = amplitude * np.exp(-(energy - mean) ** 2 / (2 * width ** 2))
         return pwl + gauss
 
 
@@ -175,7 +192,7 @@ class UserModel(models.SpectralModel):
 
 model = UserModel(
     index=2,
-    amplitude=1e-12 * u.Unit('cm-2 s-1 TeV-1'),
+    amplitude=1e-12 * u.Unit("cm-2 s-1 TeV-1"),
     reference=1 * u.TeV,
     mean=5 * u.TeV,
     width=0.2 * u.TeV,
@@ -183,15 +200,15 @@ model = UserModel(
 print(model)
 
 
-# In[14]:
+# In[31]:
 
 
 energy_range = [1, 10] * u.TeV
-
-fig, ax = plt.subplots(1)
-model.plot(ax=ax, energy_range=energy_range)
+model.plot(energy_range=energy_range);
 
 
 # ## What's next?
 # 
-# In this tutorial we learnd how to work with spectral models. Go to [gammapy.spectrum](http://docs.gammapy.org/dev/spectrum/index.html) to see what else you can do with gammapy.spectrum.
+# In this tutorial we learnd how to work with spectral models.
+# 
+# Go to [gammapy.spectrum](http://docs.gammapy.org/dev/spectrum/index.html) to learn more.
