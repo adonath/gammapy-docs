@@ -30,7 +30,8 @@ Special versions:
 cd build/dev/gammapy
 git clean -fdx
 git pull
-time python setup.py build_docs
+python setup.py build_ext -i
+time make docs-all
 cd ../../..
 rm -r docs/dev
 cp -r build/dev/gammapy/docs/_build/html docs/dev
