@@ -14,14 +14,14 @@
 
 # ## Setup
 
-# In[1]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 
 
-# In[2]:
+# In[ ]:
 
 
 import numpy as np
@@ -34,7 +34,7 @@ from gammapy.irf import CTAIrf
 
 # ## Simulation
 
-# In[3]:
+# In[ ]:
 
 
 # Define simulation parameters parameters
@@ -44,7 +44,7 @@ offset = 0.5 * u.deg
 energy = np.logspace(-1, 2, 31) * u.TeV
 
 
-# In[4]:
+# In[ ]:
 
 
 # Define spectral model
@@ -55,15 +55,15 @@ model = PowerLaw(
 )
 
 
-# In[5]:
+# In[ ]:
 
 
 # Load IRFs
-filename = "$GAMMAPY_EXTRA/datasets/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
+filename = "$CTADATA/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
 cta_irf = CTAIrf.read(filename)
 
 
-# In[6]:
+# In[ ]:
 
 
 aeff = cta_irf.aeff.to_effective_area_table(offset=offset, energy=energy)
@@ -72,7 +72,7 @@ plt.loglog()
 print(cta_irf.aeff.data)
 
 
-# In[7]:
+# In[ ]:
 
 
 edisp = cta_irf.edisp.to_energy_dispersion(
@@ -82,7 +82,7 @@ edisp.plot_matrix()
 print(edisp.data)
 
 
-# In[8]:
+# In[ ]:
 
 
 # Simulate data
@@ -92,7 +92,7 @@ sim = SpectrumSimulation(
 sim.simulate_obs(seed=42, obs_id=0)
 
 
-# In[9]:
+# In[ ]:
 
 
 sim.obs.peek()
@@ -103,7 +103,7 @@ print(sim.obs)
 # 
 # Now that we have some simulated CTA counts spectrum, let's analyse it.
 
-# In[10]:
+# In[ ]:
 
 
 # Fit data
@@ -112,13 +112,13 @@ fit.run()
 result = fit.result[0]
 
 
-# In[11]:
+# In[ ]:
 
 
 print(result)
 
 
-# In[12]:
+# In[ ]:
 
 
 energy_range = [0.1, 100] * u.TeV
@@ -132,7 +132,7 @@ result.model.plot_error(energy_range=energy_range, energy_power=2);
 # * Change the observation time to something longer or shorter. Does the observation and spectrum results change as you expected?
 # * Change the spectral model, e.g. add a cutoff at 5 TeV, or put a steep-spectrum source with spectral index of 4.0
 
-# In[13]:
+# In[ ]:
 
 
 # Start the exercises here!

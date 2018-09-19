@@ -22,28 +22,28 @@
 # 
 # Note that the ``3fhl`` dataset is high-energy only, ranging from 10 GeV to 2 TeV.
 
-# In[1]:
+# In[ ]:
 
 
 # Check that you have the prepared Fermi-LAT dataset
 get_ipython().system('ls -1 $GAMMAPY_FERMI_LAT_DATA/3fhl')
 
 
-# In[2]:
+# In[ ]:
 
 
 # We will use diffuse models from here
 get_ipython().system('ls -1 $GAMMAPY_EXTRA/datasets/fermi_3fhl')
 
 
-# In[3]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 
 
-# In[4]:
+# In[ ]:
 
 
 import numpy as np
@@ -64,7 +64,7 @@ from gammapy.cube import MapEvaluator, MapFit, PSFKernel
 # 
 # To load up the Fermi-LAT event list, use the [gammapy.data.EventList](http://docs.gammapy.org/dev/api/gammapy.data.EventList.html) class:
 
-# In[5]:
+# In[ ]:
 
 
 events = EventList.read(
@@ -75,26 +75,26 @@ print(events)
 
 # The event data is stored in a [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html) object. In case of the Fermi-LAT event list this contains all the additional information on positon, zenith angle, earth azimuth angle, event class, event type etc.
 
-# In[6]:
+# In[ ]:
 
 
 events.table.colnames
 
 
-# In[7]:
+# In[ ]:
 
 
 events.table[:5][["ENERGY", "RA", "DEC"]]
 
 
-# In[8]:
+# In[ ]:
 
 
 print(events.time[0].iso)
 print(events.time[-1].iso)
 
 
-# In[9]:
+# In[ ]:
 
 
 energy = events.energy
@@ -103,7 +103,7 @@ energy.info("stats")
 
 # As a short analysis example we will count the number of events above a certain minimum energy: 
 
-# In[10]:
+# In[ ]:
 
 
 for e_min in [10, 100, 1000] * u.GeV:
@@ -115,7 +115,7 @@ for e_min in [10, 100, 1000] * u.GeV:
 # 
 # Let us start to prepare things for an 3D map analysis of the Galactic center region with Gammapy. The first thing we do is to define the map geometry. We chose a TAN projection centered on position ``(glon, glat) = (0, 0)`` with pixel size 0.1 deg, and four energy bins.
 
-# In[11]:
+# In[ ]:
 
 
 gc_pos = SkyCoord(0, 0, unit="deg", frame="galactic")
@@ -144,13 +144,13 @@ counts.fill_by_coord(
 )
 
 
-# In[12]:
+# In[ ]:
 
 
 counts.geom.axes[0]
 
 
-# In[13]:
+# In[ ]:
 
 
 counts.sum_over_axes().smooth(2).plot(stretch="sqrt", vmax=30);
@@ -164,7 +164,7 @@ counts.sum_over_axes().smooth(2).plot(stretch="sqrt", vmax=30);
 # 
 # Below we just use the default behaviour, which is linear interpolation in energy on the original exposure cube. Probably log interpolation would be better, but it doesn't matter much here, because the energy binning is fine. Finally, we just copy the counts map geometry, which contains an energy axis with `node_type="edges"`. This is non-ideal for exposure cubes, but again, acceptable because exposure doesn't vary much from bin to bin, so the exact way interpolation occurs in later use of that exposure cube doesn't matter a lot. Of course you could define any energy axis for your exposure cube that you like.
 
-# In[14]:
+# In[ ]:
 
 
 exposure_hpx = Map.read(
@@ -176,13 +176,13 @@ print(exposure_hpx.geom)
 print(exposure_hpx.geom.axes[0])
 
 
-# In[15]:
+# In[ ]:
 
 
 exposure_hpx.plot();
 
 
-# In[16]:
+# In[ ]:
 
 
 # For exposure, we choose a geometry with node_type='center',
@@ -199,14 +199,14 @@ print(exposure.geom)
 print(exposure.geom.axes[0])
 
 
-# In[17]:
+# In[ ]:
 
 
 # Exposure is almost constant accross the field of view
 exposure.slice_by_idx({"energy": 0}).plot(add_cbar=True);
 
 
-# In[18]:
+# In[ ]:
 
 
 # Exposure varies very little with energy at these high energies
@@ -221,7 +221,7 @@ exposure.get_by_coord({"skycoord": gc_pos, "energy": energy})
 # 
 # Diffuse model maps are very large (100s of MB), so as an example here, we just load one that represents a small cutout for the Galactic center region.
 
-# In[19]:
+# In[ ]:
 
 
 diffuse_galactic_fermi = Map.read(
@@ -233,7 +233,7 @@ print(diffuse_galactic_fermi.geom)
 print(diffuse_galactic_fermi.geom.axes[0])
 
 
-# In[20]:
+# In[ ]:
 
 
 # Interpolate the diffuse emission model onto the counts geometry
@@ -257,13 +257,13 @@ print(diffuse_galactic.geom)
 print(diffuse_galactic.geom.axes[0])
 
 
-# In[21]:
+# In[ ]:
 
 
 diffuse_galactic.slice_by_idx({"energy": 0}).plot();
 
 
-# In[22]:
+# In[ ]:
 
 
 # Exposure varies very little with energy at these high energies
@@ -277,7 +277,7 @@ plt.xlabel("Energy (GeV)")
 plt.ylabel("Flux (cm-2 s-1 MeV-1 sr-1)")
 
 
-# In[23]:
+# In[ ]:
 
 
 # TODO: show how one can fix the extrapolate to high energy
@@ -289,7 +289,7 @@ plt.ylabel("Flux (cm-2 s-1 MeV-1 sr-1)")
 # 
 # To load the isotropic diffuse model with Gammapy, use the [gammapy.spectrum.models.TableModel](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.TableModel.html). We are using `'fill_value': 'extrapolate'` to extrapolate the model above 500 GeV:
 
-# In[24]:
+# In[ ]:
 
 
 filename = "$GAMMAPY_FERMI_LAT_DATA/isodiff/iso_P8R2_SOURCE_V6_v06.txt"
@@ -301,7 +301,7 @@ diffuse_iso = TableModel.read_fermi_isotropic_model(
 
 # We can plot the model in the energy range between 50 GeV and 2000 GeV:
 
-# In[25]:
+# In[ ]:
 
 
 erange = [50, 2000] * u.GeV
@@ -312,7 +312,7 @@ diffuse_iso.plot(erange, flux_unit="1 / (cm2 MeV s sr)");
 # 
 # Next we will tke a look at the PSF. It was computed using ``gtpsf``, in this case for the Galactic center position. Note that generally for Fermi-LAT, the PSF only varies little within a given regions of the sky, especially at high energies like what we have here. We use the [gammapy.irf.EnergyDependentTablePSF](http://docs.gammapy.org/dev/api/gammapy.irf.EnergyDependentTablePSF.html) class to load the PSF and use some of it's methods to get some information about it.
 
-# In[26]:
+# In[ ]:
 
 
 psf = EnergyDependentTablePSF.read(
@@ -323,7 +323,7 @@ print(psf)
 
 # To get an idea of the size of the PSF we check how the containment radii of the Fermi-LAT PSF vari with energy and different containment fractions:
 
-# In[27]:
+# In[ ]:
 
 
 plt.figure(figsize=(8, 5))
@@ -334,7 +334,7 @@ plt.show()
 
 # In addition we can check how the actual shape of the PSF varies with energy and compare it against the mean PSF between 50 GeV and 2000 GeV:
 
-# In[28]:
+# In[ ]:
 
 
 plt.figure(figsize=(8, 5))
@@ -352,14 +352,14 @@ plt.ylim(1e3, 1e6)
 plt.legend();
 
 
-# In[29]:
+# In[ ]:
 
 
 # Let's compute a PSF kernel matching the pixel size of our map
 psf_kernel = PSFKernel.from_table_psf(psf, counts.geom, max_radius="0.5 deg")
 
 
-# In[30]:
+# In[ ]:
 
 
 psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch="log", add_cbar=True);
@@ -369,7 +369,7 @@ psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch="log", add_cbar=True);
 # 
 # Let's compute a background cube, with predicted number of background events per pixel from the diffuse Galactic and isotropic model components. For this, we use the use the [gammapy.cube.MapEvaluator](http://docs.gammapy.org/dev/api/gammapy.cube.MapEvaluator.html) to multiply with the exposure and apply the PSF. The Fermi-LAT energy dispersion at high energies is small, we neglect it here.
 
-# In[31]:
+# In[ ]:
 
 
 model = SkyDiffuseCube(diffuse_galactic)
@@ -381,7 +381,7 @@ background_gal.sum_over_axes().plot()
 print("Background counts from Galactic diffuse: ", background_gal.data.sum())
 
 
-# In[32]:
+# In[ ]:
 
 
 model = SkyModel(SkyDiffuseConstant(), diffuse_iso)
@@ -393,7 +393,7 @@ background_iso.sum_over_axes().plot()
 print("Background counts from isotropic diffuse: ", background_iso.data.sum())
 
 
-# In[33]:
+# In[ ]:
 
 
 background = background_gal.copy()
@@ -404,7 +404,7 @@ background.data += background_iso.data
 # 
 # Let's compute an excess and flux image, by subtracting the background, and summing over the energy axis.
 
-# In[34]:
+# In[ ]:
 
 
 excess = counts.copy()
@@ -415,7 +415,7 @@ excess.sum_over_axes().smooth(2).plot(
 print("Excess counts: ", excess.data.sum())
 
 
-# In[35]:
+# In[ ]:
 
 
 flux = excess.copy()
@@ -428,7 +428,7 @@ flux.sum_over_axes().smooth(2).plot(stretch="sqrt", add_cbar=True);
 # 
 # Finally, the big finale: let's do a 3D map fit for the source at the Galactic center, to measure it's position and spectrum.
 
-# In[36]:
+# In[ ]:
 
 
 model = SkyModel(
@@ -442,7 +442,13 @@ fit = MapFit(
     background=background,
     psf=psf_kernel,
 )
-result = fit.fit()
+result = fit.run()
+
+
+# In[ ]:
+
+
+print(result)
 
 
 # ## Exercises

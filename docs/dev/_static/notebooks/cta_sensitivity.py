@@ -15,14 +15,14 @@
 # ## Setup
 # As usual, we'll start with some setup ...
 
-# In[1]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 
 
-# In[2]:
+# In[ ]:
 
 
 from gammapy.irf import CTAPerf
@@ -33,7 +33,7 @@ from gammapy.spectrum import SensitivityEstimator
 # 
 # First load the CTA IRFs.
 
-# In[3]:
+# In[ ]:
 
 
 filename = "$GAMMAPY_EXTRA/datasets/cta/perf_prod2/point_like_non_smoothed/South_5h.fits.gz"
@@ -44,7 +44,7 @@ irf = CTAPerf.read(filename)
 # 
 # Choose a few parameters, then run the sentitivity computation.
 
-# In[4]:
+# In[ ]:
 
 
 sensitivity_estimator = SensitivityEstimator(irf=irf, livetime="5h")
@@ -55,21 +55,21 @@ sensitivity_estimator.run()
 # 
 # The results are given as an Astropy table.
 
-# In[5]:
+# In[ ]:
 
 
 # Show the results table
 sensitivity_estimator.results_table
 
 
-# In[6]:
+# In[ ]:
 
 
 # Save it to file (could use e.g. format of CSV or ECSV or FITS)
 # sensitivity_estimator.results_table.write('sensitivity.ecsv', format='ascii.ecsv')
 
 
-# In[7]:
+# In[ ]:
 
 
 # Plot the sensitivity curve

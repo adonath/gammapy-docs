@@ -21,14 +21,14 @@
 
 # ## Setup
 
-# In[1]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 
 
-# In[2]:
+# In[ ]:
 
 
 import numpy as np
@@ -39,7 +39,7 @@ from gammapy.astro import population
 
 # ## Simulate positions
 
-# In[3]:
+# In[ ]:
 
 
 # Spatial distribution using Lorimer (2006) model
@@ -60,7 +60,7 @@ table = population.make_base_catalog_galactic(
 # 
 # Here we implement the "reference model" from the 1FHL catalog paper section 6.2.
 
-# In[4]:
+# In[ ]:
 
 
 # Source luminosity (ph s^-1)
@@ -71,7 +71,7 @@ table["luminosity"] = luminosity
 
 # ## Compute observable parameters
 
-# In[5]:
+# In[ ]:
 
 
 table = population.add_observed_parameters(table)
@@ -84,49 +84,49 @@ table.info()
 # 
 # Here we just plot a few distributions to check if the results look OK.
 
-# In[6]:
+# In[ ]:
 
 
 plt.scatter(table["x"][:1000], table["y"][:1000]);
 
 
-# In[7]:
+# In[ ]:
 
 
 plt.hist(table["GLON"], bins=100);
 
 
-# In[8]:
+# In[ ]:
 
 
 plt.hist(table["GLAT"], bins=100, log=True);
 
 
-# In[9]:
+# In[ ]:
 
 
 plt.scatter(table["GLON"][:1000], table["GLAT"][:1000]);
 
 
-# In[10]:
+# In[ ]:
 
 
 plt.hist(table["distance"], bins=100, log=True);
 
 
-# In[11]:
+# In[ ]:
 
 
 plt.hist(np.log10(table["luminosity"]), bins=100, log=True);
 
 
-# In[12]:
+# In[ ]:
 
 
 plt.hist(np.log10(table["flux"]), bins=100, log=True);
 
 
-# In[13]:
+# In[ ]:
 
 
 # TODO: plot GLON, GLAT, FLUX distribution
@@ -136,7 +136,7 @@ plt.hist(np.log10(table["flux"]), bins=100, log=True);
 # 
 # TODO
 
-# In[14]:
+# In[ ]:
 
 
 # Start exercises here

@@ -10,7 +10,7 @@
 # 
 # The central class we're going to use for this example analysis is:  
 # 
-# - [gammapy.spectrum.FluxPointFitter](http://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPointFitter.html)
+# - [gammapy.spectrum.FluxPointFit](http://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPointFit.html)
 # 
 # In addition we will work with the following data classes:
 # 
@@ -29,7 +29,7 @@
 # 
 # Let us start with the usual IPython notebook and Python imports:
 
-# In[1]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -37,7 +37,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-# In[8]:
+# In[ ]:
 
 
 from astropy import units as u
@@ -46,7 +46,7 @@ from gammapy.spectrum.models import (
     ExponentialCutoffPowerLaw,
     LogParabola,
 )
-from gammapy.spectrum import FluxPointFitter, FluxPoints
+from gammapy.spectrum import FluxPointFit, FluxPoints
 from gammapy.catalog import (
     SourceCatalog3FGL,
     SourceCatalogGammaCat,
@@ -58,7 +58,7 @@ from gammapy.catalog import (
 # 
 # For this analysis we choose to work with the source 'HESS J1507-622' and the associated Fermi-LAT sources '3FGL J1506.6-6219' and '3FHL J1507.9-6228e'. We load the source catalogs, and then access source of interest by name:
 
-# In[3]:
+# In[ ]:
 
 
 fermi_3fgl = SourceCatalog3FGL()
@@ -66,7 +66,7 @@ fermi_3fhl = SourceCatalog3FHL()
 gammacat = SourceCatalogGammaCat()
 
 
-# In[4]:
+# In[ ]:
 
 
 source_gammacat = gammacat["HESS J1507-622"]
@@ -76,7 +76,7 @@ source_fermi_3fhl = fermi_3fhl["3FHL J1507.9-6228e"]
 
 # The corresponding flux points data can be accessed with `.flux_points` attribute:
 
-# In[5]:
+# In[ ]:
 
 
 flux_points_gammacat = source_gammacat.flux_points
@@ -85,7 +85,7 @@ flux_points_gammacat.table
 
 # In the Fermi-LAT catalogs, integral flux points are given. Currently the flux point fitter only works with differential flux points, so we apply the conversion here.
 
-# In[6]:
+# In[ ]:
 
 
 flux_points_3fgl = source_fermi_3fgl.flux_points.to_sed_type(
@@ -98,7 +98,7 @@ flux_points_3fhl = source_fermi_3fhl.flux_points.to_sed_type(
 
 # Finally we stack the flux points into a single `FluxPoints` object and drop the upper limit values, because currently we can't handle them in the fit:
 
-# In[9]:
+# In[ ]:
 
 
 # stack flux point tables
@@ -110,62 +110,41 @@ flux_points = FluxPoints.stack(
 flux_points = flux_points.drop_ul()
 
 
-# ## Fitter Setup
-
-# We initialze the fitter object with the `'chi2assym'` statistic, because we have assymmetric errors on the flux points. As optimizer we choose the `'simplex'` algorithm and to estimate the errors we use `'covar'` method: 
-
-# In[10]:
-
-
-fitter = FluxPointFitter(stat="chi2assym", optimizer="minuit", opts_minuit={'print_level':1})
-
-
 # ## Power Law Fit
 # 
 # First we start with fitting a simple [power law](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html#gammapy.spectrum.models.PowerLaw).
 
-# In[12]:
+# In[ ]:
 
 
-pwl = PowerLaw(
-    index=2, amplitude=1e-12 * u.Unit("cm-2 s-1 TeV-1"), reference=1. * u.TeV
-)
+pwl = PowerLaw(index=2, amplitude="1e-12 cm-2 s-1 TeV-1", reference="1 TeV")
 
 
 # After creating the model we run the fit by passing the `'flux_points'` and `'pwl'` objects:
 
-# In[13]:
+# In[ ]:
 
 
-result_pwl = fitter.run(flux_points, pwl)
+fitter = FluxPointFit(pwl, flux_points, stat="chi2assym")
+result_pwl = fitter.run()
 
 
 # And print the result:
 
-# In[14]:
+# In[ ]:
 
 
-print(result_pwl["best-fit-model"])
-
-
-# As a quick check we print the value of the fit statistics per degrees of freedom as well:
-
-# In[15]:
-
-
-print(result_pwl["statval/dof"])
+print(result_pwl.model)
 
 
 # Finally we plot the data points and the best fit model:
 
-# In[17]:
+# In[ ]:
 
 
 ax = flux_points.plot(energy_power=2)
-result_pwl["best-fit-model"].plot(
-    energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
-)
-result_pwl["best-fit-model"].plot_error(
+result_pwl.model.plot(energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2)
+result_pwl.model.plot_error(
     energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
 )
 ax.set_ylim(1e-13, 1e-11);
@@ -175,42 +154,35 @@ ax.set_ylim(1e-13, 1e-11);
 # 
 # Next we fit an [exponential cut-off power](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.ExponentialCutoffPowerLaw.html#gammapy.spectrum.models.ExponentialCutoffPowerLaw) law to the data.
 
-# In[18]:
+# In[ ]:
 
 
 ecpl = ExponentialCutoffPowerLaw(
     index=2,
-    amplitude=1e-12 * u.Unit("cm-2 s-1 TeV-1"),
-    reference=1. * u.TeV,
-    lambda_=0.1 / u.TeV,
+    amplitude="1e-12 cm-2 s-1 TeV-1",
+    reference="1 TeV",
+    lambda_="0.1 TeV-1",
 )
 
 
 # We run the fitter again by passing the flux points and the `ecpl` model instance:
 
-# In[19]:
+# In[ ]:
 
 
-result_ecpl = fitter.run(flux_points, ecpl)
-print(result_ecpl["best-fit-model"])
-
-
-# In[20]:
-
-
-print(result_ecpl["statval/dof"])
+fitter = FluxPointFit(ecpl, flux_points, stat="chi2assym")
+result_ecpl = fitter.run()
+print(result_ecpl.model)
 
 
 # We plot the data and best fit model:
 
-# In[27]:
+# In[ ]:
 
 
 ax = flux_points.plot(energy_power=2)
-result_ecpl["best-fit-model"].plot(
-    energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
-)
-result_ecpl["best-fit-model"].plot_error(
+result_ecpl.model.plot(energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2)
+result_ecpl.model.plot_error(
     energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
 )
 ax.set_ylim(1e-13, 1e-11)
@@ -220,38 +192,30 @@ ax.set_ylim(1e-13, 1e-11)
 # 
 # Finally we try to fit a [log-parabola](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.LogParabola.html#gammapy.spectrum.models.LogParabola) model:
 
-# In[22]:
+# In[ ]:
 
 
 log_parabola = LogParabola(
-    alpha=2,
-    amplitude=1e-12 * u.Unit("cm-2 s-1 TeV-1"),
-    reference=1. * u.TeV,
-    beta=0.1 * u.Unit(""),
+    alpha=2, amplitude="1e-12 cm-2 s-1 TeV-1", reference="1 TeV", beta=0.1
 )
 
 
-# In[23]:
+# In[ ]:
 
 
-result_log_parabola = fitter.run(flux_points, log_parabola)
-print(result_log_parabola["best-fit-model"])
+fitter = FluxPointFit(log_parabola, flux_points, stat="chi2assym")
+result_log_parabola = fitter.run()
+print(result_log_parabola.model)
 
 
-# In[24]:
-
-
-print(result_log_parabola["statval/dof"])
-
-
-# In[26]:
+# In[ ]:
 
 
 ax = flux_points.plot(energy_power=2)
-result_log_parabola["best-fit-model"].plot(
+result_log_parabola.model.plot(
     energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
 )
-result_log_parabola["best-fit-model"].plot_error(
+result_log_parabola.model.plot_error(
     energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
 )
 ax.set_ylim(1e-13, 1e-11);

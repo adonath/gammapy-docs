@@ -13,7 +13,7 @@
 # 
 # As always, we start with some setup for the notebook, and with imports.
 
-# In[1]:
+# In[ ]:
 
 
 from gammapy.astro.darkmatter import (
@@ -31,7 +31,7 @@ import astropy.units as u
 import numpy as np
 
 
-# In[2]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -42,13 +42,13 @@ import matplotlib.pyplot as plt
 # 
 # The following dark matter profiles are currently implemented. Each model can be scaled to a given density at a certain distance. These parameters are controlled by ``profiles.DMProfile.LOCAL_DENSITY`` and ``profiles.DMProfile.DISTANCE_GC``
 
-# In[3]:
+# In[ ]:
 
 
 profiles.DMProfile.__subclasses__()
 
 
-# In[4]:
+# In[ ]:
 
 
 for profile in profiles.DMProfile.__subclasses__():
@@ -72,7 +72,7 @@ print(
 # 
 # There are utilies to compute J-Factor maps can can serve as a basis to compute J-Factors for certain regions. In the following we compute a J-Factor map for the Galactic Centre region
 
-# In[5]:
+# In[ ]:
 
 
 profile = profiles.NFWProfile()
@@ -87,7 +87,7 @@ position = SkyCoord(0.0, 0.0, frame="galactic", unit="deg")
 geom = WcsGeom.create(binsz=0.05, skydir=position, width=3.0, coordsys="GAL")
 
 
-# In[6]:
+# In[ ]:
 
 
 jfactory = JFactory(
@@ -96,7 +96,7 @@ jfactory = JFactory(
 jfact = jfactory.compute_jfactor()
 
 
-# In[7]:
+# In[ ]:
 
 
 jfact_map = WcsNDMap(geom=geom, data=jfact.value, unit=jfact.unit)
@@ -110,7 +110,7 @@ pix_reg.plot(ax=ax, facecolor="none", edgecolor="red", label="1 deg circle")
 plt.legend()
 
 
-# In[8]:
+# In[ ]:
 
 
 # NOTE: https://arxiv.org/abs/1607.08142 cite 2.67e21 without the the +/- 0.3 deg band around the plane
@@ -127,14 +127,14 @@ print(
 # 
 # The gamma-ray spectrum per annihilation is a further ingredient for a dark matter analysis. The following annihilation channels are supported. For more info see https://arxiv.org/pdf/1012.4515.pdf
 
-# In[9]:
+# In[ ]:
 
 
 fluxes = PrimaryFlux(mDM="1 TeV", channel="eL")
 print(fluxes.allowed_channels)
 
 
-# In[10]:
+# In[ ]:
 
 
 fig, axes = plt.subplots(4, 1, figsize=(6, 16))
@@ -163,7 +163,7 @@ plt.subplots_adjust(hspace=0.5)
 # 
 # Finally flux maps can be produced like this:
 
-# In[11]:
+# In[ ]:
 
 
 flux = compute_dm_flux(
@@ -174,7 +174,7 @@ flux = compute_dm_flux(
 )
 
 
-# In[12]:
+# In[ ]:
 
 
 flux_map = WcsNDMap(geom=geom, data=flux.value, unit=flux.unit)

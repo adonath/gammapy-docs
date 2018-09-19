@@ -56,13 +56,13 @@
 # 
 # If you don't get an error, just go ahead, no nead to read the import code and text in this section.
 
-# In[1]:
+# In[ ]:
 
 
 import numpy as np
 
 
-# In[2]:
+# In[ ]:
 
 
 import astropy.units as u
@@ -76,7 +76,7 @@ import astropy
 print(astropy.__version__)
 
 
-# In[3]:
+# In[ ]:
 
 
 from gammapy.maps import Map
@@ -87,7 +87,7 @@ import gammapy
 print(gammapy.__version__)
 
 
-# In[4]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -98,7 +98,7 @@ import matplotlib
 print(matplotlib.__version__)
 
 
-# In[5]:
+# In[ ]:
 
 
 # This will work on Python 3, but fail on Python 2
@@ -115,7 +115,7 @@ from urllib.request import urlretrieve
 # we avoided the use of Python 3 only features for now.
 # You just have to import `Path` and `urlretrieve` from here instead:
 
-# In[6]:
+# In[ ]:
 
 
 # This will work on Python 2 as well as Python 3
@@ -139,7 +139,7 @@ from urllib.request import urlretrieve
 # 
 # **The rest of this notebook assumes that you have the data files at ``hgps_data_path``.**
 
-# In[7]:
+# In[ ]:
 
 
 # Download HGPS data used in this tutorial to a folder of your choice
@@ -155,7 +155,7 @@ hgps_filenames = [
 ]
 
 
-# In[8]:
+# In[ ]:
 
 
 def hgps_data_download():
@@ -187,14 +187,14 @@ for path in hgps_data_path.iterdir():
 # Note that ``astropy.io.fits.open`` doesn't work with `Path` objects yet,
 # so you have to call `str(path)` and pass a string.
 
-# In[9]:
+# In[ ]:
 
 
 path = hgps_data_path / "hgps_catalog_v1.fits.gz"
 hdu_list = fits.open(str(path))
 
 
-# In[10]:
+# In[ ]:
 
 
 hdu_list.info()
@@ -209,7 +209,7 @@ hdu_list.info()
 # 
 # We will only be using `Table`, so let's convert the FITS tabular data into a `Table` object:
 
-# In[11]:
+# In[ ]:
 
 
 table = Table.read(hdu_list["HGPS_SOURCES"])
@@ -220,7 +220,7 @@ table = Table.read(hdu_list["HGPS_SOURCES"])
 # like we did above; `Table` is just for one table
 
 
-# In[12]:
+# In[ ]:
 
 
 # List available columns
@@ -229,7 +229,7 @@ table.info()
 # table.info(out=None)['name', 'dtype', 'shape', 'unit'][:10]
 
 
-# In[13]:
+# In[ ]:
 
 
 # Rows are accessed by indexing into the table
@@ -239,7 +239,7 @@ table.info()
 table[0][table.colnames[:5]]
 
 
-# In[14]:
+# In[ ]:
 
 
 # Columns are accessed by indexing into the table
@@ -248,14 +248,14 @@ table[0][table.colnames[:5]]
 table["Source_Name"][:5]
 
 
-# In[15]:
+# In[ ]:
 
 
 # Accessing a given element of the table like this
 table["Source_Name"][5]
 
 
-# In[16]:
+# In[ ]:
 
 
 # If you know some Python and Numpy, you can now start
@@ -263,7 +263,7 @@ table["Source_Name"][5]
 # Just to give one example: "What spatial models are used?"
 
 
-# In[17]:
+# In[ ]:
 
 
 set(table["Spatial_Model"])
@@ -291,7 +291,7 @@ set(table["Spatial_Model"])
 # Let's convert the HGPS catalog into this format.
 # (to avoid very long text output, we use `table[:3]` to just use the first three rows)
 
-# In[18]:
+# In[ ]:
 
 
 lines = ["global color=red"]
@@ -302,7 +302,7 @@ for row in table[:3]:
 txt = "\n".join(lines)
 
 
-# In[19]:
+# In[ ]:
 
 
 # To save it to a DS9 region text file
@@ -335,14 +335,14 @@ print(path.read_text())
 # 1. this table contains metadata that trips up the Astropy CSV writer (I filed an [issue](https://github.com/astropy/astropy/issues/7357) with Astropy)
 # 1. this table contains array-valued columns for the spectral points and CSV can only have scalar values.
 
-# In[20]:
+# In[ ]:
 
 
 # This is the problematic header key
 table.meta["comments"]
 
 
-# In[21]:
+# In[ ]:
 
 
 # These are the array-valued columns
@@ -353,7 +353,7 @@ for name in array_colnames:
     print(name, table[name].shape)
 
 
-# In[22]:
+# In[ ]:
 
 
 # So each source has an array of spectral flux points,
@@ -368,7 +368,7 @@ print(table["Flux_Points_Flux"][0])
 # Let's get back to our actual goal of converting part of the HGPS catalog table data to CSV format.
 # The following code makes a copy of the table that contains just the scalar columns, then removes the `meta` information (most CSV variants / readers don't support metadata anyways) and writes a CSV file.
 
-# In[23]:
+# In[ ]:
 
 
 scalar_colnames = tuple(
@@ -384,7 +384,7 @@ table2.write(str(path), format="ascii.csv", overwrite=True)
 # Let's do one more example, using the ``ascii.fixed_width`` format which is a bit easier to read for humans.
 # We will just select a few columns and rows to print here.
 
-# In[24]:
+# In[ ]:
 
 
 table2 = table["Source_Name", "GLON", "GLAT"][:3]
@@ -411,7 +411,7 @@ print(path.read_text())
 # 
 # To read the map, use `fits.open` to get an `HDUList` object, then access `[0]` to get the first and only image HDU in the FITS file, and finally use the `hdu.data` Numpy array, `hdu.header` header object or `wcs = WCS(hdu.header)` WCS object to work with the data.
 
-# In[25]:
+# In[ ]:
 
 
 path = hgps_data_path / "hgps_map_significance_0.1deg_v1.fits.gz"
@@ -419,26 +419,26 @@ hdu_list = fits.open(str(path))
 hdu_list.info()
 
 
-# In[26]:
+# In[ ]:
 
 
 hdu = hdu_list[0]
 type(hdu)
 
 
-# In[27]:
+# In[ ]:
 
 
 type(hdu.data)
 
 
-# In[28]:
+# In[ ]:
 
 
 hdu.data.shape
 
 
-# In[29]:
+# In[ ]:
 
 
 # The FITS header contains the information about the
@@ -452,7 +452,7 @@ hdu.header
 # you have to create a "Word coordinate system transform (WCS)"
 # object from the FITS header.
 
-# In[30]:
+# In[ ]:
 
 
 wcs = WCS(hdu.header)
@@ -461,7 +461,7 @@ wcs
 
 # Let's find the (arguably) most interesting pixel in the HGPS map and look up it's value in the significance image.
 
-# In[31]:
+# In[ ]:
 
 
 # pos = SkyCoord.from_name('Sgr A*')
@@ -469,14 +469,14 @@ pos = SkyCoord(266.416826, -29.007797, unit="deg")
 pos
 
 
-# In[32]:
+# In[ ]:
 
 
 xp, yp = pos.to_pixel(wcs)
 xp, yp
 
 
-# In[33]:
+# In[ ]:
 
 
 # Note that SkyCoord makes it easy to transform
@@ -489,7 +489,7 @@ print(pos.galactic)
 print(pos.galactic.to_pixel(wcs))
 
 
-# In[34]:
+# In[ ]:
 
 
 # FITS WCS and Numpy have opposite array axis order
@@ -500,7 +500,7 @@ idx = int(yp + 0.5), int(xp + 0.5)
 idx
 
 
-# In[35]:
+# In[ ]:
 
 
 # Now, finally the value of this pixel
@@ -519,14 +519,14 @@ hdu.data[idx]
 
 # Let's do one more exercise: find the sky position for the pixel with the highest significance:
 
-# In[36]:
+# In[ ]:
 
 
 # The pixel with the maximum significance
 hdu.data.max()
 
 
-# In[37]:
+# In[ ]:
 
 
 # So it is the pixel in the HGPS map that contains Sgr A*
@@ -539,7 +539,7 @@ yp, xp = np.unravel_index(np.nanargmax(hdu.data), hdu.data.shape)
 yp, xp
 
 
-# In[38]:
+# In[ ]:
 
 
 pos = SkyCoord.from_pixel(xp, yp, wcs)
@@ -560,7 +560,7 @@ pos
 # 
 # Let's start by reading the HGPS catalog via the `SourceCatalogHGPS` class (which is just a wrapper class for `astropy.table.Table`) and access some information about a given source. Feel free to choose any source you like here: we have chosen simply the first one on the table: the pulsar-wind nebula Vela X, a large and bright TeV source around the [Vela pulsar](https://en.wikipedia.org/wiki/Vela_Pulsar).
 
-# In[39]:
+# In[ ]:
 
 
 path = hgps_data_path / "hgps_catalog_v1.fits.gz"
@@ -572,13 +572,13 @@ cat = SourceCatalogHGPS(path)
 # Now all tables from the FITS file were loaded
 # and stored on the ``cat`` object. See the [SourceCatalogHGPS](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogHGPS.html) docs, or just try accessing one:
 
-# In[40]:
+# In[ ]:
 
 
 cat.table.meta["EXTNAME"]
 
 
-# In[41]:
+# In[ ]:
 
 
 cat.table_components.meta["EXTNAME"]
@@ -589,7 +589,7 @@ cat.table_components.meta["EXTNAME"]
 # You can access a given source by row index (starting at zero) or by source name.
 # This creates [SourceCatalogObjectHGPS](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogObjectHGPS.html) objects that have a copy of all the data for a given source. See the class docs for a full overview.
 
-# In[42]:
+# In[ ]:
 
 
 # These all give the same source object
@@ -603,7 +603,7 @@ source = cat["Vela X"]
 source
 
 
-# In[43]:
+# In[ ]:
 
 
 # To see a pretty-printed text version of all
@@ -611,14 +611,14 @@ source
 print(source)
 
 
-# In[44]:
+# In[ ]:
 
 
 # You can also more selectively print subsets of info:
 print(source.info("map"))
 
 
-# In[45]:
+# In[ ]:
 
 
 # All of the data for this source is available
@@ -627,14 +627,14 @@ print(source.info("map"))
 source.data["Flux_Spec_Int_1TeV"]
 
 
-# In[46]:
+# In[ ]:
 
 
 # The flux points are available as a Table
 source.flux_points.table
 
 
-# In[47]:
+# In[ ]:
 
 
 # The spectral model is available as a
@@ -643,7 +643,7 @@ spectral_model = source.spectral_model()
 print(spectral_model)
 
 
-# In[48]:
+# In[ ]:
 
 
 # One common task is to compute integral fluxes
@@ -652,7 +652,7 @@ print(spectral_model)
 spectral_model.integral_error(emin=1 * u.TeV, emax=10 * u.TeV)
 
 
-# In[49]:
+# In[ ]:
 
 
 # Let's plot the spectrum
@@ -661,7 +661,7 @@ source.spectral_model().plot_error(source.energy_range)
 source.flux_points.plot();
 
 
-# In[50]:
+# In[ ]:
 
 
 # Or let's make the same plot in the common
@@ -680,14 +680,14 @@ plt.title("Vela X HGPS spectrum");
 # 
 # Let's use the [gammapy.maps.Map.read](http://docs.gammapy.org/dev/api/gammapy.maps.Map.html#gammapy.maps.Map.read) method to load up the HGPS significance survey map.
 
-# In[51]:
+# In[ ]:
 
 
 path = hgps_data_path / "hgps_map_significance_0.1deg_v1.fits.gz"
 survey_map = Map.read(path)
 
 
-# In[52]:
+# In[ ]:
 
 
 # Map has a quick-look plot method, but it's not
@@ -695,7 +695,7 @@ survey_map = Map.read(path)
 survey_map.plot();
 
 
-# In[53]:
+# In[ ]:
 
 
 # This is a little better
@@ -710,7 +710,7 @@ _ = survey_map.plot(stretch="sqrt")
 
 # Let's look at a cutout of the Galactic center:
 
-# In[54]:
+# In[ ]:
 
 
 image = survey_map.cutout(pos, width=(3.8, 2.5) * u.deg)
@@ -724,7 +724,7 @@ ax.coords[1].set_major_formatter("dd")
 # There's also a convenience method to look up the map value at a given sky position.
 # Let's repeat this for the same position we did above with Numpy and Astropy:
 
-# In[55]:
+# In[ ]:
 
 
 pos = SkyCoord(266.416826, -29.007797, unit="deg")
@@ -735,7 +735,7 @@ survey_map.get_by_coord(pos)
 # 
 # To finish up this tutorial, let's do something a bit more advanced, than involves the survey map, the HGPS source catalog, the multi-Gauss morphology component model. Let's show the Vela X pulsar wind nebula and the Vela Junior supernova remnant, and overplot some HGPS catalog data.
 
-# In[56]:
+# In[ ]:
 
 
 # The spatial model for Vela X in HGPS was three Gaussians
@@ -744,7 +744,7 @@ for component in source.components:
     print(component)
 
 
-# In[57]:
+# In[ ]:
 
 
 from astropy.visualization import simple_norm

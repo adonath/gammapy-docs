@@ -10,35 +10,35 @@
 # The following clases will be used:
 # 
 # * [gammapy.spectrum.models.PowerLaw](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html)
-# * [gammapy.utils.modelling.Parameter](http://docs.gammapy.org/dev/api/gammapy.utils.modeling.Parameter.html)
-# * [gammapy.utils.modelling.Parameters](http://docs.gammapy.org/dev/api/gammapy.utils.modeling.Parameters.html)
+# * [gammapy.utils.fitting.Parameter](http://docs.gammapy.org/dev/api/gammapy.utils.fitting.Parameter.html)
+# * [gammapy.utils.fitting.Parameters](http://docs.gammapy.org/dev/api/gammapy.utils.fitting.Parameters.html)
 # * [gammapy.spectrum.models.SpectralModel](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.SpectralModel.html)
 
 # ## Setup
 # 
 # Same procedure as in every script ...
 
-# In[1]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 
 
-# In[2]:
+# In[ ]:
 
 
 import numpy as np
 import astropy.units as u
 from gammapy.spectrum import models
-from gammapy.utils.modeling import Parameter, Parameters
+from gammapy.utils.fitting import Parameter, Parameters
 
 
 # ## Create a model
 # 
 # To create a spectral model, instantiate an object of the spectral model class you're interested in.
 
-# In[3]:
+# In[ ]:
 
 
 pwl = models.PowerLaw()
@@ -50,7 +50,7 @@ print(pwl)
 # Usually you will want to specify the parameters on object creation.
 # One way to do this is to pass `astropy.utils.Quantity` objects like this:
 
-# In[27]:
+# In[ ]:
 
 
 pwl = models.PowerLaw(
@@ -65,13 +65,13 @@ print(pwl)
 # 
 # The model parameters are stored in the ``Parameters`` object on the spectal model. Each model parameter is a ``Parameter`` instance. It has a ``value`` and a ``unit`` attribute, as well as a ``quantity`` property for convenience.
 
-# In[28]:
+# In[ ]:
 
 
 print(pwl.parameters)
 
 
-# In[29]:
+# In[ ]:
 
 
 print(pwl.parameters["index"])
@@ -79,7 +79,7 @@ pwl.parameters["index"].value = 2.6
 print(pwl.parameters["index"])
 
 
-# In[30]:
+# In[ ]:
 
 
 print(pwl.parameters["amplitude"])
@@ -91,7 +91,7 @@ print(pwl.parameters["amplitude"])
 # 
 # All spectral models in gammapy are subclasses of ``SpectralModel``. The list of available models is shown below.
 
-# In[6]:
+# In[ ]:
 
 
 models.SpectralModel.__subclasses__()
@@ -101,7 +101,7 @@ models.SpectralModel.__subclasses__()
 # 
 # In order to plot a model you can use the ``plot`` function. It expects an energy range as argument. You can also chose flux and energy units as well as an energy power for the plot
 
-# In[7]:
+# In[ ]:
 
 
 energy_range = [0.1, 10] * u.TeV
@@ -112,7 +112,7 @@ pwl.plot(energy_range, energy_power=2, energy_unit="GeV")
 # 
 # Parameters are stored internally as covariance matrix. There are, however, convenience methods to set individual parameter errors.
 
-# In[19]:
+# In[ ]:
 
 
 pwl.parameters.set_parameter_errors(
@@ -123,13 +123,13 @@ print(pwl)
 
 # You can access the parameter errors like this
 
-# In[16]:
+# In[ ]:
 
 
 pwl.parameters.covariance
 
 
-# In[17]:
+# In[ ]:
 
 
 pwl.parameters.error("index")
@@ -137,7 +137,7 @@ pwl.parameters.error("index")
 
 # You can plot the butterfly using the ``plot_error`` method.
 
-# In[10]:
+# In[ ]:
 
 
 ax = pwl.plot_error(energy_range, color="blue", alpha=0.2)
@@ -148,7 +148,7 @@ pwl.plot(energy_range, ax=ax, color="blue");
 # 
 # You've probably asked yourself already, if it's possible to integrated models. Yes, it is. Where analytical solutions are available, these are used by default. Otherwise, a numerical integration is performed.
 
-# In[15]:
+# In[ ]:
 
 
 pwl.integral(emin=1 * u.TeV, emax=10 * u.TeV)
@@ -160,7 +160,7 @@ pwl.integral(emin=1 * u.TeV, emax=10 * u.TeV)
 # 
 # As an example we will use a PowerLaw plus a Gaussian (with fixed width).
 
-# In[12]:
+# In[ ]:
 
 
 class UserModel(models.SpectralModel):
@@ -187,7 +187,7 @@ class UserModel(models.SpectralModel):
         return pwl + gauss
 
 
-# In[13]:
+# In[ ]:
 
 
 model = UserModel(
@@ -200,7 +200,7 @@ model = UserModel(
 print(model)
 
 
-# In[31]:
+# In[ ]:
 
 
 energy_range = [1, 10] * u.TeV

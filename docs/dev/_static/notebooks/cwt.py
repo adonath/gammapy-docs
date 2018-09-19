@@ -12,7 +12,7 @@
 # 
 # On this section we just import some packages that can be used (or maybe not) in this tutorial. You can also see the versions of the packages in the outputs below and notice that this notebook was written on Python 2.7. Don't worry about that because the code is also Python 3 compatible. 
 
-# In[1]:
+# In[ ]:
 
 
 # Render our plots inline
@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 plt.rcParams["figure.figsize"] = (15, 5)
 
 
-# In[2]:
+# In[ ]:
 
 
 import sys
@@ -38,7 +38,7 @@ print("Scipy version: " + sp.__version__)
 
 # First of all we import the data which should be analysied.
 
-# In[12]:
+# In[ ]:
 
 
 import os
@@ -59,7 +59,7 @@ background = background.cutout(position=position, width=width)
 data = dict(counts=counts, background=background)
 
 
-# In[13]:
+# In[ ]:
 
 
 fig = plt.figure(figsize=(15, 3))
@@ -73,7 +73,7 @@ data["background"].plot(vmax=10, ax=ax, fig=fig)
 
 # Let's explore how CWT works. At first define parameters of the algorithm.  An imperative parameter is kernels (`detect.CWTKernels` object). So we should create it.
 
-# In[14]:
+# In[ ]:
 
 
 # Input parameters for CWTKernels
@@ -82,7 +82,7 @@ MIN_SCALE = 6.  # First scale used.
 STEP_SCALE = 1.3  # Base scaling factor.
 
 
-# In[15]:
+# In[ ]:
 
 
 from gammapy.detect import CWTKernels
@@ -95,7 +95,7 @@ print(cwt_kernels.info_table)
 
 # Other parameters are optional, in this demonstration define them all.
 
-# In[16]:
+# In[ ]:
 
 
 MAX_ITER = 10  # The maximum number of iterations of the CWT algorithm.
@@ -110,7 +110,7 @@ KEEP_HISTORY = True  # If you want to save images of all the iterations
 
 # Let's start to analyse input data. Import Logging module to see how the algorithm works during data analysis.
 
-# In[17]:
+# In[ ]:
 
 
 from gammapy.detect import CWT
@@ -130,7 +130,7 @@ cwt = CWT(
 
 # In order to the algorithm was able to analyze source images, you need to convert them to a special format, i.e. create an CWTData object. Do this.
 
-# In[19]:
+# In[ ]:
 
 
 from gammapy.detect import CWTKernels, CWTData
@@ -140,7 +140,7 @@ cwt_data = CWTData(
 )
 
 
-# In[20]:
+# In[ ]:
 
 
 # Start the algorithm
@@ -151,7 +151,7 @@ cwt.analyze(cwt_data)
 # 
 # Look at the results of CWT algorithm. Print all the images.
 
-# In[22]:
+# In[ ]:
 
 
 PLOT_VALUE_MAX = 5
@@ -167,7 +167,7 @@ for index, (name, image) in enumerate(images.items()):
 
 # As you can see in the implementation of CWT above, it has the parameter `keep_history`. If you set to it `True`-value, it means that CWT would save all the images from iterations. Algorithm keeps images of only last CWT start.  Let's do this in the demonstration.
 
-# In[23]:
+# In[ ]:
 
 
 history = cwt.history
@@ -178,7 +178,7 @@ print(
 
 # Let's have a look, what's happening with images after the first iteration.
 
-# In[25]:
+# In[ ]:
 
 
 N_ITER = 1
@@ -197,7 +197,7 @@ for index, (name, image) in enumerate(images_iter.items()):
 
 # You can get the information about the one particular image in that way: 
 
-# In[26]:
+# In[ ]:
 
 
 print(data_iter.image_info(name="approx_bkg"))
@@ -205,13 +205,13 @@ print(data_iter.image_info(name="approx_bkg"))
 
 # You can also get the information about cubes. Or information about all the data. 
 
-# In[27]:
+# In[ ]:
 
 
 print(data_iter.cube_info(name="support", per_scale=True))
 
 
-# In[28]:
+# In[ ]:
 
 
 print(data_iter.cube_info(name="support", per_scale=False))
@@ -219,7 +219,7 @@ print(data_iter.cube_info(name="support", per_scale=False))
 
 # Also you can see the difference betwen the iterations in that way:
 
-# In[29]:
+# In[ ]:
 
 
 history = cwt.history  # get list of 'CWTData' objects
@@ -228,19 +228,19 @@ difference = (
 )  # get new `CWTData` obj, let's work with them
 
 
-# In[30]:
+# In[ ]:
 
 
 print(difference.cube_info("support"))
 
 
-# In[31]:
+# In[ ]:
 
 
 difference.info_table.show_in_notebook()
 
 
-# In[33]:
+# In[ ]:
 
 
 fig = plt.figure(figsize=FIG_SIZE)

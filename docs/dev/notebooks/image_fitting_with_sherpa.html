@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Fitting 2D images with Sherpa &mdash; gammapy v0.8.dev7246</title>
+  <title>Fitting 2D images with Sherpa &mdash; gammapy v0.8.dev7362</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.8.dev7246
+                0.8.dev7362
               </div>
             
           
@@ -247,7 +247,7 @@
 <li class="toctree-l4"><a class="reference internal" href="spectrum_pipe.html#Select-data">Select data</a></li>
 <li class="toctree-l4"><a class="reference internal" href="spectrum_pipe.html#Configure-the-analysis">Configure the analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="spectrum_pipe.html#Run-the-analysis">Run the analysis</a></li>
-<li class="toctree-l4"><a class="reference internal" href="spectrum_pipe.html#Check-out-the-results">Check out the results</a></li>
+<li class="toctree-l4"><a class="reference internal" href="spectrum_pipe.html#Results">Results</a></li>
 <li class="toctree-l4"><a class="reference internal" href="spectrum_pipe.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -282,7 +282,6 @@
 <li class="toctree-l4"><a class="reference internal" href="sed_fitting_gammacat_fermi.html#Introduction">Introduction</a></li>
 <li class="toctree-l4"><a class="reference internal" href="sed_fitting_gammacat_fermi.html#Setup">Setup</a></li>
 <li class="toctree-l4"><a class="reference internal" href="sed_fitting_gammacat_fermi.html#Load-spectral-points">Load spectral points</a></li>
-<li class="toctree-l4"><a class="reference internal" href="sed_fitting_gammacat_fermi.html#Fitter-Setup">Fitter Setup</a></li>
 <li class="toctree-l4"><a class="reference internal" href="sed_fitting_gammacat_fermi.html#Power-Law-Fit">Power Law Fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="sed_fitting_gammacat_fermi.html#Exponential-Cut-Off-Powerlaw-Fit">Exponential Cut-Off Powerlaw Fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="sed_fitting_gammacat_fermi.html#Log-Parabola-Fit">Log-Parabola Fit</a></li>
@@ -672,12 +671,9 @@
 <li class="toctree-l4"><a class="reference internal" href="../utils/index.html#id16">Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="../utils/index.html#module-gammapy.utils.modeling">gammapy.utils.modeling Module</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../utils/index.html#id17">Classes</a></li>
-</ul>
-</li>
 <li class="toctree-l3"><a class="reference internal" href="../utils/index.html#module-gammapy.utils.fitting">gammapy.utils.fitting Package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../utils/index.html#id18">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../utils/index.html#id17">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../utils/index.html#id18">Classes</a></li>
 </ul>
 </li>
 </ul>
@@ -1171,8 +1167,8 @@ div.nboutput div.output_area.stderr {
 <script type="text/javascript" src="../_static/linksdl.js"></script><div class="admonition note">
 <p class="admonition-title fa fa-exclamation-circle"><strong>This is a fixed-text formatted version of a Jupyter notebook.</strong></p>
 <ul class="simple">
-<li>Try online <a class="reference external" href="https://mybinder.org/v2/gh/gammapy/gammapy-extra/master?urlpath=lab/tree/image_fitting_with_sherpa.ipynb"><img alt="Binder" src="https://mybinder.org/badge.svg" /></a></li>
-<li>You can contribute with your own notebooks in this <a class="reference external" href="https://github.com/gammapy/gammapy-extra/tree/master/notebooks">GitHub
+<li>Try online <a class="reference external" href="https://mybinder.org/v2/gh/gammapy/gammapy/master?urlpath=lab/tree/image_fitting_with_sherpa.ipynb"><img alt="Binder" src="https://mybinder.org/badge.svg" /></a></li>
+<li>You can contribute with your own notebooks in this <a class="reference external" href="https://github.com/gammapy/gammapy/tree/master/tutorials">GitHub
 repository</a>.</li>
 <li><strong>Source files:</strong>
 <a class="reference external" href="../_static/notebooks/image_fitting_with_sherpa.ipynb">image_fitting_with_sherpa.ipynb</a>
@@ -1229,6 +1225,7 @@ generation notebook:</p>
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="kn">import</span> <span class="n">fits</span>
 <span class="kn">from</span> <span class="nn">astropy.wcs</span> <span class="kn">import</span> <span class="n">WCS</span>
 <span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">Map</span><span class="p">,</span> <span class="n">WcsNDMap</span><span class="p">,</span> <span class="n">WcsGeom</span>
+<span class="kn">import</span> <span class="nn">os</span>
 
 <span class="c1"># Warnings about XSPEC or DS9 can be ignored here</span>
 <span class="kn">import</span> <span class="nn">sherpa.astro.ui</span> <span class="kn">as</span> <span class="nn">sh</span>
@@ -1253,17 +1250,21 @@ WARNING: failed to import sherpa.astro.xspec; XSPEC models will not be available
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># Read the fits file to load them in a sherpa model</span>
-<span class="n">hdr</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">getheader</span><span class="p">(</span><span class="s2">&quot;G300-0_test_counts.fits&quot;</span><span class="p">)</span>
+<span class="n">filecounts</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;GAMMAPY_EXTRA&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;/datasets/G300-0_test_counts.fits&quot;</span>
+<span class="n">hdr</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">getheader</span><span class="p">(</span><span class="n">filecounts</span><span class="p">)</span>
 <span class="n">wcs</span> <span class="o">=</span> <span class="n">WCS</span><span class="p">(</span><span class="n">hdr</span><span class="p">)</span>
 
 <span class="n">sh</span><span class="o">.</span><span class="n">set_stat</span><span class="p">(</span><span class="s2">&quot;cash&quot;</span><span class="p">)</span>
 <span class="n">sh</span><span class="o">.</span><span class="n">set_method</span><span class="p">(</span><span class="s2">&quot;simplex&quot;</span><span class="p">)</span>
-<span class="n">sh</span><span class="o">.</span><span class="n">load_image</span><span class="p">(</span><span class="s2">&quot;G300-0_test_counts.fits&quot;</span><span class="p">)</span>
+<span class="n">sh</span><span class="o">.</span><span class="n">load_image</span><span class="p">(</span><span class="n">filecounts</span><span class="p">)</span>
 <span class="n">sh</span><span class="o">.</span><span class="n">set_coord</span><span class="p">(</span><span class="s2">&quot;logical&quot;</span><span class="p">)</span>
 
-<span class="n">sh</span><span class="o">.</span><span class="n">load_table_model</span><span class="p">(</span><span class="s2">&quot;expo&quot;</span><span class="p">,</span> <span class="s2">&quot;G300-0_test_exposure.fits&quot;</span><span class="p">)</span>
-<span class="n">sh</span><span class="o">.</span><span class="n">load_table_model</span><span class="p">(</span><span class="s2">&quot;bkg&quot;</span><span class="p">,</span> <span class="s2">&quot;G300-0_test_background.fits&quot;</span><span class="p">)</span>
-<span class="n">sh</span><span class="o">.</span><span class="n">load_psf</span><span class="p">(</span><span class="s2">&quot;psf&quot;</span><span class="p">,</span> <span class="s2">&quot;G300-0_test_psf.fits&quot;</span><span class="p">)</span>
+<span class="n">fileexp</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;GAMMAPY_EXTRA&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;/datasets/G300-0_test_exposure.fits&quot;</span>
+<span class="n">filebkg</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;GAMMAPY_EXTRA&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;/datasets/G300-0_test_background.fits&quot;</span>
+<span class="n">filepsf</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;GAMMAPY_EXTRA&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;/datasets/G300-0_test_psf.fits&quot;</span>
+<span class="n">sh</span><span class="o">.</span><span class="n">load_table_model</span><span class="p">(</span><span class="s2">&quot;expo&quot;</span><span class="p">,</span> <span class="n">fileexp</span><span class="p">)</span>
+<span class="n">sh</span><span class="o">.</span><span class="n">load_table_model</span><span class="p">(</span><span class="s2">&quot;bkg&quot;</span><span class="p">,</span> <span class="n">filebkg</span><span class="p">)</span>
+<span class="n">sh</span><span class="o">.</span><span class="n">load_psf</span><span class="p">(</span><span class="s2">&quot;psf&quot;</span><span class="p">,</span> <span class="n">filepsf</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1282,7 +1283,7 @@ then computed and shown.</p>
 <span class="n">bkg</span><span class="o">.</span><span class="n">ampl</span> <span class="o">=</span> <span class="mi">1</span>
 <span class="n">sh</span><span class="o">.</span><span class="n">freeze</span><span class="p">(</span><span class="n">bkg</span><span class="p">)</span>
 
-<span class="n">resid</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;G300-0_test_counts.fits&quot;</span><span class="p">)</span>
+<span class="n">resid</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filecounts</span><span class="p">)</span>
 <span class="n">resid</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">sh</span><span class="o">.</span><span class="n">get_data_image</span><span class="p">()</span><span class="o">.</span><span class="n">y</span> <span class="o">-</span> <span class="n">sh</span><span class="o">.</span><span class="n">get_model_image</span><span class="p">()</span><span class="o">.</span><span class="n">y</span>
 <span class="n">resid_smooth</span> <span class="o">=</span> <span class="n">resid</span><span class="o">.</span><span class="n">smooth</span><span class="p">(</span><span class="n">radius</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
 <span class="n">resid_smooth</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
@@ -1354,8 +1355,8 @@ Degrees of freedom    = 29998
 Change in statistic   = 404.211
    g0.fwhm        6.43418
    g0.ampl        0.400131
-CPU times: user 1.66 s, sys: 32.7 ms, total: 1.69 s
-Wall time: 1.69 s
+CPU times: user 1.6 s, sys: 25.1 ms, total: 1.62 s
+Wall time: 1.6 s
 </pre></div></div>
 </div>
 <p>Fit all parameters of this Gaussian component, fix them and re-compute
@@ -1572,8 +1573,8 @@ Change in statistic   = 0.0749129
    g5.xpos        76.1381
    g5.ypos        73.1869
    g5.ampl        0.524268
-CPU times: user 26.8 s, sys: 121 ms, total: 26.9 s
-Wall time: 26.9 s
+CPU times: user 26.5 s, sys: 765 ms, total: 27.3 s
+Wall time: 27.3 s
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1635,7 +1636,7 @@ fitted (g5) thus not a significant source:</p>
 </div>
 <div class="output_area docutils container">
 <i>Table length=6</i>
-<table id="table4555624856" class="table-striped table-bordered table-condensed">
+<table id="table4776174032" class="table-striped table-bordered table-condensed">
 <thead><tr><th>delstat</th><th>glon</th><th>glat</th><th>sigma</th></tr></thead>
 <thead><tr><th>float64</th><th>float64</th><th>float64</th><th>float64</th></tr></thead>
 <tr><td>136.58</td><td>300.15</td><td>0.13607</td><td>0.053811</td></tr>
@@ -1702,7 +1703,7 @@ proceedings are good introductions:</p>
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 10 Sep 2018.
+      Last updated on 19 Sep 2018.
 
     </p>
   </div>
@@ -1724,7 +1725,7 @@ proceedings are good introductions:</p>
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.8.dev7246',
+            VERSION:'0.8.dev7362',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

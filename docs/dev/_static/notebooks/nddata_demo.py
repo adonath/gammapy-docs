@@ -26,14 +26,14 @@
 # 
 # As usual, we'll start with some setup ...
 
-# In[1]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 
 
-# In[2]:
+# In[ ]:
 
 
 from gammapy.utils.nddata import NDDataArray, DataAxis, BinnedDataAxis
@@ -46,7 +46,7 @@ import astropy.units as u
 # 
 # Let's start with a simple example. A one dimensional array storing an exposure in ``cm-2 s-1`` as a function of energy. The energy axis is log spaced and thus also the interpolation shall take place in log.
 
-# In[3]:
+# In[ ]:
 
 
 energies = Energy.equal_log_spacing(10, 100, 10, unit=u.TeV)
@@ -57,7 +57,7 @@ print(nddata)
 print(nddata.axis("energy"))
 
 
-# In[4]:
+# In[ ]:
 
 
 eval_energies = np.linspace(2, 6, 20) * 1e4 * u.GeV
@@ -85,7 +85,7 @@ plt.legend();
 # 
 # Another common use case is to store a Quantity as a function of field of view offset and energy. The following shows how to use the NDDataArray to slice the data array at any values of offset and energy
 
-# In[5]:
+# In[ ]:
 
 
 energy_data = EnergyBounds.equal_log_spacing(1, 10, 50, unit=u.TeV)
@@ -115,7 +115,7 @@ plt.ylabel("Offset")
 plt.colorbar();
 
 
-# In[6]:
+# In[ ]:
 
 
 offsets = [0.23, 1.23, 2] * u.deg

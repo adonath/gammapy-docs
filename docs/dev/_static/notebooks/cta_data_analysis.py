@@ -17,20 +17,20 @@
 # 
 # As usual, we'll start with some setup ...
 
-# In[1]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 
 
-# In[2]:
+# In[ ]:
 
 
 get_ipython().system('gammapy info --no-envvar --no-system')
 
 
-# In[3]:
+# In[ ]:
 
 
 import numpy as np
@@ -54,7 +54,7 @@ from gammapy.background import ReflectedRegionsBackgroundEstimator
 from gammapy.detect import TSMapEstimator, find_peaks
 
 
-# In[4]:
+# In[ ]:
 
 
 # Configure the logger, so that the spectral analysis
@@ -72,14 +72,13 @@ log.setLevel(logging.ERROR)
 # 
 # This is shown in detail in the other notebook, here we just pick three observations near the galactic center.
 
-# In[5]:
+# In[ ]:
 
 
-# data_store = DataStore.from_dir('$CTADATA/index/gps')
-data_store = DataStore.from_dir("$GAMMAPY_EXTRA/datasets/cta-1dc/index/gps/")
+data_store = DataStore.from_dir('$CTADATA/index/gps')
 
 
-# In[6]:
+# In[ ]:
 
 
 # Just as a reminder: this is how to select observations
@@ -93,14 +92,14 @@ data_store = DataStore.from_dir("$GAMMAPY_EXTRA/datasets/cta-1dc/index/gps/")
 # table.show_in_browser(jsviewer=True)
 
 
-# In[7]:
+# In[ ]:
 
 
 obs_id = [110380, 111140, 111159]
 obs_list = data_store.obs_list(obs_id)
 
 
-# In[8]:
+# In[ ]:
 
 
 obs_cols = ["OBS_ID", "GLON_PNT", "GLAT_PNT", "LIVETIME"]
@@ -113,7 +112,7 @@ data_store.obs_table.select_obs_id(obs_id)[obs_cols]
 # 
 # Select the target position and define an ON region for the spectral analysis
 
-# In[9]:
+# In[ ]:
 
 
 axis = MapAxis.from_edges(
@@ -129,7 +128,7 @@ geom
 # 
 # Exclusion mask currently unused. Remove here or move to later in the tutorial?
 
-# In[10]:
+# In[ ]:
 
 
 target_position = SkyCoord(0, 0, unit="deg", frame="galactic")
@@ -137,7 +136,7 @@ on_radius = 0.2 * u.deg
 on_region = CircleSkyRegion(center=target_position, radius=on_radius)
 
 
-# In[11]:
+# In[ ]:
 
 
 exclusion_mask = geom.to_image().region_mask([on_region], inside=False)
@@ -145,13 +144,13 @@ exclusion_mask = WcsNDMap(geom.to_image(), exclusion_mask)
 exclusion_mask.plot();
 
 
-# In[12]:
+# In[ ]:
 
 
 get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, offset_max="2 deg")\nmaps = maker.run(obs_list)\nprint(maps.keys())')
 
 
-# In[13]:
+# In[ ]:
 
 
 # The maps are cubes, with an energy axis.
@@ -167,19 +166,19 @@ images["excess"] = excess
 # 
 # Let's have a quick look at the images we computed ...
 
-# In[14]:
+# In[ ]:
 
 
 images["counts"].smooth(2).plot(vmax=5);
 
 
-# In[15]:
+# In[ ]:
 
 
 images["background"].plot(vmax=5);
 
 
-# In[16]:
+# In[ ]:
 
 
 images["excess"].smooth(3).plot(vmax=2);
@@ -189,34 +188,34 @@ images["excess"].smooth(3).plot(vmax=2);
 # 
 # Use the class [gammapy.detect.TSMapEstimator](http://docs.gammapy.org/dev/api/gammapy.detect.TSMapEstimator.html) and [gammapy.detect.find_peaks](http://docs.gammapy.org/dev/api/gammapy.detect.find_peaks.html) to detect sources on the images:
 
-# In[17]:
+# In[ ]:
 
 
 kernel = Gaussian2DKernel(1, mode="oversample").array
 plt.imshow(kernel);
 
 
-# In[18]:
+# In[ ]:
 
 
 get_ipython().run_cell_magic('time', '', 'ts_image_estimator = TSMapEstimator()\nimages_ts = ts_image_estimator.run(images, kernel)\nprint(images_ts.keys())')
 
 
-# In[19]:
+# In[ ]:
 
 
 sources = find_peaks(images_ts["sqrt_ts"], threshold=8)
 sources
 
 
-# In[20]:
+# In[ ]:
 
 
 source_pos = SkyCoord(sources["ra"], sources["dec"])
 source_pos
 
 
-# In[21]:
+# In[ ]:
 
 
 # Plot sources on top of significance sky image
@@ -247,13 +246,13 @@ plt.gca().scatter(
 # 
 # The first step is to "extract" the spectrum, i.e. 1-dimensional counts and exposure and background vectors, as well as an energy dispersion matrix from the data and IRFs.
 
-# In[22]:
+# In[ ]:
 
 
 get_ipython().run_cell_magic('time', '', 'bkg_estimator = ReflectedRegionsBackgroundEstimator(\n    obs_list=obs_list, on_region=on_region, exclusion_mask=exclusion_mask\n)\nbkg_estimator.run()\nbkg_estimate = bkg_estimator.result\nbkg_estimator.plot();')
 
 
-# In[23]:
+# In[ ]:
 
 
 get_ipython().run_cell_magic('time', '', 'extract = SpectrumExtraction(obs_list=obs_list, bkg_estimate=bkg_estimate)\nextract.run()\nobservations = extract.observations')
@@ -263,17 +262,17 @@ get_ipython().run_cell_magic('time', '', 'extract = SpectrumExtraction(obs_list=
 # 
 # The next step is to fit a spectral model, using all data (i.e. a "global" fit, using all energies).
 
-# In[24]:
+# In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'model = models.PowerLaw(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\nfit = SpectrumFit(observations, model)\nfit.fit()\nfit.est_errors()\nprint(fit.result[0])')
+get_ipython().run_cell_magic('time', '', 'model = models.PowerLaw(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\nfit = SpectrumFit(observations, model)\nfit.run()\nprint(fit.result[0])')
 
 
 # ### Spectral points
 # 
 # Finally, let's compute spectral points. The method used is to first choose an energy binning, and then to do a 1-dim likelihood fit / profile to compute the flux and flux error.
 
-# In[25]:
+# In[ ]:
 
 
 # Flux points are computed on stacked observation
@@ -281,7 +280,7 @@ stacked_obs = extract.observations.stack()
 print(stacked_obs)
 
 
-# In[26]:
+# In[ ]:
 
 
 ebounds = EnergyBounds.equal_log_spacing(1, 40, 4, unit=u.TeV)
@@ -301,7 +300,7 @@ fpe.flux_points.table
 # Let's plot the spectral model and points. You could do it directly, but there is a helper class.
 # Note that a spectral uncertainty band, a "butterfly" is drawn, but it is very thin, i.e. barely visible.
 
-# In[27]:
+# In[ ]:
 
 
 total_result = SpectrumResult(
@@ -325,7 +324,7 @@ total_result.plot(
 # * Change the target. Make a sky image and spectrum for your favourite source.
 #     * If you don't know any, the Crab nebula is the "hello world!" analysis of gamma-ray astronomy.
 
-# In[28]:
+# In[ ]:
 
 
 # print('hello world')

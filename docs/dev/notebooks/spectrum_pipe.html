@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Spectrum analysis with Gammapy (run pipeline) &mdash; gammapy v0.8.dev7246</title>
+  <title>Spectrum analysis with Gammapy (run pipeline) &mdash; gammapy v0.8.dev7362</title>
   
 
   
@@ -64,7 +64,7 @@
             
             
               <div class="version">
-                0.8.dev7246
+                0.8.dev7362
               </div>
             
           
@@ -247,7 +247,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#Select-data">Select data</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Configure-the-analysis">Configure the analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Run-the-analysis">Run the analysis</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Check-out-the-results">Check out the results</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Results">Results</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -282,7 +282,6 @@
 <li class="toctree-l4"><a class="reference internal" href="sed_fitting_gammacat_fermi.html#Introduction">Introduction</a></li>
 <li class="toctree-l4"><a class="reference internal" href="sed_fitting_gammacat_fermi.html#Setup">Setup</a></li>
 <li class="toctree-l4"><a class="reference internal" href="sed_fitting_gammacat_fermi.html#Load-spectral-points">Load spectral points</a></li>
-<li class="toctree-l4"><a class="reference internal" href="sed_fitting_gammacat_fermi.html#Fitter-Setup">Fitter Setup</a></li>
 <li class="toctree-l4"><a class="reference internal" href="sed_fitting_gammacat_fermi.html#Power-Law-Fit">Power Law Fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="sed_fitting_gammacat_fermi.html#Exponential-Cut-Off-Powerlaw-Fit">Exponential Cut-Off Powerlaw Fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="sed_fitting_gammacat_fermi.html#Log-Parabola-Fit">Log-Parabola Fit</a></li>
@@ -672,12 +671,9 @@
 <li class="toctree-l4"><a class="reference internal" href="../utils/index.html#id16">Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="../utils/index.html#module-gammapy.utils.modeling">gammapy.utils.modeling Module</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../utils/index.html#id17">Classes</a></li>
-</ul>
-</li>
 <li class="toctree-l3"><a class="reference internal" href="../utils/index.html#module-gammapy.utils.fitting">gammapy.utils.fitting Package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../utils/index.html#id18">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../utils/index.html#id17">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../utils/index.html#id18">Classes</a></li>
 </ul>
 </li>
 </ul>
@@ -1171,8 +1167,8 @@ div.nboutput div.output_area.stderr {
 <script type="text/javascript" src="../_static/linksdl.js"></script><div class="admonition note">
 <p class="admonition-title fa fa-exclamation-circle"><strong>This is a fixed-text formatted version of a Jupyter notebook.</strong></p>
 <ul class="simple">
-<li>Try online <a class="reference external" href="https://mybinder.org/v2/gh/gammapy/gammapy-extra/master?urlpath=lab/tree/spectrum_pipe.ipynb"><img alt="Binder" src="https://mybinder.org/badge.svg" /></a></li>
-<li>You can contribute with your own notebooks in this <a class="reference external" href="https://github.com/gammapy/gammapy-extra/tree/master/notebooks">GitHub
+<li>Try online <a class="reference external" href="https://mybinder.org/v2/gh/gammapy/gammapy/master?urlpath=lab/tree/spectrum_pipe.ipynb"><img alt="Binder" src="https://mybinder.org/badge.svg" /></a></li>
+<li>You can contribute with your own notebooks in this <a class="reference external" href="https://github.com/gammapy/gammapy/tree/master/tutorials">GitHub
 repository</a>.</li>
 <li><strong>Source files:</strong>
 <a class="reference external" href="../_static/notebooks/spectrum_pipe.ipynb">spectrum_pipe.ipynb</a> |
@@ -1209,18 +1205,17 @@ functionality we need.</p>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
 
+<span class="kn">import</span> <span class="nn">astropy.units</span> <span class="kn">as</span> <span class="nn">u</span>
+<span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">SkyCoord</span>
+<span class="kn">from</span> <span class="nn">regions</span> <span class="kn">import</span> <span class="n">CircleSkyRegion</span>
+
+<span class="kn">from</span> <span class="nn">gammapy.utils.energy</span> <span class="kn">import</span> <span class="n">EnergyBounds</span>
 <span class="kn">from</span> <span class="nn">gammapy.data</span> <span class="kn">import</span> <span class="n">DataStore</span>
 <span class="kn">from</span> <span class="nn">gammapy.scripts</span> <span class="kn">import</span> <span class="n">SpectrumAnalysisIACT</span>
 <span class="kn">from</span> <span class="nn">gammapy.catalog</span> <span class="kn">import</span> <span class="n">SourceCatalogGammaCat</span>
-
-<span class="c1"># Convenience classes to define analsys inputs</span>
-<span class="c1"># At some point we&#39;ll add a convenience layer to run the analysis starting from a plain text config file.</span>
-<span class="kn">from</span> <span class="nn">gammapy.utils.energy</span> <span class="kn">import</span> <span class="n">EnergyBounds</span>
 <span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">Map</span>
-<span class="kn">from</span> <span class="nn">gammapy.spectrum</span> <span class="kn">import</span> <span class="n">models</span>
-<span class="kn">from</span> <span class="nn">regions</span> <span class="kn">import</span> <span class="n">CircleSkyRegion</span>
-<span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">SkyCoord</span>
-<span class="kn">import</span> <span class="nn">astropy.units</span> <span class="kn">as</span> <span class="nn">u</span>
+<span class="kn">from</span> <span class="nn">gammapy.spectrum.models</span> <span class="kn">import</span> <span class="n">LogParabola</span>
+<span class="kn">from</span> <span class="nn">gammapy.spectrum</span> <span class="kn">import</span> <span class="n">CrabSpectrum</span>
 </pre></div>
 </div>
 </div>
@@ -1237,13 +1232,11 @@ before). We’ll just use the standard gammapy 4 crab runs.</p>
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># TODO: Replace with public data release</span>
-<span class="n">store_dir</span> <span class="o">=</span> <span class="s2">&quot;$GAMMAPY_EXTRA/datasets/hess-crab4-hd-hap-prod2&quot;</span>
-<span class="n">data_store</span> <span class="o">=</span> <span class="n">DataStore</span><span class="o">.</span><span class="n">from_dir</span><span class="p">(</span><span class="n">store_dir</span><span class="p">)</span>
-<span class="n">obs_id</span> <span class="o">=</span> <span class="n">data_store</span><span class="o">.</span><span class="n">obs_table</span><span class="p">[</span><span class="s2">&quot;OBS_ID&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
-<span class="k">print</span><span class="p">(</span><span class="s2">&quot;Use observations {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obs_id</span><span class="p">))</span>
-
-<span class="n">obs_list</span> <span class="o">=</span> <span class="n">data_store</span><span class="o">.</span><span class="n">obs_list</span><span class="p">(</span><span class="n">obs_id</span><span class="p">)</span>
+<span></span><span class="n">data_store</span> <span class="o">=</span> <span class="n">DataStore</span><span class="o">.</span><span class="n">from_dir</span><span class="p">(</span><span class="s2">&quot;$GAMMAPY_EXTRA/datasets/hess-dl3-dr1/&quot;</span><span class="p">)</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">data_store</span><span class="o">.</span><span class="n">obs_table</span><span class="p">[</span><span class="s2">&quot;OBS_SUBSET_TAG&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;crab&quot;</span>
+<span class="n">obs_ids</span> <span class="o">=</span> <span class="n">data_store</span><span class="o">.</span><span class="n">obs_table</span><span class="p">[</span><span class="s2">&quot;OBS_ID&quot;</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+<span class="n">observations</span> <span class="o">=</span> <span class="n">data_store</span><span class="o">.</span><span class="n">obs_list</span><span class="p">(</span><span class="n">obs_ids</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">obs_ids</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1252,7 +1245,7 @@ before). We’ll just use the standard gammapy 4 crab runs.</p>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Use observations [23523 23526 23559 23592]
+[23523 23526 23559 23592]
 </pre></div></div>
 </div>
 </div>
@@ -1271,7 +1264,7 @@ using a plain text config file.</p>
 <span></span><span class="n">crab_pos</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="o">.</span><span class="n">from_name</span><span class="p">(</span><span class="s2">&quot;crab&quot;</span><span class="p">)</span>
 <span class="n">on_region</span> <span class="o">=</span> <span class="n">CircleSkyRegion</span><span class="p">(</span><span class="n">crab_pos</span><span class="p">,</span> <span class="mf">0.15</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">)</span>
 
-<span class="n">model</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">LogParabola</span><span class="p">(</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">LogParabola</span><span class="p">(</span>
     <span class="n">alpha</span><span class="o">=</span><span class="mf">2.3</span><span class="p">,</span>
     <span class="n">beta</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
     <span class="n">amplitude</span><span class="o">=</span><span class="mf">1e-11</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;cm-2 s-1 TeV-1&quot;</span><span class="p">),</span>
@@ -1300,19 +1293,7 @@ using a plain text config file.</p>
     <span class="n">regions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
 
 <span class="n">exclusion_mask</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">exclusion_mask</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">region_mask</span><span class="p">(</span><span class="n">regions</span><span class="p">,</span> <span class="n">inside</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
-<span class="n">exclusion_mask</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>Out[4]:
-</pre></div>
-</div>
-<div class="output_area highlight-none notranslate"><div class="highlight"><pre>
-<span></span>(&lt;matplotlib.figure.Figure at 0x7f5d9bea0e80&gt;,
- &lt;matplotlib.axes._subplots.WCSAxesSubplot at 0x7f5d9beaacc0&gt;,
- None)
+<span class="n">exclusion_mask</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
 </pre></div>
 </div>
 </div>
@@ -1320,7 +1301,7 @@ using a plain text config file.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_spectrum_pipe_8_1.png" src="../_images/notebooks_spectrum_pipe_8_1.png" />
+<img alt="../_images/notebooks_spectrum_pipe_8_0.png" src="../_images/notebooks_spectrum_pipe_8_0.png" />
 </div>
 </div>
 <div class="nbinput nblast docutils container">
@@ -1330,7 +1311,7 @@ using a plain text config file.</p>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">config</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-    <span class="n">outdir</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+    <span class="n">outdir</span><span class="o">=</span><span class="s2">&quot;.&quot;</span><span class="p">,</span>
     <span class="n">background</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
         <span class="n">on_region</span><span class="o">=</span><span class="n">on_region</span><span class="p">,</span>
         <span class="n">exclusion_mask</span><span class="o">=</span><span class="n">exclusion_mask</span><span class="p">,</span>
@@ -1359,8 +1340,8 @@ warnings)</p>
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">ana</span> <span class="o">=</span> <span class="n">SpectrumAnalysisIACT</span><span class="p">(</span><span class="n">observations</span><span class="o">=</span><span class="n">obs_list</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
-<span class="n">ana</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">opts_minuit</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;print_level&#39;</span><span class="p">:</span><span class="mi">1</span><span class="p">})</span>
+<span></span><span class="n">analysis</span> <span class="o">=</span> <span class="n">SpectrumAnalysisIACT</span><span class="p">(</span><span class="n">observations</span><span class="o">=</span><span class="n">observations</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+<span class="n">analysis</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">optimize_opts</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;print_level&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
 </pre></div>
 </div>
 </div>
@@ -1376,18 +1357,17 @@ warnings)</p>
 <div class="output_area docutils container">
 <table>
     <tr>
-        <td title="Minimum value of function">FCN = 119.85754664835397</td>
-        <td title="Total number of call to FCN so far">TOTAL NCALL = 101</td>
-        <td title="Number of call in last migrad">NCALLS = 101</td>
+        <td title="Minimum value of function">FCN = 108.83548502896397</td>
+        <td title="Total number of call to FCN so far">TOTAL NCALL = 118</td>
+        <td title="Number of call in last migrad">NCALLS = 118</td>
     </tr>
     <tr>
-        <td title="Estimated distance to minimum">EDM = 1.7630785871447516e-05</td>
+        <td title="Estimated distance to minimum">EDM = 2.6101091590896937e-06</td>
         <td title="Maximum EDM definition of convergence">GOAL EDM = 1e-05</td>
         <td title="Error def. Amount of increase in FCN to be defined as 1 standard deviation">
         UP = 1.0</td>
     </tr>
 </table>
-
 <table>
     <tr>
         <td align="center" title="Validity of the migrad call">Valid</td>
@@ -1423,804 +1403,80 @@ warnings)</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-        <table>
-            <tr>
-                <td><a href="#" onclick="$('#wVwgaHzcqY').toggle()">+</a></td>
-                <td title="Variable name">Name</td>
-                <td title="Value of parameter">Value</td>
-                <td title="Parabolic error">Parab Error</td>
-                <td title="Minos lower error">Minos Error-</td>
-                <td title="Minos upper error">Minos Error+</td>
-                <td title="Lower limit of the parameter">Limit-</td>
-                <td title="Upper limit of the parameter">Limit+</td>
-                <td title="Is the parameter fixed in the fit">FIXED</td>
-            </tr>
-
-            <tr>
-                <td>1</td>
-                <td>par_000_amplitude</td>
-                <td>2.37657</td>
-                <td>0.179911</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-
-            <tr>
-                <td>2</td>
-                <td>par_001_reference</td>
-                <td>1</td>
-                <td>1</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td>FIXED</td>
-            </tr>
-
-            <tr>
-                <td>3</td>
-                <td>par_002_alpha</td>
-                <td>1.89622</td>
-                <td>0.175254</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-
-            <tr>
-                <td>4</td>
-                <td>par_003_beta</td>
-                <td>18.0115</td>
-                <td>7.76092</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-
-            </table>
-
-            <pre id="wVwgaHzcqY" style="display:none;">
-            <textarea rows="14" cols="50" onclick="this.select()" readonly>\begin{tabular}{|c|r|r|r|r|r|r|r|c|}
-\hline
- & Name & Value & Para Error & Error+ & Error- & Limit+ & Limit- & FIXED\\
-\hline
-1 & par $000_{amplitude}$ & 2.377e+00 & 1.799e-01 &  &  &  &  & \\
-\hline
-2 & par $001_{reference}$ & 1.000e+00 & 1.000e+00 &  &  &  &  & FIXED\\
-\hline
-3 & par $002_{\alpha}$ & 1.896e+00 & 1.753e-01 &  &  &  &  & \\
-\hline
-4 & par $003_{\beta}$ & 1.801e+01 & 7.761e+00 &  &  &  &  & \\
-\hline
-\end{tabular}</textarea>
-            </pre></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<hr></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<hr></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
 <table>
     <tr>
-        <td title="Minimum value of function">FCN = 30.738342467874656</td>
-        <td title="Total number of call to FCN so far">TOTAL NCALL = 15</td>
-        <td title="Number of call in last migrad">NCALLS = 15</td>
+        <td><a href="#" onclick="$('#FrvRegCMhr').toggle()">+</a></td>
+        <td title="Variable name">Name</td>
+        <td title="Value of parameter">Value</td>
+        <td title="Hesse error">Hesse Error</td>
+        <td title="Minos lower error">Minos Error-</td>
+        <td title="Minos upper error">Minos Error+</td>
+        <td title="Lower limit of the parameter">Limit-</td>
+        <td title="Upper limit of the parameter">Limit+</td>
+        <td title="Is the parameter fixed in the fit">Fixed?</td>
     </tr>
     <tr>
-        <td title="Estimated distance to minimum">EDM = 6.556504937733939e-06</td>
-        <td title="Maximum EDM definition of convergence">GOAL EDM = 1e-05</td>
-        <td title="Error def. Amount of increase in FCN to be defined as 1 standard deviation">
-        UP = 1.0</td>
+        <td>0</td>
+        <td>par_000_amplitude</td>
+        <td>3.32931</td>
+        <td>0.222011</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>No</td>
+    </tr>
+    <tr>
+        <td>1</td>
+        <td>par_001_reference</td>
+        <td>1</td>
+        <td>1</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>Yes</td>
+    </tr>
+    <tr>
+        <td>2</td>
+        <td>par_002_alpha</td>
+        <td>2.32327</td>
+        <td>0.193054</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>No</td>
+    </tr>
+    <tr>
+        <td>3</td>
+        <td>par_003_beta</td>
+        <td>18.6602</td>
+        <td>9.95332</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>No</td>
     </tr>
 </table>
-
-<table>
-    <tr>
-        <td align="center" title="Validity of the migrad call">Valid</td>
-        <td align="center" title="Validity of parameters">Valid Param</td>
-        <td align="center" title="Is Covariance matrix accurate?">Accurate Covar</td>
-        <td align="center" title="Positive definiteness of covariance matrix">PosDef</td>
-        <td align="center" title="Was covariance matrix made posdef by adding diagonal element">Made PosDef</td>
-    </tr>
-    <tr>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">False</td>
-    </tr>
-    <tr>
-        <td align="center" title="Was last hesse call fail?">Hesse Fail</td>
-        <td align="center" title="Validity of covariance">HasCov</td>
-        <td align="center" title="Is EDM above goal EDM?">Above EDM</td>
-        <td align="center"></td>
-        <td align="center" title="Did last migrad call reach max call limit?">Reach calllim</td>
-    </tr>
-    <tr>
-        <td align="center" style="background-color:#92CCA6">False</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">False</td>
-        <td align="center"></td>
-        <td align="center" style="background-color:#92CCA6">False</td>
-    </tr>
-</table></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-        <table>
-            <tr>
-                <td><a href="#" onclick="$('#XsbmnGOJHQ').toggle()">+</a></td>
-                <td title="Variable name">Name</td>
-                <td title="Value of parameter">Value</td>
-                <td title="Parabolic error">Parab Error</td>
-                <td title="Minos lower error">Minos Error-</td>
-                <td title="Minos upper error">Minos Error+</td>
-                <td title="Lower limit of the parameter">Limit-</td>
-                <td title="Upper limit of the parameter">Limit+</td>
-                <td title="Is the parameter fixed in the fit">FIXED</td>
-            </tr>
-
-            <tr>
-                <td>1</td>
-                <td>par_000_amplitude</td>
-                <td>2.34491</td>
-                <td>0.155248</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-
-            <tr>
-                <td>2</td>
-                <td>par_001_reference</td>
-                <td>1</td>
-                <td>0</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td>FIXED</td>
-            </tr>
-
-            <tr>
-                <td>3</td>
-                <td>par_002_alpha</td>
-                <td>1.89622</td>
-                <td>0.175254</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td>FIXED</td>
-            </tr>
-
-            <tr>
-                <td>4</td>
-                <td>par_003_beta</td>
-                <td>18.0115</td>
-                <td>0.0776092</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td>FIXED</td>
-            </tr>
-
-            </table>
-
-            <pre id="XsbmnGOJHQ" style="display:none;">
-            <textarea rows="14" cols="50" onclick="this.select()" readonly>\begin{tabular}{|c|r|r|r|r|r|r|r|c|}
+<pre id="FrvRegCMhr" style="display:none;">
+<textarea rows="14" cols="50" onclick="this.select()" readonly>
+\begin{tabular}{|c|r|r|r|r|r|r|r|c|}
 \hline
- & Name & Value & Para Error & Error+ & Error- & Limit+ & Limit- & FIXED\\
+ & Name & Value & Hesse Error & Minos Error- & Minos Error+ & Limit- & Limit+ & Fixed?\\
 \hline
-1 & par $000_{amplitude}$ & 2.345e+00 & 1.552e-01 &  &  &  &  & \\
+0 & par $000_{amplitude}$ & 3.32931 & 0.222011 &  &  &  &  & No\\
 \hline
-2 & par $001_{reference}$ & 1.000e+00 & 0.000e+00 &  &  &  &  & FIXED\\
+1 & par $001_{reference}$ & 1 & 1 &  &  &  &  & Yes\\
 \hline
-3 & par $002_{\alpha}$ & 1.896e+00 & 1.753e-01 &  &  &  &  & FIXED\\
+2 & par $002_{\alpha}$ & 2.32327 & 0.193054 &  &  &  &  & No\\
 \hline
-4 & par $003_{\beta}$ & 1.801e+01 & 7.761e-02 &  &  &  &  & FIXED\\
+3 & par $003_{\beta}$ & 18.6602 & 9.95332 &  &  &  &  & No\\
 \hline
-\end{tabular}</textarea>
-            </pre></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<hr></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<hr></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<table>
-    <tr>
-        <td title="Minimum value of function">FCN = 16.8566467249511</td>
-        <td title="Total number of call to FCN so far">TOTAL NCALL = 54</td>
-        <td title="Number of call in last migrad">NCALLS = 54</td>
-    </tr>
-    <tr>
-        <td title="Estimated distance to minimum">EDM = 4.561852147042846e-08</td>
-        <td title="Maximum EDM definition of convergence">GOAL EDM = 1e-05</td>
-        <td title="Error def. Amount of increase in FCN to be defined as 1 standard deviation">
-        UP = 1.0</td>
-    </tr>
-</table>
-
-<table>
-    <tr>
-        <td align="center" title="Validity of the migrad call">Valid</td>
-        <td align="center" title="Validity of parameters">Valid Param</td>
-        <td align="center" title="Is Covariance matrix accurate?">Accurate Covar</td>
-        <td align="center" title="Positive definiteness of covariance matrix">PosDef</td>
-        <td align="center" title="Was covariance matrix made posdef by adding diagonal element">Made PosDef</td>
-    </tr>
-    <tr>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">False</td>
-    </tr>
-    <tr>
-        <td align="center" title="Was last hesse call fail?">Hesse Fail</td>
-        <td align="center" title="Validity of covariance">HasCov</td>
-        <td align="center" title="Is EDM above goal EDM?">Above EDM</td>
-        <td align="center"></td>
-        <td align="center" title="Did last migrad call reach max call limit?">Reach calllim</td>
-    </tr>
-    <tr>
-        <td align="center" style="background-color:#92CCA6">False</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">False</td>
-        <td align="center"></td>
-        <td align="center" style="background-color:#92CCA6">False</td>
-    </tr>
-</table></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-        <table>
-            <tr>
-                <td><a href="#" onclick="$('#WBBwvvlbvA').toggle()">+</a></td>
-                <td title="Variable name">Name</td>
-                <td title="Value of parameter">Value</td>
-                <td title="Parabolic error">Parab Error</td>
-                <td title="Minos lower error">Minos Error-</td>
-                <td title="Minos upper error">Minos Error+</td>
-                <td title="Lower limit of the parameter">Limit-</td>
-                <td title="Upper limit of the parameter">Limit+</td>
-                <td title="Is the parameter fixed in the fit">FIXED</td>
-            </tr>
-
-            <tr>
-                <td>1</td>
-                <td>par_000_amplitude</td>
-                <td>0.528095</td>
-                <td>0.042299</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-
-            <tr>
-                <td>2</td>
-                <td>par_001_reference</td>
-                <td>2.15443</td>
-                <td>0</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td>FIXED</td>
-            </tr>
-
-            <tr>
-                <td>3</td>
-                <td>par_002_alpha</td>
-                <td>1.89622</td>
-                <td>0.175254</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td>FIXED</td>
-            </tr>
-
-            <tr>
-                <td>4</td>
-                <td>par_003_beta</td>
-                <td>18.0115</td>
-                <td>0.0776092</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td>FIXED</td>
-            </tr>
-
-            </table>
-
-            <pre id="WBBwvvlbvA" style="display:none;">
-            <textarea rows="14" cols="50" onclick="this.select()" readonly>\begin{tabular}{|c|r|r|r|r|r|r|r|c|}
-\hline
- & Name & Value & Para Error & Error+ & Error- & Limit+ & Limit- & FIXED\\
-\hline
-1 & par $000_{amplitude}$ & 5.281e-01 & 4.230e-02 &  &  &  &  & \\
-\hline
-2 & par $001_{reference}$ & 2.154e+00 & 0.000e+00 &  &  &  &  & FIXED\\
-\hline
-3 & par $002_{\alpha}$ & 1.896e+00 & 1.753e-01 &  &  &  &  & FIXED\\
-\hline
-4 & par $003_{\beta}$ & 1.801e+01 & 7.761e-02 &  &  &  &  & FIXED\\
-\hline
-\end{tabular}</textarea>
-            </pre></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<hr></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<hr></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<table>
-    <tr>
-        <td title="Minimum value of function">FCN = 22.357275190972253</td>
-        <td title="Total number of call to FCN so far">TOTAL NCALL = 39</td>
-        <td title="Number of call in last migrad">NCALLS = 39</td>
-    </tr>
-    <tr>
-        <td title="Estimated distance to minimum">EDM = 6.716359745559398e-12</td>
-        <td title="Maximum EDM definition of convergence">GOAL EDM = 1e-05</td>
-        <td title="Error def. Amount of increase in FCN to be defined as 1 standard deviation">
-        UP = 1.0</td>
-    </tr>
-</table>
-
-<table>
-    <tr>
-        <td align="center" title="Validity of the migrad call">Valid</td>
-        <td align="center" title="Validity of parameters">Valid Param</td>
-        <td align="center" title="Is Covariance matrix accurate?">Accurate Covar</td>
-        <td align="center" title="Positive definiteness of covariance matrix">PosDef</td>
-        <td align="center" title="Was covariance matrix made posdef by adding diagonal element">Made PosDef</td>
-    </tr>
-    <tr>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">False</td>
-    </tr>
-    <tr>
-        <td align="center" title="Was last hesse call fail?">Hesse Fail</td>
-        <td align="center" title="Validity of covariance">HasCov</td>
-        <td align="center" title="Is EDM above goal EDM?">Above EDM</td>
-        <td align="center"></td>
-        <td align="center" title="Did last migrad call reach max call limit?">Reach calllim</td>
-    </tr>
-    <tr>
-        <td align="center" style="background-color:#92CCA6">False</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">False</td>
-        <td align="center"></td>
-        <td align="center" style="background-color:#92CCA6">False</td>
-    </tr>
-</table></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-        <table>
-            <tr>
-                <td><a href="#" onclick="$('#OhDIxTucLD').toggle()">+</a></td>
-                <td title="Variable name">Name</td>
-                <td title="Value of parameter">Value</td>
-                <td title="Parabolic error">Parab Error</td>
-                <td title="Minos lower error">Minos Error-</td>
-                <td title="Minos upper error">Minos Error+</td>
-                <td title="Lower limit of the parameter">Limit-</td>
-                <td title="Upper limit of the parameter">Limit+</td>
-                <td title="Is the parameter fixed in the fit">FIXED</td>
-            </tr>
-
-            <tr>
-                <td>1</td>
-                <td>par_000_amplitude</td>
-                <td>0.0855578</td>
-                <td>0.010069</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-
-            <tr>
-                <td>2</td>
-                <td>par_001_reference</td>
-                <td>4.64159</td>
-                <td>0</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td>FIXED</td>
-            </tr>
-
-            <tr>
-                <td>3</td>
-                <td>par_002_alpha</td>
-                <td>1.89622</td>
-                <td>0.175254</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td>FIXED</td>
-            </tr>
-
-            <tr>
-                <td>4</td>
-                <td>par_003_beta</td>
-                <td>18.0115</td>
-                <td>0.0776092</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td>FIXED</td>
-            </tr>
-
-            </table>
-
-            <pre id="OhDIxTucLD" style="display:none;">
-            <textarea rows="14" cols="50" onclick="this.select()" readonly>\begin{tabular}{|c|r|r|r|r|r|r|r|c|}
-\hline
- & Name & Value & Para Error & Error+ & Error- & Limit+ & Limit- & FIXED\\
-\hline
-1 & par $000_{amplitude}$ & 8.556e-02 & 1.007e-02 &  &  &  &  & \\
-\hline
-2 & par $001_{reference}$ & 4.642e+00 & 0.000e+00 &  &  &  &  & FIXED\\
-\hline
-3 & par $002_{\alpha}$ & 1.896e+00 & 1.753e-01 &  &  &  &  & FIXED\\
-\hline
-4 & par $003_{\beta}$ & 1.801e+01 & 7.761e-02 &  &  &  &  & FIXED\\
-\hline
-\end{tabular}</textarea>
-            </pre></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<hr></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<hr></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<table>
-    <tr>
-        <td title="Minimum value of function">FCN = 36.56613526646676</td>
-        <td title="Total number of call to FCN so far">TOTAL NCALL = 63</td>
-        <td title="Number of call in last migrad">NCALLS = 63</td>
-    </tr>
-    <tr>
-        <td title="Estimated distance to minimum">EDM = 4.22446250169494e-08</td>
-        <td title="Maximum EDM definition of convergence">GOAL EDM = 1e-05</td>
-        <td title="Error def. Amount of increase in FCN to be defined as 1 standard deviation">
-        UP = 1.0</td>
-    </tr>
-</table>
-
-<table>
-    <tr>
-        <td align="center" title="Validity of the migrad call">Valid</td>
-        <td align="center" title="Validity of parameters">Valid Param</td>
-        <td align="center" title="Is Covariance matrix accurate?">Accurate Covar</td>
-        <td align="center" title="Positive definiteness of covariance matrix">PosDef</td>
-        <td align="center" title="Was covariance matrix made posdef by adding diagonal element">Made PosDef</td>
-    </tr>
-    <tr>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">False</td>
-    </tr>
-    <tr>
-        <td align="center" title="Was last hesse call fail?">Hesse Fail</td>
-        <td align="center" title="Validity of covariance">HasCov</td>
-        <td align="center" title="Is EDM above goal EDM?">Above EDM</td>
-        <td align="center"></td>
-        <td align="center" title="Did last migrad call reach max call limit?">Reach calllim</td>
-    </tr>
-    <tr>
-        <td align="center" style="background-color:#92CCA6">False</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">False</td>
-        <td align="center"></td>
-        <td align="center" style="background-color:#92CCA6">False</td>
-    </tr>
-</table></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-        <table>
-            <tr>
-                <td><a href="#" onclick="$('#zKiOyfuUDh').toggle()">+</a></td>
-                <td title="Variable name">Name</td>
-                <td title="Value of parameter">Value</td>
-                <td title="Parabolic error">Parab Error</td>
-                <td title="Minos lower error">Minos Error-</td>
-                <td title="Minos upper error">Minos Error+</td>
-                <td title="Lower limit of the parameter">Limit-</td>
-                <td title="Upper limit of the parameter">Limit+</td>
-                <td title="Is the parameter fixed in the fit">FIXED</td>
-            </tr>
-
-            <tr>
-                <td>1</td>
-                <td>par_000_amplitude</td>
-                <td>0.0100715</td>
-                <td>0.00219544</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-
-            <tr>
-                <td>2</td>
-                <td>par_001_reference</td>
-                <td>10</td>
-                <td>0</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td>FIXED</td>
-            </tr>
-
-            <tr>
-                <td>3</td>
-                <td>par_002_alpha</td>
-                <td>1.89622</td>
-                <td>0.175254</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td>FIXED</td>
-            </tr>
-
-            <tr>
-                <td>4</td>
-                <td>par_003_beta</td>
-                <td>18.0115</td>
-                <td>0.0776092</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td>FIXED</td>
-            </tr>
-
-            </table>
-
-            <pre id="zKiOyfuUDh" style="display:none;">
-            <textarea rows="14" cols="50" onclick="this.select()" readonly>\begin{tabular}{|c|r|r|r|r|r|r|r|c|}
-\hline
- & Name & Value & Para Error & Error+ & Error- & Limit+ & Limit- & FIXED\\
-\hline
-1 & par $000_{amplitude}$ & 1.007e-02 & 2.195e-03 &  &  &  &  & \\
-\hline
-2 & par $001_{reference}$ & 1.000e+01 & 0.000e+00 &  &  &  &  & FIXED\\
-\hline
-3 & par $002_{\alpha}$ & 1.896e+00 & 1.753e-01 &  &  &  &  & FIXED\\
-\hline
-4 & par $003_{\beta}$ & 1.801e+01 & 7.761e-02 &  &  &  &  & FIXED\\
-\hline
-\end{tabular}</textarea>
-            </pre></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<hr></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<hr></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<table>
-    <tr>
-        <td title="Minimum value of function">FCN = 16.19379695206349</td>
-        <td title="Total number of call to FCN so far">TOTAL NCALL = 76</td>
-        <td title="Number of call in last migrad">NCALLS = 76</td>
-    </tr>
-    <tr>
-        <td title="Estimated distance to minimum">EDM = 4.084427143910815e-10</td>
-        <td title="Maximum EDM definition of convergence">GOAL EDM = 1e-05</td>
-        <td title="Error def. Amount of increase in FCN to be defined as 1 standard deviation">
-        UP = 1.0</td>
-    </tr>
-</table>
-
-<table>
-    <tr>
-        <td align="center" title="Validity of the migrad call">Valid</td>
-        <td align="center" title="Validity of parameters">Valid Param</td>
-        <td align="center" title="Is Covariance matrix accurate?">Accurate Covar</td>
-        <td align="center" title="Positive definiteness of covariance matrix">PosDef</td>
-        <td align="center" title="Was covariance matrix made posdef by adding diagonal element">Made PosDef</td>
-    </tr>
-    <tr>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">False</td>
-    </tr>
-    <tr>
-        <td align="center" title="Was last hesse call fail?">Hesse Fail</td>
-        <td align="center" title="Validity of covariance">HasCov</td>
-        <td align="center" title="Is EDM above goal EDM?">Above EDM</td>
-        <td align="center"></td>
-        <td align="center" title="Did last migrad call reach max call limit?">Reach calllim</td>
-    </tr>
-    <tr>
-        <td align="center" style="background-color:#92CCA6">False</td>
-        <td align="center" style="background-color:#92CCA6">True</td>
-        <td align="center" style="background-color:#92CCA6">False</td>
-        <td align="center"></td>
-        <td align="center" style="background-color:#92CCA6">False</td>
-    </tr>
-</table></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-        <table>
-            <tr>
-                <td><a href="#" onclick="$('#SNZQLafGpa').toggle()">+</a></td>
-                <td title="Variable name">Name</td>
-                <td title="Value of parameter">Value</td>
-                <td title="Parabolic error">Parab Error</td>
-                <td title="Minos lower error">Minos Error-</td>
-                <td title="Minos upper error">Minos Error+</td>
-                <td title="Lower limit of the parameter">Limit-</td>
-                <td title="Upper limit of the parameter">Limit+</td>
-                <td title="Is the parameter fixed in the fit">FIXED</td>
-            </tr>
-
-            <tr>
-                <td>1</td>
-                <td>par_000_amplitude</td>
-                <td>0.00174508</td>
-                <td>0.000568629</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-
-            <tr>
-                <td>2</td>
-                <td>par_001_reference</td>
-                <td>21.5443</td>
-                <td>0</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td>FIXED</td>
-            </tr>
-
-            <tr>
-                <td>3</td>
-                <td>par_002_alpha</td>
-                <td>1.89622</td>
-                <td>0.175254</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td>FIXED</td>
-            </tr>
-
-            <tr>
-                <td>4</td>
-                <td>par_003_beta</td>
-                <td>18.0115</td>
-                <td>0.0776092</td>
-                <td>0</td>
-                <td>0</td>
-                <td></td>
-                <td></td>
-                <td>FIXED</td>
-            </tr>
-
-            </table>
-
-            <pre id="SNZQLafGpa" style="display:none;">
-            <textarea rows="14" cols="50" onclick="this.select()" readonly>\begin{tabular}{|c|r|r|r|r|r|r|r|c|}
-\hline
- & Name & Value & Para Error & Error+ & Error- & Limit+ & Limit- & FIXED\\
-\hline
-1 & par $000_{amplitude}$ & 1.745e-03 & 5.686e-04 &  &  &  &  & \\
-\hline
-2 & par $001_{reference}$ & 2.154e+01 & 0.000e+00 &  &  &  &  & FIXED\\
-\hline
-3 & par $002_{\alpha}$ & 1.896e+00 & 1.753e-01 &  &  &  &  & FIXED\\
-\hline
-4 & par $003_{\beta}$ & 1.801e+01 & 7.761e-02 &  &  &  &  & FIXED\\
-\hline
-\end{tabular}</textarea>
-            </pre></div>
+\end{tabular}
+</textarea>
+</pre></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -2229,16 +1485,17 @@ warnings)</p>
 <hr></div>
 </div>
 </div>
-<div class="section" id="Check-out-the-results">
-<h2>Check out the results<a class="headerlink" href="#Check-out-the-results" title="Permalink to this headline">¶</a></h2>
-<p>TODO: Nice summary page with all results</p>
+<div class="section" id="Results">
+<h2>Results<a class="headerlink" href="#Results" title="Permalink to this headline">¶</a></h2>
+<p>Let’s look at the results, and also compare with a previously published
+Crab nebula spectrum for reference.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre>
 <span></span>In [7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">print</span><span class="p">(</span><span class="n">ana</span><span class="o">.</span><span class="n">fit</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span></span><span class="k">print</span><span class="p">(</span><span class="n">analysis</span><span class="o">.</span><span class="n">fit</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 </pre></div>
 </div>
 </div>
@@ -2256,22 +1513,22 @@ Parameters:
 
            name     value     error         unit      min max
         --------- --------- --------- --------------- --- ---
-        amplitude 2.377e-11 1.799e-12 1 / (cm2 s TeV) nan nan
+        amplitude 3.329e-11 2.220e-12 1 / (cm2 s TeV) nan nan
         reference 1.000e+00 0.000e+00             TeV nan nan
-            alpha 1.896e+00 1.753e-01                 nan nan
-             beta 1.801e-01 7.761e-02                 nan nan
+            alpha 2.323e+00 1.931e-01                 nan nan
+             beta 1.866e-01 9.953e-02                 nan nan
 
 Covariance:
 
            name         amplitude        ...          beta
         --------- ---------------------- ... ----------------------
-        amplitude 3.2368124620079763e-24 ... -6.012435840626412e-14
+        amplitude   4.92889897101586e-24 ... -6.321637165018376e-14
         reference                    0.0 ...                    0.0
-            alpha 2.0393068413972897e-13 ...   -0.01253616253525647
-             beta -6.012435840626412e-14 ...   0.006023186772299266
+            alpha  2.247623220255695e-13 ...  -0.017443815677126957
+             beta -6.321637165018376e-14 ...   0.009906859056281655
 
-Statistic: 26.002 (wstat)
-Fit Range: [ 0.77426368 27.82559402] TeV
+Statistic: 39.258 (wstat)
+Fit Range: [ 0.87992254 27.82559402] TeV
 
 </pre></div></div>
 </div>
@@ -2281,12 +1538,13 @@ Fit Range: [ 0.77426368 27.82559402] TeV
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">ana</span><span class="o">.</span><span class="n">spectrum_result</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-    <span class="n">energy_range</span><span class="o">=</span><span class="n">ana</span><span class="o">.</span><span class="n">fit</span><span class="o">.</span><span class="n">fit_range</span><span class="p">,</span>
-    <span class="n">energy_power</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-    <span class="n">flux_unit</span><span class="o">=</span><span class="s2">&quot;erg-1 cm-2 s-1&quot;</span><span class="p">,</span>
-    <span class="n">fig_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">)),</span>
-<span class="p">)</span>
+<span></span><span class="n">opts</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;energy_range&quot;</span><span class="p">:</span> <span class="n">analysis</span><span class="o">.</span><span class="n">fit</span><span class="o">.</span><span class="n">fit_range</span><span class="p">,</span>
+    <span class="s2">&quot;energy_power&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="s2">&quot;flux_unit&quot;</span><span class="p">:</span> <span class="s2">&quot;erg-1 cm-2 s-1&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">axes</span> <span class="o">=</span> <span class="n">analysis</span><span class="o">.</span><span class="n">spectrum_result</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">**</span><span class="n">opts</span><span class="p">)</span>
+<span class="n">CrabSpectrum</span><span class="p">()</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -2296,8 +1554,7 @@ Fit Range: [ 0.77426368 27.82559402] TeV
 </pre></div>
 </div>
 <div class="output_area highlight-none notranslate"><div class="highlight"><pre>
-<span></span>(&lt;matplotlib.axes._subplots.AxesSubplot at 0x7f5d9862aac8&gt;,
- &lt;matplotlib.axes._subplots.AxesSubplot at 0x7f5d9862d0f0&gt;)
+<span></span>&lt;matplotlib.axes._subplots.AxesSubplot at 0x125c5df98&gt;
 </pre></div>
 </div>
 </div>
@@ -2343,7 +1600,7 @@ Fit Range: [ 0.77426368 27.82559402] TeV
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 10 Sep 2018.
+      Last updated on 19 Sep 2018.
 
     </p>
   </div>
@@ -2365,7 +1622,7 @@ Fit Range: [ 0.77426368 27.82559402] TeV
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../',
-            VERSION:'0.8.dev7246',
+            VERSION:'0.8.dev7362',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

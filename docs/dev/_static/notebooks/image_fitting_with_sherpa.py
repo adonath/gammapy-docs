@@ -33,7 +33,7 @@
 # ```
 # 
 
-# In[1]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
@@ -44,38 +44,43 @@ import astropy.units as u
 from astropy.io import fits
 from astropy.wcs import WCS
 from gammapy.maps import Map, WcsNDMap, WcsGeom
+import os
 
 # Warnings about XSPEC or DS9 can be ignored here
 import sherpa.astro.ui as sh
 
 
-# In[2]:
+# In[ ]:
 
 
 # Read the fits file to load them in a sherpa model
-hdr = fits.getheader("G300-0_test_counts.fits")
+filecounts = os.environ['GAMMAPY_EXTRA'] + '/datasets/G300-0_test_counts.fits'
+hdr = fits.getheader(filecounts)
 wcs = WCS(hdr)
 
 sh.set_stat("cash")
 sh.set_method("simplex")
-sh.load_image("G300-0_test_counts.fits")
+sh.load_image(filecounts)
 sh.set_coord("logical")
 
-sh.load_table_model("expo", "G300-0_test_exposure.fits")
-sh.load_table_model("bkg", "G300-0_test_background.fits")
-sh.load_psf("psf", "G300-0_test_psf.fits")
+fileexp = os.environ['GAMMAPY_EXTRA'] + '/datasets/G300-0_test_exposure.fits'
+filebkg = os.environ['GAMMAPY_EXTRA'] + '/datasets/G300-0_test_background.fits'
+filepsf = os.environ['GAMMAPY_EXTRA'] + '/datasets/G300-0_test_psf.fits'
+sh.load_table_model("expo", fileexp)
+sh.load_table_model("bkg", filebkg)
+sh.load_psf("psf", filepsf)
 
 
 # In principle one might first want to fit the background amplitude. However the background estimation method already yields the correct normalization, so we freeze the background amplitude to unity instead of adjusting it. The (smoothed) residuals from this background model are then computed and shown.
 
-# In[3]:
+# In[ ]:
 
 
 sh.set_full_model(bkg)
 bkg.ampl = 1
 sh.freeze(bkg)
 
-resid = Map.read("G300-0_test_counts.fits")
+resid = Map.read(filecounts)
 resid.data = sh.get_data_image().y - sh.get_model_image().y
 resid_smooth = resid.smooth(radius=6)
 resid_smooth.plot();
@@ -84,7 +89,7 @@ resid_smooth.plot();
 # ### Find and fit the brightest source
 # We then find the position of the maximum in the (smoothed) residuals map, and fit a (symmetrical) Gaussian source with that initial position:
 
-# In[4]:
+# In[ ]:
 
 
 yp, xp = np.unravel_index(
@@ -108,7 +113,7 @@ g0.fwhm = 10  # give some reasonable initial values
 g0.ampl = ampl
 
 
-# In[5]:
+# In[ ]:
 
 
 get_ipython().run_cell_magic('time', '', 'sh.fit()')
@@ -116,7 +121,7 @@ get_ipython().run_cell_magic('time', '', 'sh.fit()')
 
 # Fit all parameters of this Gaussian component, fix them and re-compute the residuals map.
 
-# In[6]:
+# In[ ]:
 
 
 sh.thaw(g0.xpos, g0.ypos)
@@ -131,7 +136,7 @@ resid_smooth.plot(vmin=-0.5, vmax=1);
 # ### Iteratively find and fit additional sources
 # Instantiate additional Gaussian components, and use them to iteratively fit sources, repeating the steps performed above for component g0. (The residuals map is shown after each additional source included in the model.) This takes some time...
 
-# In[7]:
+# In[ ]:
 
 
 # initialize components with fixed, zero amplitude
@@ -144,7 +149,7 @@ gs = [g0, g1, g2, g3, g4, g5]
 sh.set_full_model(bkg + psf(g0 + g1 + g2 + g3 + g4 + g5) * expo)
 
 
-# In[8]:
+# In[ ]:
 
 
 get_ipython().run_cell_magic('time', '', 'for i in range(1, len(gs)):\n    yp, xp = np.unravel_index(\n        np.nanargmax(resid_smooth.data), resid_smooth.data.shape\n    )\n    ampl = resid_smooth.get_by_pix((xp, yp))[0]\n    gs[i].xpos, gs[i].ypos = xp, yp\n    gs[i].fwhm = 10\n    gs[i].ampl = ampl\n\n    sh.thaw(gs[i].fwhm)\n    sh.thaw(gs[i].ampl)\n    sh.fit()\n\n    sh.thaw(gs[i].xpos)\n    sh.thaw(gs[i].ypos)\n    sh.fit()\n    sh.freeze(gs[i])\n\n    resid.data = sh.get_data_image().y - sh.get_model_image().y\n    resid_smooth = resid.smooth(radius=6)\n    resid_smooth.plot(vmin=-0.5, vmax=1)')
@@ -157,7 +162,7 @@ get_ipython().run_cell_magic('time', '', 'for i in range(1, len(gs)):\n    yp, x
 # 
 # The criterion for a significant source detection is typically that it should improve the test statistic by at least 25 or 30. The last excess fitted (g5) thus not a significant source:
 
-# In[9]:
+# In[ ]:
 
 
 from astropy.stats import gaussian_fwhm_to_sigma

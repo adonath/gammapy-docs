@@ -11,14 +11,14 @@
 
 # ## Imports and versions
 
-# In[1]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 
 
-# In[2]:
+# In[ ]:
 
 
 import numpy as np
@@ -38,7 +38,7 @@ from gammapy.cube import MapFit, MapEvaluator, PSFKernel
 from gammapy.cube import make_map_exposure_true_energy, make_map_background_irf
 
 
-# In[3]:
+# In[ ]:
 
 
 get_ipython().system('gammapy info --no-envvar --no-dependencies --no-system')
@@ -46,12 +46,12 @@ get_ipython().system('gammapy info --no-envvar --no-dependencies --no-system')
 
 # ## Simulate
 
-# In[4]:
+# In[ ]:
 
 
 def get_irfs():
     """Load CTA IRFs"""
-    filename = "$GAMMAPY_EXTRA/datasets/cta-1dc/caldb/data/cta//1dc/bcf/South_z20_50h/irf_file.fits"
+    filename = "$CTADATA/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
     psf = EnergyDependentMultiGaussPSF.read(
         filename, hdu="POINT SPREAD FUNCTION"
     )
@@ -64,7 +64,7 @@ def get_irfs():
 irfs = get_irfs()
 
 
-# In[5]:
+# In[ ]:
 
 
 # Define sky model to simulate the data
@@ -78,7 +78,7 @@ sky_model = SkyModel(
 print(sky_model)
 
 
-# In[6]:
+# In[ ]:
 
 
 # Define map geometry
@@ -90,7 +90,7 @@ geom = WcsGeom.create(
 )
 
 
-# In[7]:
+# In[ ]:
 
 
 # Define some observation parameters
@@ -102,7 +102,7 @@ offset_max = 2 * u.deg
 offset = Angle("2 deg")
 
 
-# In[8]:
+# In[ ]:
 
 
 exposure = make_map_exposure_true_energy(
@@ -111,7 +111,7 @@ exposure = make_map_exposure_true_energy(
 exposure.slice_by_idx({"energy": 3}).plot(add_cbar=True);
 
 
-# In[9]:
+# In[ ]:
 
 
 background = make_map_background_irf(
@@ -120,7 +120,7 @@ background = make_map_background_irf(
 background.slice_by_idx({"energy": 3}).plot(add_cbar=True);
 
 
-# In[10]:
+# In[ ]:
 
 
 psf = irfs["psf"].to_energy_dependent_table_psf(theta=offset)
@@ -128,20 +128,20 @@ psf_kernel = PSFKernel.from_table_psf(psf, geom, max_radius=0.3 * u.deg)
 psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch="log");
 
 
-# In[11]:
+# In[ ]:
 
 
 edisp = irfs["edisp"].to_energy_dispersion(offset=offset)
 edisp.plot_matrix();
 
 
-# In[12]:
+# In[ ]:
 
 
 get_ipython().run_cell_magic('time', '', '# The idea is that we have this class that can compute `npred`\n# maps, i.e. "predicted counts per pixel" given the model and\n# the observation infos: exposure, background, PSF and EDISP\nevaluator = MapEvaluator(\n    model=sky_model, exposure=exposure, background=background, psf=psf_kernel\n)')
 
 
-# In[13]:
+# In[ ]:
 
 
 # Accessing and saving a lot of the following maps is for debugging.
@@ -152,13 +152,13 @@ npred = evaluator.compute_npred()
 npred_map = WcsNDMap(geom, npred)
 
 
-# In[14]:
+# In[ ]:
 
 
 npred_map.sum_over_axes().plot(add_cbar=True);
 
 
-# In[15]:
+# In[ ]:
 
 
 # This one line is the core of how to simulate data when
@@ -170,7 +170,7 @@ counts = rng.poisson(npred)
 counts_map = WcsNDMap(geom, counts)
 
 
-# In[16]:
+# In[ ]:
 
 
 counts_map.sum_over_axes().plot();
@@ -181,7 +181,7 @@ counts_map.sum_over_axes().plot();
 # Now let's analyse the simulated data.
 # Here we just fit it again with the same model we had before, but you could do any analysis you like here, e.g. fit a different model, or do a region-based analysis, ...
 
-# In[17]:
+# In[ ]:
 
 
 # Define sky model to fit the data
@@ -193,20 +193,29 @@ model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
 print(model)
 
 
-# In[18]:
+# In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', "fit = MapFit(\n    model=model,\n    counts=counts_map,\n    exposure=exposure,\n    background=background,\n    psf=psf_kernel,\n)\n\nfit.fit(opts_minuit={'print_level':1})")
+get_ipython().run_cell_magic('time', '', 'fit = MapFit(\n    model=model,\n    counts=counts_map,\n    exposure=exposure,\n    background=background,\n    psf=psf_kernel,\n)\n\nresult = fit.run(optimize_opts={"print_level": 1})')
 
 
-# In[19]:
+# True model:
+
+# In[ ]:
 
 
-print("True values:\n\n{}\n\n".format(sky_model.parameters))
-print("Fit result:\n\n{}\n\n".format(model.parameters))
+print(sky_model)
 
 
-# In[20]:
+# Best-fit model:
+
+# In[ ]:
+
+
+print(result.model)
+
+
+# In[ ]:
 
 
 # TODO: show e.g. how to make a residual image
@@ -218,12 +227,12 @@ print("Fit result:\n\n{}\n\n".format(model.parameters))
 # as a fitting backend. This is just a prototype, we will improve this interface and
 # add other fitting backends (e.g. Sherpa or scipy.optimize or emcee or ...)
 # 
-# As a power-user, you can access ``fit.iminuit`` and get the full power of what is developed there already.
+# As a power-user, you can access ``fit._iminuit`` and get the full power of what is developed there already.
 # E.g. the ``fit.fit()`` call ran ``Minuit.migrad()`` and ``Minuit.hesse()`` in the background, and you have
 # access to e.g. the covariance matrix, or can check a likelihood profile, or can run ``Minuit.minos()``
 # to compute asymmetric errors or ...
 
-# In[21]:
+# In[ ]:
 
 
 # Check correlation between model parameters
@@ -233,7 +242,7 @@ print("Fit result:\n\n{}\n\n".format(model.parameters))
 fit.minuit.print_matrix()
 
 
-# In[22]:
+# In[ ]:
 
 
 # You can use likelihood profiles to check if your model is

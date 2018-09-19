@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.data.obs_table &mdash; gammapy v0.8.dev7246</title>
+  <title>gammapy.data.obs_table &mdash; gammapy v0.8.dev7362</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev7246
+                0.8.dev7362
               </div>
             
           
@@ -245,7 +245,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/spectrum_pipe.html#Select-data">Select data</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/spectrum_pipe.html#Configure-the-analysis">Configure the analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/spectrum_pipe.html#Run-the-analysis">Run the analysis</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/spectrum_pipe.html#Check-out-the-results">Check out the results</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/spectrum_pipe.html#Results">Results</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/spectrum_pipe.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -280,7 +280,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/sed_fitting_gammacat_fermi.html#Introduction">Introduction</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/sed_fitting_gammacat_fermi.html#Setup">Setup</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/sed_fitting_gammacat_fermi.html#Load-spectral-points">Load spectral points</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/sed_fitting_gammacat_fermi.html#Fitter-Setup">Fitter Setup</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/sed_fitting_gammacat_fermi.html#Power-Law-Fit">Power Law Fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/sed_fitting_gammacat_fermi.html#Exponential-Cut-Off-Powerlaw-Fit">Exponential Cut-Off Powerlaw Fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/sed_fitting_gammacat_fermi.html#Log-Parabola-Fit">Log-Parabola Fit</a></li>
@@ -670,12 +669,9 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../utils/index.html#id16">Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="../../../utils/index.html#module-gammapy.utils.modeling">gammapy.utils.modeling Module</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../utils/index.html#id17">Classes</a></li>
-</ul>
-</li>
 <li class="toctree-l3"><a class="reference internal" href="../../../utils/index.html#module-gammapy.utils.fitting">gammapy.utils.fitting Package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../utils/index.html#id18">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../utils/index.html#id17">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../utils/index.html#id18">Classes</a></li>
 </ul>
 </li>
 </ul>
@@ -984,14 +980,16 @@
   <h1>Source code for gammapy.data.obs_table</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
 <span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">namedtuple</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="k">import</span> <span class="n">Table</span>
-<span class="kn">from</span> <span class="nn">astropy.units</span> <span class="k">import</span> <span class="n">Quantity</span>
+<span class="kn">from</span> <span class="nn">astropy.units</span> <span class="k">import</span> <span class="n">Unit</span><span class="p">,</span> <span class="n">Quantity</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="k">import</span> <span class="n">Angle</span><span class="p">,</span> <span class="n">SkyCoord</span>
 <span class="kn">from</span> <span class="nn">astropy.time</span> <span class="k">import</span> <span class="n">Time</span>
 <span class="kn">from</span> <span class="nn">astropy.utils</span> <span class="k">import</span> <span class="n">lazyproperty</span>
 <span class="kn">from</span> <span class="nn">..utils.scripts</span> <span class="k">import</span> <span class="n">make_path</span>
 <span class="kn">from</span> <span class="nn">..utils.time</span> <span class="k">import</span> <span class="n">time_relative_to_ref</span>
+<span class="kn">from</span> <span class="nn">..utils.testing</span> <span class="k">import</span> <span class="n">Checker</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ObservationTable&quot;</span><span class="p">]</span>
 
@@ -1332,6 +1330,93 @@
 
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid selection type: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">selection</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]))</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">ObservationTableChecker</span><span class="p">(</span><span class="n">Checker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Event list checker.</span>
+
+<span class="sd">    Data format specification: ref:`gadf:iact-events`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    event_list : `~gammapy.data.EventList`</span>
+<span class="sd">        Event list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">CHECKS</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;meta&quot;</span><span class="p">:</span> <span class="s2">&quot;check_meta&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;columns&quot;</span><span class="p">:</span> <span class="s2">&quot;check_columns&quot;</span><span class="p">,</span>
+        <span class="c1"># &quot;times&quot;: &quot;check_times&quot;,</span>
+        <span class="c1"># &quot;coordinates_galactic&quot;: &quot;check_coordinates_galactic&quot;,</span>
+        <span class="c1"># &quot;coordinates_altaz&quot;: &quot;check_coordinates_altaz&quot;,</span>
+    <span class="p">}</span>
+
+    <span class="c1"># accuracy = {&quot;angle&quot;: Angle(&quot;1 arcsec&quot;), &quot;time&quot;: Quantity(1, &quot;microsecond&quot;)}</span>
+
+    <span class="c1"># https://gamma-astro-data-formats.readthedocs.io/en/latest/events/events.html#mandatory-header-keywords</span>
+    <span class="n">meta_required</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;HDUCLASS&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;HDUDOC&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;HDUVERS&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;HDUCLAS1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;HDUCLAS2&quot;</span><span class="p">,</span>
+        <span class="c1"># https://gamma-astro-data-formats.readthedocs.io/en/latest/general/time.html#time-formats</span>
+        <span class="s2">&quot;MJDREFI&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;MJDREFF&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;TIMEUNIT&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;TIMESYS&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;TIMEREF&quot;</span><span class="p">,</span>
+        <span class="c1"># https://gamma-astro-data-formats.readthedocs.io/en/latest/general/coordinates.html#coords-location</span>
+        <span class="s2">&quot;GEOLON&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;GEOLAT&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ALTITUDE&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="n">_col</span> <span class="o">=</span> <span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;col&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;unit&quot;</span><span class="p">])</span>
+    <span class="n">columns_required</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">_col</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;OBS_ID&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">),</span>
+        <span class="n">_col</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;RA_PNT&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;deg&quot;</span><span class="p">),</span>
+        <span class="n">_col</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;DEC_PNT&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;deg&quot;</span><span class="p">),</span>
+        <span class="n">_col</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;TSTART&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;s&quot;</span><span class="p">),</span>
+        <span class="n">_col</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;TSTOP&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;s&quot;</span><span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs_table</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obs_table</span> <span class="o">=</span> <span class="n">obs_table</span>
+
+    <span class="k">def</span> <span class="nf">_record</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">&quot;info&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="n">level</span><span class="p">,</span> <span class="s2">&quot;hdu&quot;</span><span class="p">:</span> <span class="s2">&quot;obs-index&quot;</span><span class="p">,</span> <span class="s2">&quot;msg&quot;</span><span class="p">:</span> <span class="n">msg</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">check_meta</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_table</span><span class="o">.</span><span class="n">meta</span>
+
+        <span class="n">meta_missing</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta_required</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">m</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">meta_missing</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_record</span><span class="p">(</span>
+                <span class="n">level</span><span class="o">=</span><span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s2">&quot;Missing meta keys: </span><span class="si">{!r}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">meta_missing</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;HDUCLAS1&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;INDEX&quot;</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_record</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s2">&quot;HDUCLAS1 must be INDEX&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;HDUCLAS2&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;OBS&quot;</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_record</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s2">&quot;HDUCLAS2 must be OBS&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">check_columns</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_table</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_record</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s2">&quot;Observation table has zero rows&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">unit</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns_required</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">t</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_record</span><span class="p">(</span>
+                    <span class="n">level</span><span class="o">=</span><span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s2">&quot;Missing table column: </span><span class="si">{!r}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">Unit</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span> <span class="o">!=</span> <span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+                    <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_record</span><span class="p">(</span>
+                        <span class="n">level</span><span class="o">=</span><span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="s2">&quot;Invalid unit for column: </span><span class="si">{!r}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                    <span class="p">)</span>
 </pre></div>
 
            </div>
@@ -1345,7 +1430,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 10 Sep 2018.
+      Last updated on 19 Sep 2018.
 
     </p>
   </div>
@@ -1367,7 +1452,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev7246',
+            VERSION:'0.8.dev7362',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.spectrum.flux_point &mdash; gammapy v0.8.dev7246</title>
+  <title>gammapy.spectrum.flux_point &mdash; gammapy v0.8.dev7362</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev7246
+                0.8.dev7362
               </div>
             
           
@@ -245,7 +245,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/spectrum_pipe.html#Select-data">Select data</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/spectrum_pipe.html#Configure-the-analysis">Configure the analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/spectrum_pipe.html#Run-the-analysis">Run the analysis</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/spectrum_pipe.html#Check-out-the-results">Check out the results</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/spectrum_pipe.html#Results">Results</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/spectrum_pipe.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -280,7 +280,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/sed_fitting_gammacat_fermi.html#Introduction">Introduction</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/sed_fitting_gammacat_fermi.html#Setup">Setup</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/sed_fitting_gammacat_fermi.html#Load-spectral-points">Load spectral points</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/sed_fitting_gammacat_fermi.html#Fitter-Setup">Fitter Setup</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/sed_fitting_gammacat_fermi.html#Power-Law-Fit">Power Law Fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/sed_fitting_gammacat_fermi.html#Exponential-Cut-Off-Powerlaw-Fit">Exponential Cut-Off Powerlaw Fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/sed_fitting_gammacat_fermi.html#Log-Parabola-Fit">Log-Parabola Fit</a></li>
@@ -670,12 +669,9 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../utils/index.html#id16">Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="../../../utils/index.html#module-gammapy.utils.modeling">gammapy.utils.modeling Module</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../utils/index.html#id17">Classes</a></li>
-</ul>
-</li>
 <li class="toctree-l3"><a class="reference internal" href="../../../utils/index.html#module-gammapy.utils.fitting">gammapy.utils.fitting Package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../utils/index.html#id18">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../utils/index.html#id17">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../utils/index.html#id18">Classes</a></li>
 </ul>
 </li>
 </ul>
@@ -990,7 +986,8 @@
 <span class="kn">from</span> <span class="nn">astropy.io.registry</span> <span class="k">import</span> <span class="n">IORegistryError</span>
 <span class="kn">from</span> <span class="nn">..utils.scripts</span> <span class="k">import</span> <span class="n">make_path</span>
 <span class="kn">from</span> <span class="nn">..utils.table</span> <span class="k">import</span> <span class="n">table_standardise_units_copy</span><span class="p">,</span> <span class="n">table_from_row_data</span>
-<span class="kn">from</span> <span class="nn">..utils.fitting</span> <span class="k">import</span> <span class="n">fit_iminuit</span>
+<span class="kn">from</span> <span class="nn">..utils.fitting</span> <span class="k">import</span> <span class="n">Fit</span>
+<span class="kn">from</span> <span class="nn">..stats.fit_statistics</span> <span class="k">import</span> <span class="n">chi2</span>
 <span class="kn">from</span> <span class="nn">.models</span> <span class="k">import</span> <span class="n">PowerLaw</span>
 <span class="kn">from</span> <span class="nn">.powerlaw</span> <span class="k">import</span> <span class="n">power_law_integral_flux</span>
 <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">SpectrumObservationList</span><span class="p">,</span> <span class="n">SpectrumObservation</span>
@@ -999,7 +996,7 @@
     <span class="s2">&quot;FluxPoints&quot;</span><span class="p">,</span>
     <span class="c1"># &#39;FluxPointProfiles&#39;,</span>
     <span class="s2">&quot;FluxPointEstimator&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;FluxPointFitter&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;FluxPointFit&quot;</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -1733,7 +1730,7 @@
         <span class="k">except</span> <span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
             <span class="c1"># Where the root finding fails NaN is set as amplitude</span>
             <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Flux point upper limit computation failed.&quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="n">fit</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;amplitude&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span></div>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;amplitude&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="FluxPointEstimator.compute_flux_point_sqrt_ts"><a class="viewcode-back" href="../../../api/gammapy.spectrum.FluxPointEstimator.html#gammapy.spectrum.FluxPointEstimator.compute_flux_point_sqrt_ts">[docs]</a>    <span class="k">def</span> <span class="nf">compute_flux_point_sqrt_ts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fit</span><span class="p">,</span> <span class="n">stat_best_fit</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1805,11 +1802,10 @@
             <span class="s2">&quot; in energy range:</span><span class="se">\n</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">)</span>
         <span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="o">.</span><span class="n">est_errors</span><span class="p">()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 
         <span class="c1"># compute TS value for all observations</span>
-        <span class="n">stat_best_fit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">([</span><span class="n">res</span><span class="o">.</span><span class="n">statval</span> <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="o">.</span><span class="n">result</span><span class="p">])</span>
+        <span class="n">stat_best_fit</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">total_stat</span>
 
         <span class="n">dnde</span><span class="p">,</span> <span class="n">dnde_err</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">evaluate_error</span><span class="p">(</span><span class="n">energy_ref</span><span class="p">)</span>
         <span class="n">sqrt_ts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_flux_point_sqrt_ts</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">,</span> <span class="n">stat_best_fit</span><span class="o">=</span><span class="n">stat_best_fit</span><span class="p">)</span>
@@ -1867,42 +1863,16 @@
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">table</span><span class="o">=</span><span class="n">table</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">chi2_flux_points</span><span class="p">(</span><span class="n">flux_points</span><span class="p">,</span> <span class="n">gp_model</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Chi2 statistics for a list of flux points and model.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">model</span> <span class="o">=</span> <span class="n">gp_model</span><span class="p">(</span><span class="n">flux_points</span><span class="o">.</span><span class="n">e_ref</span><span class="p">)</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">flux_points</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;dnde&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
-    <span class="n">data_err</span> <span class="o">=</span> <span class="n">flux_points</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;dnde_err&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
-    <span class="n">stat_per_bin</span> <span class="o">=</span> <span class="p">((</span><span class="n">data</span> <span class="o">-</span> <span class="n">model</span><span class="p">)</span> <span class="o">/</span> <span class="n">data_err</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="o">**</span> <span class="mi">2</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">(</span><span class="n">stat_per_bin</span><span class="p">),</span> <span class="n">stat_per_bin</span>
-
-
-<span class="k">def</span> <span class="nf">chi2_flux_points_assym</span><span class="p">(</span><span class="n">flux_points</span><span class="p">,</span> <span class="n">gp_model</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Assymetric chi2 statistics for a list of flux points and model.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">model</span> <span class="o">=</span> <span class="n">gp_model</span><span class="p">(</span><span class="n">flux_points</span><span class="o">.</span><span class="n">e_ref</span><span class="p">)</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="n">flux_points</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;dnde&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
-
-    <span class="n">data_errp</span> <span class="o">=</span> <span class="n">flux_points</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;dnde_errp&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
-    <span class="n">data_errn</span> <span class="o">=</span> <span class="n">flux_points</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;dnde_errn&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
-
-    <span class="n">data_err</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">model</span> <span class="o">&gt;</span> <span class="n">data</span><span class="p">,</span> <span class="n">data_errp</span><span class="p">,</span> <span class="n">data_errn</span><span class="p">)</span>
-    <span class="n">stat_per_bin</span> <span class="o">=</span> <span class="p">((</span><span class="n">data</span> <span class="o">-</span> <span class="n">model</span><span class="p">)</span> <span class="o">/</span> <span class="n">data_err</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="o">**</span> <span class="mi">2</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">(</span><span class="n">stat_per_bin</span><span class="p">),</span> <span class="n">stat_per_bin</span>
-
-
-<div class="viewcode-block" id="FluxPointFitter"><a class="viewcode-back" href="../../../api/gammapy.spectrum.FluxPointFitter.html#gammapy.spectrum.FluxPointFitter">[docs]</a><span class="k">class</span> <span class="nc">FluxPointFitter</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="FluxPointFit"><a class="viewcode-back" href="../../../api/gammapy.spectrum.FluxPointFit.html#gammapy.spectrum.FluxPointFit">[docs]</a><span class="k">class</span> <span class="nc">FluxPointFit</span><span class="p">(</span><span class="n">Fit</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fit a set of flux points with a parametric model.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    optimizer : {&#39;minuit&#39;}</span>
-<span class="sd">        Select optimizer</span>
-<span class="sd">    ul_handling : {&#39;ignore&#39;}</span>
-<span class="sd">        How to handle flux point upper limits in the fit</span>
+<span class="sd">    model : `~gammapy.spectrum.models.SpectralModel`</span>
+<span class="sd">        Spectral model (with fit start parameters)</span>
+<span class="sd">    data : `~gammapy.spectrum.FluxPoints`</span>
+<span class="sd">        Flux points.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
@@ -1910,7 +1880,7 @@
 <span class="sd">    Load flux points from file and fit with a power-law model::</span>
 
 <span class="sd">        from astropy import units as u</span>
-<span class="sd">        from gammapy.spectrum import FluxPoints, FluxPointFitter</span>
+<span class="sd">        from gammapy.spectrum import FluxPoints, FluxPointFit</span>
 <span class="sd">        from gammapy.spectrum.models import PowerLaw</span>
 
 <span class="sd">        filename = &#39;$GAMMAPY_EXTRA/test_datasets/spectrum/flux_points/diff_flux_points.fits&#39;</span>
@@ -1922,100 +1892,56 @@
 <span class="sd">            reference=1. * u.TeV,</span>
 <span class="sd">        )</span>
 
-<span class="sd">        fitter = FluxPointFitter()</span>
-<span class="sd">        result = fitter.run(flux_points, model)</span>
+<span class="sd">        fitter = FluxPointFit(model, flux_points)</span>
+<span class="sd">        result = fitter.run()</span>
 <span class="sd">        print(result[&#39;best_fit_model&#39;])</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">stat</span><span class="o">=</span><span class="s2">&quot;chi2&quot;</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="s2">&quot;minuit&quot;</span><span class="p">,</span> <span class="n">ul_handling</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">opts_minuit</span><span class="o">=</span><span class="kc">None</span>
-    <span class="p">):</span>
-        <span class="k">if</span> <span class="n">stat</span> <span class="o">==</span> <span class="s2">&quot;chi2&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">stat</span> <span class="o">=</span> <span class="n">chi2_flux_points</span>
-        <span class="k">elif</span> <span class="n">stat</span> <span class="o">==</span> <span class="s2">&quot;chi2assym&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">stat</span> <span class="o">=</span> <span class="n">chi2_flux_points_assym</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">stat</span><span class="o">=</span><span class="s2">&quot;chi2&quot;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+
+        <span class="k">if</span> <span class="n">stat</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;chi2&quot;</span><span class="p">,</span> <span class="s2">&quot;chi2assym&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stat</span> <span class="o">=</span> <span class="n">stat</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="s2">&quot;&#39;</span><span class="si">{stat}</span><span class="s2">&#39; is not a valid fit statistic, please choose&quot;</span>
                 <span class="s2">&quot; either &#39;chi2&#39; or &#39;chi2assym&#39;&quot;</span>
             <span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">ul_handling</span> <span class="o">!=</span> <span class="s2">&quot;ignore&quot;</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;No handling of upper limits implemented.&quot;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_stat_chi2</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Likelihood per bin given the current model parameters&quot;&quot;&quot;</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">e_ref</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;dnde&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
+        <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;dnde_err&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
+        <span class="k">return</span> <span class="p">((</span><span class="n">data</span> <span class="o">-</span> <span class="n">model</span><span class="p">)</span> <span class="o">/</span> <span class="n">sigma</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="o">**</span> <span class="mi">2</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span>
-            <span class="p">[</span>
-                <span class="p">(</span><span class="s2">&quot;stat&quot;</span><span class="p">,</span> <span class="n">stat</span><span class="p">),</span>
-                <span class="p">(</span><span class="s2">&quot;optimizer&quot;</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">),</span>
-                <span class="p">(</span><span class="s2">&quot;ul_handling&quot;</span><span class="p">,</span> <span class="n">ul_handling</span><span class="p">),</span>
-                <span class="p">(</span><span class="s2">&quot;opts_minuit&quot;</span><span class="p">,</span> <span class="n">opts_minuit</span><span class="p">),</span>
-            <span class="p">]</span>
-        <span class="p">)</span>
-
-<div class="viewcode-block" id="FluxPointFitter.fit"><a class="viewcode-back" href="../../../api/gammapy.spectrum.FluxPointFitter.html#gammapy.spectrum.FluxPointFitter.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_stat_chi2_assym</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Fit given model to data.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        model : `~gammapy.spectrum.models.SpectralModel`</span>
-<span class="sd">            Spectral model (with fit start parameters)</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        best_fit_model : `~gammapy.spectrum.models.SpectralModel`</span>
-<span class="sd">            Best fit model</span>
+<span class="sd">        Assymetric chi2 statistics for a list of flux points and model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
-        <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">e_ref</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;dnde&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
+        <span class="n">data_errp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;dnde_errp&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
+        <span class="n">data_errn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;dnde_errn&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
 
-        <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;optimizer&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;minuit&quot;</span><span class="p">:</span>
+        <span class="n">val_n</span> <span class="o">=</span> <span class="p">((</span><span class="n">data</span> <span class="o">-</span> <span class="n">model</span><span class="p">)</span> <span class="o">/</span> <span class="n">data_errn</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="n">val_p</span> <span class="o">=</span> <span class="p">((</span><span class="n">data</span> <span class="o">-</span> <span class="n">model</span><span class="p">)</span> <span class="o">/</span> <span class="n">data_errp</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">model</span> <span class="o">&gt;</span> <span class="n">data</span><span class="p">,</span> <span class="n">val_p</span><span class="p">,</span> <span class="n">val_n</span><span class="p">)</span>
 
-            <span class="k">def</span> <span class="nf">total_stat</span><span class="p">(</span><span class="n">parameters</span><span class="p">):</span>
-                <span class="n">model</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">parameters</span>
-                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-
-            <span class="n">minuit</span> <span class="o">=</span> <span class="n">fit_iminuit</span><span class="p">(</span>
-                <span class="n">parameters</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span>
-                <span class="n">function</span><span class="o">=</span><span class="n">total_stat</span><span class="p">,</span>
-                <span class="n">opts_minuit</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;opts_minuit&quot;</span><span class="p">],</span>
-            <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_minuit</span> <span class="o">=</span> <span class="n">minuit</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stat</span> <span class="o">==</span> <span class="s2">&quot;chi2&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stat_chi2</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Only the minuit fitting backend is supported.&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">model</span></div>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stat_chi2_assym</span>
 
-<div class="viewcode-block" id="FluxPointFitter.run"><a class="viewcode-back" href="../../../api/gammapy.spectrum.FluxPointFitter.html#gammapy.spectrum.FluxPointFitter.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Run all fitting and extra information steps.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        data : list of `~gammapy.spectrum.FluxPoints`</span>
-<span class="sd">            Flux points.</span>
-<span class="sd">        model : `~gammapy.spectrum.models.SpectralModel`</span>
-<span class="sd">            Spectral model</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        result : `~collections.OrderedDict`</span>
-<span class="sd">            Dictionary with fit results and debug output.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">best_fit_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
-        <span class="n">statval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">best_fit_model</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-
-        <span class="c1"># Compute degrees of freedom</span>
-        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">table</span><span class="p">)</span>
-        <span class="n">m</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">par</span> <span class="ow">in</span> <span class="n">best_fit_model</span><span class="o">.</span><span class="n">parameters</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">par</span><span class="o">.</span><span class="n">frozen</span><span class="p">)</span>
-        <span class="n">dof</span> <span class="o">=</span> <span class="n">n</span> <span class="o">-</span> <span class="n">m</span>
-
-        <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">(</span>
-            <span class="p">[</span>
-                <span class="p">(</span><span class="s2">&quot;best-fit-model&quot;</span><span class="p">,</span> <span class="n">best_fit_model</span><span class="p">),</span>
-                <span class="p">(</span><span class="s2">&quot;dof&quot;</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">dof</span><span class="p">)),</span>
-                <span class="p">(</span><span class="s2">&quot;statval&quot;</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">statval</span><span class="p">)),</span>
-                <span class="p">(</span><span class="s2">&quot;statval/dof&quot;</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">statval</span> <span class="o">/</span> <span class="n">dof</span><span class="p">)),</span>
-            <span class="p">]</span>
-        <span class="p">)</span></div></div>
+<div class="viewcode-block" id="FluxPointFit.total_stat"><a class="viewcode-back" href="../../../api/gammapy.spectrum.FluxPointFit.html#gammapy.spectrum.FluxPointFit.total_stat">[docs]</a>    <span class="k">def</span> <span class="nf">total_stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameters</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Total likelihood given the current model parameters&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">parameters</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stat</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span></div></div>
 </pre></div>
 
            </div>
@@ -2029,7 +1955,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 10 Sep 2018.
+      Last updated on 19 Sep 2018.
 
     </p>
   </div>
@@ -2051,7 +1977,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../',
-            VERSION:'0.8.dev7246',
+            VERSION:'0.8.dev7362',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

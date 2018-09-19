@@ -9,14 +9,14 @@
 
 # ## Imports and versions
 
-# In[1]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 
 
-# In[2]:
+# In[ ]:
 
 
 import numpy as np
@@ -33,7 +33,7 @@ from gammapy.image.models import SkyGaussian, SkyPointSource
 from regions import CircleSkyRegion
 
 
-# In[3]:
+# In[ ]:
 
 
 get_ipython().system('gammapy info --no-envvar --no-dependencies --no-system')
@@ -41,16 +41,16 @@ get_ipython().system('gammapy info --no-envvar --no-dependencies --no-system')
 
 # ## Make maps
 
-# In[4]:
+# In[ ]:
 
 
 # Define which data to use
-data_store = DataStore.from_dir("$GAMMAPY_EXTRA/datasets/cta-1dc/index/gps/")
+data_store = DataStore.from_dir("$CTADATA/index/gps/")
 obs_ids = [110380, 111140, 111159]
 obs_list = data_store.obs_list(obs_ids)
 
 
-# In[5]:
+# In[ ]:
 
 
 # Define map geometry (spatial and energy binning)
@@ -67,31 +67,31 @@ geom = WcsGeom.create(
 )
 
 
-# In[6]:
+# In[ ]:
 
 
 get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, 4. * u.deg)\nmaps = maker.run(obs_list)')
 
 
-# In[7]:
+# In[ ]:
 
 
 get_ipython().run_cell_magic('time', '', '# Make 2D images (for plotting, analysis will be 3D)\nimages = maker.make_images()')
 
 
-# In[8]:
+# In[ ]:
 
 
 images["counts"].smooth(radius=0.2 * u.deg).plot(stretch="sqrt");
 
 
-# In[9]:
+# In[ ]:
 
 
 images["background"].plot(stretch="sqrt");
 
 
-# In[10]:
+# In[ ]:
 
 
 residual = images["counts"].copy()
@@ -103,7 +103,7 @@ residual.smooth(5).plot(stretch="sqrt");
 # 
 # For the moment we rely on the ObservationList.make_mean_psf() method.
 
-# In[11]:
+# In[ ]:
 
 
 get_ipython().run_cell_magic('time', '', 'obs_list = data_store.obs_list(obs_ids)\nsrc_pos = SkyCoord(0, 0, unit="deg", frame="galactic")\n\ntable_psf = obs_list.make_mean_psf(src_pos)\npsf_kernel = PSFKernel.from_table_psf(\n    table_psf, maps["exposure"].geom, max_radius="0.3 deg"\n)')
@@ -111,7 +111,7 @@ get_ipython().run_cell_magic('time', '', 'obs_list = data_store.obs_list(obs_ids
 
 # ## Compute energy dispersion
 
-# In[12]:
+# In[ ]:
 
 
 get_ipython().run_cell_magic('time', '', 'energy_axis = geom.get_axis_by_name("energy")\nenergy = energy_axis.edges * energy_axis.unit\nedisp = obs_list.make_mean_edisp(\n    position=src_pos, e_true=energy, e_reco=energy\n)')
@@ -129,7 +129,7 @@ get_ipython().run_cell_magic('time', '', 'energy_axis = geom.get_axis_by_name("e
 # and then read them from your script that does the likelihood fitting without
 # having to run the precomputations again.
 
-# In[13]:
+# In[ ]:
 
 
 # Write
@@ -142,7 +142,7 @@ psf_kernel.write(str(path / "psf.fits"), overwrite=True)
 edisp.write(str(path / "edisp.fits"), overwrite=True)
 
 
-# In[14]:
+# In[ ]:
 
 
 # Read
@@ -159,7 +159,7 @@ edisp = EnergyDispersion.read(str(path / "edisp.fits"))
 # 
 # Let's cut out only part of the map, so that we can have a faster fit
 
-# In[15]:
+# In[ ]:
 
 
 cmaps = {
@@ -173,7 +173,7 @@ cmaps["counts"].sum_over_axes().plot(stretch="sqrt");
 # 
 # To select a certain region and/or energy range for the fit we can create a fit mask.
 
-# In[16]:
+# In[ ]:
 
 
 mask = Map.from_geom(cmaps["counts"].geom)
@@ -186,7 +186,7 @@ mask.get_image_by_idx((0,)).plot();
 
 # In addition we also exclude the range below 0.3 TeV for the fit:
 
-# In[17]:
+# In[ ]:
 
 
 coords = mask.geom.get_coord()
@@ -198,7 +198,7 @@ mask.data &= coords["energy"] > 0.3
 # - TODO: Add diffuse emission model? (it's 800 MB, maybe prepare a cutout)
 # - TODO: compare against true model known for DC1
 
-# In[18]:
+# In[ ]:
 
 
 spatial_model = SkyPointSource(lon_0="0.01 deg", lat_0="0.01 deg")
@@ -208,10 +208,10 @@ spectral_model = PowerLaw(
 model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
 
 
-# In[19]:
+# In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'fit = MapFit(\n    model=model,\n    counts=cmaps["counts"],\n    exposure=cmaps["exposure"],\n    background=cmaps["background"],\n    mask=mask,\n    psf=psf_kernel,\n    edisp=edisp,\n)\n\nfit.fit(opts_minuit={\'print_level\':1})')
+get_ipython().run_cell_magic('time', '', 'fit = MapFit(\n    model=model,\n    counts=cmaps["counts"],\n    exposure=cmaps["exposure"],\n    background=cmaps["background"],\n    mask=mask,\n    psf=psf_kernel,\n    edisp=edisp,\n)\n\nresult = fit.run(optimize_opts={"print_level": 1})')
 
 
 # ## Check model fit
@@ -219,34 +219,40 @@ get_ipython().run_cell_magic('time', '', 'fit = MapFit(\n    model=model,\n    c
 # - plot counts spectrum for some on region (e.g. the one used in 1D spec analysis, 0.2 deg)
 # - plot residual image for some energy band (e.g. the total one used here)
 
-# In[20]:
+# In[ ]:
 
 
 # Parameter error are not synched back to
 # sub model components automatically yet
-spec = model.spectral_model.copy()
+spec = result.model.spectral_model
 print(spec)
 
 
-# In[21]:
+# In[ ]:
 
 
 # For now, we can copy the parameter error manually
 spec.parameters.set_parameter_errors(
     {
-        "index": model.parameters.error("index"),
-        "amplitude": model.parameters.error("amplitude"),
+        "index": result.model.parameters.error("index"),
+        "amplitude": result.model.parameters.error("amplitude"),
     }
 )
 print(spec)
 
 
-# In[22]:
+# In[ ]:
 
 
 energy_range = [0.1, 10] * u.TeV
 spec.plot(energy_range, energy_power=2)
 spec.plot_error(energy_range, energy_power=2);
+
+
+# In[ ]:
+
+
+result.model.parameters.covariance = 10
 
 
 # ## Exercises

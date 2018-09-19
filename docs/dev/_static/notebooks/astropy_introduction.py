@@ -23,7 +23,7 @@
 # 
 # ## Setup
 
-# In[1]:
+# In[ ]:
 
 
 # to make plots appear in the notebook
@@ -31,7 +31,7 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 
 
-# In[2]:
+# In[ ]:
 
 
 # If something below doesn't work, here's how you
@@ -40,12 +40,13 @@ import matplotlib.pyplot as plt
 # most even with Astropy 1.0
 import numpy as np
 import astropy
+import os
 
 print("numpy:", np.__version__)
 print("astropy:", astropy.__version__)
 
 
-# In[3]:
+# In[ ]:
 
 
 # Units, Quantities and constants
@@ -63,7 +64,7 @@ from astropy.time import Time
 # 
 # ### Basic usage
 
-# In[4]:
+# In[ ]:
 
 
 # One can create a Quantity like this
@@ -75,14 +76,14 @@ d = 8 * u.kpc
 flux = L / (4 * np.pi * d ** 2)
 
 
-# In[5]:
+# In[ ]:
 
 
 # And convert its value to an equivalent unit
 flux.to("erg cm-2 s-1")
 
 
-# In[6]:
+# In[ ]:
 
 
 flux.to("W/m2")
@@ -90,7 +91,7 @@ flux.to("W/m2")
 
 # More generally a Quantity is a numpy array with a unit.
 
-# In[7]:
+# In[ ]:
 
 
 E = np.logspace(1, 4, 10) * u.GeV
@@ -99,7 +100,7 @@ E.to("TeV")
 
 # Here we compute the interaction time of protons.
 
-# In[8]:
+# In[ ]:
 
 
 x_eff = 30 * u.mbarn
@@ -114,7 +115,7 @@ interaction_time.to("Myr")
 # 
 # We compute here the energy loss rate of an electron of kinetic energy E in magnetic field B. See formula (5B10) in this [lecture](http://www.cv.nrao.edu/course/astr534/SynchrotronPower.html)
 
-# In[9]:
+# In[ ]:
 
 
 def electron_energy_loss_rate(B, E):
@@ -131,7 +132,7 @@ def electron_energy_loss_rate(B, E):
 print(electron_energy_loss_rate(1e-5 * u.G, 1 * u.TeV).to("erg/s"))
 
 
-# In[10]:
+# In[ ]:
 
 
 # Now plot it
@@ -143,7 +144,7 @@ plt.loglog(E_elec, y);
 
 # A frequent issue is homogeneity. One can use decorators to ensure it.
 
-# In[11]:
+# In[ ]:
 
 
 # This ensures that B and E are homogeneous to magnetic field strength and energy
@@ -171,7 +172,7 @@ except u.UnitsError as message:
 # 
 # Note that SkyCoord are arrays of coordinates. We will see that in more detail in the next section.
 
-# In[12]:
+# In[ ]:
 
 
 # Different ways to create a SkyCoord
@@ -192,7 +193,7 @@ print("Distance to Crab: ", c1.separation(c2).degree)
 # 
 # How to change between coordinate frames. The Crab in Galactic coordinates.
 
-# In[13]:
+# In[ ]:
 
 
 c2b = c2.galactic
@@ -204,7 +205,7 @@ print(c2b.l, c2b.b)
 # 
 # Is the Crab visible now?
 
-# In[14]:
+# In[ ]:
 
 
 now = Time.now()
@@ -212,7 +213,7 @@ print(now)
 print(now.mjd)
 
 
-# In[15]:
+# In[ ]:
 
 
 # define the location for the AltAz system
@@ -233,20 +234,21 @@ print(crab_altaz)
 # ### Accessing the table
 # First, we need to open the catalog in a Table. 
 
-# In[16]:
+# In[ ]:
 
 
 # Open Fermi 3FGL from the repo
-table = Table.read("../datasets/catalogs/fermi/gll_psc_v16.fit.gz", hdu=1)
+filename = os.environ['GAMMAPY_EXTRA']+'/datasets/catalogs/fermi/gll_psc_v16.fit.gz'
+table = Table.read(filename, hdu=1)
 # Alternatively, one can grab it from the server.
 # table = Table.read("http://fermi.gsfc.nasa.gov/ssc/data/access/lat/4yr_catalog/gll_psc_v16.fit")
 
 
-# In[17]:
+# In[ ]:
 
 
 # Note that a single FITS file might contain different tables in different HDUs
-filename = "../datasets/catalogs/fermi/gll_psc_v16.fit.gz"
+filename = os.environ['GAMMAPY_EXTRA']+'/datasets/catalogs/fermi/gll_psc_v16.fit.gz'
 # You can load a `fits.HDUList` and check the extension names
 print([_.name for _ in fits.open(filename)])
 # Then you can load by name or integer index via the `hdu` option
@@ -256,27 +258,27 @@ extended_source_table = Table.read(filename, hdu="ExtendedSources")
 # ### General informations on the Table
 # 
 
-# In[18]:
+# In[ ]:
 
 
 table.info()
 
 
-# In[19]:
+# In[ ]:
 
 
 # Statistics on each column
 table.info("stats")
 
 
-# In[20]:
+# In[ ]:
 
 
 ### list of column names
 table.colnames
 
 
-# In[21]:
+# In[ ]:
 
 
 # HTML display
@@ -286,7 +288,7 @@ table.colnames
 
 # ### Accessing the table
 
-# In[22]:
+# In[ ]:
 
 
 # The header keywords are stored as a dict
@@ -294,21 +296,21 @@ table.colnames
 table.meta["TSMIN"]
 
 
-# In[23]:
+# In[ ]:
 
 
 # First row
 table[0]
 
 
-# In[24]:
+# In[ ]:
 
 
 # Spectral index of the 5 first entries
 table[:5]["Spectral_Index"]
 
 
-# In[25]:
+# In[ ]:
 
 
 # Which source has the lowest spectral index?
@@ -332,14 +334,14 @@ print(
 
 # ### Quantities and SkyCoords from a Table
 
-# In[26]:
+# In[ ]:
 
 
 fluxes = table["nuFnu1000_3000"].quantity
 fluxes
 
 
-# In[27]:
+# In[ ]:
 
 
 coord = SkyCoord(table["GLON"], table["GLAT"], frame="galactic")
@@ -350,7 +352,7 @@ coord.fk5
 # 
 # Here we select Sources according to their class and do some whole sky chart
 
-# In[28]:
+# In[ ]:
 
 
 # Get coordinates of FSRQs
@@ -359,7 +361,7 @@ fsrq = np.where(
 )
 
 
-# In[29]:
+# In[ ]:
 
 
 # This is here for plotting purpose...
@@ -379,7 +381,7 @@ ax.legend()
 # ax.invert_xaxis()  -> This does not work for projections...
 
 
-# In[30]:
+# In[ ]:
 
 
 # Now do it for a series of classes
@@ -412,7 +414,7 @@ ax.legend();
 # 
 # Here's one way to create a `Table` from scratch: put the data into a list of dicts, and then call the `Table` constructor with the `rows` option.
 
-# In[31]:
+# In[ ]:
 
 
 rows = [dict(a=42, b="spam"), dict(a=43, b="ham")]
@@ -425,7 +427,7 @@ my_table
 # Writing tables to files is easy, you can just give the filename and format you want.
 # If you run a script repeatedly you might want to add `overwrite=True`.
 
-# In[32]:
+# In[ ]:
 
 
 # Examples how to write a table in different formats
@@ -440,7 +442,7 @@ my_table
 # The `table.write` API doesn't support that directly yet.
 # Here's how you can currently write multiple tables to a FITS file: you have to convert the `astropy.table.Table` objects to `astropy.io.fits.BinTable` objects, and then store them in a `astropy.io.fits.HDUList` objects and call `HDUList.writeto`.
 
-# In[33]:
+# In[ ]:
 
 
 my_table2 = Table(data=dict(a=[1, 2, 3]))
@@ -467,7 +469,7 @@ hdu_list = fits.HDUList(
 # 
 # One little trick is needed when converting to a dataframe: we need to drop the multi-dimensional columns that the 3FGL catalog uses for a few columns (flux up/down errors, and lightcurves):
 
-# In[34]:
+# In[ ]:
 
 
 scalar_colnames = tuple(
@@ -476,7 +478,7 @@ scalar_colnames = tuple(
 data_frame = table[scalar_colnames].to_pandas()
 
 
-# In[35]:
+# In[ ]:
 
 
 # If you want to have a quick-look at the dataframe:
@@ -485,7 +487,7 @@ data_frame = table[scalar_colnames].to_pandas()
 # data_frame.describe()
 
 
-# In[36]:
+# In[ ]:
 
 
 # Just do demonstrate one of the useful DataFrame methods,

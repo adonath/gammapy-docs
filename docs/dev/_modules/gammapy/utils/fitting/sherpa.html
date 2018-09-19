@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.utils.fitting.sherpa &mdash; gammapy v0.8.dev7246</title>
+  <title>gammapy.utils.fitting.sherpa &mdash; gammapy v0.8.dev7362</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev7246
+                0.8.dev7362
               </div>
             
           
@@ -245,7 +245,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/spectrum_pipe.html#Select-data">Select data</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/spectrum_pipe.html#Configure-the-analysis">Configure the analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/spectrum_pipe.html#Run-the-analysis">Run the analysis</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/spectrum_pipe.html#Check-out-the-results">Check out the results</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/spectrum_pipe.html#Results">Results</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/spectrum_pipe.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -280,7 +280,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/sed_fitting_gammacat_fermi.html#Introduction">Introduction</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/sed_fitting_gammacat_fermi.html#Setup">Setup</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/sed_fitting_gammacat_fermi.html#Load-spectral-points">Load spectral points</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/sed_fitting_gammacat_fermi.html#Fitter-Setup">Fitter Setup</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/sed_fitting_gammacat_fermi.html#Power-Law-Fit">Power Law Fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/sed_fitting_gammacat_fermi.html#Exponential-Cut-Off-Powerlaw-Fit">Exponential Cut-Off Powerlaw Fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/sed_fitting_gammacat_fermi.html#Log-Parabola-Fit">Log-Parabola Fit</a></li>
@@ -670,12 +669,9 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../../utils/index.html#id16">Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="../../../../utils/index.html#module-gammapy.utils.modeling">gammapy.utils.modeling Module</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../../utils/index.html#id17">Classes</a></li>
-</ul>
-</li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../utils/index.html#module-gammapy.utils.fitting">gammapy.utils.fitting Package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../../utils/index.html#id18">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../utils/index.html#id17">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../utils/index.html#id18">Classes</a></li>
 </ul>
 </li>
 </ul>
@@ -981,8 +977,9 @@
             
   <h1>Source code for gammapy.utils.fitting.sherpa</h1><div class="highlight"><pre>
 <span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">absolute_import</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">unicode_literals</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;fit_sherpa&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;optimize_sherpa&quot;</span><span class="p">]</span>
 
 
 <span class="k">def</span> <span class="nf">get_sherpa_optimiser</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
@@ -1013,10 +1010,10 @@
 
     <span class="k">def</span> <span class="nf">fcn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factors</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">set_parameter_factors</span><span class="p">(</span><span class="n">factors</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">function</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">function</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">),</span> <span class="mi">0</span>
 
 
-<div class="viewcode-block" id="fit_sherpa"><a class="viewcode-back" href="../../../../api/gammapy.utils.fitting.fit_sherpa.html#gammapy.utils.fitting.fit_sherpa">[docs]</a><span class="k">def</span> <span class="nf">fit_sherpa</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">function</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="s2">&quot;simplex&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="optimize_sherpa"><a class="viewcode-back" href="../../../../api/gammapy.utils.fitting.optimize_sherpa.html#gammapy.utils.fitting.optimize_sherpa">[docs]</a><span class="k">def</span> <span class="nf">optimize_sherpa</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">function</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Sherpa optimization wrapper method.</span>
 
 <span class="sd">    Parameters</span>
@@ -1025,20 +1022,17 @@
 <span class="sd">        Parameter list with starting values.</span>
 <span class="sd">    function : callable</span>
 <span class="sd">        Likelihood function</span>
-<span class="sd">    optimizer : {&#39;levmar&#39;, &#39;simplex&#39;, &#39;moncar&#39;, &#39;gridsearch&#39;}</span>
-<span class="sd">        Which optimizer to use for the fit. See</span>
-<span class="sd">        http://cxc.cfa.harvard.edu/sherpa/methods/index.html</span>
-<span class="sd">        for details on the different options available.</span>
+<span class="sd">    **kwargs : dict</span>
+<span class="sd">        Options passed to the optimizer instance.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
-<span class="sd">    parameters : `~gammapy.utils.modeling.Parameters`</span>
-<span class="sd">        Parameter list with best-fit values</span>
+<span class="sd">    result : (factors, info, optimizer)</span>
+<span class="sd">        Tuple containing the best fit factors, some info and the optimizer instance.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">get_sherpa_optimiser</span><span class="p">(</span><span class="n">optimizer</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">parameters</span><span class="o">.</span><span class="n">covariance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">parameters</span><span class="o">.</span><span class="n">autoscale</span><span class="p">()</span>
+    <span class="n">method</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;method&quot;</span><span class="p">,</span> <span class="s2">&quot;simplex&quot;</span><span class="p">)</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">get_sherpa_optimiser</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+    <span class="n">optimizer</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="n">pars</span> <span class="o">=</span> <span class="p">[</span><span class="n">par</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">par</span> <span class="ow">in</span> <span class="n">parameters</span><span class="o">.</span><span class="n">parameters</span><span class="p">]</span>
     <span class="n">parmins</span> <span class="o">=</span> <span class="p">[</span><span class="n">par</span><span class="o">.</span><span class="n">min</span> <span class="k">for</span> <span class="n">par</span> <span class="ow">in</span> <span class="n">parameters</span><span class="o">.</span><span class="n">parameters</span><span class="p">]</span>
@@ -1046,24 +1040,14 @@
 
     <span class="n">statfunc</span> <span class="o">=</span> <span class="n">SherpaFunction</span><span class="p">(</span><span class="n">function</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
 
-    <span class="n">result</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-        <span class="n">statfunc</span><span class="o">=</span><span class="n">statfunc</span><span class="o">.</span><span class="n">fcn</span><span class="p">,</span> <span class="n">pars</span><span class="o">=</span><span class="n">pars</span><span class="p">,</span> <span class="n">parmins</span><span class="o">=</span><span class="n">parmins</span><span class="p">,</span> <span class="n">parmaxes</span><span class="o">=</span><span class="n">parmaxes</span>
-    <span class="p">)</span>
+    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">statfunc</span><span class="o">=</span><span class="n">statfunc</span><span class="o">.</span><span class="n">fcn</span><span class="p">,</span> <span class="n">pars</span><span class="o">=</span><span class="n">pars</span><span class="p">,</span> <span class="n">parmins</span><span class="o">=</span><span class="n">parmins</span><span class="p">,</span> <span class="n">parmaxes</span><span class="o">=</span><span class="n">parmaxes</span>
+        <span class="p">)</span>
 
-    <span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-        <span class="s2">&quot;factors&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
-        <span class="s2">&quot;statval&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
-        <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span>
-        <span class="s2">&quot;info&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span>  <span class="c1"># that&#39;s a dict, content varies based on optimiser</span>
-    <span class="p">}</span>
+    <span class="n">info</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="s2">&quot;nfev&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="mi">4</span><span class="p">][</span><span class="s2">&quot;nfev&quot;</span><span class="p">]}</span>
 
-    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;nfev&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;info&quot;</span><span class="p">][</span><span class="s2">&quot;nfev&quot;</span><span class="p">]</span>
-
-    <span class="c1"># Copy final results into the parameters object</span>
-    <span class="n">parameters</span><span class="o">.</span><span class="n">set_parameter_factors</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;factors&quot;</span><span class="p">])</span>
-
-    <span class="k">return</span> <span class="n">result</span></div>
+    <span class="k">return</span> <span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">info</span><span class="p">,</span> <span class="n">optimizer</span></div>
 </pre></div>
 
            </div>
@@ -1077,7 +1061,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 10 Sep 2018.
+      Last updated on 19 Sep 2018.
 
     </p>
   </div>
@@ -1099,7 +1083,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.8.dev7246',
+            VERSION:'0.8.dev7362',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',

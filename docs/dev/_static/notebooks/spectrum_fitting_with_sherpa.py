@@ -5,19 +5,18 @@
 # 
 # Once we have exported the spectral files (PHA, ARF, RMF and BKG) in the OGIP format, it becomes possible to fit them later with gammapy or with any existing OGIP compliant tool such as XSpec or sherpa.
 # 
-# We show here how to do so with sherpa using the high-level user interface. For a general view on how to use stand-alone sherpa, see this [tutorial](http://nbviewer.jupyter.org/github/sherpa/sherpa/blob/master/docs/SherpaQuickStart.ipynb)
+# We show here how to do so with sherpa using the high-level user interface. For a general view on how to use stand-alone sherpa, see https://sherpa.readthedocs.io.
 
 # ## Load data stack
 # 
-# We first need to import the user interface and load the data with [load_data](http://cxc.harvard.edu/sherpa/ahelp/load_data.html). One can load files one by one, or more simply load them all at once through a [DataStack](http://cxc.harvard.edu/sherpa/ahelp/datastack.html).
+# - We first need to import the user interface and load the data with [load_data](http://cxc.harvard.edu/sherpa/ahelp/load_data.html).
+# - One can load files one by one, or more simply load them all at once through a [DataStack](http://cxc.harvard.edu/sherpa/ahelp/datastack.html).
 
-# In[1]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
-
-plt.style.use("ggplot")
 
 import glob  # to list files
 from os.path import expandvars
@@ -25,19 +24,19 @@ from sherpa.astro.datastack import DataStack
 import sherpa.astro.datastack as sh
 
 
-# In[2]:
+# In[ ]:
 
 
 import sherpa
 
-print("sherpa:", sherpa.__version__)
+sherpa.__version__
 
 
-# In[3]:
+# In[ ]:
 
 
 ds = DataStack()
-ANALYSIS_DIR = expandvars("$GAMMAPY_EXTRA/datasets/hess-crab4_pha/")
+ANALYSIS_DIR = expandvars("$GAMMAPY_EXTRA/datasets/joint-crab/spectra/hess/")
 filenames = glob.glob(ANALYSIS_DIR + "pha_obs*.fits")
 for filename in filenames:
     sh.load_data(ds, filename)
@@ -52,7 +51,7 @@ ds.show_stack()
 # 
 # Here we start with a simple PL.
 
-# In[4]:
+# In[ ]:
 
 
 # Define the source model
@@ -69,9 +68,9 @@ print(p1)
 
 # ## Fit and error estimation
 # 
-# We need to set the correct statistic: [WSTAT](http://cxc.harvard.edu/sherpa/ahelp/wstat.html). We use functions [set_stat](http://cxc.harvard.edu/sherpa/ahelp/set_stat.html) to define the fit statistic, [notice](http://cxc.harvard.edu/sherpa/ahelp/notice.html) to set the energy range, and [fit](http://cxc.harvard.edu/sherpa/ahelp/fit.html)
+# We need to set the correct statistic: [WSTAT](http://cxc.harvard.edu/sherpa/ahelp/wstat.html). We use functions [set_stat](http://cxc.harvard.edu/sherpa/ahelp/set_stat.html) to define the fit statistic, [notice](http://cxc.harvard.edu/sherpa/ahelp/notice.html) to set the energy range, and [fit](http://cxc.harvard.edu/sherpa/ahelp/fit.html).
 
-# In[5]:
+# In[ ]:
 
 
 ### Define the statistic
@@ -88,7 +87,7 @@ ds.fit()
 # 
 # Note that sherpa does not provide flux points. It also only provides plot for each individual spectrum.
 
-# In[6]:
+# In[ ]:
 
 
 sh.get_data_plot_prefs()["xlog"] = True
@@ -100,14 +99,14 @@ ds.plot_fit()
 # 
 # We use [conf](http://cxc.harvard.edu/sherpa/ahelp/conf.html) and [reg_proj](http://cxc.harvard.edu/sherpa/ahelp/reg_proj.html) functions.
 
-# In[7]:
+# In[ ]:
 
 
 # Compute confidence intervals
 ds.conf()
 
 
-# In[8]:
+# In[ ]:
 
 
 # Compute confidence contours for amplitude and index

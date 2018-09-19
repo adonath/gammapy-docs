@@ -47,14 +47,14 @@
 # 
 # In case you're new to Jupyter notebooks: to execute a cell, select it, then type "SHIFT" + "ENTER".
 
-# In[1]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 
 
-# In[2]:
+# In[ ]:
 
 
 import numpy as np
@@ -82,13 +82,13 @@ print("gammapy:", gammapy.__version__)
 # Assuming you've followed the instructions, you should have the ``CTADATA`` environment variable pointing to the folder where all data is located. (Gammapy doesn't need or use the ``CALDB`` environment variable.)
 # 
 
-# In[3]:
+# In[ ]:
 
 
 get_ipython().system('echo $CTADATA')
 
 
-# In[4]:
+# In[ ]:
 
 
 get_ipython().system('ls $CTADATA')
@@ -107,7 +107,7 @@ get_ipython().system('ls $CTADATA')
 # * you either have to exit the "jupyter notebook" command on your terminal, set the environment variable (I'm using bash and added the command `export CTADATA=/Users/deil/work/cta-dc/data/1dc/1dc` to my `~/.profile` file and then did `source ~/.profile`), then re-start Jupyter and this notebook.
 # * or you can set the environment variable by uncommentting the code in the following cell, setting the correct path, then executing it.
 
-# In[5]:
+# In[ ]:
 
 
 # import os
@@ -125,25 +125,25 @@ get_ipython().system('ls $CTADATA')
 # 
 # First, the EVENT data (RA, DEC, ENERGY, TIME of each photon or hadronic background event) is in the `data/baseline` folder, with one observation per file. The "baseline" refers to the assumed CTA array that was used to simulate the observations. The number in the filename is the observation identifier `OBS_ID` of the observation. Observations are ~ 30 minutes, pointing at a fixed location on the sky.
 
-# In[6]:
+# In[ ]:
 
 
 get_ipython().system('ls $CTADATA')
 
 
-# In[7]:
+# In[ ]:
 
 
 get_ipython().system('ls $CTADATA/data/baseline')
 
 
-# In[8]:
+# In[ ]:
 
 
 get_ipython().system('ls $CTADATA/data/baseline/gps | head -n3')
 
 
-# In[9]:
+# In[ ]:
 
 
 # There's 3270 observations and 11 GB of event data for the gps dataset
@@ -153,7 +153,7 @@ get_ipython().system('du -hs $CTADATA/data/baseline/gps')
 
 # Let's open up the first event list using the Gammapy `EventList` class, which contains the ``EVENTS`` table data via the ``table`` attribute as an Astropy `Table` object.
 
-# In[10]:
+# In[ ]:
 
 
 from gammapy.data import EventList
@@ -163,41 +163,41 @@ print(type(events))
 print(type(events.table))
 
 
-# In[11]:
+# In[ ]:
 
 
 # First event (using [] for "indexing")
 events.table[0]
 
 
-# In[12]:
+# In[ ]:
 
 
 # First few events (using [] for "slicing")
 events.table[:2]
 
 
-# In[13]:
+# In[ ]:
 
 
 # Event times can be accessed as Astropy Time objects
 print(type(events.time))
 
 
-# In[14]:
+# In[ ]:
 
 
 events.time[:2]
 
 
-# In[15]:
+# In[ ]:
 
 
 # Convert event time to more human-readable format
 print(events.time[:2].fits)
 
 
-# In[16]:
+# In[ ]:
 
 
 # Event positions can be accessed as Astropy SkyCoord objects
@@ -205,13 +205,13 @@ print(type(events.radec))
 events.radec[:2]
 
 
-# In[17]:
+# In[ ]:
 
 
 events.galactic[:2]
 
 
-# In[18]:
+# In[ ]:
 
 
 # The event header information is stored
@@ -219,7 +219,7 @@ events.galactic[:2]
 print(type(events.table.meta))
 
 
-# In[19]:
+# In[ ]:
 
 
 # E.g. to get the observation pointing position in degrees:
@@ -237,7 +237,7 @@ events.table.meta["RA_PNT"], events.table.meta["DEC_PNT"]
 # To illustrate a bit how to work with EVENT table an header data,
 # let's plot the event positions as well as the pointing position.
 
-# In[20]:
+# In[ ]:
 
 
 # Event positions
@@ -257,7 +257,7 @@ pos_pnt
 # 
 # Let's have a look at the event energy distribution.
 
-# In[21]:
+# In[ ]:
 
 
 energy = events.table["ENERGY"].data
@@ -275,7 +275,7 @@ plt.ylabel("Number of events")
 # One idea could be to split the data into gamma-ray and hadronic background events.
 # Now from looking at the FITS header, one can see that ``MC_ID == 1`` is the hadronic background, and the other values are for different gamma-ray emission components.
 
-# In[22]:
+# In[ ]:
 
 
 is_gamma = events.table["MC_ID"] != 1
@@ -284,7 +284,7 @@ print("Number of gammas: ", is_gamma.sum())
 print("Number of hadrons: ", len(events.table) - is_gamma.sum())
 
 
-# In[23]:
+# In[ ]:
 
 
 energy = events.table["ENERGY"].data
@@ -318,7 +318,7 @@ plt.legend()
 # 
 # I presume (hope) this unnecessary information will be dropped from the CTA event lists in the future to save some space (make the CTA DL3 data ~25% smaller), but for now, let's use those columns to compute the field of view offset and look at the offset-energy distribution of the events.
 
-# In[24]:
+# In[ ]:
 
 
 energy_bins = 10 ** np.linspace(-2, 2, 100)
@@ -347,7 +347,7 @@ plt.ylabel("Offset (deg)")
 # 
 # We will just use `astropy.table.Table` directly, not go via the `gammapy.data.EventList` class. Note that you can always make an `EventList` object from a `Table` object via `event_list = EventList(table)`. One point to keep in mind is that `Table.read` doesn't resolve environment variables in filenames, so we'll use the Python standard library `os` package to construct the filenames.
 
-# In[25]:
+# In[ ]:
 
 
 import os
@@ -367,13 +367,13 @@ tables = [t1, t2]
 table = table_vstack(tables, metadata_conflicts="silent")
 
 
-# In[26]:
+# In[ ]:
 
 
 print("Number of events: ", len(table))
 
 
-# In[27]:
+# In[ ]:
 
 
 # Let's select gamma rays with energy above 10 TeV
@@ -398,13 +398,13 @@ print("Number of events after selection:", len(table2))
 # 
 # For now, the EVENT to IRF association (i.e. which IRF is the right one for given EVENTS) is done by index files. We will discuss those in the next section, but before we do, let's look at the CTA IRFs for one given configuration: `South_z20_50h`.
 
-# In[28]:
+# In[ ]:
 
 
 get_ipython().system('(cd $CTADATA && tree caldb)')
 
 
-# In[29]:
+# In[ ]:
 
 
 # Let's look at the content of one of the IRF FITS files.
@@ -423,7 +423,7 @@ hdu_list.info()
 # 
 # The effective area is given as a 2-dim array with energy and field of view offset axes.
 
-# In[30]:
+# In[ ]:
 
 
 from gammapy.irf import EffectiveAreaTable2D
@@ -433,26 +433,26 @@ print(type(aeff))
 print(type(aeff.data))
 
 
-# In[31]:
+# In[ ]:
 
 
 print(aeff.data)
 
 
-# In[32]:
+# In[ ]:
 
 
 aeff.peek()
 
 
-# In[33]:
+# In[ ]:
 
 
 # What is the on-axis effective area at 10 TeV?
 aeff.data.evaluate(energy="10 TeV", offset="0 deg").to("km2")
 
 
-# In[34]:
+# In[ ]:
 
 
 # This is how you slice out an `EffectiveAreaTable` object
@@ -469,7 +469,7 @@ aeff.to_effective_area_table(offset="1 deg")
 # At ~100 GeV, the MSTs take over and EDISP is chaotic in the ~ 50 GeV to 100 GeV energy range.
 # So it can be useful to have quick access to IRFs like with Gammapy (e.g. for spectral line searches in this case), even if for 95% of science analyses users later won't have to look at the IRFs and just trust that everything is working.
 
-# In[35]:
+# In[ ]:
 
 
 from gammapy.irf import EnergyDispersion2D
@@ -479,19 +479,19 @@ print(type(edisp))
 print(type(edisp.data))
 
 
-# In[36]:
+# In[ ]:
 
 
 print(edisp.data)
 
 
-# In[37]:
+# In[ ]:
 
 
 edisp.peek()
 
 
-# In[38]:
+# In[ ]:
 
 
 # This is how for analysis you could slice out an `EnergyDispersion`
@@ -503,7 +503,7 @@ edisp.to_energy_dispersion(offset="0 deg")
 # 
 # The point spread function (PSF) in this case is given as an analytical Gaussian model.
 
-# In[39]:
+# In[ ]:
 
 
 from gammapy.irf import EnergyDependentMultiGaussPSF
@@ -514,13 +514,13 @@ psf = EnergyDependentMultiGaussPSF.read(
 print(psf.info())
 
 
-# In[40]:
+# In[ ]:
 
 
 psf.peek()
 
 
-# In[41]:
+# In[ ]:
 
 
 # This is how for analysis you could slice out the PSF
@@ -534,7 +534,7 @@ psf.to_energy_dependent_table_psf("1 deg")
 # 
 # Note that really the background model for DC-1 and most CTA IRFs produced so far are radially symmetric, i.e. only depend on the FOV offset. The background model here was rotated to fill the FOV in a rotationally symmetric way, for no good reason.
 
-# In[42]:
+# In[ ]:
 
 
 from gammapy.irf import Background3D
@@ -543,14 +543,14 @@ bkg = Background3D.read(irf_filename, hdu="BACKGROUND")
 print(bkg)
 
 
-# In[43]:
+# In[ ]:
 
 
 # TODO: implement a peek method for Background3D
 # bkg.peek()
 
 
-# In[44]:
+# In[ ]:
 
 
 bkg.data.evaluate(energy="3 TeV", fov_lon="1 deg", fov_lat="0 deg")
@@ -579,7 +579,7 @@ bkg.data.evaluate(energy="3 TeV", fov_lon="1 deg", fov_lat="0 deg")
 # 
 # Side comment: if you have data, but no index files, you should write a Python script to make the index files. As an example, the one I used to make the index files for 1DC is [here](https://github.com/gammasky/cta-dc/blob/master/data/cta_1dc_make_data_index_files.py).
 
-# In[45]:
+# In[ ]:
 
 
 get_ipython().system('(cd $CTADATA && tree index)')
@@ -589,7 +589,7 @@ get_ipython().system('(cd $CTADATA && tree index)')
 # 
 # If you want to access data and IRFs from the CTA 1DC GPS dataset, just create a `DataStore` by pointing at a folder where the index files are located.
 
-# In[46]:
+# In[ ]:
 
 
 from gammapy.data import DataStore
@@ -597,14 +597,14 @@ from gammapy.data import DataStore
 data_store = DataStore.from_dir("$CTADATA/index/gps")
 
 
-# In[47]:
+# In[ ]:
 
 
 # Print out some basic information about the available data:
 data_store.info()
 
 
-# In[48]:
+# In[ ]:
 
 
 # The observation index is loaded as a table
@@ -616,7 +616,7 @@ print(
 )
 
 
-# In[49]:
+# In[ ]:
 
 
 # The HDU index is loaded as a table
@@ -624,7 +624,7 @@ print(len(data_store.hdu_table))
 print(data_store.hdu_table.colnames)
 
 
-# In[50]:
+# In[ ]:
 
 
 # Of course, you can look at the tables if you like
@@ -644,7 +644,7 @@ print(data_store.hdu_table.colnames)
 # 
 # Let's look at one example: select observations that are at offset 1 to 2 deg from the Galactic center.
 
-# In[51]:
+# In[ ]:
 
 
 from astropy.coordinates import SkyCoord
@@ -660,21 +660,21 @@ table = table[mask]
 print("Number of selected observations: ", len(table))
 
 
-# In[52]:
+# In[ ]:
 
 
 # Look at the first few
 table[["OBS_ID", "GLON_PNT", "GLAT_PNT", "IRF"]][:5]
 
 
-# In[53]:
+# In[ ]:
 
 
 # Check which IRFs were used ... it's all south and 20 deg zenith angle
 set(table["IRF"])
 
 
-# In[54]:
+# In[ ]:
 
 
 # Check the pointing positions
@@ -692,43 +692,43 @@ plt.ylabel("Galactic latitude (deg)")
 # 
 # Once you have selected the observations of interest, use the `DataStore` to load the data and IRF for those observations. Let's say we're interested in `OBS_ID=110000`.
 
-# In[55]:
+# In[ ]:
 
 
 obs = data_store.obs(obs_id=110000)
 
 
-# In[56]:
+# In[ ]:
 
 
 print(obs)
 
 
-# In[57]:
+# In[ ]:
 
 
 obs.events
 
 
-# In[58]:
+# In[ ]:
 
 
 obs.events.table[:5]
 
 
-# In[59]:
+# In[ ]:
 
 
 obs.aeff
 
 
-# In[60]:
+# In[ ]:
 
 
 obs.edisp
 
 
-# In[61]:
+# In[ ]:
 
 
 obs.psf
@@ -740,13 +740,13 @@ obs.psf
 # 
 # The 1DC sky model is distributed as a set of XML files, which in turn link to a ton of other FITS and text files.
 
-# In[62]:
+# In[ ]:
 
 
 get_ipython().system('ls $CTADATA/models/*.xml | xargs -n 1 basename')
 
 
-# In[63]:
+# In[ ]:
 
 
 # This is what the XML file looks like
@@ -779,7 +779,7 @@ get_ipython().system('tail -n 20 $CTADATA/models/models_gps.xml')
 # 
 # As an example, here's how you can read an XML sky model and access the spectral parameters of one source (the last, "Arp200" visible above in the XML printout) and create a [gammapy.spectrum.models.PowerLaw](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html) object.
 
-# In[64]:
+# In[ ]:
 
 
 # Read XML file and access spectrum parameters
@@ -792,7 +792,7 @@ data = data["spectrum"]["parameter"]
 data
 
 
-# In[65]:
+# In[ ]:
 
 
 # Create a spectral model the the right units
@@ -824,7 +824,7 @@ print(spec)
 #     * One idea could be to go brute-force through **all** events, select the ones above 10 TeV and stack them all into one table. Then make an all-sky image and run a peak finder, or use an event cluster-finding method e.g. from scikit-learn.
 #     * Another idea could be to first make a list of targets of interest, either from the CTA 1DC sky model or from gamma-cat, compute the model integral flux above 10 TeV and pick candidates that way, then run analyses.
 
-# In[66]:
+# In[ ]:
 
 
 # start typing here ...

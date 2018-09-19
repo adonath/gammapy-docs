@@ -18,54 +18,51 @@
 # 
 # As usual, we'll start with some setup for the notebook, and import the functionality we need.
 
-# In[1]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import numpy as np
 import matplotlib.pyplot as plt
 
+import astropy.units as u
+from astropy.coordinates import SkyCoord
+from regions import CircleSkyRegion
+
+from gammapy.utils.energy import EnergyBounds
 from gammapy.data import DataStore
 from gammapy.scripts import SpectrumAnalysisIACT
 from gammapy.catalog import SourceCatalogGammaCat
-
-# Convenience classes to define analsys inputs
-# At some point we'll add a convenience layer to run the analysis starting from a plain text config file.
-from gammapy.utils.energy import EnergyBounds
 from gammapy.maps import Map
-from gammapy.spectrum import models
-from regions import CircleSkyRegion
-from astropy.coordinates import SkyCoord
-import astropy.units as u
+from gammapy.spectrum.models import LogParabola
+from gammapy.spectrum import CrabSpectrum
 
 
 # ## Select data
 # 
 # First, we select and load some H.E.S.S. data (simulated events for now). In real life you would do something fancy here, or just use the list of observations someone send you (and hope they have done something fancy before). We'll just use the standard gammapy 4 crab runs.
 
-# In[2]:
+# In[ ]:
 
 
-# TODO: Replace with public data release
-store_dir = "$GAMMAPY_EXTRA/datasets/hess-crab4-hd-hap-prod2"
-data_store = DataStore.from_dir(store_dir)
-obs_id = data_store.obs_table["OBS_ID"].data
-print("Use observations {}".format(obs_id))
-
-obs_list = data_store.obs_list(obs_id)
+data_store = DataStore.from_dir("$GAMMAPY_EXTRA/datasets/hess-dl3-dr1/")
+mask = data_store.obs_table["OBS_SUBSET_TAG"] == "crab"
+obs_ids = data_store.obs_table["OBS_ID"][mask].data
+observations = data_store.obs_list(obs_ids)
+print(obs_ids)
 
 
 # ## Configure the analysis
 # 
 # Now we'll define the input for the spectrum analysis. It will be done the python way, i.e. by creating a config dict containing python objects. We plan to add also the convenience to configure the analysis using a plain text config file.
 
-# In[3]:
+# In[ ]:
 
 
 crab_pos = SkyCoord.from_name("crab")
 on_region = CircleSkyRegion(crab_pos, 0.15 * u.deg)
 
-model = models.LogParabola(
+model = LogParabola(
     alpha=2.3,
     beta=0.01,
     amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"),
@@ -75,7 +72,7 @@ model = models.LogParabola(
 flux_point_binning = EnergyBounds.equal_log_spacing(0.7, 30, 5, u.TeV)
 
 
-# In[4]:
+# In[ ]:
 
 
 exclusion_mask = Map.create(skydir=crab_pos, width=(10, 10), binsz=0.02)
@@ -90,14 +87,14 @@ for source in gammacat:
     regions.append(region)
 
 exclusion_mask.data = exclusion_mask.geom.region_mask(regions, inside=False)
-exclusion_mask.plot()
+exclusion_mask.plot();
 
 
-# In[5]:
+# In[ ]:
 
 
 config = dict(
-    outdir=None,
+    outdir=".",
     background=dict(
         on_region=on_region,
         exclusion_mask=exclusion_mask,
@@ -118,32 +115,33 @@ config = dict(
 # 
 # TODO: Clean up the log (partly done, get rid of remaining useless warnings)
 
-# In[6]:
+# In[ ]:
 
 
-ana = SpectrumAnalysisIACT(observations=obs_list, config=config)
-ana.run(opts_minuit={'print_level':1})
+analysis = SpectrumAnalysisIACT(observations=observations, config=config)
+analysis.run(optimize_opts={"print_level": 1})
 
 
-# ## Check out the results
+# ## Results
 # 
-# TODO: Nice summary page with all results
+# Let's look at the results, and also compare with a previously published Crab nebula spectrum for reference.
 
-# In[7]:
-
-
-print(ana.fit.result[0])
+# In[ ]:
 
 
-# In[8]:
+print(analysis.fit.result[0])
 
 
-ana.spectrum_result.plot(
-    energy_range=ana.fit.fit_range,
-    energy_power=2,
-    flux_unit="erg-1 cm-2 s-1",
-    fig_kwargs=dict(figsize=(8, 8)),
-)
+# In[ ]:
+
+
+opts = {
+    "energy_range": analysis.fit.fit_range,
+    "energy_power": 2,
+    "flux_unit": "erg-1 cm-2 s-1",
+}
+axes = analysis.spectrum_result.plot(**opts)
+CrabSpectrum().model.plot(ax=axes[0], **opts)
 
 
 # ## Exercises

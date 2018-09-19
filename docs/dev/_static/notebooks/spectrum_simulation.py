@@ -22,14 +22,14 @@
 # 
 # Same procedure as in every script ...
 
-# In[1]:
+# In[ ]:
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 
 
-# In[2]:
+# In[ ]:
 
 
 import numpy as np
@@ -43,7 +43,7 @@ from gammapy.spectrum.models import PowerLaw
 # 
 # For the sake of self consistency of this tutorial, we will simulate a simple detector. For a real application you would want to replace this part of the code with loading the IRFs or your detector.
 
-# In[3]:
+# In[ ]:
 
 
 e_true = np.logspace(-2, 2.5, 109) * u.TeV
@@ -63,7 +63,7 @@ aeff.plot(ax=axes[1]);
 # 
 # In this section we will simulate one observation using a power law model.
 
-# In[4]:
+# In[ ]:
 
 
 pwl = PowerLaw(
@@ -72,7 +72,7 @@ pwl = PowerLaw(
 print(pwl)
 
 
-# In[5]:
+# In[ ]:
 
 
 livetime = 2 * u.h
@@ -83,13 +83,12 @@ sim.simulate_obs(seed=2309, obs_id=1)
 print(sim.obs)
 
 
-# In[6]:
+# In[ ]:
 
 
 fit = SpectrumFit(obs_list=sim.obs, model=pwl.copy(), stat="cash")
 fit.fit_range = [1, 10] * u.TeV
-fit.fit()
-fit.est_errors()
+fit.run()
 print(fit.result[0])
 
 
@@ -97,7 +96,7 @@ print(fit.result[0])
 # 
 # In this section we will include a background component. Furthermore, we will also simulate more than one observation and fit each one individuallt in order to get average fit results.
 
-# In[7]:
+# In[ ]:
 
 
 bkg_model = PowerLaw(
@@ -105,7 +104,7 @@ bkg_model = PowerLaw(
 )
 
 
-# In[8]:
+# In[ ]:
 
 
 get_ipython().run_cell_magic('time', '', 'n_obs = 30\nseeds = np.arange(n_obs)\n\nsim = SpectrumSimulation(\n    aeff=aeff,\n    edisp=edisp,\n    source_model=pwl,\n    livetime=livetime,\n    background_model=bkg_model,\n    alpha=0.2,\n)\n\nsim.run(seeds)\nprint(sim.result)\nprint(sim.result[0])')
@@ -113,7 +112,7 @@ get_ipython().run_cell_magic('time', '', 'n_obs = 30\nseeds = np.arange(n_obs)\n
 
 # Before moving on to the fit let's have a look at the simulated observations
 
-# In[9]:
+# In[ ]:
 
 
 n_on = [obs.total_stats.n_on for obs in sim.result]
@@ -129,13 +128,13 @@ axes[2].hist(excess)
 axes[2].set_xlabel("excess");
 
 
-# In[10]:
+# In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'results = []\nfor obs in sim.result:\n    fit = SpectrumFit(obs, pwl.copy(), stat="wstat")\n    fit.fit(opts_minuit={"print_level": 0})\n    results.append(\n        {\n            "index": fit.result[0].model.parameters["index"].value,\n            "amplitude": fit.result[0].model.parameters["amplitude"].value,\n        }\n    )')
+get_ipython().run_cell_magic('time', '', 'results = []\nfor obs in sim.result:\n    fit = SpectrumFit(obs, pwl.copy(), stat="wstat")\n    fit.optimize()\n    results.append(\n        {\n            "index": fit.result[0].model.parameters["index"].value,\n            "amplitude": fit.result[0].model.parameters["amplitude"].value,\n        }\n    )')
 
 
-# In[11]:
+# In[ ]:
 
 
 index = np.array([_["index"] for _ in results])
