@@ -389,7 +389,7 @@ print(m_2fhl_gc)
 # In[ ]:
 
 
-filename = os.environ['GAMMAPY_EXTRA']+"/datasets/fermi_survey/all.fits.gz"
+filename = os.environ["GAMMAPY_EXTRA"] + "/datasets/fermi_survey/all.fits.gz"
 hdulist = fits.open(filename)
 hdulist.info()
 
@@ -481,7 +481,7 @@ m_2fhl_gc.plot();
 # In[ ]:
 
 
-smoothed = m_2fhl_gc.smooth(radius=0.2 * u.deg, kernel="gauss")
+smoothed = m_2fhl_gc.smooth(width=0.2 * u.deg, kernel="gauss")
 smoothed.plot(stretch="sqrt", add_cbar=True, vmax=4, cmap="inferno");
 
 
@@ -492,7 +492,7 @@ smoothed.plot(stretch="sqrt", add_cbar=True, vmax=4, cmap="inferno");
 
 rc_params = {"figure.figsize": (12, 5.4), "font.size": 12}
 with plt.rc_context(rc=rc_params):
-    smoothed = m_2fhl_gc.smooth(radius=0.2 * u.deg, kernel="gauss")
+    smoothed = m_2fhl_gc.smooth(width=0.2 * u.deg, kernel="gauss")
     smoothed.plot(stretch="sqrt", add_cbar=True, vmax=4);
 
 

@@ -45,7 +45,7 @@ get_ipython().system('gammapy info --no-envvar --no-dependencies --no-system')
 
 
 # Define which data to use
-data_store = DataStore.from_dir("$CTADATA/index/gps/")
+data_store = DataStore.from_dir("$GAMMAPY_DATA/cta-1dc/index/gps/")
 obs_ids = [110380, 111140, 111159]
 obs_list = data_store.obs_list(obs_ids)
 
@@ -82,7 +82,7 @@ get_ipython().run_cell_magic('time', '', '# Make 2D images (for plotting, analys
 # In[ ]:
 
 
-images["counts"].smooth(radius=0.2 * u.deg).plot(stretch="sqrt");
+images["counts"].smooth(width=0.1 * u.deg).plot(stretch="sqrt");
 
 
 # In[ ]:

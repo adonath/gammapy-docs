@@ -4,11 +4,10 @@
 # ![CTA first data challenge logo](images/cta-1dc.png)
 # 
 # # CTA first data challenge (1DC) with Gammapy
-# 
 
 # ## Introduction
 # 
-# The [CTA observatory](https://www.cta-observatory.org/) has started a first data challenge ("CTA 1DC"), focusing on high-level data analysis. Gammapy is a prototype for the CTA science tools (see [Gammapy proceeding from ICRC 2017](https://github.com/gammapy/icrc2017-gammapy-poster/blob/master/proceeding/gammapy-icrc2017.pdf)), and while many things are work in progress (most importantly: source and background modeling and cube analysis), you can use it already to analyse the simulated CTA data.
+# In 2017 and 2018, the [CTA observatory](https://www.cta-observatory.org/) did a first data challenge, called CTA DC-1, where CTA high-level data was simulated assuming a sky model and using CTA IRFs.
 # 
 # The main page for CTA 1DC is here:
 # https://forge.in2p3.fr/projects/data-challenge-1-dc-1/wiki (CTA internal)
@@ -32,12 +31,6 @@
 # ### Further information
 # 
 # How to analyse the CTA 1DC data with Gammapy (make an image and spectrum) is shown in a second notebook [cta_data_analysis.ipynb](cta_data_analysis.ipynb). If you prefer, you can of course just skim or skip this notebook and go straight to second one.
-# 
-# More tutorial notebooks for Gammapy are [here](../index.ipynb),
-# the Gammapy Sphinx docs are at at http://docs.gammapy.org
-# If you have a Gammapy-related question, please send an email to to Gammapy mailing list at http://groups.google.com/group/gammapy (registration required) or if you have an issue or feature request, file an issue here: https://github.com/gammapy/gammapy/issues/new (free Github account required, takes 1 min to set up).
-# 
-# Please note that the 1DC data isn't public and results should be shared on CTA Redmine, as described here: https://forge.in2p3.fr/projects/data-challenge-1-dc-1/wiki#Sharing-of-analysis-results. Unfortunately there's no good way yet to share Jupyter notebooks in CTA, as there is e.g. on Github and nbviewer which can show any public noteook.
 
 # ## Notebook and Gammapy Setup
 # 
@@ -66,54 +59,25 @@ print("astropy:", astropy.__version__)
 print("gammapy:", gammapy.__version__)
 
 
-# ## Getting the 1DC data
+# ## DC-1 data
 # 
-# You can find infos how to download the 1DC data here: 
+# In this and other Gammapy tutorials we will only access a few data files from CTA DC-1 from `$GAMMAPY_DATA/cta-1dc` that you will have if you followed the "Getting started with Gammapy" instructions and executed `gammapy download tutorials`.
+# 
+# Information how to download more or all of the DC-1 data (in total 20 GB) is here:
 # https://forge.in2p3.fr/projects/data-challenge-1-dc-1/wiki#Data-access
 # 
-# Overall it's quite large (20 GB) and will take a while to download. You can just download a subset of the "gps", "gc", "egal" or "agn" datasets, the ones you're interested in.
-# 
-# **In this tutorial, we will only use the "gps" (Galactic center survey) dataset, so maybe you could start by downloading that first.**
-# 
-# While you wait, we strongly recommend you go over some [CTA basics](https://www.youtube.com/playlist?list=PLq3ItKoU0hy7ED6m1eve6WIFs7ibcv3YR) as well as some [Python basics](https://www.youtube.com/playlist?list=PL-Qryc-SVnnu0tPV623TFnrAEQLykkZF5) to prepare yourself for this tutorial.
-# 
-# Got the data?
-# 
-# Assuming you've followed the instructions, you should have the ``CTADATA`` environment variable pointing to the folder where all data is located. (Gammapy doesn't need or use the ``CALDB`` environment variable.)
-# 
+# Working with that data with Gammapy is identical to what we show here, except that the recommended way to do it is to point `DataStore.read` at `$CTADATA/index/gps` or whatever dataset or files you'd like to access there.
 
 # In[ ]:
 
 
-get_ipython().system('echo $CTADATA')
+get_ipython().system('echo $GAMMAPY_DATA/cta-1dc')
 
 
 # In[ ]:
 
 
-get_ipython().system('ls $CTADATA')
-
-
-# You can find a description of the directories and files here:
-# https://forge.in2p3.fr/projects/data-challenge-1-dc-1/wiki/Data_organisation
-# 
-# A very detailed specification of the data formats is here:
-# http://gamma-astro-data-formats.readthedocs.io/
-# 
-# But actually, instead of reading those pages, let's just explore the data and see how to load it with Gammapy ...
-# 
-# Before we start, just in case the commands above show that you don't have `CTADATA` set:
-# 
-# * you either have to exit the "jupyter notebook" command on your terminal, set the environment variable (I'm using bash and added the command `export CTADATA=/Users/deil/work/cta-dc/data/1dc/1dc` to my `~/.profile` file and then did `source ~/.profile`), then re-start Jupyter and this notebook.
-# * or you can set the environment variable by uncommentting the code in the following cell, setting the correct path, then executing it.
-
-# In[ ]:
-
-
-# import os
-# os.environ['CTADATA'] = '/Users/deil/work/cta-dc/data/1dc/1dc'
-# !echo $CTADATA
-# !ls $CTADATA
+get_ipython().system('ls $GAMMAPY_DATA/cta-1dc')
 
 
 # 
@@ -123,32 +87,12 @@ get_ipython().system('ls $CTADATA')
 # 
 # ## EVENT data
 # 
-# First, the EVENT data (RA, DEC, ENERGY, TIME of each photon or hadronic background event) is in the `data/baseline` folder, with one observation per file. The "baseline" refers to the assumed CTA array that was used to simulate the observations. The number in the filename is the observation identifier `OBS_ID` of the observation. Observations are ~ 30 minutes, pointing at a fixed location on the sky.
+# First, the EVENT data (RA, DEC, ENERGY, TIME of each photon or hadronic background event) is in the `data` folder, with one observation per file. The "baseline" refers to the assumed CTA array that was used to simulate the observations. The number in the filename is the observation identifier `OBS_ID` of the observation. Observations are ~ 30 minutes, pointing at a fixed location on the sky.
 
 # In[ ]:
 
 
-get_ipython().system('ls $CTADATA')
-
-
-# In[ ]:
-
-
-get_ipython().system('ls $CTADATA/data/baseline')
-
-
-# In[ ]:
-
-
-get_ipython().system('ls $CTADATA/data/baseline/gps | head -n3')
-
-
-# In[ ]:
-
-
-# There's 3270 observations and 11 GB of event data for the gps dataset
-get_ipython().system('ls $CTADATA/data/baseline/gps | wc -l')
-get_ipython().system('du -hs $CTADATA/data/baseline/gps')
+get_ipython().system('ls -1 $GAMMAPY_DATA/cta-1dc/data/baseline/gps')
 
 
 # Let's open up the first event list using the Gammapy `EventList` class, which contains the ``EVENTS`` table data via the ``table`` attribute as an Astropy `Table` object.
@@ -158,9 +102,20 @@ get_ipython().system('du -hs $CTADATA/data/baseline/gps')
 
 from gammapy.data import EventList
 
-events = EventList.read("$CTADATA/data/baseline/gps/gps_baseline_110000.fits")
-print(type(events))
-print(type(events.table))
+path = "$GAMMAPY_DATA/cta-1dc/data/baseline/gps/gps_baseline_110380.fits"
+events = EventList.read(path)
+
+
+# In[ ]:
+
+
+type(events)
+
+
+# In[ ]:
+
+
+type(events.table)
 
 
 # In[ ]:
@@ -181,7 +136,7 @@ events.table[:2]
 
 
 # Event times can be accessed as Astropy Time objects
-print(type(events.time))
+type(events.time)
 
 
 # In[ ]:
@@ -265,7 +220,7 @@ energy_bins = np.logspace(-2, 2, num=100)
 plt.hist(energy, bins=energy_bins)
 plt.semilogx()
 plt.xlabel("Event energy (TeV)")
-plt.ylabel("Number of events")
+plt.ylabel("Number of events");
 
 
 # A double-peak, at ~ 30 GeV and ~ 100 GeV? .... let's try to find out what's going on ...
@@ -289,13 +244,13 @@ print("Number of hadrons: ", len(events.table) - is_gamma.sum())
 
 energy = events.table["ENERGY"].data
 energy_bins = np.logspace(-2, 2, num=100)
-opts = dict(bins=energy_bins, normed=True, histtype="step")
+opts = dict(bins=energy_bins, density=True, histtype="step")
 plt.hist(energy[~is_gamma], label="hadron", **opts)
 plt.hist(energy[is_gamma], label="gamma", **opts)
 plt.loglog()
 plt.xlabel("Event energy (TeV)")
 plt.ylabel("Number of events")
-plt.legend()
+plt.legend();
 
 
 # As expected, the energy spectra are roughly power-laws. 
@@ -322,7 +277,7 @@ plt.legend()
 
 
 energy_bins = 10 ** np.linspace(-2, 2, 100)
-offset_bins = np.arange(0, 5, 0.1)
+offset_bins = np.arange(0, 5.5, 0.1)
 
 t = events.table
 offset = np.sqrt(t["DETX"] ** 2 + t["DETY"] ** 2)
@@ -341,6 +296,14 @@ plt.ylabel("Offset (deg)")
 
 # So the CTA field of view increases with energy in steps. The energy distribution we saw before was the combination of the energy distribution at all offsets. Even at a single offset, the double energy-threshold at ~ 30 GeV and ~ 100 GeV is present.
 # 
+# There is also a quick-look peek method you can use to get a peek at the contents of an event list:
+
+# In[ ]:
+
+
+events.peek()
+
+
 # ### Stacking EVENTS tables
 # 
 # As a final example of how to work with event lists, here's now to apply arbitrary event selections and how to stack events tables from several observations into a single event list. 
@@ -355,12 +318,12 @@ from astropy.table import Table
 from astropy.table import vstack as table_vstack
 
 filename = os.path.join(
-    os.environ["CTADATA"], "data/baseline/gps/gps_baseline_110000.fits"
+    os.environ["GAMMAPY_DATA"], "cta-1dc/data/baseline/gps/gps_baseline_110380.fits"
 )
 t1 = Table.read(filename, hdu="EVENTS")
 
 filename = os.path.join(
-    os.environ["CTADATA"], "data/baseline/gps/gps_baseline_110001.fits"
+    os.environ["GAMMAPY_DATA"], "cta-1dc/data/baseline/gps/gps_baseline_111140.fits"
 )
 t2 = Table.read(filename, hdu="EVENTS")
 tables = [t1, t2]
@@ -401,7 +364,7 @@ print("Number of events after selection:", len(table2))
 # In[ ]:
 
 
-get_ipython().system('(cd $CTADATA && tree caldb)')
+get_ipython().system('(cd $GAMMAPY_DATA/cta-1dc && tree caldb)')
 
 
 # In[ ]:
@@ -411,7 +374,7 @@ get_ipython().system('(cd $CTADATA && tree caldb)')
 # IRFs are stored in `BinTable` HDUs in a weird format
 # that you don't need to care about because it's implemented in Gammapy
 irf_filename = os.path.join(
-    os.environ["CTADATA"], "caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
+    os.environ["GAMMAPY_DATA"], "cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
 )
 from astropy.io import fits
 
@@ -427,10 +390,19 @@ hdu_list.info()
 
 
 from gammapy.irf import EffectiveAreaTable2D
-
 aeff = EffectiveAreaTable2D.read(irf_filename, hdu="EFFECTIVE AREA")
-print(type(aeff))
-print(type(aeff.data))
+
+
+# In[ ]:
+
+
+type(aeff)
+
+
+# In[ ]:
+
+
+type(aeff.data)
 
 
 # In[ ]:
@@ -473,7 +445,6 @@ aeff.to_effective_area_table(offset="1 deg")
 
 
 from gammapy.irf import EnergyDispersion2D
-
 edisp = EnergyDispersion2D.read(irf_filename, hdu="ENERGY DISPERSION")
 print(type(edisp))
 print(type(edisp.data))
@@ -576,13 +547,11 @@ bkg.data.evaluate(energy="3 TeV", fov_lon="1 deg", fov_lat="0 deg")
 # * The purpose of HDU index files is to locate all FITS header data units (HDUs) for a given observation. At the moment, for each observation, there are six relevant HDUs: EVENTS, GTI, AEFF, EDISP, PSF and BKG. The format is described in detail [here](http://gamma-astro-data-formats.readthedocs.io/en/latest/data_storage/hdu_index/index.html).
 # 
 # For 1DC there is one set of index files per simulated dataset, as well as a set of index files listing all available data in the all directory.
-# 
-# Side comment: if you have data, but no index files, you should write a Python script to make the index files. As an example, the one I used to make the index files for 1DC is [here](https://github.com/gammasky/cta-dc/blob/master/data/cta_1dc_make_data_index_files.py).
 
 # In[ ]:
 
 
-get_ipython().system('(cd $CTADATA && tree index)')
+get_ipython().system('(cd $GAMMAPY_DATA/cta-1dc && tree index)')
 
 
 # ### Gammapy DataStore
@@ -593,8 +562,12 @@ get_ipython().system('(cd $CTADATA && tree index)')
 
 
 from gammapy.data import DataStore
+data_store = DataStore.from_dir("$GAMMAPY_DATA/cta-1dc/index/gps")
 
-data_store = DataStore.from_dir("$CTADATA/index/gps")
+# If you want to access all CTA DC-1 data,
+# set the CTADATA env var and use this:
+# data_store = DataStore.from_dir("$CTADATA/index/gps")
+# Or point at the directly with the index files directly
 
 
 # In[ ]:
@@ -610,10 +583,8 @@ data_store.info()
 # The observation index is loaded as a table
 print("Number of observations: ", len(data_store.obs_table))
 print(data_store.obs_table.colnames)
-print(
-    "Total observation time (hours): ",
-    data_store.obs_table["ONTIME"].sum() / 3600,
-)
+# Compute and print total obs time in hours
+print(data_store.obs_table["ONTIME"].sum() / 3600)
 
 
 # In[ ]:
@@ -690,12 +661,12 @@ plt.ylabel("Galactic latitude (deg)")
 
 # ## Load data
 # 
-# Once you have selected the observations of interest, use the `DataStore` to load the data and IRF for those observations. Let's say we're interested in `OBS_ID=110000`.
+# Once you have selected the observations of interest, use the `DataStore` to load the data and IRF for those observations. Let's say we're interested in `OBS_ID=110380`.
 
 # In[ ]:
 
 
-obs = data_store.obs(obs_id=110000)
+obs = data_store.obs(obs_id=110380)
 
 
 # In[ ]:
@@ -713,7 +684,13 @@ obs.events
 # In[ ]:
 
 
-obs.events.table[:5]
+obs.events.table[:3]
+
+
+# In[ ]:
+
+
+obs.gti
 
 
 # In[ ]:
@@ -734,6 +711,12 @@ obs.edisp
 obs.psf
 
 
+# In[ ]:
+
+
+obs.bkg
+
+
 # Here's an example how to loop over many observations and analyse them: [cta_1dc_make_allsky_images.py](https://github.com/gammasky/cta-dc/blob/master/data/cta_1dc_make_allsky_images.py)
 
 # ## Model XML files
@@ -743,14 +726,18 @@ obs.psf
 # In[ ]:
 
 
-get_ipython().system('ls $CTADATA/models/*.xml | xargs -n 1 basename')
+# TODO: copy an example XML file for tutorials
+# This one is no good: $CTADATA/models/models_gps.xml
+# Too large, private in CTA, loads large diffuse model
+# We need to prepare something custom.
+# !ls $CTADATA/models/*.xml | xargs -n 1 basename
 
 
 # In[ ]:
 
 
 # This is what the XML file looks like
-get_ipython().system('tail -n 20 $CTADATA/models/models_gps.xml')
+# !tail -n 20 $CTADATA/models/models_gps.xml
 
 
 # At the moment, you cannot read and write these sky model XML files with Gammapy.
@@ -783,29 +770,29 @@ get_ipython().system('tail -n 20 $CTADATA/models/models_gps.xml')
 
 
 # Read XML file and access spectrum parameters
-from gammapy.extern import xmltodict
+# from gammapy.extern import xmltodict
 
-filename = os.path.join(os.environ["CTADATA"], "models/models_gps.xml")
-data = xmltodict.parse(open(filename).read())
-data = data["source_library"]["source"][-1]
-data = data["spectrum"]["parameter"]
-data
+# filename = os.path.join(os.environ["CTADATA"], "models/models_gps.xml")
+# data = xmltodict.parse(open(filename).read())
+# data = data["source_library"]["source"][-1]
+# data = data["spectrum"]["parameter"]
+# data
 
 
 # In[ ]:
 
 
 # Create a spectral model the the right units
-from astropy import units as u
-from gammapy.spectrum.models import PowerLaw
+# from astropy import units as u
+# from gammapy.spectrum.models import PowerLaw
 
-par_to_val = lambda par: float(par["@value"]) * float(par["@scale"])
-spec = PowerLaw(
-    amplitude=par_to_val(data[0]) * u.Unit("cm-2 s-1 MeV-1"),
-    index=par_to_val(data[1]),
-    reference=par_to_val(data[2]) * u.Unit("MeV"),
-)
-print(spec)
+# par_to_val = lambda par: float(par["@value"]) * float(par["@scale"])
+# spec = PowerLaw(
+#     amplitude=par_to_val(data[0]) * u.Unit("cm-2 s-1 MeV-1"),
+#     index=par_to_val(data[1]),
+#     reference=par_to_val(data[2]) * u.Unit("MeV"),
+# )
+# print(spec)
 
 
 # ## Exercises

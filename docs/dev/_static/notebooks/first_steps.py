@@ -153,7 +153,7 @@ vela_2fhl.plot();
 # In[ ]:
 
 
-vela_2fhl_smoothed = vela_2fhl.smooth(kernel="gauss", radius=0.5 * u.deg)
+vela_2fhl_smoothed = vela_2fhl.smooth(kernel="gauss", width=0.2 * u.deg)
 
 
 # In[ ]:

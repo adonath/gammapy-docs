@@ -54,7 +54,7 @@ import sherpa.astro.ui as sh
 
 
 # Read the fits file to load them in a sherpa model
-filecounts = os.environ['GAMMAPY_EXTRA'] + '/datasets/G300-0_test_counts.fits'
+filecounts = os.environ["GAMMAPY_EXTRA"] + "/datasets/G300-0_test_counts.fits"
 hdr = fits.getheader(filecounts)
 wcs = WCS(hdr)
 
@@ -63,9 +63,9 @@ sh.set_method("simplex")
 sh.load_image(filecounts)
 sh.set_coord("logical")
 
-fileexp = os.environ['GAMMAPY_EXTRA'] + '/datasets/G300-0_test_exposure.fits'
-filebkg = os.environ['GAMMAPY_EXTRA'] + '/datasets/G300-0_test_background.fits'
-filepsf = os.environ['GAMMAPY_EXTRA'] + '/datasets/G300-0_test_psf.fits'
+fileexp = os.environ["GAMMAPY_EXTRA"] + "/datasets/G300-0_test_exposure.fits"
+filebkg = os.environ["GAMMAPY_EXTRA"] + "/datasets/G300-0_test_background.fits"
+filepsf = os.environ["GAMMAPY_EXTRA"] + "/datasets/G300-0_test_psf.fits"
 sh.load_table_model("expo", fileexp)
 sh.load_table_model("bkg", filebkg)
 sh.load_psf("psf", filepsf)
@@ -82,7 +82,7 @@ sh.freeze(bkg)
 
 resid = Map.read(filecounts)
 resid.data = sh.get_data_image().y - sh.get_model_image().y
-resid_smooth = resid.smooth(radius=6)
+resid_smooth = resid.smooth(width=6)
 resid_smooth.plot();
 
 
@@ -129,7 +129,7 @@ sh.fit()
 sh.freeze(g0)
 
 resid.data = sh.get_data_image().y - sh.get_model_image().y
-resid_smooth = resid.smooth(radius=6)
+resid_smooth = resid.smooth(width=6)
 resid_smooth.plot(vmin=-0.5, vmax=1);
 
 
@@ -152,7 +152,7 @@ sh.set_full_model(bkg + psf(g0 + g1 + g2 + g3 + g4 + g5) * expo)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'for i in range(1, len(gs)):\n    yp, xp = np.unravel_index(\n        np.nanargmax(resid_smooth.data), resid_smooth.data.shape\n    )\n    ampl = resid_smooth.get_by_pix((xp, yp))[0]\n    gs[i].xpos, gs[i].ypos = xp, yp\n    gs[i].fwhm = 10\n    gs[i].ampl = ampl\n\n    sh.thaw(gs[i].fwhm)\n    sh.thaw(gs[i].ampl)\n    sh.fit()\n\n    sh.thaw(gs[i].xpos)\n    sh.thaw(gs[i].ypos)\n    sh.fit()\n    sh.freeze(gs[i])\n\n    resid.data = sh.get_data_image().y - sh.get_model_image().y\n    resid_smooth = resid.smooth(radius=6)\n    resid_smooth.plot(vmin=-0.5, vmax=1)')
+get_ipython().run_cell_magic('time', '', 'for i in range(1, len(gs)):\n    yp, xp = np.unravel_index(\n        np.nanargmax(resid_smooth.data), resid_smooth.data.shape\n    )\n    ampl = resid_smooth.get_by_pix((xp, yp))[0]\n    gs[i].xpos, gs[i].ypos = xp, yp\n    gs[i].fwhm = 10\n    gs[i].ampl = ampl\n\n    sh.thaw(gs[i].fwhm)\n    sh.thaw(gs[i].ampl)\n    sh.fit()\n\n    sh.thaw(gs[i].xpos)\n    sh.thaw(gs[i].ypos)\n    sh.fit()\n    sh.freeze(gs[i])\n\n    resid.data = sh.get_data_image().y - sh.get_model_image().y\n    resid_smooth = resid.smooth(width=6)\n    resid_smooth.plot(vmin=-0.5, vmax=1)')
 
 
 # ### Generating output table and Test Statistics estimation

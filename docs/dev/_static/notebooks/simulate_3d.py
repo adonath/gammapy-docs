@@ -51,7 +51,7 @@ get_ipython().system('gammapy info --no-envvar --no-dependencies --no-system')
 
 def get_irfs():
     """Load CTA IRFs"""
-    filename = "$CTADATA/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
+    filename = "$GAMMAPY_DATA/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
     psf = EnergyDependentMultiGaussPSF.read(
         filename, hdu="POINT SPREAD FUNCTION"
     )
