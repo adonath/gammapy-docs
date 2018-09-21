@@ -27,6 +27,7 @@
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 
 
 # In[ ]:
@@ -36,7 +37,8 @@ from copy import deepcopy
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
-from astropy.table import Table
+from astropy.io import fits
+from astropy.table import Table, vstack
 
 
 # In[ ]:
@@ -64,7 +66,7 @@ observations = data_store.obs_list(obs_ids)
 print("Number of observations:", len(observations))
 
 
-# ## Estimate background model
+# ## Background model
 # 
 # The background model we will estimate is a differential background rate model in unit `s-1 MeV-1 sr-1` as a function of reconstructed energy and field of fiew offset.
 # 
@@ -127,36 +129,30 @@ class BackgroundModelEstimator(object):
         return rate
 
 
-# In[ ]:
+def background2d_peek(bkg):
+    data = bkg.data
+    x = data.axes[0].bins
+    y = data.axes[1].bins
+    c = data.data.T.value
+    plt.pcolormesh(x, y, c, norm=LogNorm())
+    plt.semilogx()
+    plt.colorbar()
+    plt.xlabel("Energy (TeV)")
+    plt.ylabel("Offset (deg)")
 
-
-get_ipython().run_cell_magic('time', '', 'ebounds = np.logspace(-1, 2, 20) * u.TeV\noffset = sqrt_space(start=0, stop=2.5, num=10) * u.deg\nestimator = BackgroundModelEstimator(ebounds, offset)\n# observations = observations[:3]  # To run more quickly for debugging\nestimator.run(observations)')
-
-
-# ## Check background model
-# 
-# Let's make a few plots to see what our background model looks like:
-# 
-# 1. Acceptance curve (background rate as a function of field of view offset for a given energy)
-# 1. Rate spectrum (background rate as a function of energy for a given offset)
-# 1. Rate image (background rate as a function of energy and offset)
-# 
-# ### Acceptance curve
 
 # In[ ]:
 
 
-from matplotlib.colors import LogNorm
+get_ipython().run_cell_magic('time', '', 'ebounds = np.logspace(-1, 2, 20) * u.TeV\noffset = sqrt_space(start=0, stop=3, num=10) * u.deg\nestimator = BackgroundModelEstimator(ebounds, offset)\n# observations = observations[:3]  # To run more quickly for debugging\nestimator.run(observations)')
 
-hist = estimator.background_rate.data.data
-print(hist.shape)
-print(ebounds.shape)
-print(offset.shape)
-plt.pcolormesh(ebounds, offset, hist.T.value, norm=LogNorm())
-plt.semilogx()
-plt.colorbar()
-plt.xlabel("Energy (TeV)")
-plt.ylabel("Offset (deg)")
+
+# Let's have a quick look at what we did ...
+
+# In[ ]:
+
+
+background2d_peek(estimator.background_rate)
 
 
 # In[ ]:
@@ -166,147 +162,210 @@ plt.ylabel("Offset (deg)")
 # estimator.background_rate.to_fits().writeto('background_model.fits', overwrite=True)
 
 
-# ## TODO
+# ## Zenith dependence
 # 
-# **The rest of the notebook is still the old version.
-# Needs to be removed or rewritten.**
+# The background models used in H.E.S.S. usually depend on the zenith angle of the observation. That kinda makes sense because the energy threshold increases with zenith angle, and since the background is related to (but not given by) the charged cosmic ray spectrum that is a power-law and falls steeply, we also expect the background rate to change.
+# 
+# Let's have a look at the dependence we get for this configuration used here (Hillas reconstruction, standard cuts, see H.E.S.S. release notes for more information).
 
 # In[ ]:
 
 
-# Read one of the background models from file
-filename = scratch_dir / "smooth_background_2D_group_000_table.fits.gz"
-model = EnergyOffsetBackgroundModel.read(str(filename))
+data_store = DataStore.from_dir("$GAMMAPY_DATA/hess-dl3-dr1")
+obs_table = data_store.obs_table
+obs_table = obs_table[obs_table["OBS_SUBSET_TAG"] == "offdata"]
 
 
 # In[ ]:
 
 
-offset = model.bg_rate.offset_bin_center
-energies = model.bg_rate.energy
-iE = 6
+x = obs_table["ZEN_PNT"]
+y = obs_table["SAFE_ENERY_THRESHOLD_LO"]
+plt.plot(x, y, "o")
+plt.xlabel("Zenith (deg)")
+plt.ylabel("Energy threshold (TeV)")
 
-x = offset
-y = model.bg_rate.data[iE, :]
-plt.plot(x, y, label="bkg model smooth")
-title = (
-    "energy band: "
-    + str("%.2f" % energies[iE].value)
-    + "-"
-    + str("%.2f" % energies[iE + 1].value)
-    + " TeV"
-)
-plt.title(title)
-plt.xlabel("Offset (degree)")
-plt.ylabel("Bkg rate (MeV-1 s-1 sr-1)")
-plt.legend()
-
-
-# ### Background rate spectrum
 
 # In[ ]:
 
 
-x = energies.log_centers
-y = model.bg_rate.data[:, 10]
-plt.loglog(x, y, label="bkg model smooth")
-plt.title("offset: " + str("%.2f" % offset[10].value) + " deg")
+x = obs_table["ZEN_PNT"]
+y = obs_table["EVENT_COUNT"] / obs_table["ONTIME"]
+plt.plot(x, y, "o")
+plt.xlabel("Zenith (deg)")
+plt.ylabel("Rate (events / sec)")
+plt.ylim(0, 10)
+
+
+# The energy threshold increases, as expected. It's a bit surprising that the total background rate doesn't decreases with increasing zenith angle. That's a bit of luck for this configuration, and because we're looking at the rate of background events in the whole field of view. As shown below, the energy threshold increases (reducing the total rate), but the rate at a given energy increases with zenith angle (increasing the total rate). Overall the background does change with zenith angle and that dependency should be taken into account.
+# 
+# The remaining scatter you see in the plots above (in energy threshold and rate) is due to dependence on telescope optical efficiency, atmospheric changes from run to run and other effects. If you're interested in this, [2014APh....54...25H](http://adsabs.harvard.edu/abs/2014APh....54...25H) has some infos. We'll not consider this futher.
+# 
+# When faced with the question whether and how to model the zenith angle dependence, we're faced with a complex optimisation problem: the closer we require off runs to be in zenith angle, the fewer off runs and thus event statistic we have available, which will lead do noise in the background model. The choice of zenith angle binning or "on-off observation mathching" strategy isn't the only thing that needs to be optimised, there's also energy and offset binnings and smoothing scales. And of course good settings will depend on the way you plan to use the background model, i.e. the science measurement you plan to do. Some say background modeling is the hardest part of IACT data analysis.
+# 
+# Here we'll just code up something simple: make three background models, one from the off runs with zenith angle 0 to 20 deg, one from 20 to 40 deg, and one from 40 to 90 deg.
+
+# In[ ]:
+
+
+zenith_bins = [
+    {"min": 0, "max": 20},
+    {"min": 20, "max": 40},
+    {"min": 40, "max": 90},
+]
+
+
+def make_model(observations):
+    ebounds = np.logspace(-1, 2, 20) * u.TeV
+    offset = sqrt_space(start=0, stop=3, num=10) * u.deg
+    estimator = BackgroundModelEstimator(ebounds, offset)
+    estimator.run(observations)
+    return estimator.background_rate
+
+
+def make_models():
+    data_store = DataStore.from_dir("$GAMMAPY_DATA/hess-dl3-dr1")
+    obs_table = data_store.obs_table
+    obs_table = obs_table[obs_table["OBS_SUBSET_TAG"] == "offdata"]
+
+    for zenith in zenith_bins:
+        mask = zenith["min"] <= obs_table["ZEN_PNT"]
+        mask &= obs_table["ZEN_PNT"] < zenith["max"]
+        obs_ids = obs_table["OBS_ID"][mask].data
+        observations = data_store.obs_list(obs_ids)
+        yield make_model(observations)
+
+
+# In[ ]:
+
+
+get_ipython().run_cell_magic('time', '', 'models = list(make_models())')
+
+
+# In[ ]:
+
+
+background2d_peek(models[0])
+plt.figure()
+background2d_peek(models[2])
+
+
+# In[ ]:
+
+
+energy = models[0].data.axes[0].nodes.to("TeV")
+y = models[0].data.evaluate(energy=energy, offset="0.5 deg")
+plt.plot(energy, y, label="0 < zen < 20")
+y = models[1].data.evaluate(energy=energy, offset="0.5 deg")
+plt.plot(energy, y, label="20 < zen < 40")
+y = models[2].data.evaluate(energy=energy, offset="0.5 deg")
+plt.plot(energy, y, label="40 < zen < 90")
+plt.loglog()
 plt.xlabel("Energy (TeV)")
-plt.ylabel("Bkg rate (MeV-1 s-1 sr-1)")
+plt.ylabel("Bkg rate (s-1 sr-1 MeV-1)")
+plt.legend();
 
 
-# ### Background rate image with energy and offset axes
+# ## Index tables
 # 
-# It doesn't look good in this case.
-# To do this well, you need to use more off or AGN runs to build the background model!
-
-# In[ ]:
-
-
-model.bg_rate.plot()
-
-
-# ## Make new index table
+# So now we have radially symmetric background models for three zenith angle bins. To be able to use it from the high-level Gammapy classes like e.g. the MapMaker though, we also have to create a [HDU index table](https://gamma-astro-data-formats.readthedocs.io/en/latest/data_storage/hdu_index/index.html) that declares which background model to use for each observation.
 # 
-# Here we first copy the dataset of the 4 crab runs from gammapy-extra in a new directory containing the data you will use for the analysis. 
-# 
-# We use the same dataset to produce the bkg or for the analysis. Of course normally you produce the bkg model using thousands of AGN runs not the 4 Crab test runs.
+# It sounds harder than it actually is. Basically you have to some code to make a new `astropy.table.Table`. The most tricky part is that before you can make the HDU index table, you have to decide where to store the data, because the HDU index table is a reference to the data location. Let's decide in this example that we want to re-use all existing files in `$GAMMAPY_DATA/hess-dl3-dr1` and put all the new HDUs (for background models and new index files) bundled in a single FITS file called `hess-dl3-dr3-with-background.fits.gz` in the current working directory. Note that index files aren't relocatable if they reference files outside the current folder.
 
 # In[ ]:
 
 
-# Make a new hdu table in your dataset directory that contains the link to the acceptance curve to use to build the bkg model in your cube analysis
-data_dir = make_fresh_dir("data")
+filename = "hess-dl3-dr3-with-background.fits.gz"
+
+# Make a new table with one row for each observation
+# pointing to the background model HDU
+rows = []
+for obs_row in data_store.obs_table:
+    obs_row["ZEN_PNT"]
+    # TODO: pick the right background model
+    # based on zenith angle
+    bkg_idx = 0
+    hdu_name = "BKG{}".format(bkg_idx)
+    row = {
+        "OBS_ID": obs_row["OBS_ID"],
+        "HDU_TYPE": "bkg",
+        "HDU_CLASS": "bkg_2d",
+        "FILE_DIR": ".",
+        "FILE_NAME": filename,
+        "HDU_NAME": hdu_name,
+    }
+    rows.append(row)
+
+hdu_table_bkg = Table(rows=rows)
 
 
 # In[ ]:
 
 
-ds = DataStore.from_dir("$GAMMAPY_EXTRA/datasets/hess-crab4-hd-hap-prod2")
-ds.copy_obs(ds.obs_table, data_dir)
+# Make a copy of the original HDU index table
+hdu_table = data_store.hdu_table.copy()
 
+# Remove BASE_DIR, since now files will no longer
+# be in a single folder, so a base dir doesn't work
+hdu_table.meta.pop("BASE_DIR")
 
-# The hdu_table in this directory contains no link to a bkg model for each observation. 
+# Adjust FILE_DIR to point to the original files
+# Here we use an environment variable
+del hdu_table["FILE_DIR"]
+hdu_table["FILE_DIR"] = "$GAMMAPY_DATA/hess-dl3-dr1/data"
+
+# Add the rows for the background HDUs
+hdu_table = vstack([hdu_table, hdu_table_bkg])
+hdu_table.sort("OBS_ID")
+
 
 # In[ ]:
 
 
-data_store = DataStore.from_dir(data_dir)
-data_store.hdu_table
+hdu_table[:7]
 
-
-# In order to produce a background image or background cube we have to create a hdu table that contains for each observation a link to the bkg model to use depending of the observation conditions of the run.
 
 # In[ ]:
 
 
-# Copy the background directory in the one where is located the hdu table, here data
-shutil.move(str(scratch_dir), str(data_dir))
+# Make one FITS file that contains the background models
+# and new index tables
+hdu_list = fits.HDUList()
 
-# Create the new hdu table with a link to the background model
-group_filename = data_dir / "background/group-def.fits"
+hdu = fits.BinTableHDU(hdu_table)
+hdu.name = "HDU_INDEX"
+hdu_list.append(hdu)
 
-# relat_path= (scratch_dir.absolute()).relative_to(data_dir.absolute())
-hdu_index_table = bgmaker.make_total_index_table(
-    data_store=data_store,
-    modeltype="2D",
-    out_dir_background_model=scratch_dir,
-    filename_obs_group_table=str(group_filename),
-    smooth=False,
+hdu = fits.BinTableHDU(data_store.obs_table)
+hdu_list.append(hdu)
+
+for idx, model in enumerate(models):
+    hdu = model.to_fits()
+    hdu.name = "BKG{}".format(idx)
+    hdu_list.append(hdu)
+
+print([_.name for _ in hdu_list])
+hdu_list.writeto(filename, overwrite=True)
+
+
+# In[ ]:
+
+
+ds2 = DataStore.from_dir(
+    base_dir="", hdu_table_filename=filename, obs_table_filename=filename
 )
+ds2.info()
 
-# Write the new hdu table
-filename = data_dir / "hdu-index.fits.gz"
-hdu_index_table.write(str(filename), overwrite=True)
-
-
-# In[ ]:
-
-
-hdu_index_table
-
-
-# In[ ]:
-
-
-print(hdu_index_table[-4]["FILE_DIR"], " ", hdu_index_table[-4]["FILE_NAME"])
-
-
-# In[ ]:
-
-
-print(hdu_index_table[-1]["FILE_DIR"], " ", hdu_index_table[-1]["FILE_NAME"])
+# Let's see if it's possible to access the data
+obs = ds2.obs(20136)
+obs.events
+obs.aeff
+background2d_peek(obs.bkg)
 
 
 # ## Exercises
 # 
-# - Use real AGN run
-# - Change the binning for the grouping: thinner zenithal bin, add efficiency binning ....
-# - Change the energy binning (ebounds) and the offset (offset) used to compute the acceptance curve
-# 
-
-# ## What next?
-# 
-# In this tutorial we have created a template background model in the `bkg_2d` format, i.e. with offset and energy axes (see [spec](http://gamma-astro-data-formats.readthedocs.io/en/latest/irfs/background/index.html#bkg-2d-format)).
-# 
-# In future tutorials, we will use this background model as one of the model components for source analysis.
+# - Play with the parameters here (energy binning, offset binning, zenith binning)
+# - Try to figure out why there are outliers on the zenith vs energy threshold curve.
+# - Does azimuth angle or optical efficiency have an effect on background rate?
+# - Use the background models for a 3D analysis (see "hess" notebook).

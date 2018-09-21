@@ -38,6 +38,7 @@ import matplotlib.pyplot as plt
 # can check what version of Numpy and Astropy you have
 # All examples should work with Astropy 1.3,
 # most even with Astropy 1.0
+from gammapy.extern.pathlib import Path
 import numpy as np
 import astropy
 import os
@@ -238,8 +239,10 @@ print(crab_altaz)
 
 
 # Open Fermi 3FGL from the repo
-filename = os.environ["GAMMAPY_DATA"] + "catalogs/fermi/gll_psc_v16.fit.gz"
-table = Table.read(filename, hdu=1)
+filename = os.environ["GAMMAPY_DATA"] / Path(
+    "catalogs/fermi/gll_psc_v16.fit.gz"
+)
+table = Table.read(str(filename), hdu=1)
 # Alternatively, one can grab it from the server.
 # table = Table.read("http://fermi.gsfc.nasa.gov/ssc/data/access/lat/4yr_catalog/gll_psc_v16.fit")
 
@@ -248,11 +251,13 @@ table = Table.read(filename, hdu=1)
 
 
 # Note that a single FITS file might contain different tables in different HDUs
-filename = os.environ["GAMMAPY_DATA"] + "catalogs/fermi/gll_psc_v16.fit.gz"
+filename = os.environ["GAMMAPY_DATA"] / Path(
+    "catalogs/fermi/gll_psc_v16.fit.gz"
+)
 # You can load a `fits.HDUList` and check the extension names
-print([_.name for _ in fits.open(filename)])
+print([_.name for _ in fits.open(str(filename))])
 # Then you can load by name or integer index via the `hdu` option
-extended_source_table = Table.read(filename, hdu="ExtendedSources")
+extended_source_table = Table.read(str(filename), hdu="ExtendedSources")
 
 
 # ### General informations on the Table
