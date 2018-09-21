@@ -46,10 +46,10 @@
 
 import os
 
-path = os.path.expandvars("$GAMMAPY_EXTRA/datasets")
+path = os.path.expandvars("$GAMMAPY_DATA")
 
 if not os.path.exists(path):
-    raise Exception("gammapy-extra repository not found!")
+    raise Exception("gammapy-data repository not found!")
 else:
     print("Great your setup is correct!")
 
@@ -59,7 +59,7 @@ else:
 # In[ ]:
 
 
-# os.environ['GAMMAPY_EXTRA'] = os.path.join(os.getcwd(), '..')
+# os.environ['GAMMAPY_DATA'] = os.path.join(os.getcwd(), '..')
 
 
 # Now we can continue with the usual IPython notebooks and Python imports:
@@ -98,7 +98,7 @@ from astropy.visualization import simple_norm
 from gammapy.maps import Map
 
 vela_2fhl = Map.read(
-    "$GAMMAPY_EXTRA/datasets/fermi_2fhl/fermi_2fhl_vela.fits.gz", hdu="COUNTS"
+    "$GAMMAPY_DATA/fermi_2fhl/fermi_2fhl_vela.fits.gz", hdu="COUNTS"
 )
 
 
@@ -178,7 +178,7 @@ vela_2fhl_cutout.plot();
 # In[ ]:
 
 
-vela_wmap = Map.read("$GAMMAPY_EXTRA/datasets/images/Vela_region_WMAP_K.fits")
+vela_wmap = Map.read("$GAMMAPY_DATA/images/Vela_region_WMAP_K.fits")
 
 # define a norm to stretch the data, so it is better visible
 norm = simple_norm(vela_wmap.data, stretch="sqrt", max_percent=99.9)
@@ -243,9 +243,7 @@ from gammapy.data import EventList
 # In[ ]:
 
 
-events_2fhl = EventList.read(
-    "$GAMMAPY_EXTRA/datasets/fermi_2fhl/2fhl_events.fits.gz"
-)
+events_2fhl = EventList.read("$GAMMAPY_DATA/fermi_2fhl/2fhl_events.fits.gz")
 
 
 # This time the actual data is stored as an [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html#astropy.table.Table) object. It can be accessed with `.table` attribute: 
@@ -349,7 +347,7 @@ from gammapy.catalog import SourceCatalog2FHL
 
 
 fermi_2fhl = SourceCatalog2FHL(
-    "$GAMMAPY_EXTRA/datasets/catalogs/fermi/gll_psch_v08.fit.gz"
+    "$GAMMAPY_DATA/catalogs/fermi/gll_psch_v08.fit.gz"
 )
 fermi_2fhl.table
 

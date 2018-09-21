@@ -249,12 +249,6 @@ spec.plot(energy_range, energy_power=2)
 spec.plot_error(energy_range, energy_power=2);
 
 
-# In[ ]:
-
-
-result.model.parameters.covariance = 10
-
-
 # ## Exercises
 # 
 # * Analyse the second source in the field of view: G0.9+0.1

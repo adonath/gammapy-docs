@@ -370,7 +370,7 @@ print(image.geom)
 # In[ ]:
 
 
-filename = "$GAMMAPY_EXTRA/datasets/fermi_2fhl/fermi_2fhl_gc.fits.gz"
+filename = "$GAMMAPY_DATA/fermi_2fhl/fermi_2fhl_gc.fits.gz"
 m_2fhl_gc = Map.read(filename)
 print(m_2fhl_gc)
 
@@ -389,7 +389,7 @@ print(m_2fhl_gc)
 # In[ ]:
 
 
-filename = os.environ["GAMMAPY_EXTRA"] + "/datasets/fermi_survey/all.fits.gz"
+filename = os.environ["GAMMAPY_DATA"] + "/fermi_survey/all.fits.gz"
 hdulist = fits.open(filename)
 hdulist.info()
 
@@ -464,7 +464,7 @@ Table.read(hdulist["PRIMARY_BANDS"])
 # In[ ]:
 
 
-filename = "$GAMMAPY_EXTRA/datasets/fermi_2fhl/fermi_2fhl_gc.fits.gz"
+filename = "$GAMMAPY_DATA/fermi_2fhl/fermi_2fhl_gc.fits.gz"
 m_2fhl_gc = Map.read(filename, hdu="counts")
 
 
@@ -503,7 +503,7 @@ with plt.rc_context(rc=rc_params):
 # In[ ]:
 
 
-filename = "$GAMMAPY_EXTRA/datasets/fermi_3fhl/gll_iem_v06_cutout.fits"
+filename = "$GAMMAPY_DATA/fermi_3fhl/gll_iem_v06_cutout.fits"
 m_iem_gc = Map.read(filename)
 
 rc_params = {

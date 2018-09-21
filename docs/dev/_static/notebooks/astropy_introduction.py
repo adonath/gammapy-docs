@@ -238,9 +238,7 @@ print(crab_altaz)
 
 
 # Open Fermi 3FGL from the repo
-filename = (
-    os.environ["GAMMAPY_EXTRA"] + "/datasets/catalogs/fermi/gll_psc_v16.fit.gz"
-)
+filename = os.environ["GAMMAPY_DATA"] + "catalogs/fermi/gll_psc_v16.fit.gz"
 table = Table.read(filename, hdu=1)
 # Alternatively, one can grab it from the server.
 # table = Table.read("http://fermi.gsfc.nasa.gov/ssc/data/access/lat/4yr_catalog/gll_psc_v16.fit")
@@ -250,9 +248,7 @@ table = Table.read(filename, hdu=1)
 
 
 # Note that a single FITS file might contain different tables in different HDUs
-filename = (
-    os.environ["GAMMAPY_EXTRA"] + "/datasets/catalogs/fermi/gll_psc_v16.fit.gz"
-)
+filename = os.environ["GAMMAPY_DATA"] + "catalogs/fermi/gll_psc_v16.fit.gz"
 # You can load a `fits.HDUList` and check the extension names
 print([_.name for _ in fits.open(filename)])
 # Then you can load by name or integer index via the `hdu` option

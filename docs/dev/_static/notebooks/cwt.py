@@ -46,7 +46,7 @@ from astropy.io import fits
 from astropy.coordinates import Angle, SkyCoord
 from gammapy.maps import Map
 
-filename = "$GAMMAPY_EXTRA/datasets/fermi_survey/all.fits.gz"
+filename = "$GAMMAPY_DATA/fermi_survey/all.fits.gz"
 
 counts = Map.read(filename=filename, hdu="COUNTS")
 background = Map.read(filename=filename, hdu="BACKGROUND")

@@ -45,7 +45,7 @@ from gammapy.spectrum import CrabSpectrum
 # In[ ]:
 
 
-data_store = DataStore.from_dir("$GAMMAPY_EXTRA/datasets/hess-dl3-dr1/")
+data_store = DataStore.from_dir("$GAMMAPY_DATA/hess-dl3-dr1/")
 mask = data_store.obs_table["OBS_SUBSET_TAG"] == "crab"
 obs_ids = data_store.obs_table["OBS_ID"][mask].data
 observations = data_store.obs_list(obs_ids)

@@ -54,7 +54,7 @@ import sherpa.astro.ui as sh
 
 
 # Read the fits file to load them in a sherpa model
-filecounts = os.environ["GAMMAPY_EXTRA"] + "/datasets/G300-0_test_counts.fits"
+filecounts = os.environ["GAMMAPY_DATA"] + "/sherpaCTA/G300-0_test_counts.fits"
 hdr = fits.getheader(filecounts)
 wcs = WCS(hdr)
 
@@ -63,9 +63,9 @@ sh.set_method("simplex")
 sh.load_image(filecounts)
 sh.set_coord("logical")
 
-fileexp = os.environ["GAMMAPY_EXTRA"] + "/datasets/G300-0_test_exposure.fits"
-filebkg = os.environ["GAMMAPY_EXTRA"] + "/datasets/G300-0_test_background.fits"
-filepsf = os.environ["GAMMAPY_EXTRA"] + "/datasets/G300-0_test_psf.fits"
+fileexp = os.environ["GAMMAPY_DATA"] + "/sherpaCTA/G300-0_test_exposure.fits"
+filebkg = os.environ["GAMMAPY_DATA"] + "/sherpaCTA/G300-0_test_background.fits"
+filepsf = os.environ["GAMMAPY_DATA"] + "/sherpaCTA/G300-0_test_psf.fits"
 sh.load_table_model("expo", fileexp)
 sh.load_table_model("bkg", filebkg)
 sh.load_psf("psf", filepsf)

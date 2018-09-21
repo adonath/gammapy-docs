@@ -318,12 +318,14 @@ from astropy.table import Table
 from astropy.table import vstack as table_vstack
 
 filename = os.path.join(
-    os.environ["GAMMAPY_DATA"], "cta-1dc/data/baseline/gps/gps_baseline_110380.fits"
+    os.environ["GAMMAPY_DATA"],
+    "cta-1dc/data/baseline/gps/gps_baseline_110380.fits",
 )
 t1 = Table.read(filename, hdu="EVENTS")
 
 filename = os.path.join(
-    os.environ["GAMMAPY_DATA"], "cta-1dc/data/baseline/gps/gps_baseline_111140.fits"
+    os.environ["GAMMAPY_DATA"],
+    "cta-1dc/data/baseline/gps/gps_baseline_111140.fits",
 )
 t2 = Table.read(filename, hdu="EVENTS")
 tables = [t1, t2]
@@ -374,7 +376,8 @@ get_ipython().system('(cd $GAMMAPY_DATA/cta-1dc && tree caldb)')
 # IRFs are stored in `BinTable` HDUs in a weird format
 # that you don't need to care about because it's implemented in Gammapy
 irf_filename = os.path.join(
-    os.environ["GAMMAPY_DATA"], "cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
+    os.environ["GAMMAPY_DATA"],
+    "cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits",
 )
 from astropy.io import fits
 
@@ -390,6 +393,7 @@ hdu_list.info()
 
 
 from gammapy.irf import EffectiveAreaTable2D
+
 aeff = EffectiveAreaTable2D.read(irf_filename, hdu="EFFECTIVE AREA")
 
 
@@ -445,6 +449,7 @@ aeff.to_effective_area_table(offset="1 deg")
 
 
 from gammapy.irf import EnergyDispersion2D
+
 edisp = EnergyDispersion2D.read(irf_filename, hdu="ENERGY DISPERSION")
 print(type(edisp))
 print(type(edisp.data))
@@ -562,6 +567,7 @@ get_ipython().system('(cd $GAMMAPY_DATA/cta-1dc && tree index)')
 
 
 from gammapy.data import DataStore
+
 data_store = DataStore.from_dir("$GAMMAPY_DATA/cta-1dc/index/gps")
 
 # If you want to access all CTA DC-1 data,

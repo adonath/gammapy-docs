@@ -121,7 +121,7 @@ logging.getLogger("gammapy.spectrum").setLevel("WARNING")
 # In[ ]:
 
 
-datastore = DataStore.from_dir("$GAMMAPY_EXTRA/datasets/hess-dl3-dr1/")
+datastore = DataStore.from_dir("$GAMMAPY_DATA/hess-dl3-dr1/")
 obs_ids = [23523, 23526, 23559, 23592]
 obs_list = datastore.obs_list(obs_ids)
 

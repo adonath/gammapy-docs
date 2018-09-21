@@ -75,7 +75,7 @@ log.setLevel(logging.ERROR)
 # In[ ]:
 
 
-data_store = DataStore.from_dir('$GAMMAPY_DATA/cta-1dc/index/gps')
+data_store = DataStore.from_dir("$GAMMAPY_DATA/cta-1dc/index/gps")
 
 
 # In[ ]:

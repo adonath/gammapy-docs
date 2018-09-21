@@ -26,14 +26,14 @@
 
 
 # Check that you have the prepared Fermi-LAT dataset
-get_ipython().system('ls -1 $GAMMAPY_FERMI_LAT_DATA/3fhl')
+get_ipython().system('ls -1 $GAMMAPY_DATA/fermi_3fhl')
 
 
 # In[ ]:
 
 
 # We will use diffuse models from here
-get_ipython().system('ls -1 $GAMMAPY_EXTRA/datasets/fermi_3fhl')
+get_ipython().system('ls -1 $GAMMAPY_DATA/fermi_3fhl')
 
 
 # In[ ]:

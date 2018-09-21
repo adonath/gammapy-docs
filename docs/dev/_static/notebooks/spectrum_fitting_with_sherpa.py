@@ -36,7 +36,7 @@ sherpa.__version__
 
 
 ds = DataStack()
-ANALYSIS_DIR = expandvars("$GAMMAPY_EXTRA/datasets/joint-crab/spectra/hess/")
+ANALYSIS_DIR = expandvars("$GAMMAPY_DATA/joint-crab/spectra/hess/")
 filenames = glob.glob(ANALYSIS_DIR + "pha_obs*.fits")
 for filename in filenames:
     sh.load_data(ds, filename)

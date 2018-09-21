@@ -59,7 +59,9 @@ model = PowerLaw(
 
 
 # Load IRFs
-filename = "$GAMMAPY_DATA/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
+filename = (
+    "$GAMMAPY_DATA/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
+)
 cta_irf = CTAIrf.read(filename)
 
 

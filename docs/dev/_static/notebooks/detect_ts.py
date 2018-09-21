@@ -51,7 +51,7 @@ from gammapy.catalog import source_catalogs
 
 
 # Load data from files
-filename = "$GAMMAPY_EXTRA/datasets/fermi_survey/all.fits.gz"
+filename = "$GAMMAPY_DATA/fermi_survey/all.fits.gz"
 opts = {
     "position": SkyCoord(0, 0, unit="deg", frame="galactic"),
     "width": (20, 8),

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.utils.fitting.fit &mdash; gammapy v0.8.dev7377</title>
+  <title>gammapy.utils.fitting.fit &mdash; gammapy v0.8.dev7406</title>
   
 
   
@@ -62,7 +62,7 @@
             
             
               <div class="version">
-                0.8.dev7377
+                0.8.dev7406
               </div>
             
           
@@ -976,6 +976,7 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">abc</span>
 
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">astropy.utils.misc</span> <span class="k">import</span> <span class="n">InheritDocstrings</span>
 
 <span class="kn">from</span> <span class="nn">...extern</span> <span class="k">import</span> <span class="n">six</span>
@@ -1004,6 +1005,74 @@
         <span class="sd">&quot;&quot;&quot;Total likelihood given the current model parameters&quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
+<div class="viewcode-block" id="Fit.likelihood_profiles"><a class="viewcode-back" href="../../../../api/gammapy.utils.fitting.Fit.html#gammapy.cube.Fit.likelihood_profiles">[docs]</a>    <span class="k">def</span> <span class="nf">likelihood_profiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute likelihood profiles for multiple parameters.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model : `~gammapy.spectrum.models.SpectralModel` or `~gammapy.cube.models.SkyModel`</span>
+<span class="sd">            Model to compute the likelihood profile for.</span>
+<span class="sd">        parameters : list of str or &quot;all&quot;</span>
+<span class="sd">            For which parameters to compute likelihood profiles.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">profiles</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="n">parameters</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
+            <span class="n">parameters</span> <span class="o">=</span> <span class="p">[</span><span class="n">par</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">par</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">paramaters</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">parname</span> <span class="ow">in</span> <span class="n">parameters</span><span class="p">:</span>
+            <span class="n">profiles</span><span class="p">[</span><span class="n">parname</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood_profile</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">parname</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">profiles</span></div>
+
+<div class="viewcode-block" id="Fit.likelihood_profile"><a class="viewcode-back" href="../../../../api/gammapy.utils.fitting.Fit.html#gammapy.cube.Fit.likelihood_profile">[docs]</a>    <span class="k">def</span> <span class="nf">likelihood_profile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">parameter</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">bounds</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nvalues</span><span class="o">=</span><span class="mi">11</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute likelihood profile for a single parameter of the model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model : `~gammapy.spectrum.models.SpectralModel`</span>
+<span class="sd">            Model to compute the likelihood profile for.</span>
+<span class="sd">        parameter : str</span>
+<span class="sd">            Parameter to calculate profile for</span>
+<span class="sd">        values : `~astropy.units.Quantity` (optional)</span>
+<span class="sd">            Parameter values to evaluate the likelihood for.</span>
+<span class="sd">        bounds : int or tuple of float</span>
+<span class="sd">            When an `int` is passed the bounds are computed from `bounds * sigma`</span>
+<span class="sd">            from the best fit value of the parameter, where `sigma` corresponds to</span>
+<span class="sd">            the one sigma error on the parameter. If a tuple of floats is given</span>
+<span class="sd">            those are taken as the min and max values and `nvalues` are linearly</span>
+<span class="sd">            spaced between those.</span>
+<span class="sd">        nvalues : int</span>
+<span class="sd">            Number of parameter grid points to use.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        likelihood_profile : dict</span>
+<span class="sd">            Dict of parameter values and likelihood values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="n">likelihood</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="n">values</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bounds</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+                <span class="n">parmin</span><span class="p">,</span> <span class="n">parmax</span> <span class="o">=</span> <span class="n">bounds</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">parerr</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">parameter</span><span class="p">)</span>
+                <span class="n">parval</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">parameter</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+                <span class="n">parmin</span><span class="p">,</span> <span class="n">parmax</span> <span class="o">=</span> <span class="n">parval</span> <span class="o">-</span> <span class="n">bounds</span> <span class="o">*</span> <span class="n">parerr</span><span class="p">,</span> <span class="n">parval</span> <span class="o">+</span> <span class="n">bounds</span> <span class="o">*</span> <span class="n">parerr</span>
+
+            <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">parmin</span><span class="p">,</span> <span class="n">parmax</span><span class="p">,</span> <span class="n">nvalues</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">parameter</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="n">stat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_stat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+            <span class="n">likelihood</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stat</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="n">values</span><span class="p">,</span>
+            <span class="s1">&#39;likelihood&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">likelihood</span><span class="p">),</span>
+        <span class="p">}</span></div>
+
 <div class="viewcode-block" id="Fit.optimize"><a class="viewcode-back" href="../../../../api/gammapy.utils.fitting.Fit.html#gammapy.cube.Fit.optimize">[docs]</a>    <span class="k">def</span> <span class="nf">optimize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;minuit&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Run the optimization</span>
 
@@ -1029,8 +1098,8 @@
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        fit_result : `FitResult`</span>
-<span class="sd">            Fit result object with the best fit model and additional information.</span>
+<span class="sd">        fit_result : `dict`</span>
+<span class="sd">            Optimize info dict with the best fit model and additional information.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">parameters</span>
 
@@ -1050,7 +1119,7 @@
         <span class="c1"># Copy final results into the parameters object</span>
         <span class="n">parameters</span><span class="o">.</span><span class="n">set_parameter_factors</span><span class="p">(</span><span class="n">factors</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">FitResult</span><span class="p">(</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
             <span class="n">total_stat</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">total_stat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">parameters</span><span class="p">),</span>
             <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span>
@@ -1060,29 +1129,32 @@
 
     <span class="c1"># TODO: this is a preliminary solution to restore the old behaviour, that&#39;s</span>
     <span class="c1"># why the method is hidden.</span>
-    <span class="k">def</span> <span class="nf">_estimate_errors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fit_result</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_estimate_errors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Run the error estimation&quot;&quot;&quot;</span>
-        <span class="n">parameters</span> <span class="o">=</span> <span class="n">fit_result</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">minuit</span><span class="o">.</span><span class="n">covariance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;minuit&quot;</span><span class="p">):</span>
             <span class="n">covar</span> <span class="o">=</span> <span class="n">_get_covar</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">minuit</span><span class="p">)</span>
             <span class="n">parameters</span><span class="o">.</span><span class="n">set_covariance_factors</span><span class="p">(</span><span class="n">covar</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">set_covariance_factors</span><span class="p">(</span><span class="n">covar</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No covariance matrix found&quot;</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No covariance matrix found. Error estimation currently&quot;</span>
+                        <span class="s2">&quot; only works with iminuit backend.&quot;</span><span class="p">)</span>
             <span class="n">parameters</span><span class="o">.</span><span class="n">covariance</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">return</span> <span class="n">fit_result</span>
+        <span class="k">return</span> <span class="n">model</span>
 
-<div class="viewcode-block" id="Fit.run"><a class="viewcode-back" href="../../../../api/gammapy.utils.fitting.Fit.html#gammapy.cube.Fit.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="n">optimize_opts</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Fit.run"><a class="viewcode-back" href="../../../../api/gammapy.utils.fitting.Fit.html#gammapy.cube.Fit.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="n">optimize_opts</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">profile_opts</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Run all fitting steps.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        steps : {&quot;all&quot;, &quot;optimize&quot;, &quot;errors&quot;}</span>
+<span class="sd">        steps : {&quot;all&quot;, &quot;optimize&quot;, &quot;errors&quot;, &quot;profiles&quot;}</span>
 <span class="sd">            Which fitting steps to run.</span>
 <span class="sd">        optimize_opts : dict</span>
 <span class="sd">            Options passed to `Fit.optimize`.</span>
+<span class="sd">        profile_opts : dict</span>
+<span class="sd">            Options passed to `Fit.likelihood_profiles`.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1098,15 +1170,20 @@
             <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="o">**</span><span class="n">optimize_opts</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="s2">&quot;errors&quot;</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_estimate_errors</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_estimate_errors</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">])</span>
 
-        <span class="k">return</span> <span class="n">result</span></div></div>
+        <span class="k">if</span> <span class="s2">&quot;profiles&quot;</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">profile_opts</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">profile_opts</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;likelihood_profiles&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood_profiles</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">],</span> <span class="o">**</span><span class="n">profile_opts</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">FitResult</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">)</span></div></div>
 
 
 <span class="k">class</span> <span class="nc">FitResult</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Fit result object.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">success</span><span class="p">,</span> <span class="n">nfev</span><span class="p">,</span> <span class="n">total_stat</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">backend</span><span class="p">,</span> <span class="n">method</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">success</span><span class="p">,</span> <span class="n">nfev</span><span class="p">,</span> <span class="n">total_stat</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">backend</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">likelihood_profiles</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_success</span> <span class="o">=</span> <span class="n">success</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_nfev</span> <span class="o">=</span> <span class="n">nfev</span>
@@ -1114,6 +1191,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_message</span> <span class="o">=</span> <span class="n">message</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_backend</span> <span class="o">=</span> <span class="n">backend</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_method</span> <span class="o">=</span> <span class="n">method</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_profiles</span> <span class="o">=</span> <span class="n">likelihood_profiles</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1160,6 +1238,38 @@
         <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">total stat : </span><span class="si">{:.2f}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">total_stat</span><span class="p">)</span>
         <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">message    : </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">str_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">likelihood_profiles</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Likelihood profiles for paramaters.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_profiles</span>
+
+    <span class="k">def</span> <span class="nf">plot_likelihood_profile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Plot likelihood profile for a given parameter.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        parameter : str</span>
+<span class="sd">            Parameter to plot profile for.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ax : `matplotlib.pyplot.Axes`</span>
+<span class="sd">            Axes object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+
+        <span class="n">ts_diff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood_profiles</span><span class="p">[</span><span class="n">parameter</span><span class="p">][</span><span class="s1">&#39;likelihood&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_stat</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood_profiles</span><span class="p">[</span><span class="n">parameter</span><span class="p">][</span><span class="s1">&#39;values&#39;</span><span class="p">]</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">ts_diff</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">parameter</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">parameter</span> <span class="o">+</span> <span class="s2">&quot;[unit]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">))</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s1">&#39;TS difference&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ax</span>
 </pre></div>
 
            </div>
@@ -1173,7 +1283,7 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2018, The Gammapy developers.
-      Last updated on 20 Sep 2018.
+      Last updated on 21 Sep 2018.
 
     </p>
   </div>
@@ -1195,7 +1305,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../../../',
-            VERSION:'0.8.dev7377',
+            VERSION:'0.8.dev7406',
             LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
