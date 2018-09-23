@@ -60,9 +60,10 @@ from gammapy.irf import Background2D
 
 
 data_store = DataStore.from_dir("$GAMMAPY_DATA/hess-dl3-dr1")
-mask = data_store.obs_table["OBS_SUBSET_TAG"] == "offdata"
-obs_ids = data_store.obs_table["OBS_ID"][mask].data
-observations = data_store.obs_list(obs_ids)
+# Select just the off data runs
+obs_table = data_store.obs_table
+obs_table = obs_table[obs_table["TARGET_NAME"] == "Off data"]
+observations = data_store.obs_list(obs_table["OBS_ID"])
 print("Number of observations:", len(observations))
 
 
@@ -144,7 +145,7 @@ def background2d_peek(bkg):
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'ebounds = np.logspace(-1, 2, 20) * u.TeV\noffset = sqrt_space(start=0, stop=3, num=10) * u.deg\nestimator = BackgroundModelEstimator(ebounds, offset)\n# observations = observations[:3]  # To run more quickly for debugging\nestimator.run(observations)')
+get_ipython().run_cell_magic('time', '', 'ebounds = np.logspace(-1, 2, 20) * u.TeV\noffset = sqrt_space(start=0, stop=3, num=10) * u.deg\nestimator = BackgroundModelEstimator(ebounds, offset)\nestimator.run(observations)')
 
 
 # Let's have a quick look at what we did ...
@@ -171,19 +172,11 @@ background2d_peek(estimator.background_rate)
 # In[ ]:
 
 
-data_store = DataStore.from_dir("$GAMMAPY_DATA/hess-dl3-dr1")
-obs_table = data_store.obs_table
-obs_table = obs_table[obs_table["OBS_SUBSET_TAG"] == "offdata"]
-
-
-# In[ ]:
-
-
 x = obs_table["ZEN_PNT"]
-y = obs_table["SAFE_ENERY_THRESHOLD_LO"]
+y = obs_table["SAFE_ENERGY_LO"]
 plt.plot(x, y, "o")
 plt.xlabel("Zenith (deg)")
-plt.ylabel("Energy threshold (TeV)")
+plt.ylabel("Energy threshold (TeV)");
 
 
 # In[ ]:
@@ -194,7 +187,7 @@ y = obs_table["EVENT_COUNT"] / obs_table["ONTIME"]
 plt.plot(x, y, "o")
 plt.xlabel("Zenith (deg)")
 plt.ylabel("Rate (events / sec)")
-plt.ylim(0, 10)
+plt.ylim(0, 10);
 
 
 # The energy threshold increases, as expected. It's a bit surprising that the total background rate doesn't decreases with increasing zenith angle. That's a bit of luck for this configuration, and because we're looking at the rate of background events in the whole field of view. As shown below, the energy threshold increases (reducing the total rate), but the rate at a given energy increases with zenith angle (increasing the total rate). Overall the background does change with zenith angle and that dependency should be taken into account.
@@ -224,14 +217,10 @@ def make_model(observations):
 
 
 def make_models():
-    data_store = DataStore.from_dir("$GAMMAPY_DATA/hess-dl3-dr1")
-    obs_table = data_store.obs_table
-    obs_table = obs_table[obs_table["OBS_SUBSET_TAG"] == "offdata"]
-
     for zenith in zenith_bins:
         mask = zenith["min"] <= obs_table["ZEN_PNT"]
         mask &= obs_table["ZEN_PNT"] < zenith["max"]
-        obs_ids = obs_table["OBS_ID"][mask].data
+        obs_ids = obs_table["OBS_ID"][mask]
         observations = data_store.obs_list(obs_ids)
         yield make_model(observations)
 
@@ -270,7 +259,7 @@ plt.legend();
 # 
 # So now we have radially symmetric background models for three zenith angle bins. To be able to use it from the high-level Gammapy classes like e.g. the MapMaker though, we also have to create a [HDU index table](https://gamma-astro-data-formats.readthedocs.io/en/latest/data_storage/hdu_index/index.html) that declares which background model to use for each observation.
 # 
-# It sounds harder than it actually is. Basically you have to some code to make a new `astropy.table.Table`. The most tricky part is that before you can make the HDU index table, you have to decide where to store the data, because the HDU index table is a reference to the data location. Let's decide in this example that we want to re-use all existing files in `$GAMMAPY_DATA/hess-dl3-dr1` and put all the new HDUs (for background models and new index files) bundled in a single FITS file called `hess-dl3-dr3-with-background.fits.gz` in the current working directory. Note that index files aren't relocatable if they reference files outside the current folder.
+# It sounds harder than it actually is. Basically you have to some code to make a new `astropy.table.Table`. The most tricky part is that before you can make the HDU index table, you have to decide where to store the data, because the HDU index table is a reference to the data location. Let's decide in this example that we want to re-use all existing files in `$GAMMAPY_DATA/hess-dl3-dr1` and put all the new HDUs (for background models and new index files) bundled in a single FITS file called `hess-dl3-dr3-with-background.fits.gz`, which we will put  in `$GAMMAPY_DATA/hess-dl3-dr1`.
 
 # In[ ]:
 
@@ -290,7 +279,7 @@ for obs_row in data_store.obs_table:
         "OBS_ID": obs_row["OBS_ID"],
         "HDU_TYPE": "bkg",
         "HDU_CLASS": "bkg_2d",
-        "FILE_DIR": ".",
+        "FILE_DIR": "",
         "FILE_NAME": filename,
         "HDU_NAME": hdu_name,
     }
@@ -304,15 +293,7 @@ hdu_table_bkg = Table(rows=rows)
 
 # Make a copy of the original HDU index table
 hdu_table = data_store.hdu_table.copy()
-
-# Remove BASE_DIR, since now files will no longer
-# be in a single folder, so a base dir doesn't work
 hdu_table.meta.pop("BASE_DIR")
-
-# Adjust FILE_DIR to point to the original files
-# Here we use an environment variable
-del hdu_table["FILE_DIR"]
-hdu_table["FILE_DIR"] = "$GAMMAPY_DATA/hess-dl3-dr1/data"
 
 # Add the rows for the background HDUs
 hdu_table = vstack([hdu_table, hdu_table_bkg])
@@ -328,8 +309,7 @@ hdu_table[:7]
 # In[ ]:
 
 
-# Make one FITS file that contains the background models
-# and new index tables
+# Put index tables and background models in a FITS file
 hdu_list = fits.HDUList()
 
 hdu = fits.BinTableHDU(hdu_table)
@@ -345,18 +325,22 @@ for idx, model in enumerate(models):
     hdu_list.append(hdu)
 
 print([_.name for _ in hdu_list])
-hdu_list.writeto(filename, overwrite=True)
+
+import os
+
+path = (
+    Path(os.environ["GAMMAPY_DATA"])
+    / "hess-dl3-dr1/hess-dl3-dr3-with-background.fits.gz"
+)
+hdu_list.writeto(str(path), overwrite=True)
 
 
 # In[ ]:
 
 
-ds2 = DataStore.from_dir(
-    base_dir="", hdu_table_filename=filename, obs_table_filename=filename
-)
-ds2.info()
-
 # Let's see if it's possible to access the data
+ds2 = DataStore.from_file(path)
+ds2.info()
 obs = ds2.obs(20136)
 obs.events
 obs.aeff

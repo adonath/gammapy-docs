@@ -48,7 +48,7 @@ data_store = DataStore.from_dir("$GAMMAPY_DATA/hess-dl3-dr1/")
 # In[ ]:
 
 
-mask = data_store.obs_table["OBS_SUBSET_TAG"] == "crab"
+mask = data_store.obs_table["TARGET_NAME"] == "Crab"
 obs_ids = data_store.obs_table["OBS_ID"][mask].data
 observations = data_store.obs_list(obs_ids)
 print(observations)

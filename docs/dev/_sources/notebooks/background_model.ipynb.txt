@@ -112,9 +112,10 @@
    ],
    "source": [
     "data_store = DataStore.from_dir(\"$GAMMAPY_DATA/hess-dl3-dr1\")\n",
-    "mask = data_store.obs_table[\"OBS_SUBSET_TAG\"] == \"offdata\"\n",
-    "obs_ids = data_store.obs_table[\"OBS_ID\"][mask].data\n",
-    "observations = data_store.obs_list(obs_ids)\n",
+    "# Select just the off data runs\n",
+    "obs_table = data_store.obs_table\n",
+    "obs_table = obs_table[obs_table[\"TARGET_NAME\"] == \"Off data\"]\n",
+    "observations = data_store.obs_list(obs_table[\"OBS_ID\"])\n",
     "print(\"Number of observations:\", len(observations))"
    ]
   },
@@ -210,8 +211,8 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "CPU times: user 2.11 s, sys: 42.3 ms, total: 2.15 s\n",
-      "Wall time: 2.16 s\n"
+      "CPU times: user 1.91 s, sys: 46.9 ms, total: 1.96 s\n",
+      "Wall time: 1.98 s\n"
      ]
     }
    ],
@@ -220,7 +221,6 @@
     "ebounds = np.logspace(-1, 2, 20) * u.TeV\n",
     "offset = sqrt_space(start=0, stop=3, num=10) * u.deg\n",
     "estimator = BackgroundModelEstimator(ebounds, offset)\n",
-    "# observations = observations[:3]  # To run more quickly for debugging\n",
     "estimator.run(observations)"
    ]
   },
@@ -276,28 +276,7 @@
    "cell_type": "code",
    "execution_count": 9,
    "metadata": {},
-   "outputs": [],
-   "source": [
-    "data_store = DataStore.from_dir(\"$GAMMAPY_DATA/hess-dl3-dr1\")\n",
-    "obs_table = data_store.obs_table\n",
-    "obs_table = obs_table[obs_table[\"OBS_SUBSET_TAG\"] == \"offdata\"]"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 10,
-   "metadata": {},
    "outputs": [
-    {
-     "data": {
-      "text/plain": [
-       "Text(0,0.5,'Energy threshold (TeV)')"
-      ]
-     },
-     "execution_count": 10,
-     "metadata": {},
-     "output_type": "execute_result"
-    },
     {
      "data": {
       "image/png": "iVBORw0KGgoAAAANSUhEUgAAAYUAAAEKCAYAAAD9xUlFAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAADl0RVh0U29mdHdhcmUAbWF0cGxvdGxpYiB2ZXJzaW9uIDIuMi4zLCBodHRwOi8vbWF0cGxvdGxpYi5vcmcvIxREBQAAHfZJREFUeJzt3Xt4XXWd7/H3hxAOKShBqJem1Nax1FuFag74nHpGwEvrBahFfazgeO/McwZvo9F2RERQ4Vgd5cxhdFBRRwUUqbEgWlFhcEQcUgqWW2c4INCUsfUSEYkQ0u/5Y63s7u7uy0q6V/beK5/X8+Rp1mWv9V2l5Jv1u3x/igjMzMwA9mt1AGZm1j6cFMzMrMRJwczMSpwUzMysxEnBzMxKnBTMzKzEScHMzEqcFMzMrMRJwczMSvZvdQCTdfjhh8f8+fNbHYaZWUfZtGnTbyJidqPzOi4pzJ8/n6GhoVaHYWbWUSTdm+U8Nx+ZmVmJk4KZmZU4KZiZWYmTgpmZlTgpmJlZSceNPjIzm2kGNw+zbuNWto+MMqe3h4Fli1ixpC+XezkpmJm1scHNw6xdv4XRsXEAhkdGWbt+C0AuicHNR2ZmbWzdxq2lhDBhdGycdRu35nI/JwUzsza2fWR0Uvv3lZOCmVkbm9PbM6n9+8pJwcysjQ0sW0RPd9ce+3q6uxhYtiiX+7mj2cysjU10Jnv0kZmZAUliyCsJVHLzkZmZlTgpmJlZiZOCmZmVOCmYmVmJk4KZmZU4KZiZWYmTgpmZlTgpmJlZiZOCmZmVOCmYmVmJk4KZmZU4KZiZWYmTgpmZleSWFCRdJGmHpFtrHD9V0i/Tr+slHZVXLGZmlk2ebwpfAZbXOX4P8KKIeC5wDnBhjrGYmVkGua2nEBHXSZpf5/j1ZZs3AHPzisXMzLJplz6FtwHfb3UQZmYzXctXXpN0PElSeGGdc1YDqwHmzZs3TZGZmc08LX1TkPRc4IvAyRHx21rnRcSFEdEfEf2zZ8+evgDNzGaYliUFSfOA9cAbI+I/WhWHmZntllvzkaRLgOOAwyVtAz4CdANExOeBM4HDgH+SBPBYRPTnFY+ZmTWW5+ijVQ2Ovx14e173NzOzyWuX0UdmZtYGnBTMzKyk5UNSzcxsb4Obh1m3cSvbR0aZ09vDwLJFrFjSl/t9nRTMzNrM4OZh1q7fwujYOADDI6OsXb8FIPfE4OYjM7M2s27j1lJCmDA6Ns66jVtzv7eTgplZm9k+Mjqp/c3kpGBm1mbm9PZMan8zOSmYmbWZgWWL6Onu2mNfT3cXA8sW5X5vdzSbmbWZic5kjz4yMzMgSQzTkQQqufnIzMxKnBTMzKzEScHMzEqcFMzMrMRJwczMSpwUzMyspO6QVEkHAK8A/icwBxgFbgWuiog78w/PzKw4WlX5dDJqJgVJZwCnANcBm4CrgQOBI4HPKFlD8/0Rcet0BGpm1slaWfl0Muq9KWyJiI/VOPZJSU8BjsghJjOzwqlX+bRTkoIkdUfEWLWDEfEA8EA+YZmZFUsrK59ORr2O5rcB2yRdJOmlktwpbWY2Ra2sfDoZNX/QR8SJwCLgZ8AHgPsl/aOk/zFdwZmZFUUrK59ORt3f/iNiJCK+FBEvBZYAdwKfl3TPtERnZlYQK5b0ce7KxfT19iCgr7eHc1cubqv+BMhYJVXSIcArgZOBw4Dv5BmUmVkRtary6WTUG5I6iyQJrAKOBb4HfAr4UUTsmp7wzMxsOtV7U7gP+DHwZeA1EfHo9IRkZmatUi8pzI+IhyCZ2Szp6RFx1zTFZWZmLVBv9NFEQnglsIVkRjOSjpbkPgUzswLKMvfgbJI+hRGAiLgZeHqeQZmZWWtkGX00FhEjSamjkmj0IUkXAa8CdkTEc6ocF3A+ScG9h4E3R8RNmaI2M2tTlUXvjn/GbK65c2dbF8Erl+VN4Q5JrwP2k7RA0meBGzJ87ivA8jrHXw4sTL9WA5/LcE0zs7Y1UfRueGSUICl69/Ub7ttje+36LQxuHm51qDVlSQqnA88HdgHrgT8D72n0oYi4DvhdnVNOBv4lEjcAvWmRPTOzjlSt6F2liSJ47apmUpD0CYCI+FNEfDAilqRfayLi4Sbcuw+4v2x7W7qvWiyrJQ1JGtq5c2cTbm1m1nxZi9u1WxG8cvXeFOo1/TSDquyr2lcRERdGRH9E9M+ePTvnsMzMpiZrcbt2K4JXrl5S6JJ0qKQnVPtqwr23sed6DHOB7U24rplZS1QrelepHYvglas3+ugZJCuu1fqN/mn7eO8NwOmSLiUZ8vqHdI0GM7OONDGqqJNHH9VLCrdHxJKpXljSJcBxwOGStgEfAboBIuLzwFUkw1HvIhmS+pap3svMrF10QtG7ejJVSZ2KiFjV4HgAf5vX/c3MbPLq9SmcP21RmJlZW6iXFJZKWlztgKSDJL1V0qk5xWVmZi1Qr/noAuDDaWK4FdgJHEgyA/nxwEXAN3KP0MzMpk3NpJAWvnudpIOBfuApwChwR0S073Q8MzObsoYdzWkJ7WvzD8XMzFotS+0jMzObIZwUzMysxEnBzMxKavYpSLqCOovpRMRJuURkZmYtU6+j+VPpnyuBJwNfT7dXAb/KMSYzM2uRekNS/xVA0jkR8Zdlh66QdF3ukZmZ2bTL0qcwW1KpIqqkBYAXNTAzK6AsBfHeC1wr6e50ez7w17lFZGZmLZNl8toPJC0kWV8B4M6IeCTfsMzMrBXqjT5aWePQX0giItbnFJOZmbVIvTeFE+scC8BJwcysYOqNPvJKaGZmM0zD0UeSDpH0D5KG0q9PSzpkOoIzM7PplWVI6kXAH4HXpV8PAl/OMygzM2uNLENS/yIiTinb/qikm/MKyMzMWifLm8KopBdObEhaSrLYjpmZFUyWN4W/Af4l7UcQ8DvgzXkGZWZmrZFl8totwFGSHp9uP5h7VGZm1hINk4Kk/wacQlLeYn9JAETE2blGZmZm0y5L89F3gT8AmwCXtzAzK7AsSWFuRCzPPRIzM2u5LEnhekmLI2JL7tGYmbWBwc3DrNu4le0jo8zp7WFg2SJWLOlrdVjTol5BvC0kNY72B96Sls5+hGQEUkTEc6cnRDOz6TO4eZi167cwOjYOwPDIKGvXJ78Tz4TEUO9N4VX7enFJy4HzgS7gixFxXsXxecBXgd70nDURcdW+3tfMbKrWbdxaSggTRsfGWbdx64xICjUnr0XEvRFxL0ni+K/0+wXAySQdz3VJ6gIuAF4OPAtYJelZFaedAXwrIpYArwf+aUpPYWbWJNtHqs/NrbW/aLLMaL4cGJf0dOBLJInh4gyfOwa4KyLujohHgUtJEkq5AB6ffn8IsD1T1GZmOZnT2zOp/UWTJSnsiojHgJXAZyPivcBTMnyuD7i/bHtbuq/cWcBpkrYBVwHvrHYhSasnqrTu3Lkzw63NzKZmYNkierq79tjX093FwLJFLYpoemVJCmOSVgF/BVyZ7uvO8DlV2RcV26uAr0TEXOAVwNck7RVTRFwYEf0R0T979uwMtzYzm5oVS/o4d+Vi+np7ENDX28O5KxfPiP4EyDYk9S0k9Y8+HhH3SFoAfD3D57YBR5Rtz2Xv5qG3AcsBIuLnkg4EDgd2ZLi+mVkuVizpmzFJoFLDN4WIuB34IHBTun1P5SiiGm4EFkpaIOkAko7kDRXn3Ae8GEDSM4EDAbcPmZm1SJaV104EbgZ+kG4fLanyh/te0n6I04GNwB0ko4xuk3S2pJPS094HvEPSLcAlwJsjorKJyczMpkmW5qOzSEYSXQsQETenTUgNpXMOrqrYd2bZ97cDSzPGamZmOcvS0fxYRFTOS/Bv82ZmBZTlTeFWSW8AuiQtBN4FXJ9vWGZm1gpZ3hTeCTybpO7RxSSzmd+TZ1BmZtYadd8U0lIVH42IAeBD0xOSmZm1St03hYgYB54/TbGYmVmLZelT2JwOQb0M+NPEzohYn1tUZmbWElmSwhOA3wInlO0LwEnBzKxgGiaFiHjLdARiZmat1zApSJoNvAOYX35+RLw1v7DMzKwVsjQffRf4KfAjYLzBuWZm1sGyJIVZEfHB3CMxM7OWyzJ57UpJr8g9EjMza7mabwqS/kgyykjA30t6BBhLtyMiHl/rs2Zm1plqJoWIeNx0BmJmZq2XZT2FH2fZZ2Zmna9e89GBwEHA4ZIOZfeay48H5kxDbGZmNs3qjT76a5JqqHOATexOCg8CF+Qcl5mZtUC9PoXzgfMlvTMi/nEaYzIza2hw8zDrNm5l+8goc3p7GFi2iBVL+lodVsfLUubCCcHM2srg5mHWrt/C6Fgyn3Z4ZJS167cAODHsoyzzFMzM2sq6jVtLCWHC6Ng46zZubVFExeGkYGYdZ/vI6KT2W3ZZhqReLumVkpxAzKwtzOntmdR+yy7LD/rPAW8A/lPSeZKekXNMZmZ1DSxbRE931x77erq7GFi2qEURFUfDpBARP4qIU4HnAb8CrpZ0vaS3SOrOO0Azs0orlvRx7srF9PX2IKCvt4dzVy52J3MTZKmSiqTDgNOANwKbgW8ALwTeBByXV3BmZrWsWNLnJJCDLIvsrAeeAXwNODEiHkgPfVPSUJ7BmdnM02j+gecn5CvLm8L/jYifVDsQEf1NjsfMZrBG8w88PyF/WTqaeyWtrPh6saQn5h6dmc0ojeYfeH5C/rIkhbcBXwROTb++APwd8DNJb6z3QUnLJW2VdJekNTXOeZ2k2yXdJuniScZvZgXSaP6B5yfkL0vz0S7gmRHxawBJTyIZpnoscB1JX8NeJHWRFM57KbANuFHShoi4veychcBaYGlE/N5vH2Yz25zeHoar/ICfmH/Q6LjtuyxvCvMnEkJqB3BkRPyOZCW2Wo4B7oqIuyPiUeBS4OSKc94BXBARvweIiB3ZQzezomk0/8DzE/KX5U3hp5KuBC5Lt08BrpN0EDBS53N9wP1l29tI3i7KHQkg6WdAF3BWRPyg8kKSVgOrAebNm5chZDPrRBOdxbVGFzU6bvtOEVH/BEnASpJ5CQL+Dbg8GnxQ0muBZRHx9nT7jcAxEfHOsnOuJHnbeB0wF/gp8JyIqJls+vv7Y2jII2HNzCZD0qYsI0brvimk/QIbI+IlwOWTjGEbcETZ9lxge5VzboiIMeAeSVuBhcCNk7yXmZk1Qd0+hYgYBx6WdMgUrn0jsFDSAkkHAK8HNlScMwgcDyDpcJLmpLuncC8zM2uCLH0Kfwa2SLoa+NPEzoh4V70PRcRjkk4HNpL0F1wUEbdJOhsYiogN6bGXSbodGAcGIuK3U3wWMzPbR1n6FN5UbX9EfDWXiBpwn4KZ2eQ1pU8Bkh/+knqAeRHhaYNmZgWWZZGdE4GbgR+k20dLquwbMDOzAsgyee0skoloIwARcTOwIMeYzMysRbJ0ND8WEX9IpiuU1O+IMDOr4JLXnSFLUrhV0huArrRW0buA6/MNy8yKxCWvO0eW5qN3As8GHgEuAR4E3pNnUGZWLC553TmyjD56GPhQ+mVmNmkued05sizHeSTwfmB++fkRcUJ+YZlZkbjkdefI0qdwGfB5koV2xhuca2a2l4Fli/boUwCXvG5XWUcffS73SMyssFzyunNkSQpXSPpfwHdIOpsBSBfZMbMZaCrDS1cs6XMS6ABZksJE7aOBsn0BPK354ZhZu/Pw0mLLMvrIs5fNrKTe8FInhc5Xc56CpA+Uff/aimOfyDMoM2tfHl5abPUmr72+7Pu1FceW5xCLmXWAWsNIPby0GOolBdX4vtq2mc0QA8sW0dPdtcc+Dy8tjnp9ClHj+2rbZjZDeHhpsdVLCkdJepDkraAn/Z50+8DcIzOztuXhpcVVMylERFetY2ZmVkxZqqSamdkM4aRgZmYlTgpmZlaSpcyFmRVAeb2i3lndRMAfRsc8esj24KRgNgNU1iv6/cNjpWOuXWTl3HxkNgNUq1dUzktj2gQnBbMZIEtdItcuMnBSMJsRstQlcu0iA/cpmHWcqSxwU205zHKTrV00lRisM+T6piBpuaStku6StKbOea+RFJL684zHrNNNdBgPj4wS7O4kHtw8XPdzK5b0ce7KxfT19iDg0Fnd9PZ0I6Cvt4dzVy7O/EN9qjFYZ8jtTUFSF3AB8FJgG3CjpA0RcXvFeY8D3gX8Iq9YzIpiXxa4aVa9Ii+yU2x5vikcA9wVEXdHxKPApcDJVc47B/gk8OccYzErhHZY4KYdYrD85JkU+oD7y7a3pftKJC0BjoiIK+tdSNJqSUOShnbu3Nn8SM06RDsscNMOMVh+8kwK1RbiKa3DIGk/4DPA+xpdKCIujIj+iOifPXt2E0M0m7rBzcMsPe8nLFjzPZae95MptakPbh7m6I/+kPlrvsf8Nd9jydk/rHuddljgph1isPzkOfpoG3BE2fZcYHvZ9uOA5wDXSgJ4MrBB0kkRMZRjXGb7rHKG8FRmBQ9uHmbgslsY27V7zarfPzzGwLdvqXmddljgph1isPwoIp9F1CTtD/wH8GJgGLgReENE3Fbj/GuB9zdKCP39/TE05JxhrbX0vJ8wXKUNva+3h5+tOWGfrjHZ65hlIWlTRDQc4Zlb81FEPAacDmwE7gC+FRG3STpb0kl53ddsOjSjs7Xeue60tVbJdfJaRFwFXFWx78wa5x6XZyxmzTSnt6fqb/mT6WytdY3JXsesmVzmwmwKmtHZOrBsEd377T0eo7tL7rS1lnGZC7MpaEZn68S5Z224jZHRpJT1obO6+ciJz3anrbVMbh3NeXFHs5nZ5LW8o9nMzDqPm4+s8Jq5DOUZg1v4xg33lWZhHnRAFx9/dfZicp3CVVBnLicFK7RmLkN5xuAWvn7DfXvs+9Oj47zvstqTzTpRMybmWedy85EVWjOXobzkF/dX3T++Kwq1lGW9KqhWfE4KVmjNXIZyvM6gjCJNNnMV1JnNzUfWcuXt14f0dCPByMP12/wHNw/XHco5cc0sY+t6Z3XvFUe1e3dJNRNDkSabNWNinnUuJwVrqcr264kf8lC7LbtRITmg7tKTlR7682OcMbiFyzcN121HX3XsEXv1KQB07VesyWbVlu50FdSZw81H1lJTafNft3HrHglhwth40rbf6Jp7fW5XcMkv7m/Yjv6xFYs57QXz9qgJf9ABXXz6tUcVqgO2cunOyS7XaZ3NbwrWUlNp88+jkFytZqHK631sxWI+tmLxlO7RSZq1dKd1HieFDlerHXxi//DIaKktvK8Nx5vXKwpXfk7Wz0yc2+ialWr1F0ymHd1j+60I3HzUwSba44dHRgl2t4OfMbiltB92/xY8cXwqK4TlpVphuXLV2rIbFZJrdM1q91h17BH7VOCu1n+Ldvq7NsvCSaGD1RpPXq19vPx4O403r2y/7u3p5tBZ3XXbslcs6WPda4+it6e7tO/QWd2se81RpWaPyjbx014wr7R96Kxuenv2vMfHVizep3Z0j+23onBBvA62YM33Mg25rCTgnvNe2exwZrRa/y38d23twgXxZoBa7d1d2rtpJcvnbOpq/Z3679o6jZNCB6u10Eu19vHy4x5v3nzNWHTHrB149FEHq7fQS/9Tn9ARo4+KohmL7pi1gxnRpzC4eZiPXnFbqUJmb083Z5307L1mydYb2pn3/+jl9zmwez8eeWwXuyJpClp17BEzYmz8dGrF8FEPWbVWytqnUPg3hcHNwwx8+xbGxncnv5HRMQbKyh3XKhU8dO/vGpY+aFaM5fcfHdtVOjYeUSqt4MTQHK0oDe1y1NYpCt+nsG7j1j0SwoSxsnLHkxnamccwwyxlGWqVbbbJa8XwUQ9ZtU5R+KSQpSRCrXOylj7YV1muV69ss01OK0pDuxy1dYrCJ4V6QwInjk12aGezhxlmuV6jYaaWXSuGj3rIqnWKwieFgWWL6O6qUhKhrNzxZIZ25jHMMEtZhlXHHtHUe85krRg+6iGr1ikK39E80YlXb/RRlqGdeY4Yqby/Rx/lqxXDRz1k1TrFjBiSamY207nMhZmZTVquSUHScklbJd0laU2V438n6XZJv5T0Y0lPzTMeMzOrL7ekIKkLuAB4OfAsYJWkZ1Wcthnoj4jnAt8GPplXPGZm1liebwrHAHdFxN0R8ShwKXBy+QkRcU1EPJxu3gDMzTEeMzNrIM+k0AeUT8Pdlu6r5W3A96sdkLRa0pCkoZ07dzYxRDMzK5fnkNRqs62qDnWSdBrQD7yo2vGIuBC4MD33j5JmWm2Aw4HftDqIaTbTnnmmPS/4madbpj7bPJPCNqB8xtVcYHvlSZJeAnwIeFFEPJLhuluzDKsqEklDfuZim2nPC37mdpVn89GNwEJJCyQdALwe2FB+gqQlwD8DJ0XEjhxjMTOzDHJLChHxGHA6sBG4A/hWRNwm6WxJJ6WnrQMOBi6TdLOkDTUuZ2Zm0yDXMhcRcRVwVcW+M8u+f8kULnvhvsbVgfzMxTfTnhf8zG2p48pcmJlZflzmwszMSjoqKTQqm1EEki6StEPSrWX7niDpakn/mf55aCtjbCZJR0i6RtIdkm6T9O50f5Gf+UBJ/y7plvSZP5ruXyDpF+kzfzMdoFEYkrokbZZ0Zbpd9Of9laQtaX/pULqv7f9dd0xSyFg2owi+Aiyv2LcG+HFELAR+nG4XxWPA+yLimcALgL9N/7sW+ZkfAU6IiKOAo4Hlkl4A/G/gM+kz/55kQmeRvJtk0MmEoj8vwPERcXTZMNS2/3fdMUmBDGUziiAirgN+V7H7ZOCr6fdfBVZMa1A5iogHIuKm9Ps/kvzQ6KPYzxwR8VC62Z1+BXACSQ0wKNgzS5oLvBL4YrotCvy8dbT9v+tOSgqTLZtRJE+KiAcg+SEKPLHF8eRC0nxgCfALCv7MaVPKzcAO4Grg/wEj6VBuKN6/788CHwB2pduHUeznhSTR/1DSJkmr031t/++6k1Zey1w2wzqPpIOBy4H3RMSDKvia1BExDhwtqRf4DvDMaqdNb1T5kPQqYEdEbJJ03MTuKqcW4nnLLI2I7ZKeCFwt6c5WB5RFJ70pZCqbUVC/lvQUgPTPQs3+ltRNkhC+ERHr092FfuYJETECXEvSn9IraeIXtSL9+14KnCTpVyTNvieQvDkU9XkBiIjt6Z87SBL/MXTAv+tOSgoNy2YU2AbgTen3bwK+28JYmiptW/4ScEdE/EPZoSI/8+z0DQFJPcBLSPpSrgFek55WmGeOiLURMTci5pP8f/uTiDiVgj4vgKSDJD1u4nvgZcCtdMC/646avCbpFSS/YXQBF0XEx1scUtNJugQ4jqSa4q+BjwCDwLeAecB9wGsjorIzuiNJeiHwU2ALu9ub/56kX6Goz/xckk7GLpJfzL4VEWdLehrJb9JPIFmA6rSMRSI7Rtp89P6IeFWRnzd9tu+km/sDF0fExyUdRpv/u+6opGBmZvnqpOYjMzPLmZOCmZmVOCmYmVmJk4KZmZU4KZiZWYmTghWKpFenVSnLv3ZJevkUr3d2uo44kt4jaVbZsYdqf3KPa6yQdGaNY5muUeOzn5J0wlQ/b1aNh6RaoaU1Z04lqVa5q9H5Da71K6A/In6Tbj8UEQdn+Nz1JOuQ/6bKsUzXqHHdpwJfiIiXTeXzZtX4TcEKS9KRwJnAGycSgqQBSTdK+mXZOgbz0/UcvpCub/DDdKYxkr4i6TWS3gXMAa6RdE3ZPT6erotwg6Qn1YjhkbJEskDSz9MYzqk4d6/Y0v0flnRnWn//EknvB4iIe4HDJD25uX9zNpM5KVghpfWULiaZPXtfuu9lwEKSGjRHA8+X9JfpRxYCF0TEs4ER4JTy60XE/yGpzXN8RByf7j4IuCFdF+E64B1VQlkK3FS2fT7wuYj478B/lcVbNTZJ/WksS4CVQD97uim9h1lTdFKVVLPJOAe4LSIuLdv3svRrc7p9MMkP4vuAeyLi5nT/JmB+hns8ClxZ9pmXVjnnKcDOsu2l7E44XyNZaKZebI8DvhsRowCSrqi4/g6SNxizpnBSsMJJ6+ucAjyv8hBwbkT8c8X580lWQ5swDvRkuNVY7O6UG6f6/0+jwCEV+6p15NWK7b0NYjgwvYdZU7j5yAolXfP2y8BfpSu5ldsIvDVduwFJfWmt+6z+SPKb+2TcATy9bPtnJJVCIekAbxTbvwEnKlnX+WCS1cvKHUlSfdOsKfymYEXzNySrWX2uYqGecyPim5KeCfw8PfYQcBrJb/lZXAh8X9IDZf0KjVwHfFqS0reKdwMXS3o3yRoSAETED6vFFhE3StoA3ALcCwwBf4BSv8nT031mTeEhqWY5k3Q+cEVE/GiKnz84Ih5K50hcB6yOiJskvRp4XkR8uJnx2szm5iOz/H0CmNXwrNouVLKe803A5RExMZppf+DT+xqcWTm/KZiZWYnfFMzMrMRJwczMSpwUzMysxEnBzMxKnBTMzKzEScHMzEr+P12FhdZokOZwAAAAAElFTkSuQmCC\n",
@@ -311,27 +290,17 @@
    ],
    "source": [
     "x = obs_table[\"ZEN_PNT\"]\n",
-    "y = obs_table[\"SAFE_ENERY_THRESHOLD_LO\"]\n",
+    "y = obs_table[\"SAFE_ENERGY_LO\"]\n",
     "plt.plot(x, y, \"o\")\n",
     "plt.xlabel(\"Zenith (deg)\")\n",
-    "plt.ylabel(\"Energy threshold (TeV)\")"
+    "plt.ylabel(\"Energy threshold (TeV)\");"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 11,
+   "execution_count": 10,
    "metadata": {},
    "outputs": [
-    {
-     "data": {
-      "text/plain": [
-       "(0, 10)"
-      ]
-     },
-     "execution_count": 11,
-     "metadata": {},
-     "output_type": "execute_result"
-    },
     {
      "data": {
       "image/png": "iVBORw0KGgoAAAANSUhEUgAAAYIAAAEKCAYAAAAfGVI8AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAADl0RVh0U29mdHdhcmUAbWF0cGxvdGxpYiB2ZXJzaW9uIDIuMi4zLCBodHRwOi8vbWF0cGxvdGxpYi5vcmcvIxREBQAAGm1JREFUeJzt3X+8HXV95/HXmyQslwS86AZWrsbAisEf1ARurdu0PhCFIIJEdHflAS6r1tTtD7Fb0gUfW91qKbAoSh+6PkzVyraAsoCA1G5AwEUtUvMDBAx54MoPSagJLeFX70IIn/1j5pKTy733zLl35szM+b6fj8d95Jw5c858JmfOfOb7cxQRmJlZuvaqOwAzM6uXE4GZWeKcCMzMEudEYGaWOCcCM7PEORGYmSWuskQg6WuStkm6u2PZSyXdKOm+/N8Dqtq+mZkVU2WJ4OvA8ROWnQ3cFBGHATflz83MrEaqckCZpMXA9RHxhvz5ZuDoiHhE0suB70XEksoCMDOzrub2eXsHRcQjAHkyOHCqFSWtAlYBzJ8//6jDDz+8TyGamQ2G9evXPxoRC7ut1+9EUFhErAHWAIyOjsa6detqjsjMrF0kPVhkvX73GvplXiVE/u+2Pm/fzMwm6HciuA44I398BnBtn7dvZmYTVNl99HLgNmCJpIclfQg4HzhW0n3AsflzMzOrUWVtBBFx6hQvva2qbZqZWe88stjMLHFOBGZmiWts91Gzsl2zcQsXrt3M1h1jHDw8xOoVS1i5bKTusMxq50RgSbhm4xbOufouxnbuAmDLjjHOufouACcDS56rhiwJF67d/EISGDe2cxcXrt1cU0RmzeFEYEnYumOsp+VmKXEisCQcPDzU03KzlDgRWBJWr1jC0Lw5eywbmjeH1Ss8+a2ZG4stCeMNwu41ZPZiTgSWjJXLRnziN5uEq4bMzBLnRGBmljgnAjOzxDkRmJklzonAzCxxTgRmZolzIjAzS5wTgZlZ4pwIzMwS50RgZpY4JwIzs8Q5EZiZJc6JwMwscU4EZmaJcyIwM0ucE4GZWeKcCMzMEudEYGaWOCcCM7PEORGYmSXOicDMLHFOBGZmiXMiMDNLnBOBmVninAjMzBJXSyKQ9AeS7pF0t6TLJe1TRxxmZlZDIpA0AnwUGI2INwBzgPf1Ow4zM8vUVTU0FxiSNBfYF9haUxxmZsnreyKIiC3AZ4CHgEeAxyPihonrSVolaZ2kddu3b+93mGZmyaijaugA4GTgEOBgYL6k0yeuFxFrImI0IkYXLlzY7zDNzJJRR9XQ24H7I2J7ROwErgZ+vYY4zMyMehLBQ8CbJe0rScDbgE01xGFmZtTTRnA7cCWwAbgrj2FNv+MwM7PM3Do2GhGfBD5Zx7bNzGxPHllsZpY4JwIzs8Q5EZiZJc6JwMwscbU0FtuLXbNxCxeu3czWHWMcPDzE6hVLWLlspO6wzCwBTgQNcM3GLZxz9V2M7dwFwJYdY5xz9V0ATgZmVjlXDTXAhWs3v5AExo3t3MWFazfXFJGZpcSJoAG27hjrabmZWZmcCBrg4OGhnpabmZXJiaABVq9YwtC8OXssG5o3h9UrltQUkZmlxI3FDTDeIOxeQ2ZWByeChli5bMQnfjOrhROBtYLHWZhVx4nAGs/jLMyqVbixWNIBkl4v6VBJbmS2vvE4C7NqTVsikPQS4HeBU4G9ge3APsBBkn4E/I+IuKXyKC1pHmdhVq1uVUNXAv8T+M2I2NH5gqSjgPdLOjQivlpVgGYHDw+xZZKTvsdZmJVj2kQQEcdO89p6YH3pEZlNsHrFkj3aCMDjLOrgBvvBVaiuX9K782qi8efDklZWF5bZbiuXjXDeKUcwMjyEgJHhIc475QifhPpovMF+y44xgt0N9tds3FJ3aFYCRUT3laQ7ImLphGUbI2JZZZF1GB0djXXr1vVjU2Y9SeUqefn5N09aPTcyPMQPzz6mhoisCEnrI2K023pFu49OVnJw11NLWkrdWt1gP9iKdgNdJ+kiSf867z76Odw+YIlLqVurJ0YcbEUTwe8DzwLfBK4Axsi6lZolK6WrZE+MONgKVe9ExNPA2ZIWRMRTFcdk1gopdWv1xIiDrVAikPTrwFeABcAiSW8EfjsifqfK4MyaLLVurZ4YcXAVbfD9HLACuA4gIu6U9JbKorKB19beNhPjfs9RI9xy7/bW7YdZp8I9fyLiF5I6F+2aal2z6bS1t81kcV+1fovHNFjrFW0s/kVePRSS9pZ0FrCpwrhsgLW1t01b4y7qmo1bWH7+zRxy9t+w/PybPVgsIUVLBB8BLgZGgIeBG3CvoVlpa9VIGdra26atcRfR1lKalaNQiSAiHo2I0yLioIg4MCJOj4h/rDq4QZX6cP229klva9xFDHppx6ZXdK6h/y5pf0nzJN0k6VFJp1cd3Gw0uZib+o+urX3SZxJ3k4/DToNc2rHuirYRHBcRTwAnklUNvQZYXVlUs9T0K+7Uf3RtnUSu17ibfhx2GuTSjnVXtI1gXv7vCcDlEfFPE3oQNcp0V9xNONmkNBBpKlX2Sa+y/aWXuJt+HHZKbUyE7aloieDbku4FRoGbJC0E/l91Yc1O06+421o10gaTXYWvvvJOlv7JDX2vnmn6cdipraU0K0fRKSbOlnQB8ERE7JL0z8DJM92opGGykcpvAAL4YETcNtPPm6jpV9werl+dya7Cd+4KdoztBPrbG6bpx+FEHjmcrl4GlD3W8fhp4OlZbPdi4H9HxHsl7Q3sO4vPepE2FHP9o6tGkavtflXPtOE4NIMa7ikgaX/gLcB/BIiIZ8lmNi2Nr7jTNdVV+ET9qJ7xcWhtMe0dyiTNjYjnSt2gtBRYA/wUeCPZfQ3OzEsZneutAlYBLFq06KgHH3ywzDBsQE0cGDUV31nLUlD0DmXdGot/JOkaSR+RtLiUyLJSyJHAl/JbXT4NnD1xpYhYExGjETG6cOHCkjbdTG3pa94GExs9D9h3HvP22rOHm6tnzPY0bdVQRIxKehXwDuDzkkaAHwB/C/yfiHhmBtt8GHg4Im7Pn1/JJIkgFR7aX76J7S8pT+dhVkShm9e/sLI0D/hN4HjgaGB7RLyz541K3wd+KyI2S/pvwPyImHKA2iDfvH4mNwX3ic3Miij75vUARMRO4Ob8j7yEMBO/D1ya9xj6OfCBGX5O6/Xa19wliJlx8jSb2qx6DUXEjCqzI+IOssFplWrDj7/XvuZtGq3aFE6eZtMrOrK4ddoyz0uvo4zbNFq1KVKf5M+sm54TgaS98rEAjdaWH3+vQ/s9OVjvnDzNplf05vWXkd2cZhdZv/+XSLooIi6sMrjZaNOPv5dRxh6t2ru2TfVg1m9FSwSvy6ehXgl8B1gEvL+yqEowqFfOnhysd57kz2x6haehzruOrgS+EBE7mzwNNQz2lbPnKeqNp3owm17RRPBl4AHgTuDWfJDZ41UFVYYUf/xt6CVVlzYnzzK+Vx8bNp1CA8okHRIR93c8F/DqiLivyuDGDfKAsrJMNsfO0Lw5rjZquTK+Vx8b6SprrqFxV3U+iSx7fGMmgVk12tJLynpTxvfqY8O6mbZqSNLhwOvJegmd0vHS/sA+VQZmvWlTL6k2qbtKpYzv1ceGddOtjWAJ2Q3rh4GTOpY/CXy4qqCsd+4iWb4mjEgu43st69ioOyladaatGoqIayPiA8CJEfGBjr+PRsTf9SlGK8BdJMvXhCqVMr7XMj5jJiP1Pb16exTtNfQzSR8HFne+JyI+WEVQ1rtUekn186q0CVUqZXyvZXxGr3NcNaE0ZcUVTQTXAt8Hvks2utgaqM1dJIvo98mlKdVtZXyvs/2MXpOiJ0dsl6K9hvaNiP8SEVdExFXjf5VGZjZBv6tqXN22W68j9ZtQmrLiiiaC6yWdUGkkZl30++Ti6Tx26zUpDuoUL4OqaNXQmcDHJT0LPAuIbDhB42chtcFRR1XNoFe3FdVrO8MgT/EyiAolgojYr+pAmsTd5Jqp7JOLv+fe9JIUy+684O+qWkWnoRZwGnBIRHxa0iuBl0fE31caXQ3c26G5yjy5+HuuXlmlKX9X1Ss619CXgOeBYyLitZIOAG6IiF+tOkDo71xDM7mZvLWPv+f28Hc1c2XfvP7XIuJISRsBIuKx/MbzrTVVUdO9HdLg77k9/F1Vr2gi2ClpDhAAkhaSlRBaabqiZlP6jlu1/D23h7+r6hXtPvrnwLeAAyWdC/wA+LPKoqrYdP3R3Xc8Df6e28PfVfWK9hq6VNJ64G1kXUdXRsSmSiOr0HRFzVSmakidv+f28HdVvaKNxRcD36xrormyG4vd+GRmKSj7xjQbgP8q6WeSLpTU9YObzEXNweeZL82KK1o1dAlwiaSXAu8BLpC0KCIOqzS6irioOdjc79ysN0V7DY17NXA42XTUPy09mj7y1AGDyzNfmvWmUNWQpAsk3Qd8CrgbOCoiTuryNrNauN+5WW+KlgjuB/5NRDxaZTBmZXC/c7PeFG0sXgMcL+kTAJIWSXpTdWGZzZw7A5j1pmiJ4Ivkcw2RVQ89CVwF9GWuIbMiOqcNGd53Hv9i7l48PrbTnQHMukh2riEbLBN7Cj32zzsZmjeHz/37pU4AA8TTUVcjybmGbPBU3VPIJ6D6talbcNuOlyTnGrLBU2VPofET0JYdYwS7T0AepNZf/b5n9Uy18XgplAgi4lLgj4DzgEfI5hr6X1UGZtaLKu+RW/YJyKOeZ6Yt3YLbkrA6TZsIJC0YfxwR90bEFyPiC50TznWu0wtJcyRtlHT9TN5v1qnKnkJlnoDaeLXYFFUm+zK1JWF16lYiuFbSZyW9RdL88YWSDpX0IUlrgeNnuO0zgdbOYGrNsnLZCOedcgQjw0OIbALB8045opR62TJPQG28WmyKtnQLbkvC6jRtY3FEvE3SCcBvA8vzuYZ2ApuBvwHOiIh/6HWjkl4BvBM4F/jPPUdtNomqpg1ZvWLJHo2UMPMTUBuvFpuiLXOElXm89EvXXkMR8R3gOyVv9/NkbQ77TbWCpFXAKoBFixaVvHmzYsZ7f4zt3MUciV0RjMziBORRz7PThjnC2pKwOvU66dysSToR2BYR6yUdPdV6EbGGbEQzo6Oj3W+aYFayid0Vd0W8cGU30x91G68WUzGbLp+TvbdN9zbpeyIAlgPvyquc9gH2l/TXEXF6DbGYTamKsQltvFrsh7r73c9mjEKbxjdMpe+JICLOAc4ByEsEZzkJWBNVVZ/fhuqNfmrCiXQ2SX8Qpj0vOqAMSb8h6QP544WSDqkuLLP6tbH3R6e2jFdoQk+q2ST9QegAUKhEIOmTwCiwBPhLYB7w12TVPDMWEd8DvjebzzCrSpvr85twlV1UE06ks2nEL7MDwHgV2ZYdY6V0TiiqaIng3cC7gKcBImIr0/T4MRsEVY5NqFoTrrKLakLJazZjFMoa39A52BCyzgnQn0GHRdsIno2IkDQ+6dz8bm8wGwRtrc9vwlV2UU0oec2mEb+sDgCTJe9xVbc5FE0EV0j6MjAs6cPAB4GvVBKRmc1am8YrNKUn1WySfhkXDN2SdJVJvFAiiIjPSDoWeIKsneATEXFjZVFZUuruOthv/djfJlxl96KtJa8yTZW8O1+vSuGb10fEjRGxOiLOiogbJV1QWVSWjNQmYevX/ra5fSNVk7U1jKs6iSui+6BdSRsi4sgJy34SEb9SWWQdRkdHY926df3YlPXZ8vNvnvQqaGR4qFUjM4tKbX+ttxJg2b2GJK2PiNFu601bNSTpPwG/Axwq6ScdL+0H/LDnqKxybatmaVOjZhlS29/U9dqNt64qsm5VQ5cBJwHX5f+O/x3l0cDN08ZqliZ0Heyn1PY3dW3pxjttIoiIxyPigYg4NSIeBMbI7lu8QJKnBG2Ythx0ndoyx3xZUtvf1LWlBFh0ZPFJwEXAwcA24FVkN5V5fXWhWa/actB1akrXwX5JbX9T15ZuvEXHEfwp8GbguxGxTNJbgVOrC8tmoi0H3USpdR1MbX9T1pZuvEWnmNgZEf8I7CVpr4i4BVhaYVw2A652MGuWtnTjLVoi2JHfpP5W4FJJ24DnqgvLZsLVDmbN04YSYNFxBPPJGor3Ak4DXgJcmpcSKudxBGZmvStlHMG4iHg6f/g8cImkOcD7gEtnHqKZmTXBtG0EkvaXdI6kL0g6TpnfA34O/Lv+hGhmZlXqViL4K+Ax4Dbgt4DVwN7AyRFxR8WxmZlZH3RLBIdGxBEAkr4CPAosiognK4/MzMz6olv30Z3jDyJiF3C/k4CZ2WDpViJ4o6Qn8scChvLnAiIi9q80OjMzq9y0iSAiJp8c28zMBkbRkcVmZjagnAjMzBLnRGBmljgnAjOzxDkRmJklzonAzCxxTgRmZolzIjAzS5wTgZlZ4pwIzMwS50RgZpY4JwIzs8Q5EZiZJa7viUDSKyXdImmTpHskndnvGMzMbLdCN68v2XPAH0bEBkn7Aesl3RgRP60hFjOz5PW9RBARj0TEhvzxk8AmYKTfcZiZWabWNgJJi4FlwO2TvLZK0jpJ67Zv397v0MzMklFbIpC0ALgK+FhEPDHx9YhYExGjETG6cOHC/gdoZpaIWhKBpHlkSeDSiLi6jhjMzCxTR68hAV8FNkXERf3evpmZ7amOEsFy4P3AMZLuyP9OqCEOMzOjhu6jEfEDQP3erpmZTc4ji83MEudEYGaWOCcCM7PEORGYmSXOicDMLHFOBGZmiXMiMDNLnBOBmVninAjMzBLnRGBmljgnAjOzxDkRmJklzonAzCxxTgRmZolzIjAzS5wTgZlZ4pwIzMwS50RgZpY4JwIzs8Q5EZiZJc6JwMwscU4EZmaJcyIwM0ucE4GZWeKcCMzMEudEYGaWOCcCM7PEORGYmSXOicDMLHFOBGZmiXMiMDNLnBOBmVninAjMzBLnRGBmljgnAjOzxNWSCCQdL2mzpJ9JOruOGMzMLNP3RCBpDvBF4B3A64BTJb2u33GYmVmmjhLBm4CfRcTPI+JZ4BvAyTXEYWZmwNwatjkC/KLj+cPAr01cSdIqYFX+9BlJd/chtib5l8CjdQfRR6ntL3ifU1D3/r6qyEp1JAJNsixetCBiDbAGQNK6iBitOrAmSW2fU9tf8D6noC37W0fV0MPAKzuevwLYWkMcZmZGPYngx8Bhkg6RtDfwPuC6GuIwMzNqqBqKiOck/R6wFpgDfC0i7unytjXVR9Y4qe1zavsL3ucUtGJ/FfGi6nkzM0uIRxabmSXOicDMLHGNTwQpTEch6WuStnWOlZD0Ukk3Srov//eAOmMsk6RXSrpF0iZJ90g6M18+kPssaR9Jfy/pznx//yRffoik2/P9/WbeeWKgSJojaaOk6/PnA73Pkh6QdJekOySty5c1/rhudCJIaDqKrwPHT1h2NnBTRBwG3JQ/HxTPAX8YEa8F3gz8bv69Duo+PwMcExFvBJYCx0t6M3AB8Ll8fx8DPlRjjFU5E9jU8TyFfX5rRCztGD/Q+OO60YmARKajiIhbgX+asPhk4JL88SXAyr4GVaGIeCQiNuSPnyQ7UYwwoPscmafyp/PyvwCOAa7Mlw/M/o6T9ArgncBX8udiwPd5Co0/rpueCCabjmKkplj67aCIeASyEydwYM3xVELSYmAZcDsDvM95FckdwDbgRuD/Ajsi4rl8lUE8tj8P/BHwfP78ZQz+Pgdwg6T1+TQ50ILjuo4pJnpRaDoKaydJC4CrgI9FxBPZBeNgiohdwFJJw8C3gNdOtlp/o6qOpBOBbRGxXtLR44snWXVg9jm3PCK2SjoQuFHSvXUHVETTSwQpT0fxS0kvB8j/3VZzPKWSNI8sCVwaEVfniwd6nwEiYgfwPbK2kWFJ4xdjg3ZsLwfeJekBsirdY8hKCIO8z0TE1vzfbWQJ/0204LhueiJIeTqK64Az8sdnANfWGEup8rrirwKbIuKijpcGcp8lLcxLAkgaAt5O1i5yC/DefLWB2V+AiDgnIl4REYvJfrc3R8RpDPA+S5ovab/xx8BxwN204Lhu/MhiSSeQXUmMT0dxbs0hlU7S5cDRZFPW/hL4JHANcAWwCHgI+LcRMbFBuZUk/QbwfeAudtcff5ysnWDg9lnSr5A1Es4hu/i6IiI+JelQsqvllwIbgdMj4pn6Iq1GXjV0VkScOMj7nO/bt/Knc4HLIuJcSS+j4cd14xOBmZlVq+lVQ2ZmVjEnAjOzxDkRmJklzonAzCxxTgRmZolzIrDWk/TufLbHzr/nJb1jhp/3KUlvzx9/TNK+Ha89NfU79/iMlZI+McVrhT5jivd+RtIxM32/2WTcfdQGTj7Hy2lks0A+3239Lp/1ADAaEY/mz5+KiAUF3vd3wLvG3zfhtUKfMcXnvgr4i4g4bibvN5uMSwQ2UCS9BvgE8P7xJCBptaQfS/pJx70AFuf3Q/iL/B4BN+SjfpH0dUnvlfRR4GDgFkm3dGzj3PzeAj+SdNAUMTzTkTwOkXRbHsOnJ6z7otjy5X8s6d58/vrLJZ0FEBEPAi+T9K/K/Z+zlDkR2MDI5y+6jGwU60P5suOAw8jmfFkKHCXpLflbDgO+GBGvB3YA7+n8vIj4c7K5cN4aEW/NF88HfpTfW+BW4MOThLIc2NDx/GLgSxHxq8A/dMQ7aWySRvNYlgGnAKPsaUO+DbNSNH32UbNefBq4JyK+0bHsuPxvY/58AdnJ9yHg/oi4I1++HlhcYBvPAtd3vOfYSdZ5ObC94/lydieZvyK7Oct0se0HXBsRYwCSvj3h87eRlVTMSuFEYAMhn8/mPcCRE18CzouIL09YfzHZncPG7QKGCmxqZ+xuWNvF5L+hMeAlE5ZN1hg3VWx/0CWGffJtmJXCVUPWevk9YP8S+A/5Hc86rQU+mN/7AEkj+VzxRT1JdoXei03Aqzue/5BsBk7IGrG7xfYD4CRl9zpeQHaXr06vIZvV0qwULhHYIPgI2V2fvjTh5jbnRcQ3Jb0WuC1/7SngdLKr+SLWAH8r6ZGOdoJubgU+K0l56eFM4DJJZ5LdgwGAiLhhstgi4seSrgPuBB4E1gGPwwvtIK/Ol5mVwt1HzSog6WLg2xHx3Rm+f0FEPJWPYbgVWBURGyS9GzgyIv64zHgtba4aMqvGnwH7dl1ramuU3eN4A3BVRIz3QpoLfHa2wZl1conAzCxxLhGYmSXOicDMLHFOBGZmiXMiMDNLnBOBmVni/j90D6LIltMTaQAAAABJRU5ErkJggg==\n",
@@ -349,7 +318,7 @@
     "plt.plot(x, y, \"o\")\n",
     "plt.xlabel(\"Zenith (deg)\")\n",
     "plt.ylabel(\"Rate (events / sec)\")\n",
-    "plt.ylim(0, 10)"
+    "plt.ylim(0, 10);"
    ]
   },
   {
@@ -367,7 +336,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 12,
+   "execution_count": 11,
    "metadata": {},
    "outputs": [],
    "source": [
@@ -387,29 +356,25 @@
     "\n",
     "\n",
     "def make_models():\n",
-    "    data_store = DataStore.from_dir(\"$GAMMAPY_DATA/hess-dl3-dr1\")\n",
-    "    obs_table = data_store.obs_table\n",
-    "    obs_table = obs_table[obs_table[\"OBS_SUBSET_TAG\"] == \"offdata\"]\n",
-    "\n",
     "    for zenith in zenith_bins:\n",
     "        mask = zenith[\"min\"] <= obs_table[\"ZEN_PNT\"]\n",
     "        mask &= obs_table[\"ZEN_PNT\"] < zenith[\"max\"]\n",
-    "        obs_ids = obs_table[\"OBS_ID\"][mask].data\n",
+    "        obs_ids = obs_table[\"OBS_ID\"][mask]\n",
     "        observations = data_store.obs_list(obs_ids)\n",
     "        yield make_model(observations)"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 13,
+   "execution_count": 12,
    "metadata": {},
    "outputs": [
     {
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "CPU times: user 2.27 s, sys: 61.5 ms, total: 2.33 s\n",
-      "Wall time: 2.23 s\n"
+      "CPU times: user 1.93 s, sys: 50 ms, total: 1.98 s\n",
+      "Wall time: 1.88 s\n"
      ]
     }
    ],
@@ -420,7 +385,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 14,
+   "execution_count": 13,
    "metadata": {},
    "outputs": [
     {
@@ -452,7 +417,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 15,
+   "execution_count": 14,
    "metadata": {},
    "outputs": [
     {
@@ -488,12 +453,12 @@
     "\n",
     "So now we have radially symmetric background models for three zenith angle bins. To be able to use it from the high-level Gammapy classes like e.g. the MapMaker though, we also have to create a [HDU index table](https://gamma-astro-data-formats.readthedocs.io/en/latest/data_storage/hdu_index/index.html) that declares which background model to use for each observation.\n",
     "\n",
-    "It sounds harder than it actually is. Basically you have to some code to make a new `astropy.table.Table`. The most tricky part is that before you can make the HDU index table, you have to decide where to store the data, because the HDU index table is a reference to the data location. Let's decide in this example that we want to re-use all existing files in `$GAMMAPY_DATA/hess-dl3-dr1` and put all the new HDUs (for background models and new index files) bundled in a single FITS file called `hess-dl3-dr3-with-background.fits.gz` in the current working directory. Note that index files aren't relocatable if they reference files outside the current folder."
+    "It sounds harder than it actually is. Basically you have to some code to make a new `astropy.table.Table`. The most tricky part is that before you can make the HDU index table, you have to decide where to store the data, because the HDU index table is a reference to the data location. Let's decide in this example that we want to re-use all existing files in `$GAMMAPY_DATA/hess-dl3-dr1` and put all the new HDUs (for background models and new index files) bundled in a single FITS file called `hess-dl3-dr3-with-background.fits.gz`, which we will put  in `$GAMMAPY_DATA/hess-dl3-dr1`."
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 16,
+   "execution_count": 15,
    "metadata": {},
    "outputs": [],
    "source": [
@@ -512,7 +477,7 @@
     "        \"OBS_ID\": obs_row[\"OBS_ID\"],\n",
     "        \"HDU_TYPE\": \"bkg\",\n",
     "        \"HDU_CLASS\": \"bkg_2d\",\n",
-    "        \"FILE_DIR\": \".\",\n",
+    "        \"FILE_DIR\": \"\",\n",
     "        \"FILE_NAME\": filename,\n",
     "        \"HDU_NAME\": hdu_name,\n",
     "    }\n",
@@ -523,21 +488,13 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 17,
+   "execution_count": 16,
    "metadata": {},
    "outputs": [],
    "source": [
     "# Make a copy of the original HDU index table\n",
     "hdu_table = data_store.hdu_table.copy()\n",
-    "\n",
-    "# Remove BASE_DIR, since now files will no longer\n",
-    "# be in a single folder, so a base dir doesn't work\n",
     "hdu_table.meta.pop(\"BASE_DIR\")\n",
-    "\n",
-    "# Adjust FILE_DIR to point to the original files\n",
-    "# Here we use an environment variable\n",
-    "del hdu_table[\"FILE_DIR\"]\n",
-    "hdu_table[\"FILE_DIR\"] = \"$GAMMAPY_DATA/hess-dl3-dr1/data\"\n",
     "\n",
     "# Add the rows for the background HDUs\n",
     "hdu_table = vstack([hdu_table, hdu_table_bkg])\n",
@@ -546,40 +503,40 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 18,
+   "execution_count": 17,
    "metadata": {},
    "outputs": [
     {
      "data": {
       "text/html": [
-       "<i>HDUIndexTable length=7</i>\n",
-       "<table id=\"table4805594248\" class=\"table-striped table-bordered table-condensed\">\n",
-       "<thead><tr><th>OBS_ID</th><th>HDU_TYPE</th><th>HDU_CLASS</th><th>FILE_NAME</th><th>HDU_NAME</th><th>FILE_DIR</th></tr></thead>\n",
-       "<thead><tr><th>int64</th><th>str6</th><th>str9</th><th>str36</th><th>str6</th><th>str31</th></tr></thead>\n",
-       "<tr><td>20136</td><td>events</td><td>events</td><td>hess_dl3_dr1_obs_id_020136.fits.gz</td><td>events</td><td>$GAMMAPY_DATA/hess-dl3-dr1/data</td></tr>\n",
-       "<tr><td>20136</td><td>psf</td><td>psf_table</td><td>hess_dl3_dr1_obs_id_020136.fits.gz</td><td>psf</td><td>$GAMMAPY_DATA/hess-dl3-dr1/data</td></tr>\n",
-       "<tr><td>20136</td><td>edisp</td><td>edisp_2d</td><td>hess_dl3_dr1_obs_id_020136.fits.gz</td><td>edisp</td><td>$GAMMAPY_DATA/hess-dl3-dr1/data</td></tr>\n",
-       "<tr><td>20136</td><td>bkg</td><td>bkg_2d</td><td>hess-dl3-dr3-with-background.fits.gz</td><td>BKG0</td><td>.</td></tr>\n",
-       "<tr><td>20136</td><td>gti</td><td>gti</td><td>hess_dl3_dr1_obs_id_020136.fits.gz</td><td>gti</td><td>$GAMMAPY_DATA/hess-dl3-dr1/data</td></tr>\n",
-       "<tr><td>20136</td><td>aeff</td><td>aeff_2d</td><td>hess_dl3_dr1_obs_id_020136.fits.gz</td><td>aeff</td><td>$GAMMAPY_DATA/hess-dl3-dr1/data</td></tr>\n",
-       "<tr><td>20137</td><td>events</td><td>events</td><td>hess_dl3_dr1_obs_id_020137.fits.gz</td><td>events</td><td>$GAMMAPY_DATA/hess-dl3-dr1/data</td></tr>\n",
+       "<i>HDUIndexTable masked=True length=7</i>\n",
+       "<table id=\"table4879551792\" class=\"table-striped table-bordered table-condensed\">\n",
+       "<thead><tr><th>OBS_ID</th><th>HDU_TYPE</th><th>HDU_CLASS</th><th>FILE_DIR</th><th>FILE_NAME</th><th>HDU_NAME</th><th>SIZE</th></tr></thead>\n",
+       "<thead><tr><th>int64</th><th>str6</th><th>str9</th><th>str4</th><th>str36</th><th>str6</th><th>int64</th></tr></thead>\n",
+       "<tr><td>20136</td><td>events</td><td>events</td><td>data</td><td>hess_dl3_dr1_obs_id_020136.fits.gz</td><td>events</td><td>414720</td></tr>\n",
+       "<tr><td>20136</td><td>psf</td><td>psf_table</td><td>data</td><td>hess_dl3_dr1_obs_id_020136.fits.gz</td><td>psf</td><td>118080</td></tr>\n",
+       "<tr><td>20136</td><td>edisp</td><td>edisp_2d</td><td>data</td><td>hess_dl3_dr1_obs_id_020136.fits.gz</td><td>edisp</td><td>377280</td></tr>\n",
+       "<tr><td>20136</td><td>bkg</td><td>bkg_2d</td><td></td><td>hess-dl3-dr3-with-background.fits.gz</td><td>BKG0</td><td>--</td></tr>\n",
+       "<tr><td>20136</td><td>gti</td><td>gti</td><td>data</td><td>hess_dl3_dr1_obs_id_020136.fits.gz</td><td>gti</td><td>5760</td></tr>\n",
+       "<tr><td>20136</td><td>aeff</td><td>aeff_2d</td><td>data</td><td>hess_dl3_dr1_obs_id_020136.fits.gz</td><td>aeff</td><td>11520</td></tr>\n",
+       "<tr><td>20137</td><td>events</td><td>events</td><td>data</td><td>hess_dl3_dr1_obs_id_020137.fits.gz</td><td>events</td><td>216000</td></tr>\n",
        "</table>"
       ],
       "text/plain": [
-       "<HDUIndexTable length=7>\n",
-       "OBS_ID HDU_TYPE HDU_CLASS ... HDU_NAME             FILE_DIR           \n",
-       "int64    str6      str9   ...   str6                str31             \n",
-       "------ -------- --------- ... -------- -------------------------------\n",
-       " 20136   events    events ...   events $GAMMAPY_DATA/hess-dl3-dr1/data\n",
-       " 20136      psf psf_table ...      psf $GAMMAPY_DATA/hess-dl3-dr1/data\n",
-       " 20136    edisp  edisp_2d ...    edisp $GAMMAPY_DATA/hess-dl3-dr1/data\n",
-       " 20136      bkg    bkg_2d ...     BKG0                               .\n",
-       " 20136      gti       gti ...      gti $GAMMAPY_DATA/hess-dl3-dr1/data\n",
-       " 20136     aeff   aeff_2d ...     aeff $GAMMAPY_DATA/hess-dl3-dr1/data\n",
-       " 20137   events    events ...   events $GAMMAPY_DATA/hess-dl3-dr1/data"
+       "<HDUIndexTable masked=True length=7>\n",
+       "OBS_ID HDU_TYPE HDU_CLASS ... HDU_NAME  SIZE \n",
+       "int64    str6      str9   ...   str6   int64 \n",
+       "------ -------- --------- ... -------- ------\n",
+       " 20136   events    events ...   events 414720\n",
+       " 20136      psf psf_table ...      psf 118080\n",
+       " 20136    edisp  edisp_2d ...    edisp 377280\n",
+       " 20136      bkg    bkg_2d ...     BKG0     --\n",
+       " 20136      gti       gti ...      gti   5760\n",
+       " 20136     aeff   aeff_2d ...     aeff  11520\n",
+       " 20137   events    events ...   events 216000"
       ]
      },
-     "execution_count": 18,
+     "execution_count": 17,
      "metadata": {},
      "output_type": "execute_result"
     }
@@ -590,7 +547,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 19,
+   "execution_count": 18,
    "metadata": {},
    "outputs": [
     {
@@ -602,8 +559,7 @@
     }
    ],
    "source": [
-    "# Make one FITS file that contains the background models\n",
-    "# and new index tables\n",
+    "# Put index tables and background models in a FITS file\n",
     "hdu_list = fits.HDUList()\n",
     "\n",
     "hdu = fits.BinTableHDU(hdu_table)\n",
@@ -619,12 +575,19 @@
     "    hdu_list.append(hdu)\n",
     "\n",
     "print([_.name for _ in hdu_list])\n",
-    "hdu_list.writeto(filename, overwrite=True)"
+    "\n",
+    "import os\n",
+    "\n",
+    "path = (\n",
+    "    Path(os.environ[\"GAMMAPY_DATA\"])\n",
+    "    / \"hess-dl3-dr1/hess-dl3-dr3-with-background.fits.gz\"\n",
+    ")\n",
+    "hdu_list.writeto(str(path), overwrite=True)"
    ]
   },
   {
    "cell_type": "code",
-   "execution_count": 20,
+   "execution_count": 19,
    "metadata": {},
    "outputs": [
     {
@@ -633,7 +596,7 @@
      "text": [
       "Data store:\n",
       "HDU index table:\n",
-      "BASE_DIR: .\n",
+      "BASE_DIR: /Users/deil/work/gammapy-tutorials/datasets/hess-dl3-dr1\n",
       "Rows: 630\n",
       "OBS_ID: 20136 -- 47829\n",
       "HDU_TYPE: ['aeff', 'bkg', 'edisp', 'events', 'gti', 'psf']\n",
@@ -641,14 +604,7 @@
       "\n",
       "Observation table:\n",
       "Observatory name: 'N/A'\n",
-      "Number of observations: 630\n"
-     ]
-    },
-    {
-     "name": "stderr",
-     "output_type": "stream",
-     "text": [
-      "WARNING: hdu= was not specified but multiple tables are present, reading in first available table (hdu=1) [astropy.io.fits.connect]\n"
+      "Number of observations: 105\n"
      ]
     },
     {
@@ -663,12 +619,9 @@
     }
    ],
    "source": [
-    "ds2 = DataStore.from_dir(\n",
-    "    base_dir=\"\", hdu_table_filename=filename, obs_table_filename=filename\n",
-    ")\n",
-    "ds2.info()\n",
-    "\n",
     "# Let's see if it's possible to access the data\n",
+    "ds2 = DataStore.from_file(path)\n",
+    "ds2.info()\n",
     "obs = ds2.obs(20136)\n",
     "obs.events\n",
     "obs.aeff\n",
@@ -689,7 +642,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 21,
+   "execution_count": 20,
    "metadata": {},
    "outputs": [],
    "source": []
