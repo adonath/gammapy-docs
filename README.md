@@ -3,7 +3,7 @@
 This repository is for the Gammapy documentation build and deploy on Github pages
 
 It does **not** contain the sources for the Gammmapy documentation.
-Those are in the docs` folder of the `gammapy` code repository.
+Those are in the `docs` folder of the `gammapy` code repository.
 
 ## Overview
 
@@ -42,10 +42,14 @@ git push
 
 ## Update a stable version
 
-Same as before, except check out the right tag
+Same as before, except check out the right tag and pass it to the `make docs-all` command as a param `release`
 
 ```
 git checkout v0.6
+```
+
+```
+time make docs-all release=v0.8
 ```
 
 ## Very old versions
