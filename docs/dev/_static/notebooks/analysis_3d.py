@@ -118,30 +118,34 @@ excess.smooth(5).plot(stretch="sqrt");
 
 # ### Prepare IRFs
 # 
-# To estimate the mean PSF across all observations at a given source position `src_pos`, we use the `obs_list.make_mean_psf()` method:
+# To estimate the mean PSF across all observations at a given source position `src_pos`, we use the `make_mean_psf()` method:
 
 # In[ ]:
 
 
+from gammapy.irf import make_mean_psf
+
 # mean PSF
 src_pos = SkyCoord(0, 0, unit="deg", frame="galactic")
-table_psf = obs_list.make_mean_psf(src_pos)
+table_psf = make_mean_psf(obs_list, src_pos)
 
 # PSF kernel used for the model convolution
 psf_kernel = PSFKernel.from_table_psf(table_psf, geom, max_radius="0.3 deg")
 
 
-# To estimate the mean energy dispersion across all observations at a given source position `src_pos`, we use the `obs_list.make_mean_edisp()` method:
+# To estimate the mean energy dispersion across all observations at a given source position `src_pos`, we use the `make_mean_edisp()` method:
 
 # In[ ]:
 
+
+from gammapy.irf import make_mean_edisp
 
 # define energy grid
 energy = energy_axis.edges * energy_axis.unit
 
 # mean edisp
-edisp = obs_list.make_mean_edisp(
-    position=src_pos, e_true=energy, e_reco=energy
+edisp = make_mean_edisp(
+    obs_list, position=src_pos, e_true=energy, e_reco=energy
 )
 
 

@@ -102,7 +102,9 @@ images["counts"].smooth(3).plot(stretch="sqrt", vmax=2);
 # In[ ]:
 
 
-table_psf = observations.make_mean_psf(pos_crab)
+from gammapy.irf import make_mean_psf
+
+table_psf = make_mean_psf(observations, pos_crab)
 
 
 # In[ ]:

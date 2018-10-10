@@ -254,18 +254,7 @@ events_2fhl = EventList.read("$GAMMAPY_DATA/fermi_2fhl/2fhl_events.fits.gz")
 events_2fhl.table
 
 
-# Let's try to find the total number of events contained int the list. This doesn't work:
-# 
-
-# In[ ]:
-
-
-print("Total number of events: {}".format(len(events_2fhl.table)))
-
-
-# Because Gammapy objects don't redefine properties, that are accessible from the underlying Astropy of Numpy data object.
-# 
-# So in this case of course we can directly use the `.table` attribute to find the total number of events:
+# You can do *len* over event_2fhl.table to find the total number of events.
 
 # In[ ]:
 
