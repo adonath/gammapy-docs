@@ -291,8 +291,8 @@ seg.compute_groups_fixed(ebounds=ebounds)
 fpe = FluxPointEstimator(
     obs=stacked_obs, groups=seg.groups, model=fit.result[0].model
 )
-fpe.compute_points()
-fpe.flux_points.table
+flux_points = fpe.run()
+flux_points.table
 
 
 # ### Plot
@@ -304,7 +304,7 @@ fpe.flux_points.table
 
 
 total_result = SpectrumResult(
-    model=fit.result[0].model, points=fpe.flux_points
+    model=fit.result[0].model, points=flux_points
 )
 
 total_result.plot(

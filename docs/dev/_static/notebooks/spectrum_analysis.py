@@ -309,14 +309,14 @@ print(seg.groups)
 fpe = FluxPointEstimator(
     obs=stacked_obs, groups=seg.groups, model=joint_result[0].model
 )
-fpe.compute_points()
+flux_points = fpe.run()
 
 
 # In[ ]:
 
 
-fpe.flux_points.plot()
-fpe.flux_points.table
+flux_points.plot()
+flux_points.table
 
 
 # The final plot with the best fit model and the flux points can be quickly made like this
@@ -325,7 +325,7 @@ fpe.flux_points.table
 
 
 spectrum_result = SpectrumResult(
-    points=fpe.flux_points, model=joint_result[0].model
+    points=flux_points, model=joint_result[0].model
 )
 ax0, ax1 = spectrum_result.plot(
     energy_range=joint_fit.result[0].fit_range,
