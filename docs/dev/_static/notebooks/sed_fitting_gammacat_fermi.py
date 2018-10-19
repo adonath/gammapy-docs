@@ -10,20 +10,20 @@
 # 
 # The central class we're going to use for this example analysis is:  
 # 
-# - [gammapy.spectrum.FluxPointFit](http://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPointFit.html)
+# - [gammapy.spectrum.FluxPointFit](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPointFit.html)
 # 
 # In addition we will work with the following data classes:
 # 
-# - [gammapy.spectrum.FluxPoints](http://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html)
-# - [gammapy.catalog.SourceCatalogGammaCat](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogGammaCat.html)
-# - [gammapy.catalog.SourceCatalog3FHL](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalog3FHL.html)
-# - [gammapy.catalog.SourceCatalog3FGL](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalog3FGL.html)
+# - [gammapy.spectrum.FluxPoints](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html)
+# - [gammapy.catalog.SourceCatalogGammaCat](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogGammaCat.html)
+# - [gammapy.catalog.SourceCatalog3FHL](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalog3FHL.html)
+# - [gammapy.catalog.SourceCatalog3FGL](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalog3FGL.html)
 # 
 # And the following spectral model classes:
 # 
-# - [PowerLaw](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html)
-# - [ExponentialCutoffPowerLaw](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.ExponentialCutoffPowerLaw.html)
-# - [LogParabola](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.LogParabola.html)
+# - [PowerLaw](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html)
+# - [ExponentialCutoffPowerLaw](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.ExponentialCutoffPowerLaw.html)
+# - [LogParabola](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.LogParabola.html)
 
 # ## Setup
 # 
@@ -112,7 +112,7 @@ flux_points = flux_points.drop_ul()
 
 # ## Power Law Fit
 # 
-# First we start with fitting a simple [power law](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html#gammapy.spectrum.models.PowerLaw).
+# First we start with fitting a simple [power law](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html#gammapy.spectrum.models.PowerLaw).
 
 # In[ ]:
 
@@ -152,7 +152,7 @@ ax.set_ylim(1e-13, 1e-11);
 
 # ## Exponential Cut-Off Powerlaw Fit
 # 
-# Next we fit an [exponential cut-off power](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.ExponentialCutoffPowerLaw.html#gammapy.spectrum.models.ExponentialCutoffPowerLaw) law to the data.
+# Next we fit an [exponential cut-off power](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.ExponentialCutoffPowerLaw.html#gammapy.spectrum.models.ExponentialCutoffPowerLaw) law to the data.
 
 # In[ ]:
 
@@ -190,7 +190,7 @@ ax.set_ylim(1e-13, 1e-11)
 
 # ## Log-Parabola Fit
 # 
-# Finally we try to fit a [log-parabola](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.LogParabola.html#gammapy.spectrum.models.LogParabola) model:
+# Finally we try to fit a [log-parabola](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.LogParabola.html#gammapy.spectrum.models.LogParabola) model:
 
 # In[ ]:
 
@@ -233,5 +233,5 @@ ax.set_ylim(1e-13, 1e-11);
 # * If you would like to learn how to perform a full Poisson maximum likelihood spectral fit, please check out the [spectrum pipe](spectrum_pipe.ipynb) tutorial.
 # * If you are interested in simulation of spectral data in the context of CTA, please check out the [spectrum simulation cta](spectrum_simulation_cta.ipynb) notebook.
 # * To learn more about other parts of Gammapy (e.g. Fermi-LAT and TeV data analysis), check out the other tutorial notebooks.
-# * To see what's available in Gammapy, browse the [Gammapy docs](http://docs.gammapy.org/) or use the full-text search.
+# * To see what's available in Gammapy, browse the [Gammapy docs](https://docs.gammapy.org/) or use the full-text search.
 # * If you have any questions, ask on the mailing list .

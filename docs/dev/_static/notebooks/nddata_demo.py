@@ -5,7 +5,7 @@
 
 # ## Introduction
 # 
-# This notebook explains how to use the class [gammapy.utils.nddata.NDDataArray](http://docs.gammapy.org/dev/api/gammapy.utils.nddata.NDDataArray.html)
+# This notebook explains how to use the class [gammapy.utils.nddata.NDDataArray](https://docs.gammapy.org/dev/api/gammapy.utils.nddata.NDDataArray.html)
 # 
 # The NDDataArray is basically an numpy array with associated axes and convenience methods for interpolation. For now 
 # only the scipy [RegularGridInterpolator](https://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.interpolate.RegularGridInterpolator.html)
@@ -14,10 +14,10 @@
 # 
 # The NDDataArray is currently used in the following classes
 # 
-# * [gammapy.irf.EffectiveAreaTable](http://docs.gammapy.org/dev/api/gammapy.irf.EffectiveAreaTable.html)
-# * [gammapy.irf.EffectiveAreaTable2D](http://docs.gammapy.org/dev/api/gammapy.irf.EffectiveAreaTable2D.html)
-# * [gammapy.irf.EnergyDispersion](http://docs.gammapy.org/dev/api/gammapy.irf.EnergyDispersion.html)
-# * [gammapy.spectrum.CountsSpectrum](http://docs.gammapy.org/dev/api/gammapy.spectrum.CountsSpectrum.html)
+# * [gammapy.irf.EffectiveAreaTable](https://docs.gammapy.org/dev/api/gammapy.irf.EffectiveAreaTable.html)
+# * [gammapy.irf.EffectiveAreaTable2D](https://docs.gammapy.org/dev/api/gammapy.irf.EffectiveAreaTable2D.html)
+# * [gammapy.irf.EnergyDispersion](https://docs.gammapy.org/dev/api/gammapy.irf.EnergyDispersion.html)
+# * [gammapy.spectrum.CountsSpectrum](https://docs.gammapy.org/dev/api/gammapy.spectrum.CountsSpectrum.html)
 # * Probably some more by now ...
 # 
 # Feedback welcome!

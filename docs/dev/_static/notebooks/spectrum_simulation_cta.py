@@ -7,10 +7,10 @@
 # 
 # We will use the following classes:
 # 
-# * [gammapy.spectrum.SpectrumObservation](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumObservation.html)
-# * [gammapy.spectrum.SpectrumSimulation](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumSimulation.html)
-# * [gammapy.spectrum.SpectrumFit](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumFit.html)
-# * [gammapy.irf.CTAIrf](http://docs.gammapy.org/dev/api/gammapy.irf.CTAIrf.html)
+# * [gammapy.spectrum.SpectrumObservation](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumObservation.html)
+# * [gammapy.spectrum.SpectrumSimulation](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumSimulation.html)
+# * [gammapy.spectrum.SpectrumFit](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumFit.html)
+# * [gammapy.irf.CTAIrf](https://docs.gammapy.org/dev/api/gammapy.irf.CTAIrf.html)
 
 # ## Setup
 

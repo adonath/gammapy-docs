@@ -115,7 +115,7 @@ exposure.slice_by_idx({"energy": 3}).plot(add_cbar=True);
 
 
 background = make_map_background_irf(
-    pointing=pointing, livetime=livetime, bkg=irfs["bkg"], geom=geom
+    pointing=pointing, ontime=livetime, bkg=irfs["bkg"], geom=geom
 )
 background.slice_by_idx({"energy": 3}).plot(add_cbar=True);
 
@@ -190,6 +190,11 @@ spectral_model = PowerLaw(
     index=2, amplitude="1e-11 cm-2 s-1 TeV-1", reference="1 TeV"
 )
 model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
+
+# Impose that specrtal index remains within limits
+spectral_model.parameters['index'].min = 0.
+spectral_model.parameters['index'].max = 10.
+
 print(model)
 
 

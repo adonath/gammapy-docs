@@ -5,18 +5,18 @@
 
 # ## Introduction
 # 
-# This notebook explains how to use the functions and classes in [gammapy.spectrum](http://docs.gammapy.org/dev/spectrum/index.html) in order to simulate and fit spectra.
+# This notebook explains how to use the functions and classes in [gammapy.spectrum](https://docs.gammapy.org/dev/spectrum/index.html) in order to simulate and fit spectra.
 # 
 # First, we will simulate and fit a pure power law without any background. Than we will add a power law shaped background component. Finally, we will see how to simulate and fit a user defined model. For all scenarios a toy detector will be simulated. For an example using real CTA IRFs, checkout [this notebook](https://github.com/gammapy/gammapy-extra/blob/master/notebooks/spectrum_simulation_cta.ipynb).
 # 
 # The following clases will be used:
 # 
-# * [gammapy.irf.EffectiveAreaTable](http://docs.gammapy.org/dev/api/gammapy.irf.EffectiveAreaTable.html)
-# * [gammapy.irf.EnergyDispersion](http://docs.gammapy.org/dev/api/gammapy.irf.EnergyDispersion)
-# * [gammapy.spectrum.SpectrumObservation](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumObservation.html)
-# * [gammapy.spectrum.SpectrumSimulation](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumSimulation.html)
-# * [gammapy.spectrum.SpectrumFit](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumFit.html)
-# * [gammapy.spectrum.models.PowerLaw](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html)
+# * [gammapy.irf.EffectiveAreaTable](https://docs.gammapy.org/dev/api/gammapy.irf.EffectiveAreaTable.html)
+# * [gammapy.irf.EnergyDispersion](https://docs.gammapy.org/dev/api/gammapy.irf.EnergyDispersion)
+# * [gammapy.spectrum.SpectrumObservation](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumObservation.html)
+# * [gammapy.spectrum.SpectrumSimulation](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumSimulation.html)
+# * [gammapy.spectrum.SpectrumFit](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumFit.html)
+# * [gammapy.spectrum.models.PowerLaw](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html)
 
 # ## Setup
 # 
@@ -149,4 +149,4 @@ print("spectral index: {:.2f} +/- {:.2f}".format(index.mean(), index.std()))
 
 # ## What's next
 # 
-# In this tutorial we learnd how to simulate and fit data using a toy detector. Go to [gammapy.spectrum](http://docs.gammapy.org/dev/spectrum/index.html) to see what else you can do with gammapy.
+# In this tutorial we learnd how to simulate and fit data using a toy detector. Go to [gammapy.spectrum](https://docs.gammapy.org/dev/spectrum/index.html) to see what else you can do with gammapy.
