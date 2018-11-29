@@ -19,7 +19,7 @@ Special versions:
 
 * `docs/dev` - the development version
 * `docs/stable/index.html` - forwards to latest stable, e.g. `0.6`
-* `docs/index.html` - forwards to `docs/dev`
+* `docs/index.html` - forwards to `docs/stable`
 
 ## Howto
 
@@ -30,7 +30,7 @@ Special versions:
 cd build/dev/gammapy
 git clean -fdx
 git pull
-python setup.py build_ext -i
+python setup.py develop
 time make docs-all
 cd ../../..
 rm -r docs/dev
