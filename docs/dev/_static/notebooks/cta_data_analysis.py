@@ -96,7 +96,7 @@ data_store = DataStore.from_dir("$GAMMAPY_DATA/cta-1dc/index/gps")
 
 
 obs_id = [110380, 111140, 111159]
-obs_list = data_store.obs_list(obs_id)
+observations = data_store.get_observations(obs_id)
 
 
 # In[ ]:
@@ -116,7 +116,7 @@ data_store.obs_table.select_obs_id(obs_id)[obs_cols]
 
 
 axis = MapAxis.from_edges(
-    np.logspace(-1., 1., 10), unit="TeV", name="energy", interp="log"
+    np.logspace(-1.0, 1.0, 10), unit="TeV", name="energy", interp="log"
 )
 geom = WcsGeom.create(
     skydir=(0, 0), npix=(500, 400), binsz=0.02, coordsys="GAL", axes=[axis]
@@ -147,7 +147,7 @@ exclusion_mask.plot();
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, offset_max="2 deg")\nmaps = maker.run(obs_list)\nprint(maps.keys())')
+get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, offset_max="2 deg")\nmaps = maker.run(observations)\nprint(maps.keys())')
 
 
 # In[ ]:
@@ -249,13 +249,13 @@ plt.gca().scatter(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'bkg_estimator = ReflectedRegionsBackgroundEstimator(\n    obs_list=obs_list, on_region=on_region, exclusion_mask=exclusion_mask\n)\nbkg_estimator.run()\nbkg_estimate = bkg_estimator.result\nbkg_estimator.plot();')
+get_ipython().run_cell_magic('time', '', 'bkg_estimator = ReflectedRegionsBackgroundEstimator(\n    observations=observations,\n    on_region=on_region,\n    exclusion_mask=exclusion_mask,\n)\nbkg_estimator.run()\nbkg_estimate = bkg_estimator.result\nbkg_estimator.plot();')
 
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'extract = SpectrumExtraction(obs_list=obs_list, bkg_estimate=bkg_estimate)\nextract.run()\nobservations = extract.observations')
+get_ipython().run_cell_magic('time', '', 'extract = SpectrumExtraction(\n    observations=observations, bkg_estimate=bkg_estimate\n)\nextract.run()\nobservations = extract.spectrum_observations')
 
 
 # ### Model fit
@@ -276,7 +276,7 @@ get_ipython().run_cell_magic('time', '', 'model = models.PowerLaw(\n    index=2,
 
 
 # Flux points are computed on stacked observation
-stacked_obs = extract.observations.stack()
+stacked_obs = extract.spectrum_observations.stack()
 print(stacked_obs)
 
 
@@ -292,7 +292,7 @@ fpe = FluxPointEstimator(
     obs=stacked_obs, groups=seg.groups, model=fit.result[0].model
 )
 flux_points = fpe.run()
-flux_points.table
+flux_points.table_formatted
 
 
 # ### Plot
@@ -303,9 +303,7 @@ flux_points.table
 # In[ ]:
 
 
-total_result = SpectrumResult(
-    model=fit.result[0].model, points=flux_points
-)
+total_result = SpectrumResult(model=fit.result[0].model, points=flux_points)
 
 total_result.plot(
     energy_range=[1, 40] * u.TeV,

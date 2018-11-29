@@ -78,7 +78,7 @@ data["background"].plot(vmax=10, ax=ax, fig=fig)
 
 # Input parameters for CWTKernels
 N_SCALE = 2  # Number of scales considered.
-MIN_SCALE = 6.  # First scale used.
+MIN_SCALE = 6.0  # First scale used.
 STEP_SCALE = 1.3  # Base scaling factor.
 
 
@@ -100,7 +100,7 @@ print(cwt_kernels.info_table)
 
 MAX_ITER = 10  # The maximum number of iterations of the CWT algorithm.
 TOL = 1e-5  # Tolerance for stopping criterion.
-SIGNIFICANCE_THRESHOLD = 2.  # Measure of statistical significance.
+SIGNIFICANCE_THRESHOLD = 2.0  # Measure of statistical significance.
 SIGNIFICANCE_ISLAND_THRESHOLD = (
     None
 )  # Measure is used for cleaning of isolated pixel islands.

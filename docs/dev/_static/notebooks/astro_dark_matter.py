@@ -113,10 +113,8 @@ plt.legend()
 # In[ ]:
 
 
-# NOTE: https://arxiv.org/abs/1607.08142 cite 2.67e21 without the the +/- 0.3 deg band around the plane
-mask = pix_reg.to_mask()
-data = mask.multiply(jfact.data)
-total_jfact = np.sum(data)
+# NOTE: https://arxiv.org/abs/1607.08142 quote 2.67e21 without the +/- 0.3 deg band around the plane
+total_jfact = pix_reg.to_mask().multiply(jfact).sum()
 print(
     "J-factor in 1 deg circle around GC assuming a "
     "{} is {:.3g}".format(profile.__class__.__name__, total_jfact)

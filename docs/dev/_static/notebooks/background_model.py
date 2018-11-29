@@ -63,7 +63,7 @@ data_store = DataStore.from_dir("$GAMMAPY_DATA/hess-dl3-dr1")
 # Select just the off data runs
 obs_table = data_store.obs_table
 obs_table = obs_table[obs_table["TARGET_NAME"] == "Off data"]
-observations = data_store.obs_list(obs_table["OBS_ID"])
+observations = data_store.get_observations(obs_table["OBS_ID"])
 print("Number of observations:", len(observations))
 
 
@@ -221,7 +221,7 @@ def make_models():
         mask = zenith["min"] <= obs_table["ZEN_PNT"]
         mask &= obs_table["ZEN_PNT"] < zenith["max"]
         obs_ids = obs_table["OBS_ID"][mask]
-        observations = data_store.obs_list(obs_ids)
+        observations = data_store.get_observations(obs_ids)
         yield make_model(observations)
 
 

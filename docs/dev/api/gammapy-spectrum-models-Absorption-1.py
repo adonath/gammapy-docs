@@ -17,7 +17,7 @@ finke.plot(label='Finke 2010', **opts)
 dominguez.plot(label='Dominguez 2011', **opts)
 
 # tune plot
-ax.set_ylabel(r'Absorption coefficient [$\exp{(-        au(E))}$]')
+ax.set_ylabel(r'Absorption coefficient [$\exp{(-\tau(E))}$]')
 ax.set_xlim(energy_range.value)  # we get ride of units
 ax.set_ylim([1.e-4, 2.])
 ax.set_yscale('log')

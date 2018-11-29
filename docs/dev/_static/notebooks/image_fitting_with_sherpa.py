@@ -48,14 +48,14 @@ from gammapy.cube import MapMaker, PSFKernel
 # Define which data to use
 data_store = DataStore.from_dir("$GAMMAPY_DATA/cta-1dc/index/gps/")
 obs_ids = [110380, 111140, 111159]
-obs_list = data_store.obs_list(obs_ids)
+observations = data_store.get_observations(obs_ids)
 
 
 # In[ ]:
 
 
 energy_axis = MapAxis.from_edges(
-    np.logspace(-1, 1., 10), unit="TeV", name="energy", interp="log"
+    np.logspace(-1, 1.0, 10), unit="TeV", name="energy", interp="log"
 )
 geom = WcsGeom.create(
     skydir=(0, 0),
@@ -70,7 +70,7 @@ geom = WcsGeom.create(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, offset_max=4. * u.deg)\nmaps = maker.run(obs_list)')
+get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, offset_max=4.0 * u.deg)\nmaps = maker.run(observations)')
 
 
 # ### Making a PSF Map
@@ -82,7 +82,7 @@ get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, offset_max=4. *
 
 # mean PSF
 src_pos = SkyCoord(0, 0, unit="deg", frame="galactic")
-table_psf = make_mean_psf(obs_list, src_pos)
+table_psf = make_mean_psf(observations, src_pos)
 
 # PSF kernel used for the model convolution
 psf_kernel = PSFKernel.from_table_psf(table_psf, geom, max_radius="0.3 deg")

@@ -101,26 +101,9 @@ print(matplotlib.__version__)
 # In[ ]:
 
 
-# This will work on Python 3, but fail on Python 2
-from pathlib import Path
-from urllib.request import urlretrieve
-
-
-# If you're still using Python 2, please update to Python 3!
-# 
-# Also, it's time to start using [JupyterLab](http://jupyterlab.readthedocs.io/)
-# (which is Python 3 only, Jupyter dropped Python 2 support in 2017).
-# 
-# But OK, to be honest, actually everything here will work on Python 2,
-# we avoided the use of Python 3 only features for now.
-# You just have to import `Path` and `urlretrieve` from here instead:
-
-# In[ ]:
-
-
 # This will work on Python 2 as well as Python 3
-# from gammapy.extern.six.moves.urllib.request import urlretrieve
-# from gammapy.extern.pathlib import Path
+from gammapy.extern.six.moves.urllib.request import urlretrieve
+from gammapy.extern.pathlib import Path
 
 
 # ## Download Data
@@ -236,7 +219,7 @@ table.info()
 # with an integer index (Python starts at index 0)
 # table[0]
 # To get shorter output here, we just list a few
-table[0][table.colnames[:5]]
+table[table.colnames[:5]][0]
 
 
 # In[ ]:
@@ -307,7 +290,9 @@ txt = "\n".join(lines)
 
 # To save it to a DS9 region text file
 path = hgps_data_path / "hgps_my_format.reg"
-path.write_text(txt)
+
+with open(str(path), "w") as f:
+    f.write(txt)
 
 # Print content of the file to check
 print(path.read_text())

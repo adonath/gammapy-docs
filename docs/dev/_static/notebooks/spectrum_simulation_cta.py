@@ -10,7 +10,7 @@
 # * [gammapy.spectrum.SpectrumObservation](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumObservation.html)
 # * [gammapy.spectrum.SpectrumSimulation](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumSimulation.html)
 # * [gammapy.spectrum.SpectrumFit](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumFit.html)
-# * [gammapy.irf.CTAIrf](https://docs.gammapy.org/dev/api/gammapy.irf.CTAIrf.html)
+# * [gammapy.irf.load_cta_irfs](https://docs.gammapy.org/dev/api/gammapy.irf.load_cta_irfs.html)
 
 # ## Setup
 
@@ -29,7 +29,7 @@ import astropy.units as u
 from gammapy.irf import EnergyDispersion, EffectiveAreaTable
 from gammapy.spectrum import SpectrumSimulation, SpectrumFit
 from gammapy.spectrum.models import PowerLaw
-from gammapy.irf import CTAIrf
+from gammapy.irf import load_cta_irfs
 
 
 # ## Simulation
@@ -62,22 +62,22 @@ model = PowerLaw(
 filename = (
     "$GAMMAPY_DATA/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
 )
-cta_irf = CTAIrf.read(filename)
+cta_irf = load_cta_irfs(filename)
 
 
 # In[ ]:
 
 
-aeff = cta_irf.aeff.to_effective_area_table(offset=offset, energy=energy)
+aeff = cta_irf["aeff"].to_effective_area_table(offset=offset, energy=energy)
 aeff.plot()
 plt.loglog()
-print(cta_irf.aeff.data)
+print(cta_irf["aeff"].data)
 
 
 # In[ ]:
 
 
-edisp = cta_irf.edisp.to_energy_dispersion(
+edisp = cta_irf["edisp"].to_energy_dispersion(
     offset=offset, e_true=energy, e_reco=energy
 )
 edisp.plot_matrix()

@@ -127,7 +127,7 @@ def electron_energy_loss_rate(B, E):
         E / (cst.m_e * cst.c ** 2) + 1
     )  # note that this works only because E/(cst.m_e*cst.c**2) is dimensionless
     beta = np.sqrt(1 - 1 / gamma ** 2)
-    return 4. / 3. * cst.sigma_T * cst.c * gamma ** 2 * beta ** 2 * U_B
+    return 4.0 / 3.0 * cst.sigma_T * cst.c * gamma ** 2 * beta ** 2 * U_B
 
 
 print(electron_energy_loss_rate(1e-5 * u.G, 1 * u.TeV).to("erg/s"))
@@ -137,7 +137,7 @@ print(electron_energy_loss_rate(1e-5 * u.G, 1 * u.TeV).to("erg/s"))
 
 
 # Now plot it
-E_elec = np.logspace(-1., 6, 100) * u.MeV
+E_elec = np.logspace(-1.0, 6, 100) * u.MeV
 B = 1 * u.G
 y = (E_elec / electron_energy_loss_rate(B, E_elec)).to("yr")
 plt.loglog(E_elec, y);
@@ -159,7 +159,7 @@ def electron_energy_loss_rate(B, E):
         E / (cst.m_e * cst.c ** 2) + 1
     )  # note that this works only because E/(cst.m_e*cst.c**2) is dimensionless
     beta = np.sqrt(1 - 1 / gamma ** 2)
-    return 4. / 3. * cst.sigma_T * cst.c * gamma ** 2 * beta ** 2 * U_B
+    return 4.0 / 3.0 * cst.sigma_T * cst.c * gamma ** 2 * beta ** 2 * U_B
 
 
 # Now try it

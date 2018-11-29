@@ -17,16 +17,17 @@ import matplotlib.pyplot as plt
 # In[ ]:
 
 
+import os
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord
 from gammapy.extern.pathlib import Path
 from gammapy.data import DataStore
-from gammapy.irf import EnergyDispersion
-from gammapy.maps import WcsGeom, MapAxis, Map
-from gammapy.cube import MapMaker, PSFKernel, MapFit
-from gammapy.cube.models import SkyModel
-from gammapy.spectrum.models import PowerLaw
+from gammapy.irf import EnergyDispersion, make_mean_psf, make_mean_edisp
+from gammapy.maps import WcsGeom, MapAxis, Map, WcsNDMap
+from gammapy.cube import MapMaker, MapEvaluator, PSFKernel, MapFit
+from gammapy.cube.models import SkyModel, SkyDiffuseCube
+from gammapy.spectrum.models import PowerLaw, ExponentialCutoffPowerLaw
 from gammapy.image.models import SkyGaussian, SkyPointSource
 from regions import CircleSkyRegion
 
@@ -34,22 +35,35 @@ from regions import CircleSkyRegion
 # In[ ]:
 
 
-get_ipython().system('gammapy info --no-envvar --no-dependencies --no-system')
+get_ipython().system('gammapy info --no-system')
 
 
 # ## Prepare modeling input data
 # 
 # ### Prepare input maps
 # 
-# We first use the `DataStore` object to access the CTA observations and retrieve a list of observations by passing the observations IDs to the `.obs_list()` method:
+# We first use the `DataStore` object to access the CTA observations and retrieve a list of observations by passing the observations IDs to the `.get_observations()` method:
 
 # In[ ]:
 
 
-# Define which data to use
+# Define which data to use and print some information
 data_store = DataStore.from_dir("$GAMMAPY_DATA/cta-1dc/index/gps/")
+data_store.info()
+print(
+    "Total observation time (hours): ",
+    data_store.obs_table["ONTIME"].sum() / 3600,
+)
+print("Observation table: ", data_store.obs_table.colnames)
+print("HDU table: ", data_store.hdu_table.colnames)
+
+
+# In[ ]:
+
+
+# Select some observations from these dataset by hand
 obs_ids = [110380, 111140, 111159]
-obs_list = data_store.obs_list(obs_ids)
+observations = data_store.get_observations(obs_ids)
 
 
 # Now we define a reference geometry for our analysis, We choose a WCS based gemoetry with a binsize of 0.02 deg and also define an energy axis: 
@@ -58,7 +72,7 @@ obs_list = data_store.obs_list(obs_ids)
 
 
 energy_axis = MapAxis.from_edges(
-    np.logspace(-1., 1., 10), unit="TeV", name="energy", interp="log"
+    np.logspace(-1.0, 1.0, 10), unit="TeV", name="energy", interp="log"
 )
 geom = WcsGeom.create(
     skydir=(0, 0),
@@ -75,10 +89,10 @@ geom = WcsGeom.create(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, offset_max=4. * u.deg)\nmaps = maker.run(obs_list)')
+get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, offset_max=4.0 * u.deg)\nmaps = maker.run(observations)')
 
 
-# The maps are prepare by calling the `.run()` method and passing the observation list `obs_list`. The `.run()` method returns a Python `dict` containing a `counts`, `background` and `exposure` map:
+# The maps are prepared by calling the `.run()` method and passing the `observations`. The `.run()` method returns a Python `dict` containing a `counts`, `background` and `exposure` map:
 
 # In[ ]:
 
@@ -95,7 +109,7 @@ counts = maps["counts"].sum_over_axes()
 counts.smooth(width=0.1 * u.deg).plot(stretch="sqrt", add_cbar=True, vmax=6);
 
 
-# And the background image:
+# This is the background image:
 
 # In[ ]:
 
@@ -106,46 +120,123 @@ background.smooth(width=0.1 * u.deg).plot(
 );
 
 
+# And this one the exposure image:
+
+# In[ ]:
+
+
+exposure = maps["exposure"].sum_over_axes()
+exposure.smooth(width=0.1 * u.deg).plot(stretch="sqrt", add_cbar=True);
+
+
 # We can also compute an excess image just with  a few lines of code:
 
 # In[ ]:
 
 
-excess = Map.from_geom(geom.to_image())
-excess.data = counts.data - background.data
-excess.smooth(5).plot(stretch="sqrt");
+excess = counts - background
+excess.smooth(5).plot(stretch="sqrt", add_cbar=True);
 
 
-# ### Prepare IRFs
-# 
-# To estimate the mean PSF across all observations at a given source position `src_pos`, we use the `make_mean_psf()` method:
+# For a more realistic excess plot we can also take into account the diffuse galactic emission. For this tutorial we will load a Fermi diffuse model map that represents a small cutout for the Galactic center region:
 
 # In[ ]:
 
 
-from gammapy.irf import make_mean_psf
+diffuse_gal = Map.read("$GAMMAPY_DATA/fermi_3fhl/gll_iem_v06_cutout.fits")
+
+
+# In[ ]:
+
+
+print("Diffuse image: ", diffuse_gal.geom)
+print("counts: ", maps["counts"].geom)
+
+
+# We see that the geometry of the images is completely different, so we need to apply our geometric configuration to the diffuse emission file:
+
+# In[ ]:
+
+
+coord = maps["counts"].geom.get_coord()
+
+data = diffuse_gal.interp_by_coord(
+    {
+        "skycoord": coord.skycoord,
+        "energy": coord["energy"]
+        * maps["counts"].geom.get_axis_by_name("energy").unit,
+    },
+    interp=3,
+)
+diffuse_galactic = WcsNDMap(maps["counts"].geom, data)
+print("Before: \n", diffuse_gal.geom)
+print("Now (same as maps): \n", diffuse_galactic.geom)
+
+
+# In[ ]:
+
+
+# diffuse_galactic.slice_by_idx({"energy": 0}).plot(add_cbar=True); # this can be used to check image at different energy bins
+diffuse = diffuse_galactic.sum_over_axes()
+diffuse.smooth(5).plot(stretch="sqrt", add_cbar=True)
+print(diffuse)
+
+
+# We now multiply the exposure for this diffuse emission to subtract the result from the counts along with the background.
+
+# In[ ]:
+
+
+combination = diffuse * exposure
+combination.unit = ""
+combination.smooth(5).plot(stretch="sqrt", add_cbar=True);
+
+
+# We can plot then the excess image subtracting now the effect of the diffuse galactic emission.
+
+# In[ ]:
+
+
+excess2 = counts - background - combination
+
+fig, axs = plt.subplots(1, 2, figsize=(15, 5))
+
+axs[0].set_title("With diffuse emission subtraction")
+axs[1].set_title("Without diffuse emission subtraction")
+excess2.smooth(5).plot(
+    cmap="coolwarm", vmin=-1, vmax=1, add_cbar=True, ax=axs[0]
+)
+excess.smooth(5).plot(
+    cmap="coolwarm", vmin=-1, vmax=1, add_cbar=True, ax=axs[1]
+);
+
+
+# ### Prepare IRFs
+# 
+# To estimate the mean PSF across all observations at a given source position `src_pos`, we use `make_mean_psf()`:
+
+# In[ ]:
+
 
 # mean PSF
 src_pos = SkyCoord(0, 0, unit="deg", frame="galactic")
-table_psf = make_mean_psf(obs_list, src_pos)
+table_psf = make_mean_psf(observations, src_pos)
 
 # PSF kernel used for the model convolution
 psf_kernel = PSFKernel.from_table_psf(table_psf, geom, max_radius="0.3 deg")
 
 
-# To estimate the mean energy dispersion across all observations at a given source position `src_pos`, we use the `make_mean_edisp()` method:
+# To estimate the mean energy dispersion across all observations at a given source position `src_pos`, we use `make_mean_edisp()`:
 
 # In[ ]:
 
-
-from gammapy.irf import make_mean_edisp
 
 # define energy grid
 energy = energy_axis.edges * energy_axis.unit
 
 # mean edisp
 edisp = make_mean_edisp(
-    obs_list, position=src_pos, e_true=energy, e_reco=energy
+    observations, position=src_pos, e_true=energy, e_reco=energy
 )
 
 
@@ -160,7 +251,7 @@ path = Path("analysis_3d")
 path.mkdir(exist_ok=True)
 
 
-# And the write the maps and IRFs to disk by calling the dedicated `.write()` methods:
+# And then write the maps and IRFs to disk by calling the dedicated `.write()` methods:
 
 # In[ ]:
 
@@ -195,7 +286,7 @@ psf_kernel = PSFKernel.read(str(path / "psf.fits"))
 edisp = EnergyDispersion.read(str(path / "edisp.fits"))
 
 
-# Let's cut out only part of the maps, so that we the fitting step does not take so long:
+# Let's cut out only part of the maps, so that we the fitting step does not take so long (we go from left to right one):
 
 # In[ ]:
 
@@ -205,6 +296,14 @@ cmaps = {
     for name, m in maps.items()
 }
 cmaps["counts"].sum_over_axes().plot(stretch="sqrt");
+
+
+# Insted of the complete one, which was:
+
+# In[ ]:
+
+
+counts.plot(stretch="sqrt");
 
 
 # ### Fit mask
@@ -269,9 +368,15 @@ fit = MapFit(
 get_ipython().run_cell_magic('time', '', 'result = fit.run(optimize_opts={"print_level": 1})')
 
 
+# In[ ]:
+
+
+print(result.model)
+
+
 # ### Check model fit
 # 
-# Finally we check the model fit by cmputing a residual image. For this we first get the number of predicted counts from the fit evaluator:
+# We check the model fit by computing a residual image. For this we first get the number of predicted counts from the fit evaluator:
 
 # In[ ]:
 
@@ -284,8 +389,7 @@ npred = fit.evaluator.compute_npred()
 # In[ ]:
 
 
-residual = Map.from_geom(cmaps["counts"].geom)
-residual.data = cmaps["counts"].data - npred.data
+residual = cmaps["counts"] - npred
 
 
 # In[ ]:
@@ -296,9 +400,6 @@ residual.sum_over_axes().smooth(width=0.05 * u.deg).plot(
 );
 
 
-# Apparently our model should be improved by adding a component for diffuse Galactic emission and at least one second point
-# source (see exercises at the end of the notebook).
-# 
 # We can also plot the best fit spectrum:
 
 # In[ ]:
@@ -310,7 +411,113 @@ spec.plot(energy_range=energy_range, energy_power=2)
 ax = spec.plot_error(energy_range=energy_range, energy_power=2)
 
 
+# Apparently our model should be improved by adding a component for diffuse Galactic emission and at least one second point
+# source. Let's improve it!
+
+# ### Add Galactic diffuse emission to model
+
+# We use both models at the same time, our diffuse model (the same from the Fermi file used before) and our model for the central source. This time, in order to make it more realistic, we will consider an exponential cut off power law spectral model for the source  (note that we are not constraining the fit with any mask this time).
+
+# In[ ]:
+
+
+diffuse_model = SkyDiffuseCube.read(
+    "$GAMMAPY_DATA/fermi_3fhl/gll_iem_v06_cutout.fits"
+)
+
+
+# In[ ]:
+
+
+spatial_model = SkyPointSource(lon_0="0.01 deg", lat_0="0.01 deg")
+spectral_model = ExponentialCutoffPowerLaw(
+    index=2 * u.Unit(""),
+    amplitude=1e-12 * u.Unit("cm-2 s-1 TeV-1"),
+    reference=1.0 * u.TeV,
+    lambda_=1 / u.TeV,
+)
+model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
+
+
+# In[ ]:
+
+
+combined_fit = MapFit(
+    model=diffuse_model + model,
+    counts=cmaps["counts"],
+    exposure=cmaps["exposure"],
+    background=cmaps["background"],
+    psf=psf_kernel,
+)
+
+
+# In[ ]:
+
+
+get_ipython().run_cell_magic('time', '', 'result_combined = combined_fit.run()')
+
+
+# In[ ]:
+
+
+print(result_combined.model)
+
+
+# As we can see we have now two components in our model, and we can access them separately.
+
+# In[ ]:
+
+
+# Checking normalization value (the closer to 1 the better)
+print("Model 1 (SkyDiffuseCube): ", result_combined.model.model1.parameters)
+print("Model 2 (SkyModel): ", result_combined.model.model2.parameters)
+
+
+# We can now plot the residual image considering this improved model.
+
+# In[ ]:
+
+
+residual2 = cmaps["counts"] - combined_fit.evaluator.compute_npred()
+
+
+# Just as a comparison, we can plot our previous residual map (left) and the new one (right) with the same scale:
+
+# In[ ]:
+
+
+plt.figure(figsize=(15, 5))
+ax_1 = plt.subplot(121, projection=residual.geom.wcs)
+ax_2 = plt.subplot(122, projection=residual.geom.wcs)
+
+ax_1.set_title("Without diffuse emission subtraction")
+ax_2.set_title("With diffuse emission subtraction")
+
+residual.sum_over_axes().smooth(width=0.05 * u.deg).plot(
+    cmap="coolwarm", vmin=-2, vmax=2, add_cbar=True, ax=ax_1
+)
+residual2.sum_over_axes().smooth(width=0.05 * u.deg).plot(
+    cmap="coolwarm", vmin=-2, vmax=2, add_cbar=True, ax=ax_2
+);
+
+
+# Finally we can check again our model (including now the diffuse emission):
+
+# In[ ]:
+
+
+spec2 = result_combined.model.model2.spectral_model
+ax = spec2.plot(energy_range=energy_range, energy_power=2)
+
+
+# Results seems to be better (but not perfect yet). Next step to improve our model even more would be getting rid of the other bright source (G0.9+0.1).
+
+# Note that this notebook aims to show you the procedure of a 3D analysis using just a few observations and a cutted Fermi model. Results get much better for a more complete analysis considering the GPS dataset from the CTA First Data Challenge (DC-1) and also the CTA model for the Galactic diffuse emission, as shown in the next image:
+
+# ![](images/DC1_3d.png)
+
+# The complete tutorial notebook of this analysis is available to be downloaded in [GAMMAPY-EXTRA](https://github.com/gammapy/gammapy-extra) repository at https://github.com/gammapy/gammapy-extra/blob/master/analyses/cta_1dc_gc_3d.ipynb).
+
 # ## Exercises
 # 
-# * Analyse the second source in the field of view: G0.9+0.1
-# * Run the model fit with energy dispersion (pass edisp to MapFit)
+# * Analyse the second source in the field of view: G0.9+0.1 and add it to the combined model.

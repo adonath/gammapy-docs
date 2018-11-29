@@ -9,7 +9,7 @@
 # 
 # We will be using the following Gammapy classes:
 # 
-# * [gammapy.irf.CTAIrf](https://docs.gammapy.org/dev/api/gammapy.irf.CTAIrf.html)
+# * gammapy.irf.CTAIrf
 # * [gammapy.spectrum.SensitivityEstimator](https://docs.gammapy.org/dev/api/gammapy.spectrum.SensitivityEstimator.html)
 
 # ## Setup

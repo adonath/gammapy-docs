@@ -50,7 +50,7 @@ data_store = DataStore.from_dir("$GAMMAPY_DATA/hess-dl3-dr1/")
 
 mask = data_store.obs_table["TARGET_NAME"] == "Crab"
 obs_ids = data_store.obs_table["OBS_ID"][mask].data
-observations = data_store.obs_list(obs_ids)
+observations = data_store.get_observations(obs_ids)
 print(observations)
 
 
@@ -66,13 +66,13 @@ on_region = CircleSkyRegion(center=target_position, radius=on_region_radius)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'bkg_estimator = ReflectedRegionsBackgroundEstimator(\n    on_region=on_region, obs_list=observations\n)\nbkg_estimator.run()')
+get_ipython().run_cell_magic('time', '', 'bkg_estimator = ReflectedRegionsBackgroundEstimator(\n    on_region=on_region, observations=observations\n)\nbkg_estimator.run()')
 
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'ebounds = EnergyBounds.equal_log_spacing(0.7, 100, 50, unit="TeV")\nextraction = SpectrumExtraction(\n    obs_list=observations,\n    bkg_estimate=bkg_estimator.result,\n    containment_correction=False,\n    e_reco=ebounds,\n    e_true=ebounds,\n)\nextraction.run()\nspectrum_observations = extraction.observations')
+get_ipython().run_cell_magic('time', '', 'ebounds = EnergyBounds.equal_log_spacing(0.7, 100, 50, unit="TeV")\nextraction = SpectrumExtraction(\n    observations=observations,\n    bkg_estimate=bkg_estimator.result,\n    containment_correction=False,\n    e_reco=ebounds,\n    e_true=ebounds,\n)\nextraction.run()\nspectrum_observations = extraction.spectrum_observations')
 
 
 # ## Light curve estimation
@@ -100,7 +100,7 @@ time_intervals = list(time_intervals_per_obs(observations))
 
 # Assumed spectral model
 spectral_model = PowerLaw(
-    index=2, amplitude=2.e-11 * u.Unit("1 / (cm2 s TeV)"), reference=1 * u.TeV
+    index=2, amplitude=2.0e-11 * u.Unit("1 / (cm2 s TeV)"), reference=1 * u.TeV
 )
 
 

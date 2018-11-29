@@ -75,7 +75,7 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 from astropy.table import vstack as vstack_table
 from regions import CircleSkyRegion
-from gammapy.data import DataStore, ObservationList
+from gammapy.data import DataStore, Observations
 from gammapy.data import ObservationStats, ObservationSummary
 from gammapy.background.reflected import ReflectedRegionsBackgroundEstimator
 from gammapy.utils.energy import EnergyBounds
@@ -123,7 +123,7 @@ logging.getLogger("gammapy.spectrum").setLevel("WARNING")
 
 datastore = DataStore.from_dir("$GAMMAPY_DATA/hess-dl3-dr1/")
 obs_ids = [23523, 23526, 23559, 23592]
-obs_list = datastore.obs_list(obs_ids)
+observations = datastore.get_observations(obs_ids)
 
 
 # ## Define Target Region
@@ -171,7 +171,9 @@ exclusion_mask.plot()
 
 
 background_estimator = ReflectedRegionsBackgroundEstimator(
-    obs_list=obs_list, on_region=on_region, exclusion_mask=exclusion_mask
+    observations=observations,
+    on_region=on_region,
+    exclusion_mask=exclusion_mask,
 )
 
 background_estimator.run()
@@ -198,8 +200,8 @@ background_estimator.plot(add_legend=True)
 
 
 stats = []
-for obs, bkg in zip(obs_list, background_estimator.result):
-    stats.append(ObservationStats.from_obs(obs, bkg))
+for obs, bkg in zip(observations, background_estimator.result):
+    stats.append(ObservationStats.from_observation(obs, bkg))
 
 print(stats[1])
 
@@ -220,7 +222,7 @@ obs_summary.plot_significance_vs_livetime(ax=ax2)
 
 
 e_reco = EnergyBounds.equal_log_spacing(0.1, 40, 40, unit="TeV")
-e_true = EnergyBounds.equal_log_spacing(0.05, 100., 200, unit="TeV")
+e_true = EnergyBounds.equal_log_spacing(0.05, 100.0, 200, unit="TeV")
 
 
 # Instantiate a [SpectrumExtraction](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumExtraction.html) object that will do the extraction. The containment_correction parameter is there to allow for PSF leakage correction if one is working with full enclosure IRFs. We also compute a threshold energy and store the result in OGIP compliant files (pha, rmf, arf). This last step might be omitted though.
@@ -231,7 +233,7 @@ e_true = EnergyBounds.equal_log_spacing(0.05, 100., 200, unit="TeV")
 ANALYSIS_DIR = "crab_analysis"
 
 extraction = SpectrumExtraction(
-    obs_list=obs_list,
+    observations=observations,
     bkg_estimate=background_estimator.result,
     containment_correction=False,
 )
@@ -240,9 +242,9 @@ extraction.run()
 # Add a condition on correct energy range in case it is not set by default
 extraction.compute_energy_threshold(method_lo="area_max", area_percent_lo=10.0)
 
-print(extraction.observations[0])
+print(extraction.spectrum_observations[0])
 # Write output in the form of OGIP files: PHA, ARF, RMF, BKG
-# extraction.run(obs_list=obs_list, bkg_estimate=background_estimator.result, outdir=ANALYSIS_DIR)
+# extraction.run(observations=observations, bkg_estimate=background_estimator.result, outdir=ANALYSIS_DIR)
 
 
 # ## Look at observations
@@ -256,9 +258,9 @@ print(extraction.observations[0])
 # obs = SpectrumObservation.read(filename)
 
 # Requires IPython widgets
-# _ = extraction.observations.peek()
+# _ = extraction.spectrum_observations.peek()
 
-extraction.observations[0].peek()
+extraction.spectrum_observations[0].peek()
 
 
 # ## Fit spectrum
@@ -272,7 +274,7 @@ model = PowerLaw(
     index=2, amplitude=2e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV
 )
 
-joint_fit = SpectrumFit(obs_list=extraction.observations, model=model)
+joint_fit = SpectrumFit(obs_list=extraction.spectrum_observations, model=model)
 joint_fit.run()
 joint_result = joint_fit.result
 
@@ -287,15 +289,17 @@ print(joint_result[0])
 
 # ## Compute Flux Points
 # 
-# To round up out analysis we can compute flux points by fitting the norm of the global model in energy bands. We'll use a fixed energy binning for now.
+# To round up our analysis we can compute flux points by fitting the norm of the global model in energy bands. We'll use a fixed energy binning for now.
 
 # In[ ]:
 
 
 # Define energy binning
-ebounds = [0.3, 1.1, 3, 10.1, 30] * u.TeV
+stacked_obs = extraction.spectrum_observations.stack()
 
-stacked_obs = extraction.observations.stack()
+e_min, e_max = stacked_obs.lo_threshold.to_value("TeV"), 30
+ebounds = np.logspace(np.log10(e_min), np.log10(e_max), 15) * u.TeV
+
 
 seg = SpectrumEnergyGroupMaker(obs=stacked_obs)
 seg.compute_groups_fixed(ebounds=ebounds)
@@ -315,11 +319,22 @@ flux_points = fpe.run()
 # In[ ]:
 
 
-flux_points.plot()
-flux_points.table
+flux_points.table_formatted
 
 
-# The final plot with the best fit model and the flux points can be quickly made like this
+# Now we plot the flux points and their likelihood profiles. For the plotting of upper limits we choose a threshold of TS < 4.
+
+# In[ ]:
+
+
+flux_points.table["is_ul"] = flux_points.table["ts"] < 4
+ax = flux_points.plot(
+    energy_power=2, flux_unit="erg-1 cm-2 s-1", color="darkorange"
+)
+flux_points.to_sed_type("e2dnde").plot_likelihood(ax=ax)
+
+
+# The final plot with the best fit model, flux points and residuals can be quickly made like this
 
 # In[ ]:
 
@@ -332,7 +347,6 @@ ax0, ax1 = spectrum_result.plot(
     energy_power=2,
     flux_unit="erg-1 cm-2 s-1",
     fig_kwargs=dict(figsize=(8, 8)),
-    point_kwargs=dict(color="red"),
 )
 
 ax0.set_xlim(0.4, 50)
@@ -345,7 +359,7 @@ ax0.set_xlim(0.4, 50)
 # In[ ]:
 
 
-stacked_obs = extraction.observations.stack()
+stacked_obs = extraction.spectrum_observations.stack()
 
 stacked_fit = SpectrumFit(obs_list=stacked_obs, model=model)
 stacked_fit.run()
@@ -386,12 +400,3 @@ print(
 
 # Start exercises here
 
-
-# ## What next?
-# 
-# In this tutorial we learned how to extract counts spectra from an event list and generate the corresponding IRFs. Then we fitted a model to the observations and also computed flux points.
-# 
-# Here's some suggestions where to go next:
-# 
-# * if you want think this is way too complicated and just want to run a quick analysis check out [this notebook](spectrum_pipe.ipynb)
-# * if you interested in available fit statistics checkout [gammapy.stats](https://docs.gammapy.org/dev/stats/index.html)

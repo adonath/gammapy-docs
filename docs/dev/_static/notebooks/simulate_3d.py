@@ -24,12 +24,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
-from gammapy.irf import (
-    EffectiveAreaTable2D,
-    EnergyDispersion2D,
-    EnergyDependentMultiGaussPSF,
-    Background3D,
-)
+from gammapy.irf import load_cta_irfs
 from gammapy.maps import WcsGeom, MapAxis, WcsNDMap, Map
 from gammapy.spectrum.models import PowerLaw
 from gammapy.image.models import SkyGaussian
@@ -49,19 +44,10 @@ get_ipython().system('gammapy info --no-envvar --no-dependencies --no-system')
 # In[ ]:
 
 
-def get_irfs():
-    """Load CTA IRFs"""
-    filename = "$GAMMAPY_DATA/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
-    psf = EnergyDependentMultiGaussPSF.read(
-        filename, hdu="POINT SPREAD FUNCTION"
-    )
-    aeff = EffectiveAreaTable2D.read(filename, hdu="EFFECTIVE AREA")
-    edisp = EnergyDispersion2D.read(filename, hdu="ENERGY DISPERSION")
-    bkg = Background3D.read(filename, hdu="BACKGROUND")
-    return dict(psf=psf, aeff=aeff, edisp=edisp, bkg=bkg)
-
-
-irfs = get_irfs()
+filename = (
+    "$GAMMAPY_DATA/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
+)
+irfs = load_cta_irfs(filename)
 
 
 # In[ ]:
@@ -83,7 +69,7 @@ print(sky_model)
 
 # Define map geometry
 axis = MapAxis.from_edges(
-    np.logspace(-1., 1., 10), unit="TeV", name="energy", interp="log"
+    np.logspace(-1.0, 1.0, 10), unit="TeV", name="energy", interp="log"
 )
 geom = WcsGeom.create(
     skydir=(0, 0), binsz=0.02, width=(5, 4), coordsys="GAL", axes=[axis]
@@ -131,14 +117,15 @@ psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch="log");
 # In[ ]:
 
 
-edisp = irfs["edisp"].to_energy_dispersion(offset=offset)
+energy = axis.edges * axis.unit
+edisp = irfs["edisp"].to_energy_dispersion(offset, e_reco=energy, e_true=energy)
 edisp.plot_matrix();
 
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '# The idea is that we have this class that can compute `npred`\n# maps, i.e. "predicted counts per pixel" given the model and\n# the observation infos: exposure, background, PSF and EDISP\nevaluator = MapEvaluator(\n    model=sky_model, exposure=exposure, background=background, psf=psf_kernel\n)')
+get_ipython().run_cell_magic('time', '', '# The idea is that we have this class that can compute `npred`\n# maps, i.e. "predicted counts per pixel" given the model and\n# the observation infos: exposure, background, PSF and EDISP\nevaluator = MapEvaluator(\n    model=sky_model, exposure=exposure, background=background, psf=psf_kernel, edisp=edisp\n)')
 
 
 # In[ ]:
@@ -192,8 +179,8 @@ spectral_model = PowerLaw(
 model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
 
 # Impose that specrtal index remains within limits
-spectral_model.parameters['index'].min = 0.
-spectral_model.parameters['index'].max = 10.
+spectral_model.parameters["index"].min = 0.0
+spectral_model.parameters["index"].max = 10.0
 
 print(model)
 
@@ -224,33 +211,4 @@ print(result.model)
 
 
 # TODO: show e.g. how to make a residual image
-
-
-# ## iminuit
-# 
-# What we have done for now is to write a very thin wrapper for http://iminuit.readthedocs.io/
-# as a fitting backend. This is just a prototype, we will improve this interface and
-# add other fitting backends (e.g. Sherpa or scipy.optimize or emcee or ...)
-# 
-# As a power-user, you can access ``fit._iminuit`` and get the full power of what is developed there already.
-# E.g. the ``fit.fit()`` call ran ``Minuit.migrad()`` and ``Minuit.hesse()`` in the background, and you have
-# access to e.g. the covariance matrix, or can check a likelihood profile, or can run ``Minuit.minos()``
-# to compute asymmetric errors or ...
-
-# In[ ]:
-
-
-# Check correlation between model parameters
-# As expected in this simple case,
-# spatial parameters are uncorrelated,
-# but the spectral model amplitude and index are correlated as always
-fit.minuit.print_matrix()
-
-
-# In[ ]:
-
-
-# You can use likelihood profiles to check if your model is
-# well constrained or not, and if the fit really converged
-fit.minuit.draw_profile("par_002_sigma");
 

@@ -45,7 +45,7 @@ data_store = DataStore.from_file(
 )
 mask = data_store.obs_table["TARGET_NAME"] == "Crab"
 obs_table = data_store.obs_table[mask]
-observations = data_store.obs_list(obs_table["OBS_ID"])
+observations = data_store.get_observations(obs_table["OBS_ID"])
 
 
 # In[ ]:
@@ -65,7 +65,7 @@ pos_crab = SkyCoord(83.633, 22.014, unit="deg")
 
 
 energy_axis = MapAxis.from_edges(
-    np.logspace(0, 1., 5), unit="TeV", name="energy", interp="log"
+    np.logspace(0, 1.0, 5), unit="TeV", name="energy", interp="log"
 )
 geom = WcsGeom.create(
     skydir=(83.633, 22.014),
@@ -145,7 +145,7 @@ get_ipython().run_cell_magic('time', '', 'fit = MapFit(\n    model=model,\n    c
 
 npred = fit.evaluator.compute_npred()
 residual = Map.from_geom(maps["counts"].geom)
-residual.data = maps["counts"].data - npred.data
+residual.data = maps["counts"].data - npred
 
 
 # In[ ]:
