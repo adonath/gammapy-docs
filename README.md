@@ -42,15 +42,22 @@ git push
 
 ## Update a stable version
 
-Same as before, except check out the right tag and pass it to the `make docs-all` command as a param `release`
+```
+cd build
+mkdir 0.10  # or whatever the version is
+cd 0.10
+git clone https://github.com/gammapy/gammapy.git
+cd gammapy
+git checkout v0.10
+python setup.py develop
+time make docs-all release=v0.10
+cd ../../..
+cp -r build/0.10/gammapy/docs/_build/html docs/0.10
+git add docs/0.10
+git commit -m 'Add docs/0.10'
+```
 
-```
-git checkout v0.6
-```
-
-```
-time make docs-all release=v0.8
-```
+Then update `stable/index.html` to point to the new stable version.
 
 ## Very old versions
 
