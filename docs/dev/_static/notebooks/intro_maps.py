@@ -370,9 +370,9 @@ print(image.geom)
 # In[ ]:
 
 
-filename = "$GAMMAPY_DATA/fermi_2fhl/fermi_2fhl_gc.fits.gz"
-m_2fhl_gc = Map.read(filename)
-print(m_2fhl_gc)
+filename = "$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-counts.fits.gz"
+m_3fhl_gc = Map.read(filename)
+print(m_3fhl_gc)
 
 
 # By default `Map.read()` will try to find the first valid data hdu in the filename and read the data from there. If mutliple HDUs are present in the FITS file, the desired one can be chosen with the additional `hdu=` argument:
@@ -380,8 +380,8 @@ print(m_2fhl_gc)
 # In[ ]:
 
 
-m_2fhl_gc = Map.read(filename, hdu="background")
-print(m_2fhl_gc)
+m_3fhl_gc = Map.read(filename, hdu="PRIMARY")
+print(m_3fhl_gc)
 
 
 # In rare cases e.g. when the FITS file is not valid or meta data is missing from the header it can be necessary to modify the header of a certain HDU before creating the `Map` object. In this case we can use `astropy.io.fits` directly to read the FITS file:
@@ -389,7 +389,10 @@ print(m_2fhl_gc)
 # In[ ]:
 
 
-filename = os.environ["GAMMAPY_DATA"] + "/fermi_survey/all.fits.gz"
+filename = (
+    os.environ["GAMMAPY_DATA"]
+    + "/fermi-3fhl-gc/fermi-3fhl-gc-exposure.fits.gz"
+)
 hdulist = fits.open(filename)
 hdulist.info()
 
@@ -399,8 +402,8 @@ hdulist.info()
 # In[ ]:
 
 
-hdulist["exposure"].header["BUNIT"] = "cm2 s"
-Map.from_hdulist(hdulist=hdulist, hdu="exposure")
+hdulist["PRIMARY"].header["BUNIT"] = "cm2 s"
+Map.from_hdulist(hdulist=hdulist)
 
 
 # ### 3.2 Writing Maps
@@ -464,8 +467,8 @@ Table.read(hdulist["PRIMARY_BANDS"])
 # In[ ]:
 
 
-filename = "$GAMMAPY_DATA/fermi_2fhl/fermi_2fhl_gc.fits.gz"
-m_2fhl_gc = Map.read(filename, hdu="counts")
+filename = "$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-counts.fits.gz"
+m_3fhl_gc = Map.read(filename)
 
 
 # After reading the map we can now plot it on the screen by calling the `.plot()` method:
@@ -473,7 +476,7 @@ m_2fhl_gc = Map.read(filename, hdu="counts")
 # In[ ]:
 
 
-m_2fhl_gc.plot();
+m_3fhl_gc.plot();
 
 
 # We can easily improve the plot by calling `Map.smooth()` first and providing additional arguments to `.plot()`. Most of them are passed further to [plt.imshow()](https://matplotlib.org/api/_as_gen/matplotlib.pyplot.imshow.html):
@@ -481,7 +484,7 @@ m_2fhl_gc.plot();
 # In[ ]:
 
 
-smoothed = m_2fhl_gc.smooth(width=0.2 * u.deg, kernel="gauss")
+smoothed = m_3fhl_gc.smooth(width=0.2 * u.deg, kernel="gauss")
 smoothed.plot(stretch="sqrt", add_cbar=True, vmax=4, cmap="inferno");
 
 
@@ -492,7 +495,7 @@ smoothed.plot(stretch="sqrt", add_cbar=True, vmax=4, cmap="inferno");
 
 rc_params = {"figure.figsize": (12, 5.4), "font.size": 12}
 with plt.rc_context(rc=rc_params):
-    smoothed = m_2fhl_gc.smooth(width=0.2 * u.deg, kernel="gauss")
+    smoothed = m_3fhl_gc.smooth(width=0.2 * u.deg, kernel="gauss")
     smoothed.plot(stretch="sqrt", add_cbar=True, vmax=4);
 
 
@@ -503,7 +506,7 @@ with plt.rc_context(rc=rc_params):
 # In[ ]:
 
 
-filename = "$GAMMAPY_DATA/fermi_3fhl/gll_iem_v06_cutout.fits"
+filename = "$GAMMAPY_DATA/fermi-3fhl-gc/gll_iem_v06_gc.fits.gz"
 m_iem_gc = Map.read(filename)
 
 rc_params = {
@@ -546,7 +549,7 @@ wcs_geom_cel = WcsGeom.create(
 
 m_iem = m_iem_gc.get_image_by_coord({"energy": 10 * u.GeV})
 m_iem_cel = m_iem.reproject(wcs_geom_cel)
-m_iem_cel.plot(add_cbar=True, vmin=0, vmax=2.5e-9)
+m_iem_cel.plot(add_cbar=True, vmin=0, vmax=2.5e-9);
 
 
 # ### 5.2 Interpolating Map Values

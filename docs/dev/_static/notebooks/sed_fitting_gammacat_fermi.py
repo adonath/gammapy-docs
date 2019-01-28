@@ -63,7 +63,7 @@ from gammapy.catalog import (
 
 fermi_3fgl = SourceCatalog3FGL()
 fermi_3fhl = SourceCatalog3FHL()
-gammacat = SourceCatalogGammaCat()
+gammacat = SourceCatalogGammaCat("$GAMMAPY_DATA/gamma-cat/gammacat.fits.gz")
 
 
 # In[ ]:

@@ -18,45 +18,32 @@
 # Render our plots inline
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
-
-plt.rcParams["figure.figsize"] = (15, 5)
+import numpy as np
 
 
 # In[ ]:
 
 
-import sys
-import numpy as np
-import scipy as sp
-
-print("Python version: " + sys.version)
-print("Numpy version: " + np.__version__)
-print("Scipy version: " + sp.__version__)
+from astropy.io import fits
+from astropy.coordinates import Angle, SkyCoord
+from gammapy.maps import Map
+from gammapy.detect import CWTKernels, CWT, CWTData
 
 
-# ## CWT Algorithm. PlayGround
+# ## CWT Algorithm
 
 # First of all we import the data which should be analysied.
 
 # In[ ]:
 
 
-import os
-from astropy.io import fits
-from astropy.coordinates import Angle, SkyCoord
-from gammapy.maps import Map
+counts = Map.read("$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-counts.fits.gz")
 
-filename = "$GAMMAPY_DATA/fermi_survey/all.fits.gz"
+background = Map.read(
+    "$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-background.fits.gz"
+)
 
-counts = Map.read(filename=filename, hdu="COUNTS")
-background = Map.read(filename=filename, hdu="BACKGROUND")
-
-width = Angle([20, 10], "deg")
-position = counts.geom.center_skydir
-counts = counts.cutout(position=position, width=width)
-background = background.cutout(position=position, width=width)
-
-data = dict(counts=counts, background=background)
+maps = {"counts": counts, "background": background}
 
 
 # In[ ]:
@@ -64,11 +51,11 @@ data = dict(counts=counts, background=background)
 
 fig = plt.figure(figsize=(15, 3))
 
-ax = fig.add_subplot(121, projection=data["counts"].geom.wcs)
-data["counts"].plot(vmax=10, ax=ax, fig=fig)
+ax = fig.add_subplot(121, projection=maps["counts"].geom.wcs)
+maps["counts"].plot(vmax=8, ax=ax)
 
-ax = fig.add_subplot(122, projection=data["background"].geom.wcs)
-data["background"].plot(vmax=10, ax=ax, fig=fig)
+ax = fig.add_subplot(122, projection=maps["background"].geom.wcs)
+maps["background"].plot(vmax=8, ax=ax);
 
 
 # Let's explore how CWT works. At first define parameters of the algorithm.  An imperative parameter is kernels (`detect.CWTKernels` object). So we should create it.
@@ -85,12 +72,10 @@ STEP_SCALE = 1.3  # Base scaling factor.
 # In[ ]:
 
 
-from gammapy.detect import CWTKernels
-
 cwt_kernels = CWTKernels(
     n_scale=N_SCALE, min_scale=MIN_SCALE, step_scale=STEP_SCALE
 )
-print(cwt_kernels.info_table)
+cwt_kernels.info_table
 
 
 # Other parameters are optional, in this demonstration define them all.
@@ -113,11 +98,6 @@ KEEP_HISTORY = True  # If you want to save images of all the iterations
 # In[ ]:
 
 
-from gammapy.detect import CWT
-import logging
-
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
 cwt = CWT(
     kernels=cwt_kernels,
     tol=TOL,
@@ -133,10 +113,8 @@ cwt = CWT(
 # In[ ]:
 
 
-from gammapy.detect import CWTKernels, CWTData
-
 cwt_data = CWTData(
-    counts=data["counts"], background=data["background"], n_scale=N_SCALE
+    counts=maps["counts"], background=maps["background"], n_scale=N_SCALE
 )
 
 
@@ -163,6 +141,8 @@ for index, (name, image) in enumerate(images.items()):
     ax = fig.add_subplot(len(images), 2, index + 1, projection=image.geom.wcs)
     image.plot(vmax=PLOT_VALUE_MAX, fig=fig, ax=ax)
     plt.title(name)  # Maybe add a Name in SkyImage.plots?
+
+plt.subplots_adjust(hspace=0.4)
 
 
 # As you can see in the implementation of CWT above, it has the parameter `keep_history`. If you set to it `True`-value, it means that CWT would save all the images from iterations. Algorithm keeps images of only last CWT start.  Let's do this in the demonstration.
@@ -194,13 +174,15 @@ for index, (name, image) in enumerate(images_iter.items()):
     image.plot(vmax=PLOT_VALUE_MAX, fig=fig, ax=ax)
     plt.title(name)  # Maybe add a Name in SkyImage.plots?
 
+plt.subplots_adjust(hspace=0.4)
+
 
 # You can get the information about the one particular image in that way: 
 
 # In[ ]:
 
 
-print(data_iter.image_info(name="approx_bkg"))
+data_iter.image_info(name="approx_bkg")
 
 
 # You can also get the information about cubes. Or information about all the data. 
@@ -208,13 +190,13 @@ print(data_iter.image_info(name="approx_bkg"))
 # In[ ]:
 
 
-print(data_iter.cube_info(name="support", per_scale=True))
+data_iter.cube_info(name="support", per_scale=True)
 
 
 # In[ ]:
 
 
-print(data_iter.cube_info(name="support", per_scale=False))
+data_iter.cube_info(name="support", per_scale=False)
 
 
 # Also you can see the difference betwen the iterations in that way:
@@ -231,7 +213,7 @@ difference = (
 # In[ ]:
 
 
-print(difference.cube_info("support"))
+difference.cube_info("support")
 
 
 # In[ ]:
@@ -251,6 +233,8 @@ for index, (name, image) in enumerate(images_diff.items()):
     )
     image.plot(vmax=PLOT_VALUE_MAX, fig=fig, ax=ax)
     plt.title(name)  # Maybe add a Name in SkyImage.plots?
+
+    plt.subplots_adjust(hspace=0.4)
 
 
 # You can save the results if you want

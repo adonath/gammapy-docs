@@ -118,14 +118,16 @@ psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch="log");
 
 
 energy = axis.edges * axis.unit
-edisp = irfs["edisp"].to_energy_dispersion(offset, e_reco=energy, e_true=energy)
+edisp = irfs["edisp"].to_energy_dispersion(
+    offset, e_reco=energy, e_true=energy
+)
 edisp.plot_matrix();
 
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '# The idea is that we have this class that can compute `npred`\n# maps, i.e. "predicted counts per pixel" given the model and\n# the observation infos: exposure, background, PSF and EDISP\nevaluator = MapEvaluator(\n    model=sky_model, exposure=exposure, background=background, psf=psf_kernel, edisp=edisp\n)')
+get_ipython().run_cell_magic('time', '', '# The idea is that we have this class that can compute `npred`\n# maps, i.e. "predicted counts per pixel" given the model and\n# the observation infos: exposure, background, PSF and EDISP\nevaluator = MapEvaluator(\n    model=sky_model,\n    exposure=exposure,\n    background=background,\n    psf=psf_kernel,\n    edisp=edisp,\n)')
 
 
 # In[ ]:

@@ -9,10 +9,10 @@
 # 
 # We will do this:
 # 
-# * produce 2-dimensional test-statistics (TS) images using Fermi-LAT 2FHL high-energy Galactic plane survey dataset
+# * produce 2-dimensional test-statistics (TS) images using Fermi-LAT 3FHL high-energy Galactic center dataset
 # * run a peak finder to make a source catalog
 # * do some simple measurements on each source
-# * compare to the 2FHL catalog
+# * compare to the 3FHL catalog
 # 
 # Note that what we do here is a quick-look analysis, the production of real source catalogs use more elaborate procedures.
 # 
@@ -38,35 +38,38 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 from astropy import units as u
-from astropy.convolution import Gaussian2DKernel
-from astropy.coordinates import SkyCoord
 from gammapy.maps import Map
 from gammapy.detect import TSMapEstimator, find_peaks
 from gammapy.catalog import source_catalogs
+from gammapy.cube import PSFKernel
 
 
-# ## Compute TS image
-
-# In[ ]:
-
-
-# Load data from files
-filename = "$GAMMAPY_DATA/fermi_survey/all.fits.gz"
-opts = {
-    "position": SkyCoord(0, 0, unit="deg", frame="galactic"),
-    "width": (20, 8),
-}
-maps = {
-    "counts": Map.read(filename, hdu="COUNTS").cutout(**opts),
-    "background": Map.read(filename, hdu="BACKGROUND").cutout(**opts),
-    "exposure": Map.read(filename, hdu="EXPOSURE").cutout(**opts),
-}
-
+# ## Read in input images
+# 
+# We first read in the counts cube and sum over the energy axis:
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '# Compute a source kernel (source template) in oversample mode,\n# PSF is not taken into account\nkernel = Gaussian2DKernel(2.5, mode="oversample")\nestimator = TSMapEstimator()\nimages = estimator.run(maps, kernel)')
+counts = Map.read("$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-counts.fits.gz")
+background = Map.read(
+    "$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-background.fits.gz"
+)
+exposure = Map.read(
+    "$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-exposure.fits.gz"
+)
+
+maps = {"counts": counts, "background": background, "exposure": exposure}
+
+kernel = PSFKernel.read(
+    "$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-psf.fits.gz"
+)
+
+
+# In[ ]:
+
+
+get_ipython().run_cell_magic('time', '', 'estimator = TSMapEstimator()\nimages = estimator.run(maps, kernel.data)')
 
 
 # ## Plot images
@@ -75,14 +78,14 @@ get_ipython().run_cell_magic('time', '', '# Compute a source kernel (source temp
 
 
 plt.figure(figsize=(15, 5))
-images["sqrt_ts"].plot();
+images["sqrt_ts"].plot(add_cbar=True);
 
 
 # In[ ]:
 
 
 plt.figure(figsize=(15, 5))
-images["flux"].plot(add_cbar=True);
+images["flux"].plot(add_cbar=True, stretch="sqrt", vmin=0);
 
 
 # In[ ]:
@@ -109,14 +112,14 @@ sources
 # Plot sources on top of significance sky image
 plt.figure(figsize=(15, 5))
 
-images["sqrt_ts"].plot()
+_, ax, _ = images["sqrt_ts"].plot(add_cbar=True)
 
-plt.gca().scatter(
+ax.scatter(
     sources["ra"],
     sources["dec"],
     transform=plt.gca().get_transform("icrs"),
     color="none",
-    edgecolor="black",
+    edgecolor="w",
     marker="o",
     s=600,
     lw=1.5,
@@ -133,15 +136,27 @@ plt.gca().scatter(
 # TODO
 
 
-# ## Compare to 2FHL
+# ## Compare to 3FHL
 # 
 # TODO
 
 # In[ ]:
 
 
-fermi_2fhl = source_catalogs["2fhl"]
-fermi_2fhl.table[:5][["Source_Name", "GLON", "GLAT"]]
+fermi_3fhl = source_catalogs["3fhl"]
+
+
+# In[ ]:
+
+
+selection = counts.geom.contains(fermi_3fhl.positions)
+fermi_3fhl.table = fermi_3fhl.table[selection]
+
+
+# In[ ]:
+
+
+fermi_3fhl.table[["Source_Name", "GLON", "GLAT"]]
 
 
 # ## Exercises

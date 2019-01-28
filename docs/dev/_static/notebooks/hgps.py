@@ -66,7 +66,7 @@ import numpy as np
 
 
 import astropy.units as u
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, Angle
 from astropy.io import fits
 from astropy.table import Table
 from astropy.wcs import WCS
@@ -80,6 +80,8 @@ print(astropy.__version__)
 
 
 from gammapy.maps import Map
+from gammapy.image import MapPanelPlotter
+
 from gammapy.catalog import SourceCatalogHGPS
 
 import gammapy
@@ -776,6 +778,37 @@ for c in source.components:
 # With some effort, you can use those to make HGPS model flux images.
 # 
 # There are two reasons we're not showing this here: First, the spatial model code in Gammapy is work in progress, it will change soon. Secondly, doing morphology measurements on the public HGPS maps is discouraged; we note again that the maps are correlated and no detailed PSF information is published. So please be careful / conservative when extracting quantitative mesurements from the HGPS maps e.g. for a source of interest for you.
+
+# ### Survey Map Panel Plot
+# 
+# The survey maps have an aspect ratio of ~18:2 which makes it hard to fit them on a standard size a4 paper or slide for showing them. In Gammapy there is a helper class `MapPanelPlotter`, which allows to plot these kind of maps on mutiple panels. Here is an example, how to uses it:  
+
+# In[ ]:
+
+
+fig = plt.figure(figsize=(15, 8))
+
+xlim = Angle([65, 255], unit="deg")
+ylim = Angle([-4, 4], unit="deg")
+
+plotter = MapPanelPlotter(
+    figure=fig,
+    xlim=xlim,
+    ylim=ylim,
+    npanels=4,
+    top=0.98,
+    bottom=0.07,
+    right=0.98,
+    left=0.05,
+    hspace=0.15,
+)
+
+axes = plotter.plot(
+    survey_map, cmap="inferno", stretch="sqrt", vmin=0, vmax=50
+)
+
+
+# Internally the class uses matplotlib class [`GridSpec`](https://matplotlib.org/api/gridspec_api.html#matplotlib.gridspec.GridSpec) to set up a grid of subplot axes, which are returned by the `MapPanelPlotter.plot()` function. These can be used further, e.g. to plot markers on, using the standard [`WcsAxes`](http://docs.astropy.org/en/stable/visualization/wcsaxes/) api.
 
 # ## Conclusions
 # 

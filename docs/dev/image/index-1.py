@@ -1,4 +1,4 @@
 from gammapy.maps import Map
-filename = '$GAMMAPY_DATA/fermi_2fhl/fermi_2fhl_vela.fits.gz'
-image = Map.read(filename, hdu=2)
-image.plot()
+filename = "$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-counts.fits.gz"
+image = Map.read(filename)
+image.smooth("0.1 deg").plot()

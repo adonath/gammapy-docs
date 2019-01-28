@@ -81,7 +81,7 @@ get_ipython().system('ls $GAMMAPY_DATA/cta-1dc')
 
 
 # 
-# Let's have a look around at the directories and files in `$CTADATA`.
+# Let's have a look around at the directories and files in `$GAMMAPY_DATA`.
 # 
 # We will look at the `data` folder with events, the `caldb` folder with the IRFs and the `index` folder with the index files. At the end, we will also mention what the `model` and `obs` folder contains, but they aren't used with Gammapy, at least not at the moment.
 # 

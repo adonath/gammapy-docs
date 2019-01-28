@@ -18,7 +18,7 @@
 # 
 # ## Setup
 # 
-# **IMPORTANT**: For this notebook you have to get the prepared ``3fhl`` dataset provided in the [gammapy-fermi-lat-data](https://github.com/gammapy/gammapy-fermi-lat-data) repository. Please follow the instructions [here](https://github.com/gammapy/gammapy-fermi-lat-data#get-the-data) to download the data and setup your environment.
+# **IMPORTANT**: For this notebook you have to get the prepared ``3fhl`` dataset provided in your $GAMMAPY_DATA.
 # 
 # Note that the ``3fhl`` dataset is high-energy only, ranging from 10 GeV to 2 TeV.
 
@@ -26,12 +26,6 @@
 
 
 # Check that you have the prepared Fermi-LAT dataset
-get_ipython().system('ls -1 $GAMMAPY_DATA/fermi_3fhl')
-
-
-# In[ ]:
-
-
 # We will use diffuse models from here
 get_ipython().system('ls -1 $GAMMAPY_DATA/fermi_3fhl')
 
@@ -68,7 +62,7 @@ from gammapy.cube import MapEvaluator, MapFit, PSFKernel
 
 
 events = EventList.read(
-    "$GAMMAPY_FERMI_LAT_DATA/3fhl/allsky/fermi_3fhl_events_selected.fits.gz"
+    "$GAMMAPY_DATA/fermi_3fhl/fermi_3fhl_events_selected.fits.gz"
 )
 print(events)
 
@@ -168,7 +162,7 @@ counts.sum_over_axes().smooth(2).plot(stretch="sqrt", vmax=30);
 
 
 exposure_hpx = Map.read(
-    "$GAMMAPY_FERMI_LAT_DATA/3fhl/allsky/fermi_3fhl_exposure_cube_hpx.fits.gz"
+    "$GAMMAPY_DATA/fermi_3fhl/fermi_3fhl_exposure_cube_hpx.fits.gz"
 )
 # Unit is not stored in the file, set it manually
 exposure_hpx.unit = "cm2 s"
@@ -225,7 +219,7 @@ exposure.get_by_coord({"skycoord": gc_pos, "energy": energy})
 
 
 diffuse_galactic_fermi = Map.read(
-    "$GAMMAPY_EXTRA/datasets/fermi_3fhl/gll_iem_v06_cutout.fits"
+    "$GAMMAPY_DATA/fermi_3fhl/gll_iem_v06_cutout.fits"
 )
 # Unit is not stored in the file, set it manually
 diffuse_galactic_fermi.unit = "cm-2 s-1 MeV-1 sr-1"
@@ -292,7 +286,7 @@ plt.ylabel("Flux (cm-2 s-1 MeV-1 sr-1)")
 # In[ ]:
 
 
-filename = "$GAMMAPY_FERMI_LAT_DATA/isodiff/iso_P8R2_SOURCE_V6_v06.txt"
+filename = "$GAMMAPY_DATA/fermi_3fhl/iso_P8R2_SOURCE_V6_v06.txt"
 interp_kwargs = {"fill_value": None}
 diffuse_iso = TableModel.read_fermi_isotropic_model(
     filename=filename, interp_kwargs=interp_kwargs
@@ -316,7 +310,7 @@ diffuse_iso.plot(erange, flux_unit="1 / (cm2 MeV s sr)");
 
 
 psf = EnergyDependentTablePSF.read(
-    "$GAMMAPY_FERMI_LAT_DATA/3fhl/allsky/fermi_3fhl_psf_gc.fits.gz"
+    "$GAMMAPY_DATA/fermi_3fhl/fermi_3fhl_psf_gc.fits.gz"
 )
 print(psf)
 
@@ -344,7 +338,8 @@ for energy in [100, 300, 1000] * u.GeV:
     psf_at_energy.plot_psf_vs_rad(label="PSF @ {:.0f}".format(energy), lw=2)
 
 erange = [50, 2000] * u.GeV
-psf_mean = psf.table_psf_in_energy_band(energy_band=erange, spectral_index=2.3)
+spectrum = PowerLaw(index=2.3)
+psf_mean = psf.table_psf_in_energy_band(energy_band=erange, spectrum=spectrum)
 psf_mean.plot_psf_vs_rad(label="PSF Mean", lw=4, c="k", ls="--")
 
 plt.xlim(1e-3, 0.3)

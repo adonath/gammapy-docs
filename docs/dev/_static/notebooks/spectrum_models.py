@@ -59,7 +59,7 @@ pwl = models.PowerLaw(
 print(pwl)
 
 
-# As you see, some of the parameters have default ``min`` and ``values`` as well as a ``frozen`` flag. This is only relevant in the context of spectral fitting and thus covered in [spectrum_analysis.ipynb](https://github.com/gammapy/gammapy-extra/blob/master/notebooks/spectrum_analysis.ipynb). Also, the parameter errors are not set. This will be covered later in this tutorial.
+# As you see, some of the parameters have default ``min`` and ``values`` as well as a ``frozen`` flag. This is only relevant in the context of spectral fitting and thus covered in [spectrum_analysis.ipynb](https://github.com/gammapy/gammapy/blob/master/tutorials/spectrum_analysis.ipynb). Also, the parameter errors are not set. This will be covered later in this tutorial.
 
 # ## Get and set model parameters
 # 

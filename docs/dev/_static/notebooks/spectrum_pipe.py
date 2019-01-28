@@ -77,7 +77,7 @@ flux_point_binning = EnergyBounds.equal_log_spacing(0.7, 30, 5, u.TeV)
 
 exclusion_mask = Map.create(skydir=crab_pos, width=(10, 10), binsz=0.02)
 
-gammacat = SourceCatalogGammaCat()
+gammacat = SourceCatalogGammaCat("$GAMMAPY_DATA/gamma-cat/gammacat.fits.gz")
 
 regions = []
 for source in gammacat:

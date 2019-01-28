@@ -26,7 +26,7 @@ from gammapy.data import DataStore
 from gammapy.irf import EnergyDispersion, make_mean_psf, make_mean_edisp
 from gammapy.maps import WcsGeom, MapAxis, Map, WcsNDMap
 from gammapy.cube import MapMaker, MapEvaluator, PSFKernel, MapFit
-from gammapy.cube.models import SkyModel, SkyDiffuseCube
+from gammapy.cube.models import SkyModel, SkyDiffuseCube, BackgroundModel
 from gammapy.spectrum.models import PowerLaw, ExponentialCutoffPowerLaw
 from gammapy.image.models import SkyGaussian, SkyPointSource
 from regions import CircleSkyRegion
@@ -143,7 +143,7 @@ excess.smooth(5).plot(stretch="sqrt", add_cbar=True);
 # In[ ]:
 
 
-diffuse_gal = Map.read("$GAMMAPY_DATA/fermi_3fhl/gll_iem_v06_cutout.fits")
+diffuse_gal = Map.read("$GAMMAPY_DATA/fermi-3fhl-gc/gll_iem_v06_gc.fits.gz")
 
 
 # In[ ]:
@@ -371,7 +371,16 @@ get_ipython().run_cell_magic('time', '', 'result = fit.run(optimize_opts={"print
 # In[ ]:
 
 
-print(result.model)
+print(model)
+
+
+# To get the errors on the model, we can check the covariance table:
+# 
+
+# In[ ]:
+
+
+fit.evaluator.parameters.covariance_to_table()
 
 
 # ### Check model fit
@@ -400,19 +409,62 @@ residual.sum_over_axes().smooth(width=0.05 * u.deg).plot(
 );
 
 
-# We can also plot the best fit spectrum:
+# We can also plot the best fit spectrum. For that need to extract the covariance of the spectral parameters.
 
 # In[ ]:
 
 
-spec = result.model.spectral_model
+spec = model.spectral_model
+
+# set covariance on the spectral model
+covariance = fit.evaluator.parameters.covariance
+spec.parameters.covariance = covariance[2:5, 2:5]
+
 energy_range = [0.3, 10] * u.TeV
 spec.plot(energy_range=energy_range, energy_power=2)
 ax = spec.plot_error(energy_range=energy_range, energy_power=2)
 
 
 # Apparently our model should be improved by adding a component for diffuse Galactic emission and at least one second point
-# source. Let's improve it!
+# source. But before we do that in the next section, we will fit the background as a model.
+
+# ### Fitting a background model
+# 
+# Often, it is useful to fit the normalisation (and also the index) of the background. To do so, we have to define the background as a model and pass it to `MapFit`
+
+# In[ ]:
+
+
+background_model = BackgroundModel(cmaps["background"], norm=1.1, tilt=0.0)
+
+
+# In[ ]:
+
+
+fit_bkg = MapFit(
+    model=model,
+    counts=cmaps["counts"],
+    exposure=cmaps["exposure"],
+    background_model=background_model,
+    mask=mask,
+    psf=psf_kernel,
+    edisp=edisp,
+)
+
+
+# In[ ]:
+
+
+get_ipython().run_cell_magic('time', '', 'result_bkg = fit_bkg.run()')
+
+
+# In[ ]:
+
+
+print(background_model)
+
+
+# We see we have a high normalisation of `2.15` in this case. In the next section, we add the galactic diffuse model to improve our results.
 
 # ### Add Galactic diffuse emission to model
 
@@ -422,7 +474,7 @@ ax = spec.plot_error(energy_range=energy_range, energy_power=2)
 
 
 diffuse_model = SkyDiffuseCube.read(
-    "$GAMMAPY_DATA/fermi_3fhl/gll_iem_v06_cutout.fits"
+    "$GAMMAPY_DATA/fermi-3fhl-gc/gll_iem_v06_gc.fits.gz"
 )
 
 
@@ -436,14 +488,18 @@ spectral_model = ExponentialCutoffPowerLaw(
     reference=1.0 * u.TeV,
     lambda_=1 / u.TeV,
 )
-model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
+model_ecpl = SkyModel(
+    spatial_model=spatial_model, spectral_model=spectral_model
+)
+
+model_combined = diffuse_model + model_ecpl
 
 
 # In[ ]:
 
 
-combined_fit = MapFit(
-    model=diffuse_model + model,
+fit_combined = MapFit(
+    model=model_combined,
     counts=cmaps["counts"],
     exposure=cmaps["exposure"],
     background=cmaps["background"],
@@ -454,13 +510,13 @@ combined_fit = MapFit(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'result_combined = combined_fit.run()')
+get_ipython().run_cell_magic('time', '', 'result_combined = fit_combined.run()')
 
 
 # In[ ]:
 
 
-print(result_combined.model)
+print(model_ecpl)
 
 
 # As we can see we have now two components in our model, and we can access them separately.
@@ -469,8 +525,8 @@ print(result_combined.model)
 
 
 # Checking normalization value (the closer to 1 the better)
-print("Model 1 (SkyDiffuseCube): ", result_combined.model.model1.parameters)
-print("Model 2 (SkyModel): ", result_combined.model.model2.parameters)
+print("Model 1: {}\n".format(model_combined.model1))
+print("Model 2: {}".format(model_combined.model2))
 
 
 # We can now plot the residual image considering this improved model.
@@ -478,7 +534,7 @@ print("Model 2 (SkyModel): ", result_combined.model.model2.parameters)
 # In[ ]:
 
 
-residual2 = cmaps["counts"] - combined_fit.evaluator.compute_npred()
+residual2 = cmaps["counts"] - fit_combined.evaluator.compute_npred()
 
 
 # Just as a comparison, we can plot our previous residual map (left) and the new one (right) with the same scale:
@@ -506,8 +562,8 @@ residual2.sum_over_axes().smooth(width=0.05 * u.deg).plot(
 # In[ ]:
 
 
-spec2 = result_combined.model.model2.spectral_model
-ax = spec2.plot(energy_range=energy_range, energy_power=2)
+spec_ecpl = model_ecpl.spectral_model
+ax = spec_ecpl.plot(energy_range=energy_range, energy_power=2)
 
 
 # Results seems to be better (but not perfect yet). Next step to improve our model even more would be getting rid of the other bright source (G0.9+0.1).
