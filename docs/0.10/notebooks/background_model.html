@@ -28,8 +28,7 @@
 
   
 
-  
-    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
   <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
   <link rel="stylesheet" href="../_static/gammapy.css" type="text/css" />
@@ -1070,18 +1069,18 @@ div.nblast {
 
 /* input prompt */
 div.nbinput div.prompt pre {
-    color: #303F9F;
+    color: #307FC1;
 }
 
 /* output prompt */
 div.nboutput div.prompt pre {
-    color: #D84315;
+    color: #BF5B3D;
 }
 
 /* all prompts */
 div.nbinput div.prompt,
 div.nboutput div.prompt {
-    min-width: 8ex;
+    min-width: 5ex;
     padding-top: 0.4em;
     padding-right: 0.4em;
     text-align: right;
@@ -1121,9 +1120,9 @@ div.nboutput div.output_area {
 
 /* input area */
 div.nbinput div.input_area {
-    border: 1px solid #cfcfcf;
+    border: 1px solid #e0e0e0;
     border-radius: 2px;
-    background: #f7f7f7;
+    background: #f5f5f5;
 }
 
 /* override MathJax center alignment in output cells */
@@ -1131,7 +1130,7 @@ div.nboutput div[class*=MathJax] {
     text-align: left !important;
 }
 
-/* override sphinx.ext.pngmath center alignment in output cells */
+/* override sphinx.ext.imgmath center alignment in output cells */
 div.nboutput div.math p {
     text-align: left;
 }
@@ -1181,6 +1180,40 @@ div.nboutput div.output_area.stderr {
 .ansi-bold { font-weight: bold; }
 .ansi-underline { text-decoration: underline; }
 
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
 /* CSS overrides for sphinx_rtd_theme */
 
 /* 24px margin */
@@ -1197,57 +1230,40 @@ div.nboutput div.output_area.stderr {
 .admonition > p:before {
     margin-right: 4px;  /* make room for the exclamation icon */
 }
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
 </style>
 <div class="admonition note">
 <p class="admonition-title fa fa-exclamation-circle"><strong>This is a fixed-text formatted version of a Jupyter notebook</strong></p>
 <ul class="simple">
 <li>Try online <a class="reference external" href="https://mybinder.org/v2/gh/gammapy/gammapy/c6bfb5371a5a1682cea9aaf56ebedb3c42010a43?urlpath=lab/tree/background_model.ipynb"><img alt="Binder" src="https://mybinder.org/badge.svg" /></a></li>
-<li>You can contribute with your own notebooks in this <a class="reference external" href="https://github.com/gammapy/gammapy/tree/master/tutorials">GitHub
-repository</a>.</li>
-<li><strong>Source files:</strong>
-<a class="reference external" href="../_static/notebooks/background_model.ipynb">background_model.ipynb</a>
-| <a class="reference external" href="../_static/notebooks/background_model.py">background_model.py</a></li>
+<li>You can contribute with your own notebooks in this <a class="reference external" href="https://github.com/gammapy/gammapy/tree/master/tutorials">GitHub repository</a>.</li>
+<li><strong>Source files:</strong> <a class="reference external" href="../_static/notebooks/background_model.ipynb">background_model.ipynb</a> | <a class="reference external" href="../_static/notebooks/background_model.py">background_model.py</a></li>
 </ul>
 </div>
 <div class="section" id="Make-template-background-model">
 <h1>Make template background model<a class="headerlink" href="#Make-template-background-model" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="Introduction">
 <h2>Introduction<a class="headerlink" href="#Introduction" title="Permalink to this headline">¶</a></h2>
-<p>In this tutorial, we will create a template background model from
-scratch. Often, background models are pre-computed and provided for
-analysis, but it’s educational to see how the sausage is made.</p>
-<p>We will use the “off observations”, i.e.&nbsp;those without significant
-gamma-ray emission sources in the field of view from the <a class="reference external" href="https://www.mpi-hd.mpg.de/hfm/HESS/pages/dl3-dr1/">H.E.S.S. first
-public test data
-release</a>. This
-model could then be used in the analysis of sources from that dataset
-(not done here).</p>
-<p>We will make a background model that is radially symmetric in the field
-of view, i.e.&nbsp;only depends on field of view offset angle and energy. At
-the end, we will save the model in the <code class="docutils literal notranslate"><span class="pre">BKG_2D</span></code> as defined in the
-<a class="reference external" href="https://gamma-astro-data-formats.readthedocs.io/en/latest/irfs/full_enclosure/bkg/index.html">spec</a>.</p>
-<p>Note that this is just a quick and dirty example. Actual background
-model production is done with more sophistication usually using 100s or
-1000s of off runs, e.g.&nbsp;concerning non-radial symmetries, binning and
-smoothing of the distributions, and treating other dependencies such as
-zenith angle, telescope configuration or optical efficiency. Another
-aspect not shown here is how to use AGN observations to make background
-models, by cutting out the part of the field of view that contains
-gamma-rays from the AGN.</p>
+<p>In this tutorial, we will create a template background model from scratch. Often, background models are pre-computed and provided for analysis, but it’s educational to see how the sausage is made.</p>
+<p>We will use the “off observations”, i.e.&nbsp;those without significant gamma-ray emission sources in the field of view from the <a class="reference external" href="https://www.mpi-hd.mpg.de/hfm/HESS/pages/dl3-dr1/">H.E.S.S. first public test data release</a>. This model could then be used in the analysis of sources from that dataset (not done here).</p>
+<p>We will make a background model that is radially symmetric in the field of view, i.e.&nbsp;only depends on field of view offset angle and energy. At the end, we will save the model in the <code class="docutils literal notranslate"><span class="pre">BKG_2D</span></code> as defined in the <a class="reference external" href="https://gamma-astro-data-formats.readthedocs.io/en/latest/irfs/full_enclosure/bkg/index.html">spec</a>.</p>
+<p>Note that this is just a quick and dirty example. Actual background model production is done with more sophistication usually using 100s or 1000s of off runs, e.g.&nbsp;concerning non-radial symmetries, binning and smoothing of the distributions, and treating other dependencies such as zenith angle, telescope configuration or optical efficiency. Another aspect not shown here is how to use AGN observations to make background models, by cutting out the part of the field of view that contains gamma-rays
+from the AGN.</p>
 <p>We will mainly be using the following classes:</p>
 <ul class="simple">
-<li><a class="reference internal" href="../api/gammapy.data.DataStore.html"><span class="doc">gammapy.data.DataStore</span></a> to
-load the runs to use to build the bkg model.</li>
-<li><a class="reference internal" href="../api/gammapy.irf.Background2D.html"><span class="doc">gammapy.irf.Background2D</span></a> to
-represent and write the background model.</li>
+<li><a class="reference internal" href="../api/gammapy.data.DataStore.html"><span class="doc">gammapy.data.DataStore</span></a> to load the runs to use to build the bkg model.</li>
+<li><a class="reference internal" href="../api/gammapy.irf.Background2D.html"><span class="doc">gammapy.irf.Background2D</span></a> to represent and write the background model.</li>
 </ul>
 </div>
 <div class="section" id="Setup">
 <h2>Setup<a class="headerlink" href="#Setup" title="Permalink to this headline">¶</a></h2>
 <p>As always, we start the notebook with some setup and imports.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [1]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1258,8 +1274,7 @@ represent and write the background model.</li>
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1273,8 +1288,7 @@ represent and write the background model.</li>
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1288,13 +1302,10 @@ represent and write the background model.</li>
 </div>
 <div class="section" id="Select-off-data">
 <h2>Select off data<a class="headerlink" href="#Select-off-data" title="Permalink to this headline">¶</a></h2>
-<p>We start by selecting the observations used to estimate the background
-model.</p>
-<p>In this case, we just take all “off runs” as defined in the observation
-table.</p>
+<p>We start by selecting the observations used to estimate the background model.</p>
+<p>In this case, we just take all “off runs” as defined in the observation table.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1318,28 +1329,12 @@ Number of observations: 45
 </div>
 <div class="section" id="Background-model">
 <h2>Background model<a class="headerlink" href="#Background-model" title="Permalink to this headline">¶</a></h2>
-<p>The background model we will estimate is a differential background rate
-model in unit <code class="docutils literal notranslate"><span class="pre">s-1</span> <span class="pre">MeV-1</span> <span class="pre">sr-1</span></code> as a function of reconstructed energy
-and field of fiew offset.</p>
-<p>We estimate it by histogramming off data events and then smoothing a bit
-(not using a good method) to get a less noisy estimate. To get the
-differential rate, we divide by observation time and also take bin sizes
-into account to get the rate per energy and solid angle. So overall we
-fill two arrays called <code class="docutils literal notranslate"><span class="pre">counts</span></code> and <code class="docutils literal notranslate"><span class="pre">exposure</span></code> with <code class="docutils literal notranslate"><span class="pre">exposure</span></code>
-filled so that <code class="docutils literal notranslate"><span class="pre">background_rate</span> <span class="pre">=</span> <span class="pre">counts</span> <span class="pre">/</span> <span class="pre">exposure</span></code> will give the
-final background rate we’re interested in.</p>
-<p>The processing can be done either one observation at a time, or first
-for counts and then for exposure. Either way is fine. Here we do one
-observation at a time, starting with empty histograms and then
-accumulating counts and exposure. Since this is a multi-step algorithm,
-we put the code to do this computation in a <code class="docutils literal notranslate"><span class="pre">BackgroundModelEstimator</span></code>
-class.</p>
-<p>This functionality was already in Gammapy previously, and will be added
-back again soon, after <code class="docutils literal notranslate"><span class="pre">gammapy.irf</span></code> has been restructured and
-improved.</p>
+<p>The background model we will estimate is a differential background rate model in unit <code class="docutils literal notranslate"><span class="pre">s-1</span> <span class="pre">MeV-1</span> <span class="pre">sr-1</span></code> as a function of reconstructed energy and field of fiew offset.</p>
+<p>We estimate it by histogramming off data events and then smoothing a bit (not using a good method) to get a less noisy estimate. To get the differential rate, we divide by observation time and also take bin sizes into account to get the rate per energy and solid angle. So overall we fill two arrays called <code class="docutils literal notranslate"><span class="pre">counts</span></code> and <code class="docutils literal notranslate"><span class="pre">exposure</span></code> with <code class="docutils literal notranslate"><span class="pre">exposure</span></code> filled so that <code class="docutils literal notranslate"><span class="pre">background_rate</span> <span class="pre">=</span> <span class="pre">counts</span> <span class="pre">/</span> <span class="pre">exposure</span></code> will give the final background rate we’re interested in.</p>
+<p>The processing can be done either one observation at a time, or first for counts and then for exposure. Either way is fine. Here we do one observation at a time, starting with empty histograms and then accumulating counts and exposure. Since this is a multi-step algorithm, we put the code to do this computation in a <code class="docutils literal notranslate"><span class="pre">BackgroundModelEstimator</span></code> class.</p>
+<p>This functionality was already in Gammapy previously, and will be added back again soon, after <code class="docutils literal notranslate"><span class="pre">gammapy.irf</span></code> has been restructured and improved.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1407,8 +1402,7 @@ improved.</p>
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1425,14 +1419,13 @@ improved.</p>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-CPU times: user 2.76 s, sys: 69.4 ms, total: 2.83 s
-Wall time: 2.88 s
+CPU times: user 2.1 s, sys: 67.1 ms, total: 2.17 s
+Wall time: 2.18 s
 </pre></div></div>
 </div>
 <p>Let’s have a quick look at what we did …</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1448,8 +1441,7 @@ Wall time: 2.88 s
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1461,18 +1453,10 @@ Wall time: 2.88 s
 </div>
 <div class="section" id="Zenith-dependence">
 <h2>Zenith dependence<a class="headerlink" href="#Zenith-dependence" title="Permalink to this headline">¶</a></h2>
-<p>The background models used in H.E.S.S. usually depend on the zenith
-angle of the observation. That kinda makes sense because the energy
-threshold increases with zenith angle, and since the background is
-related to (but not given by) the charged cosmic ray spectrum that is a
-power-law and falls steeply, we also expect the background rate to
-change.</p>
-<p>Let’s have a look at the dependence we get for this configuration used
-here (Hillas reconstruction, standard cuts, see H.E.S.S. release notes
-for more information).</p>
+<p>The background models used in H.E.S.S. usually depend on the zenith angle of the observation. That kinda makes sense because the energy threshold increases with zenith angle, and since the background is related to (but not given by) the charged cosmic ray spectrum that is a power-law and falls steeply, we also expect the background rate to change.</p>
+<p>Let’s have a look at the dependence we get for this configuration used here (Hillas reconstruction, standard cuts, see H.E.S.S. release notes for more information).</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1492,8 +1476,7 @@ for more information).</p>
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1513,36 +1496,14 @@ for more information).</p>
 <img alt="../_images/notebooks_background_model_16_0.png" src="../_images/notebooks_background_model_16_0.png" />
 </div>
 </div>
-<p>The energy threshold increases, as expected. It’s a bit surprising that
-the total background rate doesn’t decreases with increasing zenith
-angle. That’s a bit of luck for this configuration, and because we’re
-looking at the rate of background events in the whole field of view. As
-shown below, the energy threshold increases (reducing the total rate),
-but the rate at a given energy increases with zenith angle (increasing
-the total rate). Overall the background does change with zenith angle
-and that dependency should be taken into account.</p>
-<p>The remaining scatter you see in the plots above (in energy threshold
-and rate) is due to dependence on telescope optical efficiency,
-atmospheric changes from run to run and other effects. If you’re
-interested in this,
-<a class="reference external" href="http://adsabs.harvard.edu/abs/2014APh....54...25H">2014APh….54…25H</a>
-has some infos. We’ll not consider this futher.</p>
-<p>When faced with the question whether and how to model the zenith angle
-dependence, we’re faced with a complex optimisation problem: the closer
-we require off runs to be in zenith angle, the fewer off runs and thus
-event statistic we have available, which will lead do noise in the
-background model. The choice of zenith angle binning or “on-off
-observation mathching” strategy isn’t the only thing that needs to be
-optimised, there’s also energy and offset binnings and smoothing scales.
-And of course good settings will depend on the way you plan to use the
-background model, i.e.&nbsp;the science measurement you plan to do. Some say
-background modeling is the hardest part of IACT data analysis.</p>
-<p>Here we’ll just code up something simple: make three background models,
-one from the off runs with zenith angle 0 to 20 deg, one from 20 to 40
-deg, and one from 40 to 90 deg.</p>
+<p>The energy threshold increases, as expected. It’s a bit surprising that the total background rate doesn’t decreases with increasing zenith angle. That’s a bit of luck for this configuration, and because we’re looking at the rate of background events in the whole field of view. As shown below, the energy threshold increases (reducing the total rate), but the rate at a given energy increases with zenith angle (increasing the total rate). Overall the background does change with zenith angle and
+that dependency should be taken into account.</p>
+<p>The remaining scatter you see in the plots above (in energy threshold and rate) is due to dependence on telescope optical efficiency, atmospheric changes from run to run and other effects. If you’re interested in this, <a class="reference external" href="http://adsabs.harvard.edu/abs/2014APh....54...25H">2014APh….54…25H</a> has some infos. We’ll not consider this futher.</p>
+<p>When faced with the question whether and how to model the zenith angle dependence, we’re faced with a complex optimisation problem: the closer we require off runs to be in zenith angle, the fewer off runs and thus event statistic we have available, which will lead do noise in the background model. The choice of zenith angle binning or “on-off observation mathching” strategy isn’t the only thing that needs to be optimised, there’s also energy and offset binnings and smoothing scales. And of
+course good settings will depend on the way you plan to use the background model, i.e.&nbsp;the science measurement you plan to do. Some say background modeling is the hardest part of IACT data analysis.</p>
+<p>Here we’ll just code up something simple: make three background models, one from the off runs with zenith angle 0 to 20 deg, one from 20 to 40 deg, and one from 40 to 90 deg.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1572,8 +1533,7 @@ deg, and one from 40 to 90 deg.</p>
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1587,13 +1547,12 @@ deg, and one from 40 to 90 deg.</p>
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-CPU times: user 2.7 s, sys: 49 ms, total: 2.75 s
-Wall time: 2.75 s
+CPU times: user 2.17 s, sys: 76.3 ms, total: 2.25 s
+Wall time: 2.22 s
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1618,8 +1577,7 @@ Wall time: 2.75 s
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1647,23 +1605,11 @@ Wall time: 2.75 s
 </div>
 <div class="section" id="Index-tables">
 <h2>Index tables<a class="headerlink" href="#Index-tables" title="Permalink to this headline">¶</a></h2>
-<p>So now we have radially symmetric background models for three zenith
-angle bins. To be able to use it from the high-level Gammapy classes
-like e.g.&nbsp;the MapMaker though, we also have to create a <a class="reference external" href="https://gamma-astro-data-formats.readthedocs.io/en/latest/data_storage/hdu_index/index.html">HDU index
-table</a>
-that declares which background model to use for each observation.</p>
-<p>It sounds harder than it actually is. Basically you have to some code to
-make a new <code class="docutils literal notranslate"><span class="pre">astropy.table.Table</span></code>. The most tricky part is that before
-you can make the HDU index table, you have to decide where to store the
-data, because the HDU index table is a reference to the data location.
-Let’s decide in this example that we want to re-use all existing files
-in <code class="docutils literal notranslate"><span class="pre">$GAMMAPY_DATA/hess-dl3-dr1</span></code> and put all the new HDUs (for
-background models and new index files) bundled in a single FITS file
-called <code class="docutils literal notranslate"><span class="pre">hess-dl3-dr3-with-background.fits.gz</span></code>, which we will put in
-<code class="docutils literal notranslate"><span class="pre">$GAMMAPY_DATA/hess-dl3-dr1</span></code>.</p>
+<p>So now we have radially symmetric background models for three zenith angle bins. To be able to use it from the high-level Gammapy classes like e.g.&nbsp;the MapMaker though, we also have to create a <a class="reference external" href="https://gamma-astro-data-formats.readthedocs.io/en/latest/data_storage/hdu_index/index.html">HDU index table</a> that declares which background model to use for each observation.</p>
+<p>It sounds harder than it actually is. Basically you have to some code to make a new <code class="docutils literal notranslate"><span class="pre">astropy.table.Table</span></code>. The most tricky part is that before you can make the HDU index table, you have to decide where to store the data, because the HDU index table is a reference to the data location. Let’s decide in this example that we want to re-use all existing files in <code class="docutils literal notranslate"><span class="pre">$GAMMAPY_DATA/hess-dl3-dr1</span></code> and put all the new HDUs (for background models and new index files) bundled in a single FITS file called
+<code class="docutils literal notranslate"><span class="pre">hess-dl3-dr3-with-background.fits.gz</span></code>, which we will put in <code class="docutils literal notranslate"><span class="pre">$GAMMAPY_DATA/hess-dl3-dr1</span></code>.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1693,8 +1639,7 @@ called <code class="docutils literal notranslate"><span class="pre">hess-dl3-dr3
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [16]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1709,8 +1654,7 @@ called <code class="docutils literal notranslate"><span class="pre">hess-dl3-dr3
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1719,13 +1663,12 @@ called <code class="docutils literal notranslate"><span class="pre">hess-dl3-dr3
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>Out[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
-<div class="output_area docutils container">
+<div class="output_area rendered_html docutils container">
 <i>HDUIndexTable masked=True length=7</i>
-<table id="table112044645008" class="table-striped table-bordered table-condensed">
+<table id="table4614543568" class="table-striped table-bordered table-condensed">
 <thead><tr><th>OBS_ID</th><th>HDU_TYPE</th><th>HDU_CLASS</th><th>FILE_DIR</th><th>FILE_NAME</th><th>HDU_NAME</th><th>SIZE</th></tr></thead>
 <thead><tr><th>int64</th><th>str6</th><th>str9</th><th>str4</th><th>str36</th><th>str6</th><th>int64</th></tr></thead>
 <tr><td>20136</td><td>events</td><td>events</td><td>data</td><td>hess_dl3_dr1_obs_id_020136.fits.gz</td><td>events</td><td>414720</td></tr>
@@ -1738,8 +1681,7 @@ called <code class="docutils literal notranslate"><span class="pre">hess-dl3-dr3
 </table></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [18]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1779,8 +1721,7 @@ called <code class="docutils literal notranslate"><span class="pre">hess-dl3-dr3
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [19]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1801,7 +1742,7 @@ called <code class="docutils literal notranslate"><span class="pre">hess-dl3-dr3
 <div class="highlight"><pre>
 Data store:
 HDU index table:
-BASE_DIR: /Users/deil/work/gammapy-tutorials/datasets/hess-dl3-dr1
+BASE_DIR: /Users/jer/DATA/GAMMAPY/hess-dl3-dr1
 Rows: 630
 OBS_ID: 20136 -- 47829
 HDU_TYPE: [&#39;aeff&#39;, &#39;bkg&#39;, &#39;edisp&#39;, &#39;events&#39;, &#39;gti&#39;, &#39;psf&#39;]
@@ -1823,17 +1764,13 @@ Number of observations: 105
 <div class="section" id="Exercises">
 <h2>Exercises<a class="headerlink" href="#Exercises" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>Play with the parameters here (energy binning, offset binning, zenith
-binning)</li>
-<li>Try to figure out why there are outliers on the zenith vs energy
-threshold curve.</li>
-<li>Does azimuth angle or optical efficiency have an effect on background
-rate?</li>
+<li>Play with the parameters here (energy binning, offset binning, zenith binning)</li>
+<li>Try to figure out why there are outliers on the zenith vs energy threshold curve.</li>
+<li>Does azimuth angle or optical efficiency have an effect on background rate?</li>
 <li>Use the background models for a 3D analysis (see “hess” notebook).</li>
 </ul>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre>
-<span></span>In [20]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1864,8 +1801,8 @@ rate?</li>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2019, The Gammapy developers.
-      Last updated on 28 Jan 2019.
+        &copy; Copyright 2019, The Gammapy developers
+      Last updated on 29 Jan 2019.
 
     </p>
   </div>
@@ -1884,36 +1821,26 @@ rate?</li>
 
   
 
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'../',
-            VERSION:'0.10',
-            LANGUAGE:'None',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="../_static/jquery.js"></script>
-      <script type="text/javascript" src="../_static/underscore.js"></script>
-      <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="../_static/copybutton.js"></script>
-      <script type="text/javascript" src="../_static/gammapy.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+        <script type="text/javascript" src="../_static/copybutton.js"></script>
+        <script type="text/javascript" src="../_static/gammapy.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    
 
   
 
-  
-  
-    <script type="text/javascript" src="../_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
 
   <script type="text/javascript">
       jQuery(function () {
-          
-          SphinxRtdTheme.Navigation.enableSticky();
-          
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script> 
 
