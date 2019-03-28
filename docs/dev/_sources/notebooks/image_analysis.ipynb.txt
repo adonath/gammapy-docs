@@ -55,11 +55,11 @@
     "from gammapy.data import DataStore\n",
     "from gammapy.irf import make_mean_psf\n",
     "from gammapy.maps import Map, MapAxis, WcsGeom\n",
-    "from gammapy.cube import MapMaker, PSFKernel, MapFit\n",
-    "from gammapy.cube.models import SkyModel\n",
+    "from gammapy.cube import MapMaker, PSFKernel, MapDataset\n",
+    "from gammapy.cube.models import SkyModel, BackgroundModel\n",
     "from gammapy.spectrum.models import PowerLaw2\n",
     "from gammapy.image.models import SkyPointSource\n",
-    "\n",
+    "from gammapy.utils.fitting import Fit\n",
     "from regions import CircleSkyRegion"
    ]
   },
@@ -84,7 +84,7 @@
      "text": [
       "Data store:\n",
       "HDU index table:\n",
-      "BASE_DIR: /Users/jer/DATA/GAMMAPY/cta-1dc/index/gps\n",
+      "BASE_DIR: /Users/adonath/data/gammapy-datasets/cta-1dc/index/gps\n",
       "Rows: 24\n",
       "OBS_ID: 110380 -- 111630\n",
       "HDU_TYPE: ['aeff', 'bkg', 'edisp', 'events', 'gti', 'psf']\n",
@@ -158,7 +158,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "Note that even when doing a 2D analysis, it is better to use fine energy bins in the beginning and then sum them over. This is to ensure that the background shape can be approximated by a power law function in each energy bin."
+    "Note that even when doing a 2D analysis, it is better to use fine energy bins in the beginning and then sum them over. This is to ensure that the background shape can be approximated by a power law function in each energy bin. The `run_images()` can be used to compute maps in fine bins and then squash them to have one bin. This can be done by specifying `keep_dims = True`. This will compute a summed counts and background maps, and a spectral weighted exposure map."
    ]
   },
   {
@@ -167,18 +167,26 @@
    "metadata": {},
    "outputs": [
     {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "WARNING: Tried to get polar motions for times after IERS data is valid. Defaulting to polar motion from the 50-yr mean for those. This may affect precision at the 10s of arcsec level [astropy.coordinates.builtin_frames.utils]\n"
+     ]
+    },
+    {
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "CPU times: user 11.5 s, sys: 2.23 s, total: 13.7 s\n",
-      "Wall time: 13.9 s\n"
+      "CPU times: user 19 s, sys: 2.06 s, total: 21.1 s\n",
+      "Wall time: 11.1 s\n"
      ]
     }
    ],
    "source": [
     "%%time\n",
     "maker = MapMaker(geom, offset_max=4.0 * u.deg)\n",
-    "maps = maker.run(observations)"
+    "spectrum = PowerLaw2(index=2)\n",
+    "maps2D = maker.run_images(observations, spectrum=spectrum, keepdims=True)"
    ]
   },
   {
@@ -193,21 +201,21 @@
        " \n",
        " \tgeom  : WcsGeom \n",
        "  \taxes  : lon, lat, energy\n",
-       " \tshape : (500, 400, 10)\n",
+       " \tshape : (500, 400, 1)\n",
        " \tndim  : 3\n",
        " \tunit  : '' \n",
        " \tdtype : float32 , 'exposure': WcsNDMap\n",
        " \n",
        " \tgeom  : WcsGeom \n",
        "  \taxes  : lon, lat, energy\n",
-       " \tshape : (500, 400, 10)\n",
+       " \tshape : (500, 400, 1)\n",
        " \tndim  : 3\n",
        " \tunit  : 'm2 s' \n",
        " \tdtype : float32 , 'background': WcsNDMap\n",
        " \n",
        " \tgeom  : WcsGeom \n",
        "  \taxes  : lon, lat, energy\n",
-       " \tshape : (500, 400, 10)\n",
+       " \tshape : (500, 400, 1)\n",
        " \tndim  : 3\n",
        " \tunit  : '' \n",
        " \tdtype : float32 }"
@@ -219,24 +227,7 @@
     }
    ],
    "source": [
-    "maps"
-   ]
-  },
-  {
-   "cell_type": "markdown",
-   "metadata": {},
-   "source": [
-    "As we can see, the maps now have multiple bins in energy. We need to squash them to have one bin, and this can be done by specifying `keep_dims = True` while calling `make_images()`. This will compute a summed `counts` and `background` maps, and a spectral weighted `exposure`  map."
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 8,
-   "metadata": {},
-   "outputs": [],
-   "source": [
-    "spectrum = PowerLaw2(index=2)\n",
-    "maps2D = maker.make_images(spectrum=spectrum, keepdims=True)"
+    "maps2D"
    ]
   },
   {
@@ -248,7 +239,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 9,
+   "execution_count": 8,
    "metadata": {},
    "outputs": [],
    "source": [
@@ -283,7 +274,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 10,
+   "execution_count": 9,
    "metadata": {},
    "outputs": [],
    "source": [
@@ -304,7 +295,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 11,
+   "execution_count": 10,
    "metadata": {},
    "outputs": [],
    "source": [
@@ -317,16 +308,37 @@
    ]
   },
   {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Modeling the background\n",
+    "\n",
+    "Gammapy fitting framework assumes the background to be an integrated model.\n",
+    "Thus, we will define the background as a model, and freeze its parameters for now."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "background_model = BackgroundModel(maps2D[\"background\"])\n",
+    "background_model.parameters[\"norm\"].frozen = True\n",
+    "background_model.parameters[\"tilt\"].frozen = True"
+   ]
+  },
+  {
    "cell_type": "code",
    "execution_count": 12,
    "metadata": {},
    "outputs": [],
    "source": [
-    "fit = MapFit(\n",
+    "dataset = MapDataset(\n",
     "    model=model,\n",
     "    counts=maps2D[\"counts\"],\n",
     "    exposure=maps2D[\"exposure\"],\n",
-    "    background=maps2D[\"background\"],\n",
+    "    background_model=background_model,\n",
     "    mask=mask,\n",
     "    psf=psf_kernel,\n",
     ")"
@@ -341,13 +353,14 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "CPU times: user 7.69 s, sys: 704 ms, total: 8.39 s\n",
-      "Wall time: 8.45 s\n"
+      "CPU times: user 3.1 s, sys: 36 ms, total: 3.14 s\n",
+      "Wall time: 1.65 s\n"
      ]
     }
    ],
    "source": [
     "%%time\n",
+    "fit = Fit(dataset)\n",
     "result = fit.run()"
    ]
   },
@@ -371,19 +384,68 @@
       "\n",
       "Parameters: \n",
       "\n",
-      "\t   name     value    error   unit   min max frozen\n",
-      "\t--------- ---------- ----- -------- --- --- ------\n",
-      "\t    lon_0 -5.365e-02   nan      deg nan nan  False\n",
-      "\t    lat_0 -5.059e-02   nan      deg nan nan  False\n",
-      "\tamplitude  4.264e-11   nan cm-2 s-1 nan nan  False\n",
-      "\t    index  2.000e+00   nan          nan nan   True\n",
-      "\t     emin  1.000e-01   nan      TeV nan nan   True\n",
-      "\t     emax  1.000e+01   nan      TeV nan nan   True\n"
+      "\t   name     value    error   unit      min        max    frozen\n",
+      "\t--------- ---------- ----- -------- ---------- --------- ------\n",
+      "\t    lon_0 -5.363e-02   nan      deg -1.800e+02 1.800e+02  False\n",
+      "\t    lat_0 -5.057e-02   nan      deg -9.000e+01 9.000e+01  False\n",
+      "\t    index  2.000e+00   nan                 nan       nan   True\n",
+      "\tamplitude  4.292e-11   nan cm-2 s-1        nan       nan  False\n",
+      "\t     emin  1.000e-01   nan      TeV        nan       nan   True\n",
+      "\t     emax  1.000e+01   nan      TeV        nan       nan   True\n"
      ]
     }
    ],
    "source": [
     "print(model)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<i>Table length=9</i>\n",
+       "<table id=\"table120908215184\" class=\"table-striped table-bordered table-condensed\">\n",
+       "<thead><tr><th>name</th><th>lon_0</th><th>lat_0</th><th>index</th><th>amplitude</th><th>emin</th><th>emax</th><th>norm</th><th>tilt</th><th>reference</th></tr></thead>\n",
+       "<thead><tr><th>str9</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th></tr></thead>\n",
+       "<tr><td>lon_0</td><td>1.058e-05</td><td>3.027e-07</td><td>0.000e+00</td><td>-5.065e-16</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
+       "<tr><td>lat_0</td><td>3.027e-07</td><td>1.078e-05</td><td>0.000e+00</td><td>-6.663e-17</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
+       "<tr><td>index</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
+       "<tr><td>amplitude</td><td>-5.065e-16</td><td>-6.663e-17</td><td>0.000e+00</td><td>3.098e-24</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
+       "<tr><td>emin</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
+       "<tr><td>emax</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
+       "<tr><td>norm</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
+       "<tr><td>tilt</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
+       "<tr><td>reference</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
+       "</table>"
+      ],
+      "text/plain": [
+       "<Table length=9>\n",
+       "   name     lon_0      lat_0      index   ...    norm      tilt   reference\n",
+       "   str9    float64    float64    float64  ...  float64   float64   float64 \n",
+       "--------- ---------- ---------- --------- ... --------- --------- ---------\n",
+       "    lon_0  1.058e-05  3.027e-07 0.000e+00 ... 0.000e+00 0.000e+00 0.000e+00\n",
+       "    lat_0  3.027e-07  1.078e-05 0.000e+00 ... 0.000e+00 0.000e+00 0.000e+00\n",
+       "    index  0.000e+00  0.000e+00 0.000e+00 ... 0.000e+00 0.000e+00 0.000e+00\n",
+       "amplitude -5.065e-16 -6.663e-17 0.000e+00 ... 0.000e+00 0.000e+00 0.000e+00\n",
+       "     emin  0.000e+00  0.000e+00 0.000e+00 ... 0.000e+00 0.000e+00 0.000e+00\n",
+       "     emax  0.000e+00  0.000e+00 0.000e+00 ... 0.000e+00 0.000e+00 0.000e+00\n",
+       "     norm  0.000e+00  0.000e+00 0.000e+00 ... 0.000e+00 0.000e+00 0.000e+00\n",
+       "     tilt  0.000e+00  0.000e+00 0.000e+00 ... 0.000e+00 0.000e+00 0.000e+00\n",
+       "reference  0.000e+00  0.000e+00 0.000e+00 ... 0.000e+00 0.000e+00 0.000e+00"
+      ]
+     },
+     "execution_count": 15,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# To get the errors on the model, we can check the covariance table:\n",
+    "result.parameters.covariance_to_table()"
    ]
   },
   {
@@ -404,7 +466,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 15,
+   "execution_count": 16,
    "metadata": {},
    "outputs": [],
    "source": []
@@ -426,7 +488,7 @@
    "name": "python",
    "nbconvert_exporter": "python",
    "pygments_lexer": "ipython3",
-   "version": "3.6.0"
+   "version": "3.7.1"
   },
   "nbsphinx": {
    "orphan": true

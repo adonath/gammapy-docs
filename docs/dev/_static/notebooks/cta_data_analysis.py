@@ -155,7 +155,7 @@ get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, offset_max="2 d
 
 # The maps are cubes, with an energy axis.
 # Let's also make some images:
-images = maker.make_images()
+images = maker.run_images()
 
 excess = images["counts"].copy()
 excess.data -= images["background"].data

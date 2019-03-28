@@ -103,9 +103,8 @@ print(matplotlib.__version__)
 # In[ ]:
 
 
-# This will work on Python 2 as well as Python 3
-from gammapy.extern.six.moves.urllib.request import urlretrieve
-from gammapy.extern.pathlib import Path
+from urllib.request import urlretrieve
+from pathlib import Path
 
 
 # ## Download Data

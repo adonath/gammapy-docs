@@ -24,12 +24,12 @@
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
+from pathlib import Path
 import numpy as np
 from astropy.io import fits
 import astropy.units as u
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
-from gammapy.extern.pathlib import Path
 from gammapy.data import DataStore
 from gammapy.irf import EnergyDispersion, make_mean_psf
 from gammapy.maps import WcsGeom, MapAxis, Map
@@ -103,13 +103,13 @@ psf2D = psf_kernel.make_image(exposures=exposure_at_pos)
 # ### Make 2D images from 3D ones
 # 
 # Since sherpa image fitting works only with 2-dim images,
-# we convert the generated maps to 2D images using `make_images()` and save them as fits files. The exposure is weighed with the spectrum before averaging (assumed to be a power law by default).
+# we convert the generated maps to 2D images using `run_images()` and save them as fits files. The exposure is weighed with the spectrum before averaging (assumed to be a power law by default).
 # 
 
 # In[ ]:
 
 
-maps = maker.make_images()
+maps = maker.run_images()
 
 
 # In[ ]:
@@ -263,7 +263,8 @@ for g in gs:
     delstat = stati - statf
 
     geom = resid.geom
-    coord = geom.pix_to_coord((g.xpos.val, g.ypos.val))
+    # sherpa uses 1 based indexing
+    coord = geom.pix_to_coord((g.xpos.val - 1, g.ypos.val - 1))
     pix_scale = geom.pixel_scales.mean().deg
     sigma = g.fwhm.val * pix_scale * gaussian_fwhm_to_sigma
     rows.append(

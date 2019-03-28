@@ -10,7 +10,7 @@
 # 
 # The central class we're going to use for this example analysis is:  
 # 
-# - [gammapy.spectrum.FluxPointFit](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPointFit.html)
+# - [gammapy.spectrum.FluxPointsDataset](https://docs.gammapy.org/dev/spectrum/index.html#reference-api)
 # 
 # In addition we will work with the following data classes:
 # 
@@ -46,12 +46,13 @@ from gammapy.spectrum.models import (
     ExponentialCutoffPowerLaw,
     LogParabola,
 )
-from gammapy.spectrum import FluxPointFit, FluxPoints
+from gammapy.spectrum import FluxPointsDataset, FluxPoints
 from gammapy.catalog import (
     SourceCatalog3FGL,
     SourceCatalogGammaCat,
     SourceCatalog3FHL,
 )
+from gammapy.utils.fitting import Fit
 
 
 # ## Load spectral points
@@ -125,7 +126,8 @@ pwl = PowerLaw(index=2, amplitude="1e-12 cm-2 s-1 TeV-1", reference="1 TeV")
 # In[ ]:
 
 
-fitter = FluxPointFit(pwl, flux_points, stat="chi2assym")
+dataset_pwl = FluxPointsDataset(pwl, flux_points, likelihood="chi2assym")
+fitter = Fit(dataset_pwl)
 result_pwl = fitter.run()
 
 
@@ -134,7 +136,13 @@ result_pwl = fitter.run()
 # In[ ]:
 
 
-print(result_pwl.model)
+print(result_pwl)
+
+
+# In[ ]:
+
+
+print(pwl)
 
 
 # Finally we plot the data points and the best fit model:
@@ -143,8 +151,12 @@ print(result_pwl.model)
 
 
 ax = flux_points.plot(energy_power=2)
-result_pwl.model.plot(energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2)
-result_pwl.model.plot_error(
+pwl.plot(energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2)
+
+# assign covariance for plotting
+pwl.parameters.covariance = result_pwl.parameters.covariance
+
+pwl.plot_error(
     energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
 )
 ax.set_ylim(1e-13, 1e-11);
@@ -158,8 +170,8 @@ ax.set_ylim(1e-13, 1e-11);
 
 
 ecpl = ExponentialCutoffPowerLaw(
-    index=2,
-    amplitude="1e-12 cm-2 s-1 TeV-1",
+    index=1.8,
+    amplitude="2e-12 cm-2 s-1 TeV-1",
     reference="1 TeV",
     lambda_="0.1 TeV-1",
 )
@@ -170,9 +182,10 @@ ecpl = ExponentialCutoffPowerLaw(
 # In[ ]:
 
 
-fitter = FluxPointFit(ecpl, flux_points, stat="chi2assym")
+dataset_ecpl = FluxPointsDataset(ecpl, flux_points, likelihood="chi2assym")
+fitter = Fit(dataset_ecpl)
 result_ecpl = fitter.run()
-print(result_ecpl.model)
+print(ecpl)
 
 
 # We plot the data and best fit model:
@@ -181,8 +194,12 @@ print(result_ecpl.model)
 
 
 ax = flux_points.plot(energy_power=2)
-result_ecpl.model.plot(energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2)
-result_ecpl.model.plot_error(
+ecpl.plot(energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2)
+
+# assign covariance for plotting
+ecpl.parameters.covariance = result_ecpl.parameters.covariance
+
+ecpl.plot_error(
     energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
 )
 ax.set_ylim(1e-13, 1e-11)
@@ -203,19 +220,24 @@ log_parabola = LogParabola(
 # In[ ]:
 
 
-fitter = FluxPointFit(log_parabola, flux_points, stat="chi2assym")
+dataset_log_parabola = FluxPointsDataset(log_parabola, flux_points, likelihood="chi2assym")
+fitter = Fit(dataset_log_parabola)
 result_log_parabola = fitter.run()
-print(result_log_parabola.model)
+print(log_parabola)
 
 
 # In[ ]:
 
 
 ax = flux_points.plot(energy_power=2)
-result_log_parabola.model.plot(
+log_parabola.plot(
     energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
 )
-result_log_parabola.model.plot_error(
+
+# assign covariance for plotting
+log_parabola.parameters.covariance = result_log_parabola.parameters.covariance
+
+log_parabola.plot_error(
     energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
 )
 ax.set_ylim(1e-13, 1e-11);

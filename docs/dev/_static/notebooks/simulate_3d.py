@@ -28,9 +28,11 @@ from gammapy.irf import load_cta_irfs
 from gammapy.maps import WcsGeom, MapAxis, WcsNDMap, Map
 from gammapy.spectrum.models import PowerLaw
 from gammapy.image.models import SkyGaussian
-from gammapy.cube.models import SkyModel, SkyModels
-from gammapy.cube import MapFit, MapEvaluator, PSFKernel
+from gammapy.cube.models import SkyModel, SkyModels, BackgroundModel
+from gammapy.cube import MapDataset, PSFKernel
 from gammapy.cube import make_map_exposure_true_energy, make_map_background_irf
+from gammapy.utils.fitting import Fit
+from gammapy.data import FixedPointingInfo
 
 
 # In[ ]:
@@ -80,9 +82,9 @@ geom = WcsGeom.create(
 
 
 # Define some observation parameters
-# Here we just have a single observation,
-# we are not simulating many pointings / observations
-pointing = SkyCoord(1, 0.5, unit="deg", frame="galactic")
+# We read in the pointing info from one of the 1dc event list files as an example
+pointing = FixedPointingInfo.read("$GAMMAPY_DATA/cta-1dc/data/baseline/gps/gps_baseline_110380.fits")
+
 livetime = 1 * u.hour
 offset_max = 2 * u.deg
 offset = Angle("2 deg")
@@ -92,7 +94,7 @@ offset = Angle("2 deg")
 
 
 exposure = make_map_exposure_true_energy(
-    pointing=pointing, livetime=livetime, aeff=irfs["aeff"], geom=geom
+    pointing=pointing.radec, livetime=livetime, aeff=irfs["aeff"], geom=geom
 )
 exposure.slice_by_idx({"energy": 3}).plot(add_cbar=True);
 
@@ -124,27 +126,31 @@ edisp = irfs["edisp"].to_energy_dispersion(
 edisp.plot_matrix();
 
 
-# In[ ]:
-
-
-get_ipython().run_cell_magic('time', '', '# The idea is that we have this class that can compute `npred`\n# maps, i.e. "predicted counts per pixel" given the model and\n# the observation infos: exposure, background, PSF and EDISP\nevaluator = MapEvaluator(\n    model=sky_model,\n    exposure=exposure,\n    background=background,\n    psf=psf_kernel,\n    edisp=edisp,\n)')
-
+# Now we have to compute `npred`  maps, i.e. "predicted counts per pixel" given the model and the observation infos: exposure, background, PSF and EDISP. For this we use the `MapDataset` object:
 
 # In[ ]:
 
 
-# Accessing and saving a lot of the following maps is for debugging.
-# Just for a simulation one doesn't need to store all these things.
-# dnde = evaluator.compute_dnde()
-# flux = evaluator.compute_flux()
-npred = evaluator.compute_npred()
-npred_map = WcsNDMap(geom, npred)
+background_model = BackgroundModel(background)
+dataset = MapDataset(
+    model=sky_model,
+    exposure=exposure,
+    background_model=background_model,
+    psf=psf_kernel,
+    edisp=edisp
+)
 
 
 # In[ ]:
 
 
-npred_map.sum_over_axes().plot(add_cbar=True);
+npred = dataset.npred()
+
+
+# In[ ]:
+
+
+npred.sum_over_axes().plot(add_cbar=True);
 
 
 # In[ ]:
@@ -155,7 +161,7 @@ npred_map.sum_over_axes().plot(add_cbar=True);
 # npred to obtain simulated observed counts.
 # Compute counts as a Poisson fluctuation
 rng = np.random.RandomState(seed=42)
-counts = rng.poisson(npred)
+counts = rng.poisson(npred.data)
 counts_map = WcsNDMap(geom, counts)
 
 
@@ -174,23 +180,42 @@ counts_map.sum_over_axes().plot();
 
 
 # Define sky model to fit the data
-spatial_model = SkyGaussian(lon_0="0 deg", lat_0="0 deg", sigma="1 deg")
+spatial_model = SkyGaussian(lon_0="0.1 deg", lat_0="0.1 deg", sigma="0.5 deg")
 spectral_model = PowerLaw(
     index=2, amplitude="1e-11 cm-2 s-1 TeV-1", reference="1 TeV"
 )
 model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
-
-# Impose that specrtal index remains within limits
-spectral_model.parameters["index"].min = 0.0
-spectral_model.parameters["index"].max = 10.0
-
 print(model)
 
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'fit = MapFit(\n    model=model,\n    counts=counts_map,\n    exposure=exposure,\n    background=background,\n    psf=psf_kernel,\n)\n\nresult = fit.run(optimize_opts={"print_level": 1})')
+# We do not want to fit the background in this case, so we will freeze the parameters
+background_model.parameters["norm"].value = 1.0
+background_model.parameters["norm"].frozen = True
+background_model.parameters["tilt"].frozen = True
+
+print(background_model)
+
+
+# In[ ]:
+
+
+dataset = MapDataset(
+    model=model,
+    exposure=exposure,
+    counts=counts_map,
+    background_model=background_model,
+    psf=psf_kernel,
+    edisp=edisp
+)
+
+
+# In[ ]:
+
+
+get_ipython().run_cell_magic('time', '', 'fit = Fit(dataset)\nresult = fit.run(optimize_opts={"print_level": 1})')
 
 
 # True model:
@@ -206,7 +231,22 @@ print(sky_model)
 # In[ ]:
 
 
-print(result.model)
+print(model)
+
+
+# To get the errors on the model, we can check the covariance table:
+
+# In[ ]:
+
+
+result.parameters.covariance_to_table()
+
+
+# In[ ]:
+
+
+#Or, to see the value of and error on an individual parameter, say index:
+print(result.parameters['index'].value, result.parameters.error('index'))
 
 
 # In[ ]:

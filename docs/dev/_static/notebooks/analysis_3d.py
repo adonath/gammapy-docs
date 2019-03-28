@@ -3,7 +3,7 @@
 
 # # 3D analysis
 # 
-# This tutorial shows how to run a 3D map-based analysis using three example observations of the Galactic center region with CTA.
+# This tutorial shows how to run a stacked 3D map-based analysis using three example observations of the Galactic center region with CTA.
 
 # ## Setup
 
@@ -18,17 +18,23 @@ import matplotlib.pyplot as plt
 
 
 import os
+from pathlib import Path
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord
-from gammapy.extern.pathlib import Path
 from gammapy.data import DataStore
 from gammapy.irf import EnergyDispersion, make_mean_psf, make_mean_edisp
 from gammapy.maps import WcsGeom, MapAxis, Map, WcsNDMap
-from gammapy.cube import MapMaker, MapEvaluator, PSFKernel, MapFit
-from gammapy.cube.models import SkyModel, SkyDiffuseCube, BackgroundModel
+from gammapy.cube import MapMaker, MapEvaluator, PSFKernel, MapDataset
+from gammapy.cube.models import (
+    SkyModel,
+    SkyDiffuseCube,
+    BackgroundModel,
+    BackgroundModels,
+)
 from gammapy.spectrum.models import PowerLaw, ExponentialCutoffPowerLaw
 from gammapy.image.models import SkyGaussian, SkyPointSource
+from gammapy.utils.fitting import Fit
 from regions import CircleSkyRegion
 
 
@@ -286,48 +292,17 @@ psf_kernel = PSFKernel.read(str(path / "psf.fits"))
 edisp = EnergyDispersion.read(str(path / "edisp.fits"))
 
 
-# Let's cut out only part of the maps, so that we the fitting step does not take so long (we go from left to right one):
-
-# In[ ]:
-
-
-cmaps = {
-    name: m.cutout(SkyCoord(0, 0, unit="deg", frame="galactic"), 2 * u.deg)
-    for name, m in maps.items()
-}
-cmaps["counts"].sum_over_axes().plot(stretch="sqrt");
-
-
-# Insted of the complete one, which was:
-
-# In[ ]:
-
-
-counts.plot(stretch="sqrt");
-
-
 # ### Fit mask
 # 
-# To select a certain spatial region and/or energy range for the fit we can create a fit mask:
+# To select a certain energy range for the fit we can create a fit mask:
 
 # In[ ]:
 
 
-mask = Map.from_geom(cmaps["counts"].geom)
-
-region = CircleSkyRegion(center=src_pos, radius=0.6 * u.deg)
-mask.data = mask.geom.region_mask([region])
-
-mask.get_image_by_idx((0,)).plot();
-
-
-# In addition we also exclude the range below 0.3 TeV for the fit:
-
-# In[ ]:
-
+mask = Map.from_geom(maps["counts"].geom)
 
 coords = mask.geom.get_coord()
-mask.data &= coords["energy"] > 0.3
+mask.data = coords["energy"] > 0.3
 
 
 # ### Model fit
@@ -344,16 +319,26 @@ spectral_model = PowerLaw(
 model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
 
 
-# Now we set up the `MapFit` object by passing the prepared maps, IRFs as well as the model:
+# Often, it is useful to fit the normalisation (and also the tilt) of the background. To do so, we have to define the background as a model. In this example, we will keep the tilt fixed and the norm free.
 
 # In[ ]:
 
 
-fit = MapFit(
+background_model = BackgroundModel(maps["background"], norm=1.1, tilt=0.0)
+background_model.parameters["norm"].frozen = False
+background_model.parameters["tilt"].frozen = True
+
+
+# Now we set up the `MapDataset` object by passing the prepared maps, IRFs as well as the model:
+
+# In[ ]:
+
+
+dataset = MapDataset(
     model=model,
-    counts=cmaps["counts"],
-    exposure=cmaps["exposure"],
-    background=cmaps["background"],
+    counts=maps["counts"],
+    exposure=maps["exposure"],
+    background_model=background_model,
     mask=mask,
     psf=psf_kernel,
     edisp=edisp,
@@ -365,32 +350,23 @@ fit = MapFit(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'result = fit.run(optimize_opts={"print_level": 1})')
+get_ipython().run_cell_magic('time', '', 'fit = Fit(dataset)\nresult = fit.run(optimize_opts={"print_level": 1})')
 
 
 # In[ ]:
 
 
-print(model)
-
-
-# To get the errors on the model, we can check the covariance table:
-# 
-
-# In[ ]:
-
-
-fit.evaluator.parameters.covariance_to_table()
+result.parameters.to_table()
 
 
 # ### Check model fit
 # 
-# We check the model fit by computing a residual image. For this we first get the number of predicted counts from the fit evaluator:
+# We check the model fit by computing a residual image. For this we first get the number of predicted counts:
 
 # In[ ]:
 
 
-npred = fit.evaluator.compute_npred()
+npred = dataset.npred()
 
 
 # And compute a residual image:
@@ -398,14 +374,14 @@ npred = fit.evaluator.compute_npred()
 # In[ ]:
 
 
-residual = cmaps["counts"] - npred
+residual = maps["counts"] - npred
 
 
 # In[ ]:
 
 
 residual.sum_over_axes().smooth(width=0.05 * u.deg).plot(
-    cmap="coolwarm", vmin=-3, vmax=3, add_cbar=True
+    cmap="coolwarm", vmin=-1, vmax=1, add_cbar=True
 );
 
 
@@ -417,7 +393,7 @@ residual.sum_over_axes().smooth(width=0.05 * u.deg).plot(
 spec = model.spectral_model
 
 # set covariance on the spectral model
-covariance = fit.evaluator.parameters.covariance
+covariance = result.parameters.covariance
 spec.parameters.covariance = covariance[2:5, 2:5]
 
 energy_range = [0.3, 10] * u.TeV
@@ -425,50 +401,11 @@ spec.plot(energy_range=energy_range, energy_power=2)
 ax = spec.plot_error(energy_range=energy_range, energy_power=2)
 
 
-# Apparently our model should be improved by adding a component for diffuse Galactic emission and at least one second point
-# source. But before we do that in the next section, we will fit the background as a model.
-
-# ### Fitting a background model
-# 
-# Often, it is useful to fit the normalisation (and also the index) of the background. To do so, we have to define the background as a model and pass it to `MapFit`
-
-# In[ ]:
-
-
-background_model = BackgroundModel(cmaps["background"], norm=1.1, tilt=0.0)
-
-
-# In[ ]:
-
-
-fit_bkg = MapFit(
-    model=model,
-    counts=cmaps["counts"],
-    exposure=cmaps["exposure"],
-    background_model=background_model,
-    mask=mask,
-    psf=psf_kernel,
-    edisp=edisp,
-)
-
-
-# In[ ]:
-
-
-get_ipython().run_cell_magic('time', '', 'result_bkg = fit_bkg.run()')
-
-
-# In[ ]:
-
-
-print(background_model)
-
-
-# We see we have a high normalisation of `2.15` in this case. In the next section, we add the galactic diffuse model to improve our results.
+# Apparently our model should be improved by adding a component for diffuse Galactic emission and at least one second point source.
 
 # ### Add Galactic diffuse emission to model
 
-# We use both models at the same time, our diffuse model (the same from the Fermi file used before) and our model for the central source. This time, in order to make it more realistic, we will consider an exponential cut off power law spectral model for the source  (note that we are not constraining the fit with any mask this time).
+# We use both models at the same time, our diffuse model (the same from the Fermi file used before) and our model for the central source. This time, in order to make it more realistic, we will consider an exponential cut off power law spectral model for the source. We will fit again the normalisation and tilt of the background.
 
 # In[ ]:
 
@@ -477,46 +414,51 @@ diffuse_model = SkyDiffuseCube.read(
     "$GAMMAPY_DATA/fermi-3fhl-gc/gll_iem_v06_gc.fits.gz"
 )
 
+background_diffuse = BackgroundModel.from_skymodel(
+    diffuse_model, exposure=maps["exposure"], psf=psf_kernel
+)
+
 
 # In[ ]:
 
 
-spatial_model = SkyPointSource(lon_0="0.01 deg", lat_0="0.01 deg")
+background_irf = BackgroundModel(maps["background"], norm=1.0, tilt=0.0)
+background_total = background_irf + background_diffuse
+
+
+# In[ ]:
+
+
+spatial_model = SkyPointSource(lon_0="-0.05 deg", lat_0="-0.05 deg")
 spectral_model = ExponentialCutoffPowerLaw(
     index=2 * u.Unit(""),
-    amplitude=1e-12 * u.Unit("cm-2 s-1 TeV-1"),
+    amplitude=3e-12 * u.Unit("cm-2 s-1 TeV-1"),
     reference=1.0 * u.TeV,
-    lambda_=1 / u.TeV,
+    lambda_=0.1 / u.TeV,
 )
+
 model_ecpl = SkyModel(
     spatial_model=spatial_model, spectral_model=spectral_model
 )
 
-model_combined = diffuse_model + model_ecpl
-
 
 # In[ ]:
 
 
-fit_combined = MapFit(
-    model=model_combined,
-    counts=cmaps["counts"],
-    exposure=cmaps["exposure"],
-    background=cmaps["background"],
+dataset_combined = MapDataset(
+    model=model_ecpl,
+    counts=maps["counts"],
+    exposure=maps["exposure"],
+    background_model=background_total,
     psf=psf_kernel,
+    edisp=edisp,
 )
 
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'result_combined = fit_combined.run()')
-
-
-# In[ ]:
-
-
-print(model_ecpl)
+get_ipython().run_cell_magic('time', '', 'fit_combined = Fit(dataset_combined)\nresult_combined = fit_combined.run()')
 
 
 # As we can see we have now two components in our model, and we can access them separately.
@@ -525,16 +467,19 @@ print(model_ecpl)
 
 
 # Checking normalization value (the closer to 1 the better)
-print("Model 1: {}\n".format(model_combined.model1))
-print("Model 2: {}".format(model_combined.model2))
+print(model_ecpl, "\n")
+print(background_irf, "\n")
+print(background_diffuse, "\n")
 
+
+# You can see that the normalisation of the background has vastly improved
 
 # We can now plot the residual image considering this improved model.
 
 # In[ ]:
 
 
-residual2 = cmaps["counts"] - fit_combined.evaluator.compute_npred()
+residual2 = maps["counts"] - dataset_combined.npred()
 
 
 # Just as a comparison, we can plot our previous residual map (left) and the new one (right) with the same scale:
@@ -550,10 +495,10 @@ ax_1.set_title("Without diffuse emission subtraction")
 ax_2.set_title("With diffuse emission subtraction")
 
 residual.sum_over_axes().smooth(width=0.05 * u.deg).plot(
-    cmap="coolwarm", vmin=-2, vmax=2, add_cbar=True, ax=ax_1
+    cmap="coolwarm", vmin=-1, vmax=1, add_cbar=True, ax=ax_1
 )
 residual2.sum_over_axes().smooth(width=0.05 * u.deg).plot(
-    cmap="coolwarm", vmin=-2, vmax=2, add_cbar=True, ax=ax_2
+    cmap="coolwarm", vmin=-1, vmax=1, add_cbar=True, ax=ax_2
 );
 
 

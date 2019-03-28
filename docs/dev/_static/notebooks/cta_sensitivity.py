@@ -74,8 +74,8 @@ psf = irfs["psf"].to_energy_dependent_table_psf(theta=offset)
 
 
 containment = 0.68
-energies = np.sqrt(energy_reco[1:] * energy_reco[:-1])
-on_radii = psf.containment_radius(energies=energies, fraction=containment)
+energy = np.sqrt(energy_reco[1:] * energy_reco[:-1])
+on_radii = psf.containment_radius(energy=energy, fraction=containment)
 solid_angles = 2 * np.pi * (1 - np.cos(on_radii)) * u.sr
 
 

@@ -38,7 +38,7 @@ import matplotlib.pyplot as plt
 # can check what version of Numpy and Astropy you have
 # All examples should work with Astropy 1.3,
 # most even with Astropy 1.0
-from gammapy.extern.pathlib import Path
+from pathlib import Path
 import numpy as np
 import astropy
 import os

@@ -20,7 +20,7 @@ from gammapy.astro.darkmatter import (
     profiles,
     JFactory,
     PrimaryFlux,
-    compute_dm_flux,
+    DMAnnihilation,
 )
 
 from gammapy.maps import WcsGeom, WcsNDMap
@@ -164,23 +164,23 @@ plt.subplots_adjust(hspace=0.5)
 # In[ ]:
 
 
-flux = compute_dm_flux(
-    jfact=jfact,
-    prim_flux=fluxes,
-    x_section="1e-26 cm3s-1",
-    energy_range=[0.1, 10] * u.TeV,
+channel = "Z"
+massDM = 10 * u.TeV
+diff_flux = DMAnnihilation(mass=massDM, channel=channel)
+int_flux = (jfact * diff_flux.integral(emin=0.1 * u.TeV, emax=10 * u.TeV)).to(
+    "cm-2 s-1"
 )
 
 
 # In[ ]:
 
 
-flux_map = WcsNDMap(geom=geom, data=flux.value, unit=flux.unit)
+flux_map = WcsNDMap(geom=geom, data=int_flux.value, unit="cm-2 s-1")
 
 fig, ax, im = flux_map.plot(cmap="viridis", norm=LogNorm(), add_cbar=True)
 plt.title(
     "Flux [{}]\n m$_{{DM}}$={}, channel={}".format(
-        flux_map.unit, fluxes.mDM.to("TeV"), fluxes.channel
+        int_flux.unit, fluxes.mDM.to("TeV"), fluxes.channel
     )
 );
 

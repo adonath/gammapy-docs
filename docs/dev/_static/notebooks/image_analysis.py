@@ -26,11 +26,11 @@ from astropy.coordinates import SkyCoord
 from gammapy.data import DataStore
 from gammapy.irf import make_mean_psf
 from gammapy.maps import Map, MapAxis, WcsGeom
-from gammapy.cube import MapMaker, PSFKernel, MapFit
-from gammapy.cube.models import SkyModel
+from gammapy.cube import MapMaker, PSFKernel, MapDataset
+from gammapy.cube.models import SkyModel, BackgroundModel
 from gammapy.spectrum.models import PowerLaw2
 from gammapy.image.models import SkyPointSource
-
+from gammapy.utils.fitting import Fit
 from regions import CircleSkyRegion
 
 
@@ -82,27 +82,18 @@ geom = WcsGeom.create(
 )
 
 
-# Note that even when doing a 2D analysis, it is better to use fine energy bins in the beginning and then sum them over. This is to ensure that the background shape can be approximated by a power law function in each energy bin.
+# Note that even when doing a 2D analysis, it is better to use fine energy bins in the beginning and then sum them over. This is to ensure that the background shape can be approximated by a power law function in each energy bin. The `run_images()` can be used to compute maps in fine bins and then squash them to have one bin. This can be done by specifying `keep_dims = True`. This will compute a summed counts and background maps, and a spectral weighted exposure map.
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, offset_max=4.0 * u.deg)\nmaps = maker.run(observations)')
+get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, offset_max=4.0 * u.deg)\nspectrum = PowerLaw2(index=2)\nmaps2D = maker.run_images(observations, spectrum=spectrum, keepdims=True)')
 
 
 # In[ ]:
 
 
-maps
-
-
-# As we can see, the maps now have multiple bins in energy. We need to squash them to have one bin, and this can be done by specifying `keep_dims = True` while calling `make_images()`. This will compute a summed `counts` and `background` maps, and a spectral weighted `exposure`  map.
-
-# In[ ]:
-
-
-spectrum = PowerLaw2(index=2)
-maps2D = maker.make_images(spectrum=spectrum, keepdims=True)
+maps2D
 
 
 # For a typical 2D analysis, using an energy dispersion usually does not make sense. A PSF map can be made as in the regular 3D case, taking care to weight it properly with the spectrum.
@@ -153,14 +144,27 @@ model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
 model.parameters["index"].frozen = True
 
 
+# ## Modeling the background
+# 
+# Gammapy fitting framework assumes the background to be an integrated model.
+# Thus, we will define the background as a model, and freeze its parameters for now.
+
 # In[ ]:
 
 
-fit = MapFit(
+background_model = BackgroundModel(maps2D["background"])
+background_model.parameters["norm"].frozen = True
+background_model.parameters["tilt"].frozen = True
+
+
+# In[ ]:
+
+
+dataset = MapDataset(
     model=model,
     counts=maps2D["counts"],
     exposure=maps2D["exposure"],
-    background=maps2D["background"],
+    background_model=background_model,
     mask=mask,
     psf=psf_kernel,
 )
@@ -169,7 +173,7 @@ fit = MapFit(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'result = fit.run()')
+get_ipython().run_cell_magic('time', '', 'fit = Fit(dataset)\nresult = fit.run()')
 
 
 # To see the actual best-fit parameters, do a print on the result
@@ -178,6 +182,13 @@ get_ipython().run_cell_magic('time', '', 'result = fit.run()')
 
 
 print(model)
+
+
+# In[ ]:
+
+
+# To get the errors on the model, we can check the covariance table:
+result.parameters.covariance_to_table()
 
 
 # ## Todo: Demonstrate plotting a flux map

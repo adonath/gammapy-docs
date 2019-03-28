@@ -44,7 +44,7 @@ from astropy.table import Table, vstack
 # In[ ]:
 
 
-from gammapy.extern.pathlib import Path
+from pathlib import Path
 from gammapy.utils.nddata import sqrt_space
 from gammapy.data import DataStore
 from gammapy.irf import Background2D
@@ -80,7 +80,7 @@ print("Number of observations:", len(observations))
 # In[ ]:
 
 
-class BackgroundModelEstimator(object):
+class BackgroundModelEstimator:
     def __init__(self, ebounds, offset):
         self.counts = self._make_bkg2d(ebounds, offset, unit="")
         self.exposure = self._make_bkg2d(ebounds, offset, unit="s MeV sr")

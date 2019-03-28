@@ -14,7 +14,7 @@
 # 
 # Besides Gammapy, you might want to look at are [Sherpa](http://cxc.harvard.edu/sherpa/) or [3ML](https://threeml.readthedocs.io/). Or just using Python to roll your own analyis using several existing analysis packages. E.g. it it possible to use Fermipy and the Fermi ST to evaluate the likelihood on Fermi-LAT data, and Gammapy to evaluate it e.g. for IACT data, and to do a joint likelihood fit using e.g. [iminuit](http://iminuit.readthedocs.io/) or [emcee](http://dfm.io/emcee).
 # 
-# To use Fermi-LAT data with Gammapy, you first have to use the Fermi ST to prepare an event list (using ``gtselect`` and ``gtmktime``, exposure cube (using ``gtexpcube2`` and PSF (using ``gtpsf``). You can then use [gammapy.data.EventList](https://docs.gammapy.org/dev/api/gammapy.data.EventList.html), [gammapy.maps](https://docs.gammapy.org/dev/maps/index.html) and the [gammapy.irf.EnergyDependentTablePSF](https://docs.gammapy.org/dev/api/gammapy.irf.EnergyDependentTablePSF.html) to read the Fermi-LAT maps and PSF, i.e. support for these high-level analysis products from the Fermi ST is built in. To do a 3D map analyis, you can use [MapFit](https://docs.gammapy.org/dev/api/gammapy.cube.MapFit.html) for Fermi-LAT data in the same way that it's use for IACT data. This is illustrated in this notebook. A 1D region-based spectral analysis is also possible, this will be illustrated in a future tutorial. There you have to extract 1D counts, exposure and background vectors and then pass them to [SpectrumFit](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumFit.html).
+# To use Fermi-LAT data with Gammapy, you first have to use the Fermi ST to prepare an event list (using ``gtselect`` and ``gtmktime``, exposure cube (using ``gtexpcube2`` and PSF (using ``gtpsf``). You can then use [gammapy.data.EventList](https://docs.gammapy.org/dev/api/gammapy.data.EventList.html), [gammapy.maps](https://docs.gammapy.org/dev/maps/index.html) and the [gammapy.irf.EnergyDependentTablePSF](https://docs.gammapy.org/dev/api/gammapy.irf.EnergyDependentTablePSF.html) to read the Fermi-LAT maps and PSF, i.e. support for these high-level analysis products from the Fermi ST is built in. To do a 3D map analyis, you can use Fit for Fermi-LAT data in the same way that it's use for IACT data. This is illustrated in this notebook. A 1D region-based spectral analysis is also possible, this will be illustrated in a future tutorial. There you have to extract 1D counts, exposure and background vectors and then pass them to [SpectrumFit](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumFit.html).
 # 
 # ## Setup
 # 
@@ -46,12 +46,13 @@ from astropy.coordinates import SkyCoord
 from astropy.table import Table
 from astropy.visualization import simple_norm
 from gammapy.data import EventList
-from gammapy.irf import EnergyDependentTablePSF
+from gammapy.irf import EnergyDependentTablePSF, EnergyDispersion
 from gammapy.maps import Map, MapAxis, WcsNDMap, WcsGeom
 from gammapy.spectrum.models import TableModel, PowerLaw, ConstantModel
 from gammapy.image.models import SkyPointSource, SkyDiffuseConstant
-from gammapy.cube.models import SkyModel, SkyDiffuseCube
-from gammapy.cube import MapEvaluator, MapFit, PSFKernel
+from gammapy.cube.models import SkyModel, SkyDiffuseCube, BackgroundModel
+from gammapy.cube import MapEvaluator, MapDataset, PSFKernel
+from gammapy.utils.fitting import Fit
 
 
 # ## Events
@@ -351,13 +352,24 @@ plt.legend();
 
 
 # Let's compute a PSF kernel matching the pixel size of our map
-psf_kernel = PSFKernel.from_table_psf(psf, counts.geom, max_radius="0.5 deg")
+psf_kernel = PSFKernel.from_table_psf(psf, counts.geom, max_radius="1 deg")
 
 
 # In[ ]:
 
 
 psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch="log", add_cbar=True);
+
+
+# ### Energy Dispersion
+# For simplicity we assume a diagonal energy dispersion:
+
+# In[ ]:
+
+
+e_true = exposure.geom.axes[0].edges * exposure.geom.axes[0].unit
+e_reco = counts.geom.axes[0].edges * counts.geom.axes[0].unit
+edisp = EnergyDispersion.from_diagonal_response(e_true=e_true, e_reco=e_reco)
 
 
 # ## Background
@@ -369,11 +381,14 @@ psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch="log", add_cbar=True);
 
 model = SkyDiffuseCube(diffuse_galactic)
 
-evaluator = MapEvaluator(model=model, exposure=exposure, psf=psf_kernel)
+background_gal = BackgroundModel.from_skymodel(
+    model, exposure=exposure, psf=psf_kernel, edisp=edisp
+)
 
-background_gal = counts.copy(data=evaluator.compute_npred())
-background_gal.sum_over_axes().plot()
-print("Background counts from Galactic diffuse: ", background_gal.data.sum())
+background_gal.map.sum_over_axes().plot()
+print(
+    "Background counts from Galactic diffuse: ", background_gal.map.data.sum()
+)
 
 
 # In[ ]:
@@ -381,18 +396,20 @@ print("Background counts from Galactic diffuse: ", background_gal.data.sum())
 
 model = SkyModel(SkyDiffuseConstant(), diffuse_iso)
 
-evaluator = MapEvaluator(model=model, exposure=exposure, psf=psf_kernel)
+background_iso = BackgroundModel.from_skymodel(
+    model, exposure=exposure, edisp=edisp
+)
 
-background_iso = counts.copy(data=evaluator.compute_npred())
-background_iso.sum_over_axes().plot()
-print("Background counts from isotropic diffuse: ", background_iso.data.sum())
+background_iso.map.sum_over_axes().plot(add_cbar=True)
+print(
+    "Background counts from isotropic diffuse: ", background_iso.map.data.sum()
+)
 
 
 # In[ ]:
 
 
-background = background_gal.copy()
-background.data += background_iso.data
+background_total = background_iso + background_gal
 
 
 # ## Excess and flux
@@ -403,8 +420,8 @@ background.data += background_iso.data
 
 
 excess = counts.copy()
-excess.data -= background.data
-excess.sum_over_axes().smooth(2).plot(
+excess.data -= background_total.evaluate().data
+excess.sum_over_axes().smooth("0.1 deg").plot(
     cmap="coolwarm", vmin=-5, vmax=5, add_cbar=True
 )
 print("Excess counts: ", excess.data.sum())
@@ -416,12 +433,12 @@ print("Excess counts: ", excess.data.sum())
 flux = excess.copy()
 flux.data /= exposure.data
 flux.unit = excess.unit / exposure.unit
-flux.sum_over_axes().smooth(2).plot(stretch="sqrt", add_cbar=True);
+flux.sum_over_axes().smooth("0.1 deg").plot(stretch="sqrt", add_cbar=True);
 
 
 # ## Fit
 # 
-# Finally, the big finale: let's do a 3D map fit for the source at the Galactic center, to measure it's position and spectrum.
+# Finally, the big finale: let's do a 3D map fit for the source at the Galactic center, to measure it's position and spectrum. We keep the background normalisation free.
 
 # In[ ]:
 
@@ -430,13 +447,15 @@ model = SkyModel(
     SkyPointSource("0 deg", "0 deg"),
     PowerLaw(index=2.5, amplitude="1e-11 cm-2 s-1 TeV-1", reference="100 GeV"),
 )
-fit = MapFit(
+
+dataset = MapDataset(
     model=model,
     counts=counts,
     exposure=exposure,
-    background=background,
+    background_model=background_total,
     psf=psf_kernel,
 )
+fit = Fit(dataset)
 result = fit.run()
 
 
@@ -444,6 +463,21 @@ result = fit.run()
 
 
 print(result)
+
+
+# In[ ]:
+
+
+dataset.parameters.to_table()
+
+
+# In[ ]:
+
+
+residual = counts - dataset.npred()
+residual.sum_over_axes().smooth("0.1 deg").plot(
+    cmap="coolwarm", vmin=-3, vmax=3, add_cbar=True
+);
 
 
 # ## Exercises
