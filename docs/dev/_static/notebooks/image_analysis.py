@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Fitting 2D images with Gammapy
@@ -19,10 +19,9 @@
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
-
 import astropy.units as u
 from astropy.coordinates import SkyCoord
-
+from regions import CircleSkyRegion
 from gammapy.data import DataStore
 from gammapy.irf import make_mean_psf
 from gammapy.maps import Map, MapAxis, WcsGeom
@@ -31,7 +30,6 @@ from gammapy.cube.models import SkyModel, BackgroundModel
 from gammapy.spectrum.models import PowerLaw2
 from gammapy.image.models import SkyPointSource
 from gammapy.utils.fitting import Fit
-from regions import CircleSkyRegion
 
 
 # ## Prepare modeling input data
@@ -197,3 +195,9 @@ result.parameters.covariance_to_table()
 # 1. Plot residual maps as done in the `analysis_3d` notebook
 # 2. Iteratively add and fit sources as explained in `image_fitting_with_sherpa` notebook
 # 
+
+# In[ ]:
+
+
+
+

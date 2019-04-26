@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Fitting 2D images with Sherpa
@@ -28,10 +28,9 @@ from pathlib import Path
 import numpy as np
 from astropy.io import fits
 import astropy.units as u
-from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 from gammapy.data import DataStore
-from gammapy.irf import EnergyDispersion, make_mean_psf
+from gammapy.irf import make_mean_psf
 from gammapy.maps import WcsGeom, MapAxis, Map
 from gammapy.cube import MapMaker, PSFKernel
 
@@ -296,3 +295,9 @@ table
 # 
 # * http://conference.scipy.org/proceedings/scipy2009/paper_8/full_text.pdf
 # * http://conference.scipy.org/proceedings/scipy2011/pdfs/brefsdal.pdf
+
+# In[ ]:
+
+
+
+

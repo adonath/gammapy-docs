@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Flux point fitting in Gammapy
@@ -156,9 +156,7 @@ pwl.plot(energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2)
 # assign covariance for plotting
 pwl.parameters.covariance = result_pwl.parameters.covariance
 
-pwl.plot_error(
-    energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
-)
+pwl.plot_error(energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2)
 ax.set_ylim(1e-13, 1e-11);
 
 
@@ -199,9 +197,7 @@ ecpl.plot(energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2)
 # assign covariance for plotting
 ecpl.parameters.covariance = result_ecpl.parameters.covariance
 
-ecpl.plot_error(
-    energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
-)
+ecpl.plot_error(energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2)
 ax.set_ylim(1e-13, 1e-11)
 
 
@@ -220,7 +216,9 @@ log_parabola = LogParabola(
 # In[ ]:
 
 
-dataset_log_parabola = FluxPointsDataset(log_parabola, flux_points, likelihood="chi2assym")
+dataset_log_parabola = FluxPointsDataset(
+    log_parabola, flux_points, likelihood="chi2assym"
+)
 fitter = Fit(dataset_log_parabola)
 result_log_parabola = fitter.run()
 print(log_parabola)
@@ -230,9 +228,7 @@ print(log_parabola)
 
 
 ax = flux_points.plot(energy_power=2)
-log_parabola.plot(
-    energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2
-)
+log_parabola.plot(energy_range=[1e-4, 1e2] * u.TeV, ax=ax, energy_power=2)
 
 # assign covariance for plotting
 log_parabola.parameters.covariance = result_log_parabola.parameters.covariance

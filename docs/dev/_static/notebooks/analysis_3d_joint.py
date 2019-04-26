@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Joint 3D Analysis
@@ -8,7 +8,6 @@
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
-import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 import numpy as np
 
@@ -137,72 +136,56 @@ for obs_id in obs_ids:
 # ## Likelihood fit
 # 
 # ### Reading maps and IRFs
-# As first step we read in the maps and IRFs for each observations
-
-# In[ ]:
-
-
-datasets_data = {}
-
-for obs_id in obs_ids:
-    path = Path("analysis_3d_joint") / "obs_{}".format(obs_id)
-    dataset_data = {}
-
-    for keys in ["counts", "exposure", "background"]:
-        dataset_data[keys] = Map.read(path / "{}.fits.gz".format(keys))
-
-    dataset_data["psf"] = PSFKernel.read(path / "psf.fits.gz")
-    dataset_data["edisp"] = EnergyDispersion.read(path / "edisp.fits.gz")
-    datasets_data[obs_id] = dataset_data
-
-
-# Define source model:
+# As first step we define a source model:
 
 # In[ ]:
 
 
 spatial_model = SkyPointSource(lon_0="-0.05 deg", lat_0="-0.05 deg")
 spectral_model = PowerLaw(
-    index=2.3, amplitude="2.6e-12 cm-2 s-1 TeV-1", reference="1 TeV"
+    index=2.4, amplitude="2.7e-12 cm-2 s-1 TeV-1", reference="1 TeV"
 )
 model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
 
 
-# Create the dataset for each observation:
+# Now we read the maps and IRFs and create the dataset for each observation:
 
 # In[ ]:
 
 
 datasets = []
 
-# Here we defined energy threshold per observation
-energy_thresholds = {
-    110380: 0.15 * u.TeV,
-    111140: 0.15 * u.TeV,
-    111159: 0.15 * u.TeV,
-}
-
 for obs_id in obs_ids:
-    dataset_data = datasets_data[obs_id]
+    path = Path("analysis_3d_joint") / "obs_{}".format(obs_id)
+
+    # read counts map and IRFs
+    counts = Map.read(path / "counts.fits.gz")
+    exposure = Map.read(path / "exposure.fits.gz")
+
+    psf = PSFKernel.read(path / "psf.fits.gz")
+    edisp = EnergyDispersion.read(path / "edisp.fits.gz")
 
     # create background model per observation / dataset
-    background_model = BackgroundModel(dataset_data["background"])
-    background_model.parameters["tilt"].frozen = False
+    background = Map.read(path / "background.fits.gz")
+    background_model = BackgroundModel(background)
+    background_model.tilt.frozen = False
+    background_model.norm.value = 1.3
 
-    counts = dataset_data["counts"]
-
-    mask_data = counts.geom.energy_mask(emin=energy_thresholds[obs_id])
+    # optionally define a safe energy threshold
+    emin = None
+    mask_data = counts.geom.energy_mask(emin=emin)
     mask = Map.from_geom(geom=counts.geom, data=mask_data)
 
     dataset = MapDataset(
         model=model,
         counts=counts,
-        exposure=dataset_data["exposure"],
-        psf=dataset_data["psf"],
-        edisp=dataset_data["edisp"],
+        exposure=exposure,
+        psf=psf,
+        edisp=edisp,
         background_model=background_model,
         mask=mask,
     )
+
     datasets.append(dataset)
 
 
@@ -230,6 +213,15 @@ print(result)
 
 
 fit.datasets.parameters.to_table()
+
+
+# The information which parameter belongs to which dataset is not listed explicitely in the table (yet), but the order of parameters is conserved. You can always access the underlying object tree as well to get specific parameter values:
+
+# In[ ]:
+
+
+for dataset in datasets:
+    print(dataset.background_model.norm.value)
 
 
 # ## Plotting residuals
@@ -300,4 +292,10 @@ residual_stacked = (
 residual_stacked.plot(
     vmin=-1, vmax=1, cmap="coolwarm", add_cbar=True, stretch="linear"
 );
+
+
+# In[ ]:
+
+
+
 

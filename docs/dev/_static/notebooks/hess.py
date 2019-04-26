@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # H.E.S.S. with Gammapy
@@ -28,12 +28,13 @@ from astropy.coordinates import SkyCoord
 from astropy.convolution import Tophat2DKernel
 from regions import CircleSkyRegion
 from gammapy.data import DataStore
-from gammapy.maps import Map, MapAxis, WcsGeom, WcsNDMap
+from gammapy.maps import Map, MapAxis, WcsGeom
 from gammapy.cube import MapMaker, MapDataset, PSFKernel, MapMakerRing
 from gammapy.cube.models import SkyModel, BackgroundModel
-from gammapy.spectrum.models import PowerLaw, ExponentialCutoffPowerLaw
-from gammapy.image.models import SkyGaussian, SkyPointSource
-from gammapy.detect import compute_lima_on_off_image 
+from gammapy.spectrum.models import PowerLaw
+from gammapy.spectrum import CrabSpectrum
+from gammapy.image.models import SkyPointSource
+from gammapy.detect import compute_lima_on_off_image
 from gammapy.scripts import SpectrumAnalysisIACT
 from gammapy.utils.fitting import Fit
 from gammapy.background import RingBackgroundEstimator
@@ -189,13 +190,38 @@ residual.sum_over_axes().smooth("0.1 deg").plot(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'on_region = CircleSkyRegion(pos_crab, 0.11 * u.deg)\nexclusion_mask = images["counts"].copy()\nexclusion_mask.data = np.ones_like(exclusion_mask.data, dtype=bool)\n\nmodel = PowerLaw(\n    index=2.6, amplitude="5e-11 cm-2 s-1 TeV-1", reference="1 TeV"\n)\n\nconfig = {\n    "outdir": ".",\n    "background": {"on_region": on_region, "exclusion_mask": exclusion_mask},\n    "extraction": {"containment_correction": True},\n    "fit": {"model": model, "fit_range": [1, 10] * u.TeV},\n    "fp_binning": np.logspace(0, 1, 7) * u.TeV,\n}\nanalysis = SpectrumAnalysisIACT(observations=observations, config=config)\nanalysis.run()')
+get_ipython().run_cell_magic('time', '', 'on_region = CircleSkyRegion(pos_crab, 0.11 * u.deg)\nexclusion_mask = Map.from_geom(geom.to_image())\nexclusion_mask.data = np.ones_like(exclusion_mask.data, dtype=bool)\n\nmodel_pwl = PowerLaw(\n    index=2.6, amplitude="5e-11 cm-2 s-1 TeV-1", reference="1 TeV"\n)\n\nconfig = {\n    "outdir": ".",\n    "background": {"on_region": on_region, "exclusion_mask": exclusion_mask},\n    "extraction": {"containment_correction": True},\n    "fit": {"model": model_pwl, "fit_range": [1, 10] * u.TeV},\n    "fp_binning": np.logspace(0, 1, 11) * u.TeV,\n}\nanalysis = SpectrumAnalysisIACT(observations=observations, config=config)\nanalysis.run()')
 
 
 # In[ ]:
 
 
-print(analysis.fit.result[0])
+print(model_pwl)
+
+
+# In[ ]:
+
+
+plt.figure(figsize=(10, 8))
+crab_ref = CrabSpectrum("hess_pl").model
+
+dataset_fp = analysis.spectrum_result
+
+plot_kwargs = {
+    "energy_range": [1, 10] * u.TeV,
+    "flux_unit": "erg-1 cm-2 s-1",
+    "energy_power": 2,
+}
+
+model_kwargs = {"label": "1D best fit model"}
+model_kwargs.update(plot_kwargs)
+ax_spectrum, ax_residuals = dataset_fp.peek(model_kwargs=model_kwargs)
+
+crab_ref.plot(ax=ax_spectrum, label="H.E.S.S. 2006 PWL", **plot_kwargs)
+model.spectral_model.plot(ax=ax_spectrum, label="3D best fit model", **plot_kwargs)
+
+ax_spectrum.set_ylim(1e-11, 1e-10)
+ax_spectrum.legend();
 
 
 # ## Classical Ring Background Analysis
@@ -325,7 +351,9 @@ significance_map_off = significance_map * image_mask
 
 
 significance_all = significance_map.data[np.isfinite(significance_map.data)]
-significance_off = significance_map_off.data[np.isfinite(significance_map_off.data)]
+significance_off = significance_map_off.data[
+    np.isfinite(significance_map_off.data)
+]
 
 plt.hist(
     significance_all,
@@ -365,9 +393,15 @@ print("Fit results: mu = {:.2f}, std = {:.2f}".format(mu, std))
 # In[ ]:
 
 
-print("Excess from entire map: {:.1f}".format(np.nansum(lima_maps["excess"].data)))
 print(
-    "Excess from off regions: {:.1f}".format(np.nansum((lima_maps["excess"] * image_mask).data))
+    "Excess from entire map: {:.1f}".format(
+        np.nansum(lima_maps["excess"].data)
+    )
+)
+print(
+    "Excess from off regions: {:.1f}".format(
+        np.nansum((lima_maps["excess"] * image_mask).data)
+    )
 )
 
 
@@ -377,3 +411,9 @@ print(
 # 
 # - Try analysing another source, e.g. RX J1713.7−3946
 # - Try another model, e.g. a Gaussian spatial shape or exponential cutoff power-law spectrum.
+
+# In[ ]:
+
+
+
+

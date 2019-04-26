@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Fitting and error estimation with MCMC
@@ -71,7 +71,9 @@ import corner
 # In[ ]:
 
 
-irfs = load_cta_irfs("$GAMMAPY_DATA/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits")
+irfs = load_cta_irfs(
+    "$GAMMAPY_DATA/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
+)
 
 
 # In[ ]:
@@ -268,6 +270,7 @@ print("LL =", dataset.likelihood(dataset.parameters))
 
 # Now let's define a function to init parameters and run the MCMC with emcee
 # Depending on your number of walkers, Nrun and dimensionality, this can take a while (> minutes)
+
 
 def run_mcmc(dataset, nwalkers=12, nrun=500, threads=1):
     """

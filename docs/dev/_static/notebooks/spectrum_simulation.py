@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Spectrum simulation with Gammapy
@@ -15,7 +15,6 @@
 # * [gammapy.irf.EnergyDispersion](https://docs.gammapy.org/dev/api/gammapy.irf.EnergyDispersion)
 # * [gammapy.spectrum.SpectrumObservation](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumObservation.html)
 # * [gammapy.spectrum.SpectrumSimulation](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumSimulation.html)
-# * [gammapy.spectrum.SpectrumFit](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumFit.html)
 # * [gammapy.spectrum.models.PowerLaw](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html)
 
 # ## Setup
@@ -35,8 +34,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import astropy.units as u
 from gammapy.irf import EnergyDispersion, EffectiveAreaTable
-from gammapy.spectrum import SpectrumSimulation, SpectrumFit
+from gammapy.spectrum import SpectrumSimulation
 from gammapy.spectrum.models import PowerLaw
+from gammapy.utils.fitting import Fit
 
 
 # ## Create detector
@@ -86,10 +86,13 @@ print(sim.obs)
 # In[ ]:
 
 
-fit = SpectrumFit(obs_list=sim.obs, model=pwl.copy(), stat="cash")
-fit.fit_range = [1, 10] * u.TeV
-fit.run()
-print(fit.result[0])
+dataset = sim.obs.to_spectrum_dataset()
+dataset.model = pwl.copy()
+
+fit = Fit([dataset])
+
+result = fit.run()
+print(result)
 
 
 # ## Include background
@@ -131,7 +134,7 @@ axes[2].set_xlabel("excess");
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'results = []\nfor obs in sim.result:\n    fit = SpectrumFit(obs, pwl.copy(), stat="wstat")\n    fit.optimize()\n    results.append(\n        {\n            "index": fit.result[0].model.parameters["index"].value,\n            "amplitude": fit.result[0].model.parameters["amplitude"].value,\n        }\n    )')
+get_ipython().run_cell_magic('time', '', 'results = []\nfor obs in sim.result:\n    dataset = obs.to_spectrum_dataset()\n    dataset.model = pwl.copy()\n    fit = Fit([dataset])\n    result = fit.optimize()\n    results.append(\n        {\n            "index": result.parameters["index"].value,\n            "amplitude": result.parameters["amplitude"].value,\n        }\n    )')
 
 
 # In[ ]:

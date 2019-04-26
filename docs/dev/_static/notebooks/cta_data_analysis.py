@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # ![CTA first data challenge logo](images/cta-1dc.png)
@@ -35,20 +35,19 @@ get_ipython().system('gammapy info --no-envvar --no-system')
 
 import numpy as np
 import astropy.units as u
-from astropy.coordinates import SkyCoord, Angle
+from astropy.coordinates import SkyCoord
 from astropy.convolution import Gaussian2DKernel
 from regions import CircleSkyRegion
 from gammapy.utils.energy import EnergyBounds
+from gammapy.utils.fitting import Fit
 from gammapy.data import DataStore
 from gammapy.spectrum import (
     SpectrumExtraction,
-    SpectrumFit,
-    SpectrumResult,
     models,
-    SpectrumEnergyGroupMaker,
     FluxPointEstimator,
+    FluxPointsDataset,
 )
-from gammapy.maps import Map, MapAxis, WcsNDMap, WcsGeom
+from gammapy.maps import MapAxis, WcsNDMap, WcsGeom
 from gammapy.cube import MapMaker
 from gammapy.background import ReflectedRegionsBackgroundEstimator
 from gammapy.detect import TSMapEstimator, find_peaks
@@ -255,7 +254,7 @@ get_ipython().run_cell_magic('time', '', 'bkg_estimator = ReflectedRegionsBackgr
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'extract = SpectrumExtraction(\n    observations=observations, bkg_estimate=bkg_estimate\n)\nextract.run()\nobservations = extract.spectrum_observations')
+get_ipython().run_cell_magic('time', '', 'extract = SpectrumExtraction(\n    observations=observations, bkg_estimate=bkg_estimate\n)\nextract.run()')
 
 
 # ### Model fit
@@ -265,7 +264,7 @@ get_ipython().run_cell_magic('time', '', 'extract = SpectrumExtraction(\n    obs
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'model = models.PowerLaw(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\nfit = SpectrumFit(observations, model)\nfit.run()\nprint(fit.result[0])')
+get_ipython().run_cell_magic('time', '', 'model = models.PowerLaw(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\n\ndatasets = extract.spectrum_observations.to_spectrum_datasets(model=model)\n\nfit = Fit(datasets)\nresult = fit.run()\nprint(result)')
 
 
 # ### Spectral points
@@ -285,11 +284,10 @@ print(stacked_obs)
 
 ebounds = EnergyBounds.equal_log_spacing(1, 40, 4, unit=u.TeV)
 
-seg = SpectrumEnergyGroupMaker(obs=stacked_obs)
-seg.compute_groups_fixed(ebounds=ebounds)
+dataset = stacked_obs.to_spectrum_dataset()
 
 fpe = FluxPointEstimator(
-    obs=stacked_obs, groups=seg.groups, model=fit.result[0].model
+    datasets=[dataset], e_edges=ebounds, model=model
 )
 flux_points = fpe.run()
 flux_points.table_formatted
@@ -303,13 +301,15 @@ flux_points.table_formatted
 # In[ ]:
 
 
-total_result = SpectrumResult(model=fit.result[0].model, points=flux_points)
+model.parameters.covariance = result.parameters.covariance
+flux_points_dataset = FluxPointsDataset(data=flux_points, model=model)
 
-total_result.plot(
-    energy_range=[1, 40] * u.TeV,
-    fig_kwargs=dict(figsize=(8, 8)),
-    point_kwargs=dict(color="green"),
-);
+
+# In[ ]:
+
+
+plt.figure(figsize=(8, 6))
+flux_points_dataset.peek();
 
 
 # ## Exercises
@@ -333,5 +333,4 @@ total_result.plot(
 # 
 # * This notebook showed an example of a first CTA analysis with Gammapy, using simulated 1DC data.
 # * This was part 2 for CTA 1DC turorial, the first part was here: [cta_1dc_introduction.ipynb](cta_1dc_introduction.ipynb)
-# * More tutorials (not 1DC or CTA specific) with Gammapy are [here](../index.ipynb)
 # * Let us know if you have any question or issues!

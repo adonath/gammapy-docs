@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Getting started with Gammapy
@@ -33,7 +33,6 @@
 #     - [gammapy.spectrum.FluxPoints](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html#gammapy.spectrum.FluxPoints)
 #     - [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html#astropy.table.Table)
 # 
-# If you're not yet familiar with the listed Astropy classes, maybe check out the [Astropy introduction for Gammapy users](astropy_introduction.ipynb) first.
 
 # ## Setup
 # 
@@ -77,7 +76,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord
-from astropy.visualization import simple_norm
 
 
 # ## Maps
@@ -173,6 +171,12 @@ gc_3fhl_cutout.plot(stretch="sqrt");
 # 
 # * Add a marker and circle at the position of `Sag A*` (you can find examples in the WCSAxes [documentation](https://wcsaxes.readthedocs.io/en/latest/overlays.html)).
 
+# In[ ]:
+
+
+
+
+
 # ## Event lists
 # 
 # Almost any high-level gamma-ray data analysis starts with the raw measured counts data, which is stored in event lists. In Gammapy event lists are represented by the [gammapy.data.EventList](https://docs.gammapy.org/dev/api/gammapy.data.EventList.html) class. 
@@ -265,6 +269,12 @@ events_gc_3fhl.energy[-1].to("GeV")
 # 
 # * Make a counts energy spectrum for the galactic center region, within a radius of 10 deg.
 
+# In[ ]:
+
+
+
+
+
 # ## Source catalogs
 # 
 # Gammapy provides a convenient interface to access and work with catalog based data. 
@@ -327,6 +337,12 @@ print(mkn_421_3fhl.data["Signif_Avg"])
 # * Select all the sources from the 2FHL catalog which are contained in the Galactic Center region. The methods [`WcsGeom.contains()`](https://docs.gammapy.org/stable/api/gammapy.maps.WcsGeom.html#gammapy.maps.WcsGeom.contains) and [`SourceCatalog.positions`](https://docs.gammapy.org/stable/api/gammapy.catalog.SourceCatalog.html#gammapy.catalog.SourceCatalog.positions) might be helpful for this. Add markers for all these sources and try to add labels with the source names. The function [ax.text()](http://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.text.html#matplotlib.axes.Axes.text) might be also helpful.
 # * Try to find the source class of the object at position ra=68.6803, dec=9.3331
 #  
+
+# In[ ]:
+
+
+
+
 
 # ## Spectral models and flux points
 # 
@@ -428,6 +444,12 @@ crab_3fhl.flux_points.to_sed_type("dnde").plot(ax=ax, energy_power=2);
 # 
 # * Plot the spectral model and flux points for PKS 2155-304 for the 3FGL and 2FHL catalogs. Try to plot the error of the model (aka "Butterfly") as well. Note this requires the [uncertainties package](https://pythonhosted.org/uncertainties/) to be installed on your machine.
 # 
+
+# In[ ]:
+
+
+
+
 
 # ## What next?
 # 

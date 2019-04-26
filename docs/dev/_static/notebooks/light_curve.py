@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Light curves
@@ -31,7 +31,7 @@ from gammapy.data import DataStore
 from gammapy.spectrum import SpectrumExtraction
 from gammapy.spectrum.models import PowerLaw
 from gammapy.background import ReflectedRegionsBackgroundEstimator
-from gammapy.time import LightCurve, LightCurveEstimator
+from gammapy.time import LightCurveEstimator
 
 
 # ## Spectrum
@@ -87,12 +87,7 @@ get_ipython().run_cell_magic('time', '', 'ebounds = EnergyBounds.equal_log_spaci
 
 # Creat list of time bin intervals
 # Here we do one time bin per observation
-def time_intervals_per_obs(observations):
-    for obs in observations:
-        yield obs.tstart, obs.tstop
-
-
-time_intervals = list(time_intervals_per_obs(observations))
+time_intervals = [(obs.tstart, obs.tstop) for obs in observations]
 
 
 # In[ ]:
@@ -166,3 +161,9 @@ ax.hlines(
 # * Try a time binning where you split the observation time for every run into two time bins.
 # * Try to analyse the PKS 2155 flare data from the H.E.S.S. first public test data release.
 #   Start with per-observation fluxes, and then try fluxes within 5 minute time bins for one or two of the observations where the source was very bright.
+
+# In[ ]:
+
+
+
+

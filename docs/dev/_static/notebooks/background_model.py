@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Make template background model
@@ -36,7 +36,6 @@ from matplotlib.colors import LogNorm
 from copy import deepcopy
 import numpy as np
 import astropy.units as u
-from astropy.coordinates import SkyCoord, Angle
 from astropy.io import fits
 from astropy.table import Table, vstack
 
@@ -270,18 +269,14 @@ filename = "hess-dl3-dr3-with-background.fits.gz"
 # pointing to the background model HDU
 rows = []
 for obs_row in data_store.obs_table:
-    obs_row["ZEN_PNT"]
-    # TODO: pick the right background model
-    # based on zenith angle
-    bkg_idx = 0
-    hdu_name = "BKG{}".format(bkg_idx)
+    # TODO: pick the right background model based on zenith angle
     row = {
         "OBS_ID": obs_row["OBS_ID"],
         "HDU_TYPE": "bkg",
         "HDU_CLASS": "bkg_2d",
         "FILE_DIR": "",
         "FILE_NAME": filename,
-        "HDU_NAME": hdu_name,
+        "HDU_NAME": "BKG0",
     }
     rows.append(row)
 
@@ -353,3 +348,9 @@ background2d_peek(obs.bkg)
 # - Try to figure out why there are outliers on the zenith vs energy threshold curve.
 # - Does azimuth angle or optical efficiency have an effect on background rate?
 # - Use the background models for a 3D analysis (see "hess" notebook).
+
+# In[ ]:
+
+
+
+

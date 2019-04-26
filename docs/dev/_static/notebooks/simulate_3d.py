@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # 3D simulation and fitting
@@ -23,12 +23,12 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 import astropy.units as u
-from astropy.coordinates import SkyCoord, Angle
+from astropy.coordinates import Angle
 from gammapy.irf import load_cta_irfs
-from gammapy.maps import WcsGeom, MapAxis, WcsNDMap, Map
+from gammapy.maps import WcsGeom, MapAxis, WcsNDMap
 from gammapy.spectrum.models import PowerLaw
 from gammapy.image.models import SkyGaussian
-from gammapy.cube.models import SkyModel, SkyModels, BackgroundModel
+from gammapy.cube.models import SkyModel, BackgroundModel
 from gammapy.cube import MapDataset, PSFKernel
 from gammapy.cube import make_map_exposure_true_energy, make_map_background_irf
 from gammapy.utils.fitting import Fit
@@ -83,7 +83,9 @@ geom = WcsGeom.create(
 
 # Define some observation parameters
 # We read in the pointing info from one of the 1dc event list files as an example
-pointing = FixedPointingInfo.read("$GAMMAPY_DATA/cta-1dc/data/baseline/gps/gps_baseline_110380.fits")
+pointing = FixedPointingInfo.read(
+    "$GAMMAPY_DATA/cta-1dc/data/baseline/gps/gps_baseline_110380.fits"
+)
 
 livetime = 1 * u.hour
 offset_max = 2 * u.deg
@@ -137,7 +139,7 @@ dataset = MapDataset(
     exposure=exposure,
     background_model=background_model,
     psf=psf_kernel,
-    edisp=edisp
+    edisp=edisp,
 )
 
 
@@ -208,7 +210,7 @@ dataset = MapDataset(
     counts=counts_map,
     background_model=background_model,
     psf=psf_kernel,
-    edisp=edisp
+    edisp=edisp,
 )
 
 
@@ -245,8 +247,8 @@ result.parameters.covariance_to_table()
 # In[ ]:
 
 
-#Or, to see the value of and error on an individual parameter, say index:
-print(result.parameters['index'].value, result.parameters.error('index'))
+# Or, to see the value of and error on an individual parameter, say index:
+print(result.parameters["index"].value, result.parameters.error("index"))
 
 
 # In[ ]:

@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Source detection with Gammapy
@@ -36,8 +36,6 @@ import matplotlib.pyplot as plt
 # In[ ]:
 
 
-import numpy as np
-from astropy import units as u
 from gammapy.maps import Map
 from gammapy.detect import TSMapEstimator, find_peaks
 from gammapy.catalog import source_catalogs

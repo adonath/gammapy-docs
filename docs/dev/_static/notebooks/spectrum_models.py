@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Spectral models in Gammapy
@@ -165,7 +165,7 @@ pwl.integral(emin=1 * u.TeV, emax=10 * u.TeV)
 
 class UserModel(models.SpectralModel):
     def __init__(self, index, amplitude, reference, mean, width):
-        self.parameters = Parameters(
+        super().__init__(
             [
                 Parameter("index", index, min=0),
                 Parameter("amplitude", amplitude, min=0),

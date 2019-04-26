@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Gammapy Maps
@@ -18,7 +18,7 @@
 # 1. [Reprojecting, Interpolating and Miscellaneous](#5.-Reprojecting,-Interpolating-and-Miscellaneous)
 # 
 # 
-# Make sure you have worked through he [First Steps with Gammapy](first_steps.ipynb) and [Astropy Introduction](astropy_introduction.ipynb) notebooks, because a solid knowledge about working with `SkyCoords` and `Quantity` objects as well as [Numpy](http://www.numpy.org/) is required for this tutorial.
+# Make sure you have worked through the [First Steps with Gammapy](first_steps.ipynb), because a solid knowledge about working with `SkyCoords` and `Quantity` objects as well as [Numpy](http://www.numpy.org/) is required for this tutorial.
 # 
 # **Note:** This notebook is rather lengthy, but getting to know the `Map` data structure in detail is **essential for working with Gammapy** and will allow you to fulfill **complex analysis tasks with very few and simple code** in future!
 
@@ -591,3 +591,9 @@ m_iem_cutout.plot_interactive(
 
 
 # The returned object is again a `Map` object with udpated WCS information and data size. As one can see the cutout is automatically applied to all the non-spatial axes as well. The cutout width is given in the order of `(lon, lat)` and can be specified with units that will be handled correctly. 
+
+# In[ ]:
+
+
+
+

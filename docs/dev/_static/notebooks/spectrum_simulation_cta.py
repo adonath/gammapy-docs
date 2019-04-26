@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Spectrum simulation for CTA
@@ -9,7 +9,6 @@
 # 
 # * [gammapy.spectrum.SpectrumObservation](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumObservation.html)
 # * [gammapy.spectrum.SpectrumSimulation](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumSimulation.html)
-# * [gammapy.spectrum.SpectrumFit](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumFit.html)
 # * [gammapy.irf.load_cta_irfs](https://docs.gammapy.org/dev/api/gammapy.irf.load_cta_irfs.html)
 
 # ## Setup
@@ -26,8 +25,8 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 import astropy.units as u
-from gammapy.irf import EnergyDispersion, EffectiveAreaTable
-from gammapy.spectrum import SpectrumSimulation, SpectrumFit
+from gammapy.spectrum import SpectrumSimulation
+from gammapy.utils.fitting import Fit
 from gammapy.spectrum.models import PowerLaw
 from gammapy.irf import load_cta_irfs
 
@@ -48,7 +47,7 @@ energy = np.logspace(-1, 2, 31) * u.TeV
 
 
 # Define spectral model
-model = PowerLaw(
+model_ref = PowerLaw(
     index=2.1,
     amplitude=2.5e-12 * u.Unit("cm-2 s-1 TeV-1"),
     reference=1 * u.TeV,
@@ -89,7 +88,7 @@ print(edisp.data)
 
 # Simulate data
 sim = SpectrumSimulation(
-    aeff=aeff, edisp=edisp, source_model=model, livetime=livetime
+    aeff=aeff, edisp=edisp, source_model=model_ref, livetime=livetime
 )
 sim.simulate_obs(seed=42, obs_id=0)
 
@@ -109,9 +108,12 @@ print(sim.obs)
 
 
 # Fit data
-fit = SpectrumFit(obs_list=sim.obs, model=model, stat="cash")
-fit.run()
-result = fit.result[0]
+model = model_ref.copy()
+dataset = sim.obs.to_spectrum_dataset()
+dataset.model = model
+
+fit = Fit([dataset])
+result = fit.run()
 
 
 # In[ ]:
@@ -124,9 +126,11 @@ print(result)
 
 
 energy_range = [0.1, 100] * u.TeV
+model_ref.plot(energy_range=energy_range, energy_power=2)
+
+model.parameters.covariance = result.parameters.covariance
 model.plot(energy_range=energy_range, energy_power=2)
-result.model.plot(energy_range=energy_range, energy_power=2)
-result.model.plot_error(energy_range=energy_range, energy_power=2);
+model.plot_error(energy_range=energy_range, energy_power=2);
 
 
 # ## Exercises

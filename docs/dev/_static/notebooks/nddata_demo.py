@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # How to use the NDDataArray class
@@ -126,4 +126,10 @@ for offset in offsets:
     plt.plot(eval_energies.value, slice_, label="Offset: {}".format(offset))
 plt.xlabel("Energy [TeV]")
 plt.legend();
+
+
+# In[ ]:
+
+
+
 

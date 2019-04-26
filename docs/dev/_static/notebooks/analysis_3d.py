@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # 3D analysis
@@ -17,7 +17,6 @@ import matplotlib.pyplot as plt
 # In[ ]:
 
 
-import os
 from pathlib import Path
 import numpy as np
 import astropy.units as u
@@ -25,17 +24,11 @@ from astropy.coordinates import SkyCoord
 from gammapy.data import DataStore
 from gammapy.irf import EnergyDispersion, make_mean_psf, make_mean_edisp
 from gammapy.maps import WcsGeom, MapAxis, Map, WcsNDMap
-from gammapy.cube import MapMaker, MapEvaluator, PSFKernel, MapDataset
-from gammapy.cube.models import (
-    SkyModel,
-    SkyDiffuseCube,
-    BackgroundModel,
-    BackgroundModels,
-)
+from gammapy.cube import MapMaker, PSFKernel, MapDataset
+from gammapy.cube.models import SkyModel, SkyDiffuseCube, BackgroundModel
 from gammapy.spectrum.models import PowerLaw, ExponentialCutoffPowerLaw
-from gammapy.image.models import SkyGaussian, SkyPointSource
+from gammapy.image.models import SkyPointSource
 from gammapy.utils.fitting import Fit
-from regions import CircleSkyRegion
 
 
 # In[ ]:
@@ -398,7 +391,7 @@ spec.parameters.covariance = covariance[2:5, 2:5]
 
 energy_range = [0.3, 10] * u.TeV
 spec.plot(energy_range=energy_range, energy_power=2)
-ax = spec.plot_error(energy_range=energy_range, energy_power=2)
+spec.plot_error(energy_range=energy_range, energy_power=2)
 
 
 # Apparently our model should be improved by adding a component for diffuse Galactic emission and at least one second point source.
@@ -507,8 +500,7 @@ residual2.sum_over_axes().smooth(width=0.05 * u.deg).plot(
 # In[ ]:
 
 
-spec_ecpl = model_ecpl.spectral_model
-ax = spec_ecpl.plot(energy_range=energy_range, energy_power=2)
+model_ecpl.spectral_model.plot(energy_range=energy_range, energy_power=2)
 
 
 # Results seems to be better (but not perfect yet). Next step to improve our model even more would be getting rid of the other bright source (G0.9+0.1).

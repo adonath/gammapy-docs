@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # CWT Algorithm
@@ -18,14 +18,11 @@
 # Render our plots inline
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
-import numpy as np
 
 
 # In[ ]:
 
 
-from astropy.io import fits
-from astropy.coordinates import Angle, SkyCoord
 from gammapy.maps import Map
 from gammapy.detect import CWTKernels, CWT, CWTData
 

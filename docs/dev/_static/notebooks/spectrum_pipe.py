@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Spectrum analysis with Gammapy (run pipeline)
@@ -22,7 +22,6 @@
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
-import numpy as np
 import matplotlib.pyplot as plt
 
 import astropy.units as u
@@ -59,7 +58,7 @@ print(obs_ids)
 # In[ ]:
 
 
-crab_pos = SkyCoord.from_name("crab")
+crab_pos = SkyCoord(83.633, 22.014, unit="deg")
 on_region = CircleSkyRegion(crab_pos, 0.15 * u.deg)
 
 model = LogParabola(
@@ -103,7 +102,6 @@ config = dict(
     extraction=dict(containment_correction=False),
     fit=dict(
         model=model,
-        stat="wstat",
         forward_folded=True,
         fit_range=flux_point_binning[[0, -1]],
     ),
@@ -129,19 +127,24 @@ analysis.run(optimize_opts={"print_level": 1})
 # In[ ]:
 
 
-print(analysis.fit.result[0])
+print(analysis.fit_result)
 
 
 # In[ ]:
 
 
+plt.figure(figsize=(8, 6))
 opts = {
-    "energy_range": analysis.fit.fit_range,
+    "energy_range": config["fit"]["fit_range"],
     "energy_power": 2,
     "flux_unit": "erg-1 cm-2 s-1",
 }
-axes = analysis.spectrum_result.plot(**opts)
-CrabSpectrum().model.plot(ax=axes[0], **opts)
+
+ax_spectrum, ax_residual = analysis.spectrum_result.peek()
+
+CrabSpectrum().model.plot(ax=ax_spectrum, label="Crab reference", **opts)
+ax_spectrum.set_ylim(1e-12, 1e-10)
+ax_spectrum.legend()
 
 
 # ## Exercises
@@ -154,3 +157,9 @@ CrabSpectrum().model.plot(ax=axes[0], **opts)
 # * different energy binning for the spectral point computation
 # 
 # Observe how the measured spectrum changes.
+
+# In[ ]:
+
+
+
+

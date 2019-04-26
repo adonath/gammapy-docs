@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Spectral analysis with Gammapy
@@ -26,16 +26,13 @@
 # 
 # For the global fit (using Sherpa and WSTAT in the background):
 # 
-# * [gammapy.spectrum.SpectrumFit](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumFit.html)
 # * [gammapy.spectrum.models.PowerLaw](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html)
 # * [gammapy.spectrum.models.ExponentialCutoffPowerLaw](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.ExponentialCutoffPowerLaw.html)
 # * [gammapy.spectrum.models.LogParabola](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.LogParabola.html)
 # 
 # To compute flux points (a.k.a. "SED" = "spectral energy distribution")
 # 
-# * [gammapy.spectrum.SpectrumResult](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumResult.html)
 # * [gammapy.spectrum.FluxPoints](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html)
-# * [gammapy.spectrum.SpectrumEnergyGroupMaker](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumEnergyGroupMaker.html)
 # * [gammapy.spectrum.FluxPointEstimator](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPointEstimator.html)
 # 
 # Feedback welcome!
@@ -75,27 +72,15 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 from astropy.table import vstack as vstack_table
 from regions import CircleSkyRegion
-from gammapy.data import DataStore, Observations
+from gammapy.data import DataStore
 from gammapy.data import ObservationStats, ObservationSummary
 from gammapy.background.reflected import ReflectedRegionsBackgroundEstimator
 from gammapy.utils.energy import EnergyBounds
-from gammapy.spectrum import (
-    SpectrumExtraction,
-    SpectrumObservation,
-    SpectrumFit,
-    SpectrumResult,
-)
-from gammapy.spectrum.models import (
-    PowerLaw,
-    ExponentialCutoffPowerLaw,
-    LogParabola,
-)
-from gammapy.spectrum import (
-    FluxPoints,
-    SpectrumEnergyGroupMaker,
-    FluxPointEstimator,
-)
+from gammapy.spectrum import SpectrumExtraction
+from gammapy.spectrum.models import PowerLaw
+from gammapy.spectrum import FluxPointEstimator, FluxPointsDataset
 from gammapy.maps import Map
+from gammapy.utils.fitting import Fit
 
 
 # ## Configure logger
@@ -160,7 +145,7 @@ exclusion_mask = Map.create(
 
 mask = exclusion_mask.geom.region_mask([exclusion_region], inside=False)
 exclusion_mask.data = mask
-exclusion_mask.plot()
+exclusion_mask.plot();
 
 
 # ## Estimate background
@@ -189,7 +174,7 @@ background_estimator.run()
 
 
 plt.figure(figsize=(8, 8))
-background_estimator.plot(add_legend=True)
+background_estimator.plot(add_legend=True);
 
 
 # ## Source statistic
@@ -211,7 +196,7 @@ ax1 = fig.add_subplot(121)
 
 obs_summary.plot_excess_vs_livetime(ax=ax1)
 ax2 = fig.add_subplot(122)
-obs_summary.plot_significance_vs_livetime(ax=ax2)
+obs_summary.plot_significance_vs_livetime(ax=ax2);
 
 
 # ## Extract spectrum
@@ -274,17 +259,30 @@ model = PowerLaw(
     index=2, amplitude=2e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV
 )
 
-joint_fit = SpectrumFit(obs_list=extraction.spectrum_observations, model=model)
-joint_fit.run()
-joint_result = joint_fit.result
+datasets_joint = [obs.to_spectrum_dataset() for obs in extraction.spectrum_observations]
+
+for dataset in datasets_joint:
+    dataset.model = model
+
+fit_joint = Fit(datasets_joint)
+result_joint = fit_joint.run()
+
+# we make a copy here to compare it later
+model_best_joint = model.copy()
 
 
 # In[ ]:
 
 
-ax0, ax1 = joint_result[0].plot(figsize=(8, 8))
-ax0.set_ylim(0, 20)
-print(joint_result[0])
+print(result_joint)
+
+
+# In[ ]:
+
+
+plt.figure(figsize=(8, 6))
+ax_spectrum, ax_residual = datasets_joint[0].peek()
+ax_spectrum.set_ylim(0, 20)
 
 
 # ## Compute Flux Points
@@ -298,20 +296,16 @@ print(joint_result[0])
 stacked_obs = extraction.spectrum_observations.stack()
 
 e_min, e_max = stacked_obs.lo_threshold.to_value("TeV"), 30
-ebounds = np.logspace(np.log10(e_min), np.log10(e_max), 15) * u.TeV
-
-
-seg = SpectrumEnergyGroupMaker(obs=stacked_obs)
-seg.compute_groups_fixed(ebounds=ebounds)
-
-print(seg.groups)
+e_edges = np.logspace(np.log10(e_min), np.log10(e_max), 15) * u.TeV
 
 
 # In[ ]:
 
 
+dataset_stacked = stacked_obs.to_spectrum_dataset()
+
 fpe = FluxPointEstimator(
-    obs=stacked_obs, groups=seg.groups, model=joint_result[0].model
+    datasets=[dataset_stacked], e_edges=e_edges, model=model
 )
 flux_points = fpe.run()
 
@@ -327,6 +321,7 @@ flux_points.table_formatted
 # In[ ]:
 
 
+plt.figure(figsize=(8, 5))
 flux_points.table["is_ul"] = flux_points.table["ts"] < 4
 ax = flux_points.plot(
     energy_power=2, flux_unit="erg-1 cm-2 s-1", color="darkorange"
@@ -334,22 +329,20 @@ ax = flux_points.plot(
 flux_points.to_sed_type("e2dnde").plot_likelihood(ax=ax)
 
 
-# The final plot with the best fit model, flux points and residuals can be quickly made like this
+# The final plot with the best fit model, flux points and residuals can be quickly made like this: 
 
 # In[ ]:
 
 
-spectrum_result = SpectrumResult(
-    points=flux_points, model=joint_result[0].model
-)
-ax0, ax1 = spectrum_result.plot(
-    energy_range=joint_fit.result[0].fit_range,
-    energy_power=2,
-    flux_unit="erg-1 cm-2 s-1",
-    fig_kwargs=dict(figsize=(8, 8)),
-)
+model.parameters.covariance = result_joint.parameters.covariance
+flux_points_dataset = FluxPointsDataset(data=flux_points, model=model)
 
-ax0.set_xlim(0.4, 50)
+
+# In[ ]:
+
+
+plt.figure(figsize=(8, 6))
+flux_points_dataset.peek();
 
 
 # ## Stack observations
@@ -359,30 +352,30 @@ ax0.set_xlim(0.4, 50)
 # In[ ]:
 
 
-stacked_obs = extraction.spectrum_observations.stack()
+dataset_stacked.model = model
+stacked_fit = Fit([dataset_stacked])
+result_stacked = stacked_fit.run()
 
-stacked_fit = SpectrumFit(obs_list=stacked_obs, model=model)
-stacked_fit.run()
-
-
-# In[ ]:
-
-
-stacked_result = stacked_fit.result
-print(stacked_result[0])
+# make a copy to compare later
+model_best_stacked = model.copy()
 
 
 # In[ ]:
 
 
-stacked_table = stacked_result[0].to_table(format=".3g")
-stacked_table["method"] = "stacked"
-joint_table = joint_result[0].to_table(format=".3g")
-joint_table["method"] = "joint"
-total_table = vstack_table([stacked_table, joint_table])
-print(
-    total_table["method", "index", "index_err", "amplitude", "amplitude_err"]
-)
+print(result_stacked)
+
+
+# In[ ]:
+
+
+model_best_joint.parameters.to_table()
+
+
+# In[ ]:
+
+
+model_best_stacked.parameters.to_table()
 
 
 # ## Exercises
@@ -399,4 +392,10 @@ print(
 
 
 # Start exercises here
+
+
+# In[ ]:
+
+
+
 

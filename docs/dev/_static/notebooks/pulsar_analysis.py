@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Pulsar analysis with Gammapy
@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 
 
 from regions import CircleSkyRegion
-from astropy.coordinates import SkyCoord, Angle
+from astropy.coordinates import SkyCoord
 import astropy.units as u
 
 from gammapy.maps import Map, WcsGeom
@@ -34,12 +34,11 @@ from gammapy.data import DataStore
 from gammapy.background import PhaseBackgroundEstimator
 from gammapy.spectrum.models import PowerLaw
 from gammapy.utils.energy import EnergyBounds
+from gammapy.utils.fitting import Fit
 from gammapy.spectrum import (
     SpectrumExtraction,
-    SpectrumFit,
     FluxPointEstimator,
-    SpectrumResult,
-    SpectrumEnergyGroupMaker,
+    FluxPointsDataset,
 )
 
 
@@ -299,7 +298,7 @@ extraction.compute_energy_threshold(
 extraction.spectrum_observations[0].peek()
 
 
-# Now we'll fit a model to the spectrum with SpectrumFit. First we load a power law model with an initial value for the index and the amplitude and then wo do a likelihood fit. The fit results are printed below.
+# Now we'll fit a model to the spectrum with the `Fit` class. First we load a power law model with an initial value for the index and the amplitude and then wo do a likelihood fit. The fit results are printed below.
 
 # In[ ]:
 
@@ -309,15 +308,13 @@ model = PowerLaw(
 )
 
 fit_range = (0.04 * u.TeV, 0.4 * u.TeV)
-ebounds = EnergyBounds.equal_log_spacing(0.04, 0.4, 7, u.TeV)
+datasets = extraction.spectrum_observations.to_spectrum_datasets(model=model, fit_range=fit_range)
 
-joint_fit = SpectrumFit(
-    obs_list=extraction.spectrum_observations, model=model, fit_range=fit_range
-)
-joint_fit.run()
-joint_result = joint_fit.result
+joint_fit = Fit(datasets)
+joint_result = joint_fit.run()
 
-print(joint_result[0])
+model.parameters.covariance = joint_result.parameters.covariance
+print(joint_result)
 
 
 # Now you might want to do the stacking here even if in our case there is only one observation which makes it superfluous.
@@ -326,87 +323,47 @@ print(joint_result[0])
 # In[ ]:
 
 
-stacked_obs = extraction.spectrum_observations.stack()
-seg = SpectrumEnergyGroupMaker(obs=stacked_obs)
+ebounds = EnergyBounds.equal_log_spacing(0.04, 0.4, 7, u.TeV)
 
-seg.compute_groups_fixed(ebounds=ebounds)
+stacked_obs = extraction.spectrum_observations.stack()
+dataset = stacked_obs.to_spectrum_dataset()
+
 fpe = FluxPointEstimator(
-    obs=stacked_obs, groups=seg.groups, model=joint_result[0].model
+    datasets=[dataset], e_edges=ebounds, model=model
 )
+
 flux_points = fpe.run()
+flux_points.table["is_ul"] = flux_points.table["ts"] < 1
 
 amplitude_ref = 0.57 * 19.4e-14 * u.Unit("1 / (cm2 s MeV)")
 spec_model_true = PowerLaw(
     index=4.5, amplitude=amplitude_ref, reference="20 GeV"
 )
 
-spectrum_result = SpectrumResult(
-    points=flux_points, model=joint_result[0].model
-)
+flux_points_dataset = FluxPointsDataset(data=flux_points, model=model)
 
 
 # Now we can plot.
-# We present here two different spectra: one for the spectral flux and one for the spectral energy density.
 
 # In[ ]:
 
 
-# First plot for the spectral flux
-ax0, ax1 = spectrum_result.plot(
-    energy_range=joint_fit.result[0].fit_range,
-    fig_kwargs=dict(figsize=(8, 8)),
-    point_kwargs=dict(label="Flux points"),
-    fit_kwargs=dict(label="Gammapy fit"),
-)
+plt.figure(figsize=(8, 6))
+ax_spectrum, ax_residual = flux_points_dataset.peek()
 
-ax0.set_ylim([1e-14, 1e-7])
-ax0.set_xlim([4e-2, 5e-1])
-ax1.set_ylim([-1.7, 1.7])
+ax_spectrum.set_ylim([1e-14, 3e-11])
+ax_residual.set_ylim([-1.7, 1.7])
 
 spec_model_true.plot(
-    ax=ax0,
-    energy_range=joint_fit.result[0].fit_range,
+    ax=ax_spectrum,
+    energy_range=fit_range,
     label="Reference model",
     c="black",
     linestyle="dashed",
-)
-
-ax0.legend(loc="best")
-ax0.set_ylabel(r"Flux [cm$^{-2}$ s$^1$ TeV$^{-1}$]", size=14)
-ax1.set_ylabel("Residuals", size=14)
-ax1.set_xlabel("Energy [TeV]", size=14)
-ax1.set_xticks([5e-2, 1e-1, 3e-1])
-ax1.set_xticklabels([5e-2, 1e-1, 3e-1]);
-
-
-# In[ ]:
-
-
-# Second plot for the spectral energy flux
-
-ax0, ax1 = spectrum_result.plot(
-    energy_range=joint_fit.result[0].fit_range,
     energy_power=2,
-    flux_unit="erg-1 cm-2 s-1",
-    fig_kwargs=dict(figsize=(8, 8)),
-    point_kwargs=dict(label="Flux points"),
-    fit_kwargs=dict(label="Gammapy fit"),
 )
 
-spec_model_true.plot(
-    ax=ax0,
-    energy_range=[4e-2, 5e-1] * u.TeV,
-    energy_power=2,
-    flux_unit="erg-1 cm-2 s-1",
-    label="Input model",
-    c="black",
-    linestyle="dashed",
-)
-
-ax0.set_ylim([5e-15, 5e-11])
-ax0.set_xlim([4e-2, 5e-1])
-ax1.set_ylim([-1.7, 1.7])
-ax0.legend(loc="best")
+ax_spectrum.legend(loc="best")
 
 
 # This tutorial suffers a bit from the lack of statistics: there were 9 Vela observations in the CTA DC1 while there is only one here. When done on the 9 observations, the spectral analysis is much better agreement between the input model and the gammapy fit.
