@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # # Light curves
@@ -161,9 +161,3 @@ ax.hlines(
 # * Try a time binning where you split the observation time for every run into two time bins.
 # * Try to analyse the PKS 2155 flare data from the H.E.S.S. first public test data release.
 #   Start with per-observation fluxes, and then try fluxes within 5 minute time bins for one or two of the observations where the source was very bright.
-
-# In[ ]:
-
-
-
-

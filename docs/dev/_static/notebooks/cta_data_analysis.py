@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # ![CTA first data challenge logo](images/cta-1dc.png)
@@ -44,7 +44,7 @@ from gammapy.data import DataStore
 from gammapy.spectrum import (
     SpectrumExtraction,
     models,
-    FluxPointEstimator,
+    FluxPointsEstimator,
     FluxPointsDataset,
 )
 from gammapy.maps import MapAxis, WcsNDMap, WcsGeom
@@ -264,7 +264,7 @@ get_ipython().run_cell_magic('time', '', 'extract = SpectrumExtraction(\n    obs
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'model = models.PowerLaw(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\n\ndatasets = extract.spectrum_observations.to_spectrum_datasets(model=model)\n\nfit = Fit(datasets)\nresult = fit.run()\nprint(result)')
+get_ipython().run_cell_magic('time', '', 'model = models.PowerLaw(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\n\nfor dataset in extract.spectrum_observations:\n    dataset.model = model\n\nfit = Fit(extract.spectrum_observations)\nresult = fit.run()\nprint(result)')
 
 
 # ### Spectral points
@@ -275,7 +275,11 @@ get_ipython().run_cell_magic('time', '', 'model = models.PowerLaw(\n    index=2,
 
 
 # Flux points are computed on stacked observation
-stacked_obs = extract.spectrum_observations.stack()
+from gammapy.spectrum import SpectrumDatasetOnOffStacker
+
+stacker = SpectrumDatasetOnOffStacker(extract.spectrum_observations)
+stacked_obs = stacker.run()
+
 print(stacked_obs)
 
 
@@ -284,11 +288,9 @@ print(stacked_obs)
 
 ebounds = EnergyBounds.equal_log_spacing(1, 40, 4, unit=u.TeV)
 
-dataset = stacked_obs.to_spectrum_dataset()
+stacked_obs.model = model
 
-fpe = FluxPointEstimator(
-    datasets=[dataset], e_edges=ebounds, model=model
-)
+fpe = FluxPointsEstimator(datasets=[dataset], e_edges=ebounds)
 flux_points = fpe.run()
 flux_points.table_formatted
 

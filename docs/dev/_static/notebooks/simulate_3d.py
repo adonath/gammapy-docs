@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # # 3D simulation and fitting
@@ -121,7 +121,7 @@ psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch="log");
 # In[ ]:
 
 
-energy = axis.edges * axis.unit
+energy = axis.edges
 edisp = irfs["edisp"].to_energy_dispersion(
     offset, e_reco=energy, e_true=energy
 )

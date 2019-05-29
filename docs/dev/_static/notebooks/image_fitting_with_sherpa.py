@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # # Fitting 2D images with Sherpa
@@ -295,9 +295,3 @@ table
 # 
 # * http://conference.scipy.org/proceedings/scipy2009/paper_8/full_text.pdf
 # * http://conference.scipy.org/proceedings/scipy2011/pdfs/brefsdal.pdf
-
-# In[ ]:
-
-
-
-

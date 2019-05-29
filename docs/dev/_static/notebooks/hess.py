@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # # H.E.S.S. with Gammapy
@@ -411,9 +411,3 @@ print(
 # 
 # - Try analysing another source, e.g. RX J1713.7−3946
 # - Try another model, e.g. a Gaussian spatial shape or exponential cutoff power-law spectrum.
-
-# In[ ]:
-
-
-
-

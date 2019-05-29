@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # # Joint 3D Analysis
@@ -100,7 +100,7 @@ get_ipython().run_cell_magic('time', '', 'observations_data = {}\n\nfor obs in o
 
 
 # define energy grid for edisp
-energy = energy_axis.edges * energy_axis.unit
+energy = energy_axis.edges
 
 
 # In[ ]:
@@ -173,9 +173,8 @@ for obs_id in obs_ids:
 
     # optionally define a safe energy threshold
     emin = None
-    mask_data = counts.geom.energy_mask(emin=emin)
-    mask = Map.from_geom(geom=counts.geom, data=mask_data)
-
+    mask = counts.geom.energy_mask(emin=emin)
+    
     dataset = MapDataset(
         model=model,
         counts=counts,
@@ -183,7 +182,7 @@ for obs_id in obs_ids:
         psf=psf,
         edisp=edisp,
         background_model=background_model,
-        mask=mask,
+        mask_fit=mask,
     )
 
     datasets.append(dataset)
@@ -292,10 +291,4 @@ residual_stacked = (
 residual_stacked.plot(
     vmin=-1, vmax=1, cmap="coolwarm", add_cbar=True, stretch="linear"
 );
-
-
-# In[ ]:
-
-
-
 

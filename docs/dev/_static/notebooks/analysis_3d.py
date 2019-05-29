@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # # 3D analysis
@@ -27,14 +27,9 @@ from gammapy.maps import WcsGeom, MapAxis, Map, WcsNDMap
 from gammapy.cube import MapMaker, PSFKernel, MapDataset
 from gammapy.cube.models import SkyModel, SkyDiffuseCube, BackgroundModel
 from gammapy.spectrum.models import PowerLaw, ExponentialCutoffPowerLaw
+from gammapy.spectrum import FluxPointsEstimator
 from gammapy.image.models import SkyPointSource
 from gammapy.utils.fitting import Fit
-
-
-# In[ ]:
-
-
-get_ipython().system('gammapy info --no-system')
 
 
 # ## Prepare modeling input data
@@ -231,7 +226,7 @@ psf_kernel = PSFKernel.from_table_psf(table_psf, geom, max_radius="0.3 deg")
 
 
 # define energy grid
-energy = energy_axis.edges * energy_axis.unit
+energy = energy_axis.edges 
 
 # mean edisp
 edisp = make_mean_edisp(
@@ -292,10 +287,8 @@ edisp = EnergyDispersion.read(str(path / "edisp.fits"))
 # In[ ]:
 
 
-mask = Map.from_geom(maps["counts"].geom)
-
-coords = mask.geom.get_coord()
-mask.data = coords["energy"] > 0.3
+coords = maps["counts"].geom.get_coord()
+mask = coords["energy"] > 0.3
 
 
 # ### Model fit
@@ -332,7 +325,7 @@ dataset = MapDataset(
     counts=maps["counts"],
     exposure=maps["exposure"],
     background_model=background_model,
-    mask=mask,
+    mask_fit=mask,
     psf=psf_kernel,
     edisp=edisp,
 )
@@ -431,7 +424,8 @@ spectral_model = ExponentialCutoffPowerLaw(
 )
 
 model_ecpl = SkyModel(
-    spatial_model=spatial_model, spectral_model=spectral_model
+    spatial_model=spatial_model, spectral_model=spectral_model,
+    name="gc-source"
 )
 
 
@@ -495,12 +489,26 @@ residual2.sum_over_axes().smooth(width=0.05 * u.deg).plot(
 );
 
 
-# Finally we can check again our model (including now the diffuse emission):
+# Finally we compute flux points and check again our model (including now the diffuse emission):
 
 # In[ ]:
 
 
-model_ecpl.spectral_model.plot(energy_range=energy_range, energy_power=2)
+e_edges = [0.3, 1, 3, 10] * u.TeV
+fpe = FluxPointsEstimator(datasets=[dataset_combined], e_edges=e_edges, source="gc-source")
+
+
+# In[ ]:
+
+
+get_ipython().run_cell_magic('time', '', 'flux_points = fpe.run()')
+
+
+# In[ ]:
+
+
+ax = flux_points.plot(energy_power=2)
+model_ecpl.spectral_model.plot(ax=ax, energy_range=energy_range, energy_power=2);
 
 
 # Results seems to be better (but not perfect yet). Next step to improve our model even more would be getting rid of the other bright source (G0.9+0.1).

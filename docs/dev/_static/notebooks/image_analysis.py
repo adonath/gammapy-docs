@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # # Fitting 2D images with Gammapy
@@ -121,10 +121,8 @@ psf_kernel = PSFKernel.from_table_psf(
 # In[ ]:
 
 
-mask = Map.from_geom(geom2d)
-
 region = CircleSkyRegion(center=src_pos, radius=0.6 * u.deg)
-mask.data = mask.geom.region_mask([region])
+mask = geom2d.region_mask([region])
 
 
 # ## Modeling the source
@@ -163,7 +161,7 @@ dataset = MapDataset(
     counts=maps2D["counts"],
     exposure=maps2D["exposure"],
     background_model=background_model,
-    mask=mask,
+    mask_fit=mask,
     psf=psf_kernel,
 )
 
@@ -195,9 +193,3 @@ result.parameters.covariance_to_table()
 # 1. Plot residual maps as done in the `analysis_3d` notebook
 # 2. Iteratively add and fit sources as explained in `image_fitting_with_sherpa` notebook
 # 
-
-# In[ ]:
-
-
-
-

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # # Fitting and error estimation with MCMC
@@ -204,7 +204,7 @@ def lnprob(pars, dataset, verb=False):
 
     # dataset.likelihood returns Cash statistics values
     # emcee will maximisise the LogLikelihood so we need -dataset.likelihood
-    total_lnprob = -dataset.likelihood(None) + lnprob_priors
+    total_lnprob = -dataset.likelihood() + lnprob_priors
 
     if verb:
         print("Parameters are:", pars)
@@ -262,7 +262,7 @@ dataset.parameters["amplitude"].value = 3.3e-12
 dataset.parameters["lambda_"].value = 0.05
 
 print(dataset.model)
-print("LL =", dataset.likelihood(dataset.parameters))
+print("log(L) =", dataset.likelihood())
 
 
 # In[ ]:

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # # Fermi-LAT data with Gammapy
@@ -187,6 +187,11 @@ geom = WcsGeom(wcs=counts.geom.wcs, npix=counts.geom.npix, axes=[axis])
 
 coord = counts.geom.get_coord()
 data = exposure_hpx.interp_by_coord(coord)
+
+
+# In[ ]:
+
+
 exposure = WcsNDMap(geom, data, unit=exposure_hpx.unit)
 print(exposure.geom)
 print(exposure.geom.axes[0])
@@ -238,7 +243,8 @@ data = diffuse_galactic_fermi.interp_by_coord(
     {
         "skycoord": coord.skycoord,
         "energy": coord["energy"]
-        * counts.geom.get_axis_by_name("energy").unit,
+        * counts.geom.get_axis_by_name("energy").unit
+        
     },
     interp=3,
 )
@@ -253,7 +259,7 @@ print(diffuse_galactic.geom.axes[0])
 # In[ ]:
 
 
-diffuse_galactic.slice_by_idx({"energy": 0}).plot();
+diffuse_galactic.slice_by_idx({"energy": 0}).plot(add_cbar=True);
 
 
 # In[ ]:
@@ -365,8 +371,8 @@ psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch="log", add_cbar=True);
 # In[ ]:
 
 
-e_true = exposure.geom.axes[0].edges * exposure.geom.axes[0].unit
-e_reco = counts.geom.axes[0].edges * counts.geom.axes[0].unit
+e_true = exposure.geom.axes[0].edges
+e_reco = counts.geom.axes[0].edges
 edisp = EnergyDispersion.from_diagonal_response(e_true=e_true, e_reco=e_reco)
 
 

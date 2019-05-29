@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # # Pulsar analysis with Gammapy
@@ -37,7 +37,7 @@ from gammapy.utils.energy import EnergyBounds
 from gammapy.utils.fitting import Fit
 from gammapy.spectrum import (
     SpectrumExtraction,
-    FluxPointEstimator,
+    FluxPointsEstimator,
     FluxPointsDataset,
 )
 
@@ -308,9 +308,12 @@ model = PowerLaw(
 )
 
 fit_range = (0.04 * u.TeV, 0.4 * u.TeV)
-datasets = extraction.spectrum_observations.to_spectrum_datasets(model=model, fit_range=fit_range)
 
-joint_fit = Fit(datasets)
+for obs in extraction.spectrum_observations:
+    obs.model = model
+    obs.set_fit_energy_range(fit_range[0], fit_range[1])
+
+joint_fit = Fit(extraction.spectrum_observations)
 joint_result = joint_fit.run()
 
 model.parameters.covariance = joint_result.parameters.covariance
@@ -323,14 +326,16 @@ print(joint_result)
 # In[ ]:
 
 
-ebounds = EnergyBounds.equal_log_spacing(0.04, 0.4, 7, u.TeV)
+e_edges = EnergyBounds.equal_log_spacing(0.04, 0.4, 7, u.TeV)
 
-stacked_obs = extraction.spectrum_observations.stack()
-dataset = stacked_obs.to_spectrum_dataset()
+from gammapy.spectrum import SpectrumDatasetOnOffStacker
 
-fpe = FluxPointEstimator(
-    datasets=[dataset], e_edges=ebounds, model=model
-)
+stacker = SpectrumDatasetOnOffStacker(extraction.spectrum_observations)
+dataset = stacker.run()
+
+dataset.model = model
+
+fpe = FluxPointsEstimator(datasets=[dataset], e_edges=e_edges)
 
 flux_points = fpe.run()
 flux_points.table["is_ul"] = flux_points.table["ts"] < 1

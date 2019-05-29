@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # # Make template background model
@@ -27,7 +27,6 @@
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
 
 
 # In[ ]:
@@ -108,15 +107,15 @@ class BackgroundModelEstimator:
         counts = np.histogram2d(
             x=events.energy.to("MeV"),
             y=events.offset.to("deg"),
-            bins=(data.axes[0].bins, data.axes[1].bins),
+            bins=(data.axes[0].edges, data.axes[1].edges),
         )[0]
         data.data += counts
 
     def fill_exposure(self, obs):
         data = self.exposure.data
-        energy_width = data.axes[0].bin_width
-        offset = data.axes[1].nodes
-        offset_width = data.axes[1].bin_width
+        energy_width = np.diff(data.axes[0].edges)
+        offset = data.axes[1].center
+        offset_width = np.diff(data.axes[1].edges)
         solid_angle = 2 * np.pi * offset * offset_width
         time = obs.observation_time_duration
         exposure = time * energy_width[:, None] * solid_angle[None, :]
@@ -127,18 +126,6 @@ class BackgroundModelEstimator:
         rate = deepcopy(self.counts)
         rate.data.data /= self.exposure.data.data
         return rate
-
-
-def background2d_peek(bkg):
-    data = bkg.data
-    x = data.axes[0].bins
-    y = data.axes[1].bins
-    c = data.data.T.value
-    plt.pcolormesh(x, y, c, norm=LogNorm())
-    plt.semilogx()
-    plt.colorbar()
-    plt.xlabel("Energy (TeV)")
-    plt.ylabel("Offset (deg)")
 
 
 # In[ ]:
@@ -152,7 +139,7 @@ get_ipython().run_cell_magic('time', '', 'ebounds = np.logspace(-1, 2, 20) * u.T
 # In[ ]:
 
 
-background2d_peek(estimator.background_rate)
+estimator.background_rate.plot()
 
 
 # In[ ]:
@@ -233,15 +220,19 @@ get_ipython().run_cell_magic('time', '', 'models = list(make_models())')
 # In[ ]:
 
 
-background2d_peek(models[0])
-plt.figure()
-background2d_peek(models[2])
+models[0].plot()
 
 
 # In[ ]:
 
 
-energy = models[0].data.axes[0].nodes.to("TeV")
+models[2].plot()
+
+
+# In[ ]:
+
+
+energy = models[0].data.axis("energy").center.to("TeV")
 y = models[0].data.evaluate(energy=energy, offset="0.5 deg")
 plt.plot(energy, y, label="0 < zen < 20")
 y = models[1].data.evaluate(energy=energy, offset="0.5 deg")
@@ -339,7 +330,7 @@ ds2.info()
 obs = ds2.obs(20136)
 obs.events
 obs.aeff
-background2d_peek(obs.bkg)
+obs.bkg.plot()
 
 
 # ## Exercises
@@ -348,9 +339,3 @@ background2d_peek(obs.bkg)
 # - Try to figure out why there are outliers on the zenith vs energy threshold curve.
 # - Does azimuth angle or optical efficiency have an effect on background rate?
 # - Use the background models for a 3D analysis (see "hess" notebook).
-
-# In[ ]:
-
-
-
-

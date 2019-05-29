@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # # Spectral analysis with Gammapy
 
 # ## Introduction
 # 
-# This notebook explains in detail how to use the classes in [gammapy.spectrum](https://docs.gammapy.org/dev/spectrum/index.html) and related ones. Note, that there is also [spectrum_pipe.ipynb](spectrum_pipe.ipynb) which explains how to do the analysis using a high-level interface. This notebook is aimed at advanced users who want to script taylor-made analysis pipelines and implement new methods.
+# This notebook explains in detail how to use the classes in [gammapy.spectrum](https://docs.gammapy.org/dev/spectrum/index.html) and related ones.
 # 
 # Based on a datasets of 4 Crab observations with H.E.S.S. (simulated events for now) we will perform a full region based spectral analysis, i.e. extracting source and background counts from certain 
 # regions, and fitting them using the forward-folding approach. We will use the following classes
@@ -19,12 +19,12 @@
 # 
 # To extract the 1-dim spectral information:
 # 
-# * [gammapy.spectrum.SpectrumObservation](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumObservation.html)
 # * [gammapy.spectrum.SpectrumExtraction](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumExtraction.html)
 # * [gammapy.background.ReflectedRegionsBackgroundEstimator](https://docs.gammapy.org/dev/api/gammapy.background.ReflectedRegionsBackgroundEstimator.html)
 # 
-# 
-# For the global fit (using Sherpa and WSTAT in the background):
+# To perform the joint fit: 
+# * [gammapy.spectrum.SpectrumDatasetOnOff](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDatasetOnOff.html)
+# * [gammapy.spectrum.SpectrumDatasetOnOffStacker](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDatasetOnOffStacker.html)
 # 
 # * [gammapy.spectrum.models.PowerLaw](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html)
 # * [gammapy.spectrum.models.ExponentialCutoffPowerLaw](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.ExponentialCutoffPowerLaw.html)
@@ -33,7 +33,7 @@
 # To compute flux points (a.k.a. "SED" = "spectral energy distribution")
 # 
 # * [gammapy.spectrum.FluxPoints](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html)
-# * [gammapy.spectrum.FluxPointEstimator](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPointEstimator.html)
+# * [gammapy.spectrum.FluxPointsEstimator](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPointsEstimator.html)
 # 
 # Feedback welcome!
 
@@ -77,8 +77,10 @@ from gammapy.data import ObservationStats, ObservationSummary
 from gammapy.background.reflected import ReflectedRegionsBackgroundEstimator
 from gammapy.utils.energy import EnergyBounds
 from gammapy.spectrum import SpectrumExtraction
+from gammapy.spectrum import SpectrumDatasetOnOff
 from gammapy.spectrum.models import PowerLaw
-from gammapy.spectrum import FluxPointEstimator, FluxPointsDataset
+from gammapy.spectrum import CrabSpectrum
+from gammapy.spectrum import FluxPointsEstimator, FluxPointsDataset
 from gammapy.maps import Map
 from gammapy.utils.fitting import Fit
 
@@ -167,7 +169,7 @@ background_estimator.run()
 # In[ ]:
 
 
-# print(background_estimator.result[0])
+#print(background_estimator.result[0])
 
 
 # In[ ]:
@@ -229,18 +231,18 @@ extraction.compute_energy_threshold(method_lo="area_max", area_percent_lo=10.0)
 
 print(extraction.spectrum_observations[0])
 # Write output in the form of OGIP files: PHA, ARF, RMF, BKG
-# extraction.run(observations=observations, bkg_estimate=background_estimator.result, outdir=ANALYSIS_DIR)
+# extraction.write(outdir=ANALYSIS_DIR, overwrite=True)
 
 
 # ## Look at observations
 # 
-# Now we will look at the files we just created. We will use the [SpectrumObservation](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumObservation.html) object that are still in memory from the extraction step. Note, however, that you could also read them from disk if you have written them in the step above. The ``ANALYSIS_DIR`` folder contains 4 ``FITS`` files for each observation. These files are described in detail [here](https://gamma-astro-data-formats.readthedocs.io/en/latest/spectra/ogip/index.html). In short, they correspond to the on vector, the off vector, the effectie area, and the energy dispersion.
+# Now we will look at the files we just created. We will use the [SpectrumDatasetOnOff](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDatasetOnOff.html) object that are still in memory from the extraction step. Note, however, that you could also read them from disk if you have written them in the step above. The ``ANALYSIS_DIR`` folder contains 4 ``FITS`` files for each observation. These files are described in detail [here](https://gamma-astro-data-formats.readthedocs.io/en/latest/spectra/ogip/index.html). In short, they correspond to the on vector, the off vector, the effectie area, and the energy dispersion.
 
 # In[ ]:
 
 
 # filename = ANALYSIS_DIR + '/ogip_data/pha_obs23523.fits'
-# obs = SpectrumObservation.read(filename)
+# obs = SpectrumDatasetOnOff.from_ogip_files(filename)
 
 # Requires IPython widgets
 # _ = extraction.spectrum_observations.peek()
@@ -259,7 +261,7 @@ model = PowerLaw(
     index=2, amplitude=2e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV
 )
 
-datasets_joint = [obs.to_spectrum_dataset() for obs in extraction.spectrum_observations]
+datasets_joint = extraction.spectrum_observations
 
 for dataset in datasets_joint:
     dataset.model = model
@@ -281,7 +283,7 @@ print(result_joint)
 
 
 plt.figure(figsize=(8, 6))
-ax_spectrum, ax_residual = datasets_joint[0].peek()
+ax_spectrum, ax_residual = datasets_joint[0].plot_fit()
 ax_spectrum.set_ylim(0, 20)
 
 
@@ -293,20 +295,21 @@ ax_spectrum.set_ylim(0, 20)
 
 
 # Define energy binning
-stacked_obs = extraction.spectrum_observations.stack()
+from gammapy.spectrum import SpectrumDatasetOnOffStacker
 
-e_min, e_max = stacked_obs.lo_threshold.to_value("TeV"), 30
+stacker = SpectrumDatasetOnOffStacker(extraction.spectrum_observations)
+dataset_stacked = stacker.run()
+
+e_min, e_max = dataset_stacked.counts.lo_threshold.to_value("TeV"), 30
 e_edges = np.logspace(np.log10(e_min), np.log10(e_max), 15) * u.TeV
 
 
 # In[ ]:
 
 
-dataset_stacked = stacked_obs.to_spectrum_dataset()
+dataset_stacked.model = model
 
-fpe = FluxPointEstimator(
-    datasets=[dataset_stacked], e_edges=e_edges, model=model
-)
+fpe = FluxPointsEstimator(datasets=[dataset_stacked], e_edges=e_edges)
 flux_points = fpe.run()
 
 
@@ -378,6 +381,18 @@ model_best_joint.parameters.to_table()
 model_best_stacked.parameters.to_table()
 
 
+# Finally, we compare the results of our stacked analysis to a previously published Crab Nebula Spectrum for reference. This is available in `gammapy.spectrum`.
+
+# In[ ]:
+
+
+
+model_best_stacked.plot(energy_range=[0.1,30]*u.TeV, label="Stacked analysis result")
+model_best_stacked.plot_error(energy_range=[0.1,30]*u.TeV)
+CrabSpectrum().model.plot(energy_range=[0.1,30]*u.TeV, label="Crab reference")
+plt.legend()
+
+
 # ## Exercises
 # 
 # Some things we might do:
@@ -387,15 +402,3 @@ model_best_stacked.parameters.to_table()
 # - Do a chi^2 fit to the flux points and compare
 # 
 # TODO: give pointers how to do this (and maybe write a notebook with solutions)
-
-# In[ ]:
-
-
-# Start exercises here
-
-
-# In[ ]:
-
-
-
-

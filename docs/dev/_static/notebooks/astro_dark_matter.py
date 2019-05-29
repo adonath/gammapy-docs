@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # # Dark matter utilities
@@ -183,10 +183,4 @@ plt.title(
         int_flux.unit, fluxes.mDM.to("TeV"), fluxes.channel
     )
 );
-
-
-# In[ ]:
-
-
-
 

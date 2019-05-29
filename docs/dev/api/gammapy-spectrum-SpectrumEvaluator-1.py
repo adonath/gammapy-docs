@@ -4,8 +4,8 @@ import numpy as np
 import astropy.units as u
 import matplotlib.pyplot as plt
 
-e_true = np.logspace(-2,2.5,109) * u.TeV
-e_reco = np.logspace(-2,2,73) * u.TeV
+e_true = np.logspace(-2, 2.5, 109) * u.TeV
+e_reco = np.logspace(-2, 2, 73) * u.TeV
 
 aeff = EffectiveAreaTable.from_parametrization(energy=e_true)
 edisp = EnergyDispersion.from_gauss(e_true=e_true, e_reco=e_reco,

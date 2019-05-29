@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # # Gammapy Maps
@@ -591,9 +591,3 @@ m_iem_cutout.plot_interactive(
 
 
 # The returned object is again a `Map` object with udpated WCS information and data size. As one can see the cutout is automatically applied to all the non-spatial axes as well. The cutout width is given in the order of `(lon, lat)` and can be specified with units that will be handled correctly. 
-
-# In[ ]:
-
-
-
-

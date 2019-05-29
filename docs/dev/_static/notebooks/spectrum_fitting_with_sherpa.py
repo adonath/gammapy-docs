@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+
 # coding: utf-8
 
 # # Fitting gammapy spectra with sherpa
@@ -118,9 +118,3 @@ sh.reg_unc(p1.gamma, p1.ampl)
 # - Change the energy range of the fit to be only 2 to 10 TeV
 # - Fit the built-in Sherpa exponential cutoff powerlaw model
 # - Define your own spectral model class (e.g. powerlaw again to practice) and fit it
-
-# In[ ]:
-
-
-
-
