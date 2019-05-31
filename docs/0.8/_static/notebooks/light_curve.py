@@ -11,8 +11,8 @@
 # 
 # The main classes we will use are:
 # 
-# * [gammapy.time.LightCurve](http://docs.gammapy.org/dev/api/gammapy.time.LightCurve.html)
-# * [gammapy.time.LightCurveEstimator](http://docs.gammapy.org/dev/api/gammapy.time.LightCurveEstimator.html)
+# * [gammapy.time.LightCurve](http://docs.gammapy.org/0.8/api/gammapy.time.LightCurve.html)
+# * [gammapy.time.LightCurveEstimator](http://docs.gammapy.org/0.8/api/gammapy.time.LightCurveEstimator.html)
 # 
 # ## Setup
 # 

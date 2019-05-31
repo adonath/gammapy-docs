@@ -5,7 +5,7 @@
 
 # ## Introduction
 # 
-# The [gammapy.astro.population](http://docs.gammapy.org/dev/astro/population/index.html) package contains some simple Galactic source population models.
+# The [gammapy.astro.population](http://docs.gammapy.org/0.7/astro/population/index.html) package contains some simple Galactic source population models.
 # 
 # Here we provide some Python code to compute observable parameter distributions for Galactic gamma-ray source populations.
 # 

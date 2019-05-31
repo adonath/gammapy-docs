@@ -9,10 +9,10 @@
 # 
 # We will use the following classes:
 # 
-# * [gammapy.spectrum.SpectrumDatasetOnOff](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDatasetOnOff.html)
-# * [gammapy.spectrum.SpectrumSimulation](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumSimulation.html)
-# * [gammapy.irf.load_cta_irfs](https://docs.gammapy.org/dev/api/gammapy.irf.load_cta_irfs.html)
-# * [gammapy.spectrum.models.PowerLaw](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html)
+# * [gammapy.spectrum.SpectrumDatasetOnOff](https://docs.gammapy.org/0.12/api/gammapy.spectrum.SpectrumDatasetOnOff.html)
+# * [gammapy.spectrum.SpectrumSimulation](https://docs.gammapy.org/0.12/api/gammapy.spectrum.SpectrumSimulation.html)
+# * [gammapy.irf.load_cta_irfs](https://docs.gammapy.org/0.12/api/gammapy.irf.load_cta_irfs.html)
+# * [gammapy.spectrum.models.PowerLaw](https://docs.gammapy.org/0.12/api/gammapy.spectrum.models.PowerLaw.html)
 
 # ## Setup
 # 

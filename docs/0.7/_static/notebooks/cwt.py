@@ -5,7 +5,7 @@
 
 # This notebook tutorial shows how to work with `CWT` algorithm for detecting gamma-ray sources.
 # 
-# You can find the [docs here](http://docs.gammapy.org/dev/api/gammapy.detect.CWT.html#gammapy.detect.CWT)
+# You can find the [docs here](http://docs.gammapy.org/0.7/api/gammapy.detect.CWT.html#gammapy.detect.CWT)
 # and [source code on GitHub here](https://github.com/gammapy/gammapy/blob/master/gammapy/detect/cwt.py) for better understanding how the algorithm is constructed. 
 
 # ## Setup

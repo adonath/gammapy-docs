@@ -5,35 +5,35 @@
 
 # ## Introduction
 # 
-# This notebook explains in detail how to use the classes in [gammapy.spectrum](https://docs.gammapy.org/dev/spectrum/index.html) and related ones.
+# This notebook explains in detail how to use the classes in [gammapy.spectrum](https://docs.gammapy.org/0.12/spectrum/index.html) and related ones.
 # 
 # Based on a datasets of 4 Crab observations with H.E.S.S. (simulated events for now) we will perform a full region based spectral analysis, i.e. extracting source and background counts from certain 
 # regions, and fitting them using the forward-folding approach. We will use the following classes
 # 
 # Data handling:
 # 
-# * [gammapy.data.DataStore](https://docs.gammapy.org/dev/api/gammapy.data.DataStore.html)
-# * [gammapy.data.DataStoreObservation](https://docs.gammapy.org/dev/api/gammapy.data.DataStoreObservation.html)
-# * [gammapy.data.ObservationStats](https://docs.gammapy.org/dev/api/gammapy.data.ObservationStats.html)
-# * [gammapy.data.ObservationSummary](https://docs.gammapy.org/dev/api/gammapy.data.ObservationSummary.html)
+# * [gammapy.data.DataStore](https://docs.gammapy.org/0.12/api/gammapy.data.DataStore.html)
+# * [gammapy.data.DataStoreObservation](https://docs.gammapy.org/0.12/api/gammapy.data.DataStoreObservation.html)
+# * [gammapy.data.ObservationStats](https://docs.gammapy.org/0.12/api/gammapy.data.ObservationStats.html)
+# * [gammapy.data.ObservationSummary](https://docs.gammapy.org/0.12/api/gammapy.data.ObservationSummary.html)
 # 
 # To extract the 1-dim spectral information:
 # 
-# * [gammapy.spectrum.SpectrumExtraction](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumExtraction.html)
-# * [gammapy.background.ReflectedRegionsBackgroundEstimator](https://docs.gammapy.org/dev/api/gammapy.background.ReflectedRegionsBackgroundEstimator.html)
+# * [gammapy.spectrum.SpectrumExtraction](https://docs.gammapy.org/0.12/api/gammapy.spectrum.SpectrumExtraction.html)
+# * [gammapy.background.ReflectedRegionsBackgroundEstimator](https://docs.gammapy.org/0.12/api/gammapy.background.ReflectedRegionsBackgroundEstimator.html)
 # 
 # To perform the joint fit:
 # 
-# * [gammapy.spectrum.SpectrumDatasetOnOff](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDatasetOnOff.html)
-# * [gammapy.spectrum.SpectrumDatasetOnOffStacker](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDatasetOnOffStacker.html)
-# * [gammapy.spectrum.models.PowerLaw](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html)
-# * [gammapy.spectrum.models.ExponentialCutoffPowerLaw](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.ExponentialCutoffPowerLaw.html)
-# * [gammapy.spectrum.models.LogParabola](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.LogParabola.html)
+# * [gammapy.spectrum.SpectrumDatasetOnOff](https://docs.gammapy.org/0.12/api/gammapy.spectrum.SpectrumDatasetOnOff.html)
+# * [gammapy.spectrum.SpectrumDatasetOnOffStacker](https://docs.gammapy.org/0.12/api/gammapy.spectrum.SpectrumDatasetOnOffStacker.html)
+# * [gammapy.spectrum.models.PowerLaw](https://docs.gammapy.org/0.12/api/gammapy.spectrum.models.PowerLaw.html)
+# * [gammapy.spectrum.models.ExponentialCutoffPowerLaw](https://docs.gammapy.org/0.12/api/gammapy.spectrum.models.ExponentialCutoffPowerLaw.html)
+# * [gammapy.spectrum.models.LogParabola](https://docs.gammapy.org/0.12/api/gammapy.spectrum.models.LogParabola.html)
 # 
 # To compute flux points (a.k.a. "SED" = "spectral energy distribution")
 # 
-# * [gammapy.spectrum.FluxPoints](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html)
-# * [gammapy.spectrum.FluxPointsEstimator](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPointsEstimator.html)
+# * [gammapy.spectrum.FluxPoints](https://docs.gammapy.org/0.12/api/gammapy.spectrum.FluxPoints.html)
+# * [gammapy.spectrum.FluxPointsEstimator](https://docs.gammapy.org/0.12/api/gammapy.spectrum.FluxPointsEstimator.html)
 # 
 # Feedback welcome!
 
@@ -137,7 +137,7 @@ exclusion_mask.plot();
 
 # ## Estimate background
 # 
-# Next we will manually perform a background estimate by placing [reflected regions](https://docs.gammapy.org/dev/background/reflected.html) around the pointing position and looking at the source statistics. This will result in a  [gammapy.background.BackgroundEstimate](https://docs.gammapy.org/dev/api/gammapy.background.BackgroundEstimate.html) that serves as input for other classes in gammapy.
+# Next we will manually perform a background estimate by placing [reflected regions](https://docs.gammapy.org/0.12/background/reflected.html) around the pointing position and looking at the source statistics. This will result in a  [gammapy.background.BackgroundEstimate](https://docs.gammapy.org/0.12/api/gammapy.background.BackgroundEstimate.html) that serves as input for other classes in gammapy.
 
 # In[ ]:
 
@@ -160,7 +160,7 @@ background_estimator.plot(add_legend=True);
 
 # ## Source statistic
 # 
-# Next we're going to look at the overall source statistics in our signal region. For more info about what debug plots you can create check out the [ObservationSummary](https://docs.gammapy.org/dev/api/gammapy.data.ObservationSummary.html#gammapy.data.ObservationSummary) class.
+# Next we're going to look at the overall source statistics in our signal region. For more info about what debug plots you can create check out the [ObservationSummary](https://docs.gammapy.org/0.12/api/gammapy.data.ObservationSummary.html#gammapy.data.ObservationSummary) class.
 
 # In[ ]:
 
@@ -182,7 +182,7 @@ obs_summary.plot_significance_vs_livetime(ax=ax2);
 
 # ## Extract spectrum
 # 
-# Now, we're going to extract a spectrum using the [SpectrumExtraction](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumExtraction.html) class. We provide the reconstructed energy binning we want to use. It is expected to be a Quantity with unit energy, i.e. an array with an energy unit. We also provide the true energy binning to use.
+# Now, we're going to extract a spectrum using the [SpectrumExtraction](https://docs.gammapy.org/0.12/api/gammapy.spectrum.SpectrumExtraction.html) class. We provide the reconstructed energy binning we want to use. It is expected to be a Quantity with unit energy, i.e. an array with an energy unit. We also provide the true energy binning to use.
 
 # In[ ]:
 
@@ -191,7 +191,7 @@ e_reco = np.logspace(-1, np.log10(40), 40) * u.TeV
 e_true = np.logspace(np.log10(0.05), 2, 200) * u.TeV
 
 
-# Instantiate a [SpectrumExtraction](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumExtraction.html) object that will do the extraction. The containment_correction parameter is there to allow for PSF leakage correction if one is working with full enclosure IRFs. We also compute a threshold energy and store the result in OGIP compliant files (pha, rmf, arf). This last step might be omitted though.
+# Instantiate a [SpectrumExtraction](https://docs.gammapy.org/0.12/api/gammapy.spectrum.SpectrumExtraction.html) object that will do the extraction. The containment_correction parameter is there to allow for PSF leakage correction if one is working with full enclosure IRFs. We also compute a threshold energy and store the result in OGIP compliant files (pha, rmf, arf). This last step might be omitted though.
 
 # In[ ]:
 

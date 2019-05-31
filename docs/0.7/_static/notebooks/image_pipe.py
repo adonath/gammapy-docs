@@ -12,9 +12,9 @@
 # 
 # In this tutorial we will use the folling Gammapy classes:
 # 
-# - [gammapy.data.DataStore](http://docs.gammapy.org/dev/api/gammapy.data.DataStore.html) to load the data to stack in the images
-# - [gammapy.image.SkyImage](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html) for the sky images (counts, background, exclusion, ...)
-# - [gammapy.scripts.StackedObsImageMaker](http://docs.gammapy.org/dev/api/gammapy.scripts.StackedObsImageMaker.html) to create the images
+# - [gammapy.data.DataStore](http://docs.gammapy.org/0.7/api/gammapy.data.DataStore.html) to load the data to stack in the images
+# - [gammapy.image.SkyImage](http://docs.gammapy.org/0.7/api/gammapy.image.SkyImage.html) for the sky images (counts, background, exclusion, ...)
+# - [gammapy.scripts.StackedObsImageMaker](http://docs.gammapy.org/0.7/api/gammapy.scripts.StackedObsImageMaker.html) to create the images
 # 
 # We use 4 Crab observations from H.E.S.S. for testing.
 

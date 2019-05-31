@@ -42,11 +42,11 @@
 # 
 # * From [astropy](http://docs.astropy.org/), we will use [astropy.io.fits](http://docs.astropy.org/en/stable/io/fits/index.html) to read the FITS data, [astropy.table.Table](http://docs.astropy.org/en/stable/table/index.html) to work with the tables, but also [astropy.coordinates.SkyCoord](http://docs.astropy.org/en/stable/coordinates/index.html) and [astropy.wcs.WCS](http://docs.astropy.org/en/stable/wcs/index.html) to work with sky and pixel coordinates and [astropy.units.Quantity](http://docs.astropy.org/en/stable/units/index.html) to work with quantities.
 # 
-# * From [gammapy](http://docs.gammapy.org/), we will use [gammapy.maps.WcsNDMap](http://docs.gammapy.org/dev/api/gammapy.maps.WcsNDMap.html) to work with the HGPS sky maps, and [gammapy.catalog.SourceCatalogHGPS](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogHGPS.html) and [gammapy.catalog.SourceCatalogObjectHGPS](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogObjectHGPS.html) to work with the HGPS catalog data, especially the HGPS spectral data using [gammapy.spectrum.models.SpectralModel](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.SpectralModel.html) and [gammapy.spectrum.FluxPoints](http://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html) objects.
+# * From [gammapy](http://docs.gammapy.org/), we will use [gammapy.maps.WcsNDMap](http://docs.gammapy.org/0.8/api/gammapy.maps.WcsNDMap.html) to work with the HGPS sky maps, and [gammapy.catalog.SourceCatalogHGPS](http://docs.gammapy.org/0.8/api/gammapy.catalog.SourceCatalogHGPS.html) and [gammapy.catalog.SourceCatalogObjectHGPS](http://docs.gammapy.org/0.8/api/gammapy.catalog.SourceCatalogObjectHGPS.html) to work with the HGPS catalog data, especially the HGPS spectral data using [gammapy.spectrum.models.SpectralModel](http://docs.gammapy.org/0.8/api/gammapy.spectrum.models.SpectralModel.html) and [gammapy.spectrum.FluxPoints](http://docs.gammapy.org/0.8/api/gammapy.spectrum.FluxPoints.html) objects.
 # 
-# * [matplotlib](https://matplotlib.org/) for all plotting. For sky image plotting, we will use matplotlib via [astropy.visualization](http://docs.astropy.org/en/stable/visualization/index.html) and [gammapy.maps.WcsNDMap.plot](http://docs.gammapy.org/dev/api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.plot).
+# * [matplotlib](https://matplotlib.org/) for all plotting. For sky image plotting, we will use matplotlib via [astropy.visualization](http://docs.astropy.org/en/stable/visualization/index.html) and [gammapy.maps.WcsNDMap.plot](http://docs.gammapy.org/0.8/api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.plot).
 # 
-# If you're not familiar with Python, Numpy, Astropy, Gammapy or matplotlib yet, use the tutorial introductions as explained [here](http://docs.gammapy.org/dev/tutorials.html), as well as the links to the documentation that we just mentioned.
+# If you're not familiar with Python, Numpy, Astropy, Gammapy or matplotlib yet, use the tutorial introductions as explained [here](http://docs.gammapy.org/0.8/tutorials.html), as well as the links to the documentation that we just mentioned.
 
 # ## Setup
 # 
@@ -554,7 +554,7 @@ pos
 # But still, there are some common tasks that aren't trivial to do and require reading the
 # FITS table description in detail and writing quite a bit of Python code.
 # 
-# So that you don't have to, we have done this for HGPS in [gammapy.catalog.SourceCatalogHGPS](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogHGPS.html) and also for a few other catalogs that are commonly used in gamma-ray astronomy in [gammapy.catalog](http://docs.gammapy.org/dev/catalog/index.html).
+# So that you don't have to, we have done this for HGPS in [gammapy.catalog.SourceCatalogHGPS](http://docs.gammapy.org/0.8/api/gammapy.catalog.SourceCatalogHGPS.html) and also for a few other catalogs that are commonly used in gamma-ray astronomy in [gammapy.catalog](http://docs.gammapy.org/0.8/catalog/index.html).
 # 
 # ### Read
 # 
@@ -570,7 +570,7 @@ cat = SourceCatalogHGPS(path)
 # ### Tables
 # 
 # Now all tables from the FITS file were loaded
-# and stored on the ``cat`` object. See the [SourceCatalogHGPS](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogHGPS.html) docs, or just try accessing one:
+# and stored on the ``cat`` object. See the [SourceCatalogHGPS](http://docs.gammapy.org/0.8/api/gammapy.catalog.SourceCatalogHGPS.html) docs, or just try accessing one:
 
 # In[ ]:
 
@@ -587,7 +587,7 @@ cat.table_components.meta["EXTNAME"]
 # ### Source
 # 
 # You can access a given source by row index (starting at zero) or by source name.
-# This creates [SourceCatalogObjectHGPS](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogObjectHGPS.html) objects that have a copy of all the data for a given source. See the class docs for a full overview.
+# This creates [SourceCatalogObjectHGPS](http://docs.gammapy.org/0.8/api/gammapy.catalog.SourceCatalogObjectHGPS.html) objects that have a copy of all the data for a given source. See the class docs for a full overview.
 
 # In[ ]:
 
@@ -678,7 +678,7 @@ plt.title("Vela X HGPS spectrum");
 
 # ## Maps with Gammapy
 # 
-# Let's use the [gammapy.maps.Map.read](http://docs.gammapy.org/dev/api/gammapy.maps.Map.html#gammapy.maps.Map.read) method to load up the HGPS significance survey map.
+# Let's use the [gammapy.maps.Map.read](http://docs.gammapy.org/0.8/api/gammapy.maps.Map.html#gammapy.maps.Map.read) method to load up the HGPS significance survey map.
 
 # In[ ]:
 
@@ -806,5 +806,5 @@ for c in source.components:
 # 
 # * Re-run this notebook, but change the HGPS source that was used for examples. If you have any questions about the data, try to access and print or plot it. Just to give a few ideas: How many identified pulsar wind nebulae are in HGPS? Which are the 5 brightest HGPS sources in the 1-10 TeV energy band? Which is the second-highest significance source in the HPGS image after the Galactic center?
 # * Try to reproduce some of the figures in the HGPS paper. Don't try to reproduce them exactly, but just try to write ~ 10 lines of code to access the relevant HGPS data and make a quick plot that shows the same or similar information.
-# * Fit a spectral model to the spectral points of Vela X and compare with the HGPS model fit. (they should be similar, but not identical, in HGPS a likelihood fit to counts data was done). For this task, the [spectrum_models](http://docs.gammapy.org/dev/notebooks/spectrum_models.html) and [sed_fitting_gammacat_fermi](http://docs.gammapy.org/dev/notebooks/sed_fitting_gammacat_fermi.html) tutorials will be useful.
+# * Fit a spectral model to the spectral points of Vela X and compare with the HGPS model fit. (they should be similar, but not identical, in HGPS a likelihood fit to counts data was done). For this task, the [spectrum_models](http://docs.gammapy.org/0.8/notebooks/spectrum_models.html) and [sed_fitting_gammacat_fermi](http://docs.gammapy.org/0.8/notebooks/sed_fitting_gammacat_fermi.html) tutorials will be useful.
 # 

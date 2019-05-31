@@ -7,22 +7,22 @@
 # 
 # This tutorial will show you how to work with IACT (Imaging Atmospheric Cherenkov Telescope) DL3 ("data level 3").
 # 
-# We will work with event data and instrument response functions (IRFs), mainly using [gammapy.data](http://docs.gammapy.org/dev/data/index.html) and [gammapy.irf](http://docs.gammapy.org/dev/irf/index.html).
+# We will work with event data and instrument response functions (IRFs), mainly using [gammapy.data](http://docs.gammapy.org/0.7/data/index.html) and [gammapy.irf](http://docs.gammapy.org/0.7/irf/index.html).
 # 
 # This notebook uses a preliminary small test dataset from the CTA first data challenge (1DC).
 # 
 # The main class to load data is
 # 
-# * [gammapy.data.DataStore](http://docs.gammapy.org/dev/api/gammapy.data.DataStore.html)
+# * [gammapy.data.DataStore](http://docs.gammapy.org/0.7/api/gammapy.data.DataStore.html)
 # 
 # The `DataStore` has two index tables:
 # 
-# * `DataStore.obs_table` ([gammapy.data.ObservationTable](http://docs.gammapy.org/dev/api/gammapy.data.ObservationTable.html)) to list and select available observations.
-# * `DataStore.hdu_table` ([gammapy.data.HDUIndexTable](http://docs.gammapy.org/dev/api/gammapy.data.HDUIndexTable.html)) to locate data for a given observation.
+# * `DataStore.obs_table` ([gammapy.data.ObservationTable](http://docs.gammapy.org/0.7/api/gammapy.data.ObservationTable.html)) to list and select available observations.
+# * `DataStore.hdu_table` ([gammapy.data.HDUIndexTable](http://docs.gammapy.org/0.7/api/gammapy.data.HDUIndexTable.html)) to locate data for a given observation.
 # 
 # Data loading is done via the `DataStore.obs` method which returns a
 # 
-# * [gammapy.data.DataStoreObservation](http://docs.gammapy.org/dev/api/gammapy.data.DataStoreObservation.html)
+# * [gammapy.data.DataStoreObservation](http://docs.gammapy.org/0.7/api/gammapy.data.DataStoreObservation.html)
 # 
 # object, which on property access loads the data and IRFs and returns them as Gammapy objects.
 # 
@@ -30,20 +30,20 @@
 # 
 # In this tutorial we will use objects of these types:
 # 
-# * [gammapy.data.EventList](http://docs.gammapy.org/dev/api/gammapy.data.EventList.html)
+# * [gammapy.data.EventList](http://docs.gammapy.org/0.7/api/gammapy.data.EventList.html)
 # 
 # 
-# * Load [gammapy.irf.EffectiveAreaTable2D](http://docs.gammapy.org/dev/api/gammapy.irf.EffectiveAreaTable2D.html), which has AEFF info for the whole field of view (FOV).
-# * For the given source offset in the FOV, slice out [gammapy.irf.EffectiveAreaTable](http://docs.gammapy.org/dev/api/gammapy.irf.EffectiveAreaTable.html)
+# * Load [gammapy.irf.EffectiveAreaTable2D](http://docs.gammapy.org/0.7/api/gammapy.irf.EffectiveAreaTable2D.html), which has AEFF info for the whole field of view (FOV).
+# * For the given source offset in the FOV, slice out [gammapy.irf.EffectiveAreaTable](http://docs.gammapy.org/0.7/api/gammapy.irf.EffectiveAreaTable.html)
 # 
 # 
-# * Load [gammapy.irf.EnergyDispersion2D](http://docs.gammapy.org/dev/api/gammapy.irf.EnergyDispersion2D.html), which has EDISP info for the whole FOV.
-# * For a given source offset in the FOV, slice out [gammapy.irf.EnergyDispersion](http://docs.gammapy.org/dev/api/gammapy.irf.EnergyDispersion.html)
+# * Load [gammapy.irf.EnergyDispersion2D](http://docs.gammapy.org/0.7/api/gammapy.irf.EnergyDispersion2D.html), which has EDISP info for the whole FOV.
+# * For a given source offset in the FOV, slice out [gammapy.irf.EnergyDispersion](http://docs.gammapy.org/0.7/api/gammapy.irf.EnergyDispersion.html)
 # 
 # 
-# * Load [gammapy.irf.EnergyDependentMultiGaussPSF](http://docs.gammapy.org/dev/api/gammapy.irf.EnergyDependentMultiGaussPSF.html), which has PSF info for the whole FOV using an analytical PSF model.
-# * For a given source offset in the FOV, slice out [gammapy.irf.EnergyDependentTablePSF](http://docs.gammapy.org/dev/api/gammapy.irf.EnergyDependentTablePSF.html).
-# * For a given energy or energy band, compute [gammapy.irf.TablePSF](http://docs.gammapy.org/dev/api/gammapy.irf.TablePSF.html).
+# * Load [gammapy.irf.EnergyDependentMultiGaussPSF](http://docs.gammapy.org/0.7/api/gammapy.irf.EnergyDependentMultiGaussPSF.html), which has PSF info for the whole FOV using an analytical PSF model.
+# * For a given source offset in the FOV, slice out [gammapy.irf.EnergyDependentTablePSF](http://docs.gammapy.org/0.7/api/gammapy.irf.EnergyDependentTablePSF.html).
+# * For a given energy or energy band, compute [gammapy.irf.TablePSF](http://docs.gammapy.org/0.7/api/gammapy.irf.TablePSF.html).
 # 
 # 
 # 
@@ -77,7 +77,7 @@ import astropy.units as u
 
 # ## Data store
 # 
-# First, we need to select some observations for our spectral analysis. To this end we use the [data management](http://docs.gammapy.org/dev/data/dm.html) functionality in gammapy. The following example uses a simulated crab dataset in [gammapy-extra](https://github.com/gammapy/gammapy-extra). Ideally, we'd use crabs runs from the H.E.S.S. public data release, so if you have the released files just change the ``DATA_DIR`` variable to the corresponding folder.
+# First, we need to select some observations for our spectral analysis. To this end we use the [data management](http://docs.gammapy.org/0.7/data/dm.html) functionality in gammapy. The following example uses a simulated crab dataset in [gammapy-extra](https://github.com/gammapy/gammapy-extra). Ideally, we'd use crabs runs from the H.E.S.S. public data release, so if you have the released files just change the ``DATA_DIR`` variable to the corresponding folder.
 
 # In[4]:
 

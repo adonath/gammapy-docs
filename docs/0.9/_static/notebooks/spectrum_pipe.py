@@ -9,8 +9,8 @@
 # 
 # In this tutorial we will use the folling Gammapy classes:
 # 
-# - [gammapy.data.DataStore](https://docs.gammapy.org/dev/api/gammapy.data.DataStore.html) to load the data to 
-# - [gammapy.scripts.SpectrumAnalysisIACT](https://docs.gammapy.org/dev/api/gammapy.scripts.SpectrumAnalysisIACT.html) to run the analysis
+# - [gammapy.data.DataStore](https://docs.gammapy.org/0.9/api/gammapy.data.DataStore.html) to load the data to 
+# - [gammapy.scripts.SpectrumAnalysisIACT](https://docs.gammapy.org/0.9/api/gammapy.scripts.SpectrumAnalysisIACT.html) to run the analysis
 # 
 # We use 4 Crab observations from H.E.S.S. for testing.
 

@@ -5,7 +5,7 @@
 # 
 # ## Introduction
 # 
-# This notebook show how to do source detection with Gammapy using one of the methods available in [gammapy.detect](http://docs.gammapy.org/dev/detect/index.html).
+# This notebook show how to do source detection with Gammapy using one of the methods available in [gammapy.detect](http://docs.gammapy.org/0.8/detect/index.html).
 # 
 # We will do this:
 # 
@@ -18,9 +18,9 @@
 # 
 # We will work with the following functions and classes:
 # 
-# * [gammapy.maps.WcsNDMap](http://docs.gammapy.org/dev/api/gammapy.maps.WcsNDMap.html)
-# * [gammapy.detect.TSMapEstimator](http://docs.gammapy.org/dev/api/gammapy.detect.TSMapEstimator.html)
-# * [gammapy.detect.find_peaks](http://docs.gammapy.org/dev/api/gammapy.detect.find_peaks.html)
+# * [gammapy.maps.WcsNDMap](http://docs.gammapy.org/0.8/api/gammapy.maps.WcsNDMap.html)
+# * [gammapy.detect.TSMapEstimator](http://docs.gammapy.org/0.8/api/gammapy.detect.TSMapEstimator.html)
+# * [gammapy.detect.find_peaks](http://docs.gammapy.org/0.8/api/gammapy.detect.find_peaks.html)
 
 # ## Setup
 # 

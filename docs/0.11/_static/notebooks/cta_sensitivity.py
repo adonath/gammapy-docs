@@ -11,7 +11,7 @@
 # 
 # We will be using the following Gammapy class:
 # 
-# * [gammapy.spectrum.SensitivityEstimator](https://docs.gammapy.org/dev/api/gammapy.spectrum.SensitivityEstimator.html)
+# * [gammapy.spectrum.SensitivityEstimator](https://docs.gammapy.org/0.11/api/gammapy.spectrum.SensitivityEstimator.html)
 
 # ## Setup
 # As usual, we'll start with some setup ...

@@ -13,11 +13,11 @@
 # 
 # We will use the following classes:
 # 
-# - [gammapy.cube](http://docs.gammapy.org/dev/cube/index.html) where are strored the counts, the background, the exposure and the mean psf of this Crab dataset.
-# - [gammapy.irf.EnergyDispersion](http://docs.gammapy.org/dev/api/gammapy.irf.EnergyDispersion.html) where is stored the mean rmf of this Crab dataset.
-# -  the method [gammapy.cube.SkyCube.to_sherpa_data3d](http://docs.gammapy.org/dev/api/gammapy.cube.SkyCube.html#gammapy.cube.SkyCube.to_sherpa_data3d) to transform the counts cube in Sherpa object.
-# - [gammapy.cube.CombinedModel3DInt](http://docs.gammapy.org/dev/api/gammapy.cube.CombinedModel3DInt.html) to combine the spectral and spatial model for the fit if you consider a perfect energy resolution
-# - [gammapy.cube.CombinedModel3DIntConvolveEdisp](http://docs.gammapy.org/dev/api/gammapy.cube.CombinedModel3DIntConvolveEdisp.html) to combine the spectral and spatial model for the fit taking into account that the true energy is different than the reconstructed one.
+# - [gammapy.cube](http://docs.gammapy.org/0.7/cube/index.html) where are strored the counts, the background, the exposure and the mean psf of this Crab dataset.
+# - [gammapy.irf.EnergyDispersion](http://docs.gammapy.org/0.7/api/gammapy.irf.EnergyDispersion.html) where is stored the mean rmf of this Crab dataset.
+# -  the method [gammapy.cube.SkyCube.to_sherpa_data3d](http://docs.gammapy.org/0.7/api/gammapy.cube.SkyCube.html#gammapy.cube.SkyCube.to_sherpa_data3d) to transform the counts cube in Sherpa object.
+# - [gammapy.cube.CombinedModel3DInt](http://docs.gammapy.org/0.7/api/gammapy.cube.CombinedModel3DInt.html) to combine the spectral and spatial model for the fit if you consider a perfect energy resolution
+# - [gammapy.cube.CombinedModel3DIntConvolveEdisp](http://docs.gammapy.org/0.7/api/gammapy.cube.CombinedModel3DIntConvolveEdisp.html) to combine the spectral and spatial model for the fit taking into account that the true energy is different than the reconstructed one.
 # 
 # We will use the cubes built on the 4 Crab observations of gammapy-extra.
 # 

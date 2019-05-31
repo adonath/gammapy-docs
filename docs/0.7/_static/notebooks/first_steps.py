@@ -13,24 +13,24 @@
 # 
 # * **Sky images**
 #   * We will learn how to handle image based data with gammapy using a Fermi-LAT 2FHL example image. We will work with the following classes:
-#     - [gammapy.image.SkyImage](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html)
+#     - [gammapy.image.SkyImage](http://docs.gammapy.org/0.7/api/gammapy.image.SkyImage.html)
 #     - [astropy.coordinates.SkyCoord](http://astropy.readthedocs.io/en/latest/coordinates/index.html)
 #     - [numpy.ndarray](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html)
 # 
 # * **Event lists**
 #   * We will learn how to handle event lists with Gammapy. Important for this are the following classes: 
-#     - [gammapy.data.EventList](http://docs.gammapy.org/dev/api/gammapy.data.EventList.html)
+#     - [gammapy.data.EventList](http://docs.gammapy.org/0.7/api/gammapy.data.EventList.html)
 #     - [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html#astropy.table.Table)
 # 
 # * **Source catalogs**
 #   * We will show how to load source catalogs with Gammapy and explore the data using the following classes:
-#     - [gammapy.catalog.SourceCatalog](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalog.html), specifically [gammapy.catalog.SourceCatalog2FHL](http://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalog2FHL.html)
+#     - [gammapy.catalog.SourceCatalog](http://docs.gammapy.org/0.7/api/gammapy.catalog.SourceCatalog.html), specifically [gammapy.catalog.SourceCatalog2FHL](http://docs.gammapy.org/0.7/api/gammapy.catalog.SourceCatalog2FHL.html)
 #     - [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html#astropy.table.Table)
 # 
 # * **Spectral models and flux points**
 #   * We will pick an example source and show how to plot its spectral model and flux points. For this we will use the following classes:
-#     - [gammapy.spectrum.SpectralModel](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.SpectralModel.html), specifically the [PowerLaw2](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw2.html) model.
-#     - [gammapy.spectrum.FluxPoints](http://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html#gammapy.spectrum.FluxPoints)
+#     - [gammapy.spectrum.SpectralModel](http://docs.gammapy.org/0.7/api/gammapy.spectrum.models.SpectralModel.html), specifically the [PowerLaw2](http://docs.gammapy.org/0.7/api/gammapy.spectrum.models.PowerLaw2.html) model.
+#     - [gammapy.spectrum.FluxPoints](http://docs.gammapy.org/0.7/api/gammapy.spectrum.FluxPoints.html#gammapy.spectrum.FluxPoints)
 #     - [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html#astropy.table.Table)
 # 
 # If you're not yet familiar with the listed Astropy classes, maybe check out the [Astropy introduction for Gammapy users](astropy_introduction.ipynb) first.
@@ -54,7 +54,7 @@ else:
     print('Great your setup is correct!')
 
 
-# In case you encounter an error, you can un-comment and execute the following cell to continue. But we recommend to set up your enviroment correctly as decribed [here](http://docs.gammapy.org/dev/datasets/index.html#gammapy-extra) after you are done with this notebook.
+# In case you encounter an error, you can un-comment and execute the following cell to continue. But we recommend to set up your enviroment correctly as decribed [here](http://docs.gammapy.org/0.7/datasets/index.html#gammapy-extra) after you are done with this notebook.
 
 # In[2]:
 
@@ -82,7 +82,7 @@ from astropy.visualization import simple_norm
 
 # ## Sky images
 # 
-# The central data structure to work with image based data in Gammapy is the [SkyImage](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html) class. It combines the raw data with world coordinate (WCS) information, FITS I/O functionality and convenience methods, that allow easy handling, processing and plotting of image based data. 
+# The central data structure to work with image based data in Gammapy is the [SkyImage](http://docs.gammapy.org/0.7/api/gammapy.image.SkyImage.html) class. It combines the raw data with world coordinate (WCS) information, FITS I/O functionality and convenience methods, that allow easy handling, processing and plotting of image based data. 
 # 
 # In this section we will learn how to:
 # 
@@ -92,7 +92,7 @@ from astropy.visualization import simple_norm
 # * Cutout parts from images
 # * Reproject images to different WCS
 # 
-# The `SkyImage` class is part of the [gammapy.image](http://docs.gammapy.org/dev/image/index.html) submodule. So we will start by importing it from there:
+# The `SkyImage` class is part of the [gammapy.image](http://docs.gammapy.org/0.7/image/index.html) submodule. So we will start by importing it from there:
 
 # In[5]:
 
@@ -134,7 +134,7 @@ vela_2fhl.data
 print('Total number of counts in the image: {:.0f}'.format(vela_2fhl.data.sum()))
 
 
-# To show the image on the screen we can use the [SkyImage.show()](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html#gammapy.image.SkyImage.show) method. It basically calls [plt.imshow](http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.imshow), passing the `vela_2fhl.data` attribute but in addition handles axis with world coordinates using [wcsaxes](https://wcsaxes.readthedocs.io/en/latest/) and defines some defaults for nicer plots (e.g. the colormap 'afmhot'):
+# To show the image on the screen we can use the [SkyImage.show()](http://docs.gammapy.org/0.7/api/gammapy.image.SkyImage.html#gammapy.image.SkyImage.show) method. It basically calls [plt.imshow](http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.imshow), passing the `vela_2fhl.data` attribute but in addition handles axis with world coordinates using [wcsaxes](https://wcsaxes.readthedocs.io/en/latest/) and defines some defaults for nicer plots (e.g. the colormap 'afmhot'):
 
 # In[10]:
 
@@ -152,7 +152,7 @@ vela_2fhl_smoothed = vela_2fhl.smooth(kernel='gauss', radius=0.5 * u.deg)
 vela_2fhl_smoothed.show()
 
 
-# The smoothed plot already looks much nicer, but still the image is rather large. As we are mostly interested in the inner part of the image, we will cut out a quadratic region of the size 9 deg x 9 deg around Vela. Therefore we use [SkyImage.cutout()](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html#gammapy.image.SkyImage.cutout), which wraps Astropy's [Cutout2D](http://docs.astropy.org/en/stable/api/astropy.nddata.Cutout2D.html). Again it returns a `SkyImage` object:
+# The smoothed plot already looks much nicer, but still the image is rather large. As we are mostly interested in the inner part of the image, we will cut out a quadratic region of the size 9 deg x 9 deg around Vela. Therefore we use [SkyImage.cutout()](http://docs.gammapy.org/0.7/api/gammapy.image.SkyImage.html#gammapy.image.SkyImage.cutout), which wraps Astropy's [Cutout2D](http://docs.astropy.org/en/stable/api/astropy.nddata.Cutout2D.html). Again it returns a `SkyImage` object:
 
 # In[12]:
 
@@ -187,7 +187,7 @@ vela_wmap.show(cmap='viridis', norm=norm)
 print(vela_wmap)
 
 
-# As you can see it is defined using a tangential projection and ICRS coordinates, which is different from the projection used for the `vela_2fhl` image. To compare both images we have to reproject one image to the WCS of the other. This can be achieved with the [SkyImage.reproject()](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html#gammapy.image.SkyImage.reproject) method: 
+# As you can see it is defined using a tangential projection and ICRS coordinates, which is different from the projection used for the `vela_2fhl` image. To compare both images we have to reproject one image to the WCS of the other. This can be achieved with the [SkyImage.reproject()](http://docs.gammapy.org/0.7/api/gammapy.image.SkyImage.html#gammapy.image.SkyImage.reproject) method: 
 
 # In[15]:
 
@@ -213,14 +213,14 @@ ax.contour(vela_wmap_reprojected_cutout.data, cmap='Blues')
 # ### Exercises
 # 
 # * Add a marker and circle at the Vela pulsar position (you can find examples in the WCSAxes [documentation](https://wcsaxes.readthedocs.io/en/latest/overlays.html)).
-# * Find the maximum brightness location in the WMAP image. The methods [np.argmax()](https://docs.scipy.org/doc/numpy/reference/generated/numpy.argmax.html) and [SkyImage.wcs_pixel_to_skycoord()](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html#gammapy.image.SkyImage.wcs_pixel_to_skycoord) might be helpful. Try to identify the source.
+# * Find the maximum brightness location in the WMAP image. The methods [np.argmax()](https://docs.scipy.org/doc/numpy/reference/generated/numpy.argmax.html) and [SkyImage.wcs_pixel_to_skycoord()](http://docs.gammapy.org/0.7/api/gammapy.image.SkyImage.html#gammapy.image.SkyImage.wcs_pixel_to_skycoord) might be helpful. Try to identify the source.
 # 
 # 
 # 
 
 # ## Event lists
 # 
-# Almost any high-level gamma-ray data analysis starts with the raw measured counts data, which is stored in event lists. In Gammapy event lists are represented by the [gammapy.data.EventList](http://docs.gammapy.org/dev/api/gammapy.data.EventList.html) class. 
+# Almost any high-level gamma-ray data analysis starts with the raw measured counts data, which is stored in event lists. In Gammapy event lists are represented by the [gammapy.data.EventList](http://docs.gammapy.org/0.7/api/gammapy.data.EventList.html) class. 
 # 
 # In this section we will learn how to:
 # 
@@ -228,7 +228,7 @@ ax.contour(vela_wmap_reprojected_cutout.data, cmap='Blues')
 # * Access and work with the `EventList` attributes such as `.table` and `.energy` 
 # * Filter events lists using convenience methods
 # 
-# Let's start with the import from the [gammapy.data](http://docs.gammapy.org/dev/data/index.html) submodule:
+# Let's start with the import from the [gammapy.data](http://docs.gammapy.org/0.7/data/index.html) submodule:
 
 # In[17]:
 
@@ -325,11 +325,11 @@ events_vela_2fhl.energy[-1].to('GeV')
 # 
 # In this section we will learn how to:
 # 
-# * Load builtins catalogs from [gammapy.catalog](http://docs.gammapy.org/dev/catalog/index.html)
+# * Load builtins catalogs from [gammapy.catalog](http://docs.gammapy.org/0.7/catalog/index.html)
 # * Sort and index the underlying Astropy tables
 # * Access data from individual sources
 # 
-# Let's start with importing the 2FHL catalog object from the [gammapy.catalog](http://docs.gammapy.org/dev/catalog/index.html) submodule:
+# Let's start with importing the 2FHL catalog object from the [gammapy.catalog](http://docs.gammapy.org/0.7/catalog/index.html) submodule:
 
 # In[27]:
 
@@ -378,7 +378,7 @@ print(mkn_421_2fhl.data['TS'])
 # ### Exercises
 # 
 # * Try to load the Fermi-LAT 3FHL catalog and check the total number of sources it contains.
-# * Select all the sources from the 2FHL catalog which are contained in the Vela region. Add markers for all these sources and try to add labels with the source names. The methods [SkyImage.contains()](http://docs.gammapy.org/dev/api/gammapy.image.SkyImage.html#gammapy.image.SkyImage.contains) and [ax.text()](http://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.text.html#matplotlib.axes.Axes.text) might be helpful.
+# * Select all the sources from the 2FHL catalog which are contained in the Vela region. Add markers for all these sources and try to add labels with the source names. The methods [SkyImage.contains()](http://docs.gammapy.org/0.7/api/gammapy.image.SkyImage.html#gammapy.image.SkyImage.contains) and [ax.text()](http://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.text.html#matplotlib.axes.Axes.text) might be helpful.
 # * Try to find the source class of the object at position ra=68.6803, dec=9.3331
 #  
 
@@ -399,7 +399,7 @@ crab_2fhl = fermi_2fhl['Crab']
 print(crab_2fhl.spectral_model)
 
 
-# The `crab_2fhl.spectral_model` is an instance of the [gammapy.spectrum.models.PowerLaw2](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw2.html#gammapy.spectrum.models.PowerLaw2) model, with the parameter values and errors taken from the 2FHL catalog. 
+# The `crab_2fhl.spectral_model` is an instance of the [gammapy.spectrum.models.PowerLaw2](http://docs.gammapy.org/0.7/api/gammapy.spectrum.models.PowerLaw2.html#gammapy.spectrum.models.PowerLaw2) model, with the parameter values and errors taken from the 2FHL catalog. 
 # 
 # Let's plot the spectral model in the energy range between 50 GeV and 2000 GeV:
 

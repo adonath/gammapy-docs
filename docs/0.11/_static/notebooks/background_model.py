@@ -15,8 +15,8 @@
 # 
 # We will mainly be using the following classes:
 #         
-# * [gammapy.data.DataStore](https://docs.gammapy.org/dev/api/gammapy.data.DataStore.html) to load the runs to use to build the bkg model.
-# * [gammapy.irf.Background2D](https://docs.gammapy.org/dev/api/gammapy.irf.Background2D.html) to represent and write the background model.
+# * [gammapy.data.DataStore](https://docs.gammapy.org/0.11/api/gammapy.data.DataStore.html) to load the runs to use to build the bkg model.
+# * [gammapy.irf.Background2D](https://docs.gammapy.org/0.11/api/gammapy.irf.Background2D.html) to represent and write the background model.
 
 # ## Setup
 # 

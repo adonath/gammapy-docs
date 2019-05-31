@@ -5,38 +5,38 @@
 
 # ## Introduction
 # 
-# This notebook explains in detail how to use the classes in [gammapy.spectrum](http://docs.gammapy.org/dev/spectrum/index.html) and related ones. Note, that there is also [spectrum_pipe.ipynb](spectrum_pipe.ipynb) which explains how to do the analysis using a high-level interface. This notebook is aimed at advanced users who want to script taylor-made analysis pipelines and implement new methods.
+# This notebook explains in detail how to use the classes in [gammapy.spectrum](http://docs.gammapy.org/0.7/spectrum/index.html) and related ones. Note, that there is also [spectrum_pipe.ipynb](spectrum_pipe.ipynb) which explains how to do the analysis using a high-level interface. This notebook is aimed at advanced users who want to script taylor-made analysis pipelines and implement new methods.
 # 
 # Based on a datasets of 4 Crab observations with H.E.S.S. (simulated events for now) we will perform a full region based spectral analysis, i.e. extracting source and background counts from certain 
 # regions, and fitting them using the forward-folding approach. We will use the following classes
 # 
 # Data handling:
 # 
-# * [gammapy.data.DataStore](http://docs.gammapy.org/dev/api/gammapy.data.DataStore.html)
-# * [gammapy.data.DataStoreObservation](http://docs.gammapy.org/dev/api/gammapy.data.DataStoreObservation.html)
-# * [gammapy.data.ObservationStats](http://docs.gammapy.org/dev/api/gammapy.data.ObservationStats.html)
-# * [gammapy.data.ObservationSummary](http://docs.gammapy.org/dev/api/gammapy.data.ObservationSummary.html)
+# * [gammapy.data.DataStore](http://docs.gammapy.org/0.7/api/gammapy.data.DataStore.html)
+# * [gammapy.data.DataStoreObservation](http://docs.gammapy.org/0.7/api/gammapy.data.DataStoreObservation.html)
+# * [gammapy.data.ObservationStats](http://docs.gammapy.org/0.7/api/gammapy.data.ObservationStats.html)
+# * [gammapy.data.ObservationSummary](http://docs.gammapy.org/0.7/api/gammapy.data.ObservationSummary.html)
 # 
 # To extract the 1-dim spectral information:
 # 
-# * [gammapy.spectrum.SpectrumObservation](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumObservation.html)
-# * [gammapy.spectrum.SpectrumExtraction](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumExtraction.html)
-# * [gammapy.background.ReflectedRegionsBackgroundEstimator](http://docs.gammapy.org/dev/api/gammapy.background.ReflectedRegionsBackgroundEstimator.html)
+# * [gammapy.spectrum.SpectrumObservation](http://docs.gammapy.org/0.7/api/gammapy.spectrum.SpectrumObservation.html)
+# * [gammapy.spectrum.SpectrumExtraction](http://docs.gammapy.org/0.7/api/gammapy.spectrum.SpectrumExtraction.html)
+# * [gammapy.background.ReflectedRegionsBackgroundEstimator](http://docs.gammapy.org/0.7/api/gammapy.background.ReflectedRegionsBackgroundEstimator.html)
 # 
 # 
 # For the global fit (using Sherpa and WSTAT in the background):
 # 
-# * [gammapy.spectrum.SpectrumFit](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumFit.html)
-# * [gammapy.spectrum.models.PowerLaw](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html)
-# * [gammapy.spectrum.models.ExponentialCutoffPowerLaw](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.ExponentialCutoffPowerLaw.html)
-# * [gammapy.spectrum.models.LogParabola](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.LogParabola.html)
+# * [gammapy.spectrum.SpectrumFit](http://docs.gammapy.org/0.7/api/gammapy.spectrum.SpectrumFit.html)
+# * [gammapy.spectrum.models.PowerLaw](http://docs.gammapy.org/0.7/api/gammapy.spectrum.models.PowerLaw.html)
+# * [gammapy.spectrum.models.ExponentialCutoffPowerLaw](http://docs.gammapy.org/0.7/api/gammapy.spectrum.models.ExponentialCutoffPowerLaw.html)
+# * [gammapy.spectrum.models.LogParabola](http://docs.gammapy.org/0.7/api/gammapy.spectrum.models.LogParabola.html)
 # 
 # To compute flux points (a.k.a. "SED" = "spectral energy distribution")
 # 
-# * [gammapy.spectrum.SpectrumResult](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumResult.html)
-# * [gammapy.spectrum.FluxPoints](http://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html)
-# * [gammapy.spectrum.SpectrumEnergyGroupMaker](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumEnergyGroupMaker.html)
-# * [gammapy.spectrum.FluxPointEstimator](http://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPointEstimator.html)
+# * [gammapy.spectrum.SpectrumResult](http://docs.gammapy.org/0.7/api/gammapy.spectrum.SpectrumResult.html)
+# * [gammapy.spectrum.FluxPoints](http://docs.gammapy.org/0.7/api/gammapy.spectrum.FluxPoints.html)
+# * [gammapy.spectrum.SpectrumEnergyGroupMaker](http://docs.gammapy.org/0.7/api/gammapy.spectrum.SpectrumEnergyGroupMaker.html)
+# * [gammapy.spectrum.FluxPointEstimator](http://docs.gammapy.org/0.7/api/gammapy.spectrum.FluxPointEstimator.html)
 # 
 # Feedback welcome!
 
@@ -148,7 +148,7 @@ exclusion_mask = allsky_mask.cutout(
 
 # ## Estimate background
 # 
-# Next we will manually perform a background estimate by placing [reflected regions](http://docs.gammapy.org/dev/background/reflected.html) around the pointing position and looking at the source statistics. This will result in a  [gammapy.background.BackgroundEstimate](http://docs.gammapy.org/dev/api/gammapy.background.BackgroundEstimate.html) that serves as input for other classes in gammapy.
+# Next we will manually perform a background estimate by placing [reflected regions](http://docs.gammapy.org/0.7/background/reflected.html) around the pointing position and looking at the source statistics. This will result in a  [gammapy.background.BackgroundEstimate](http://docs.gammapy.org/0.7/api/gammapy.background.BackgroundEstimate.html) that serves as input for other classes in gammapy.
 
 # In[8]:
 
@@ -171,7 +171,7 @@ background_estimator.plot()
 
 # ## Source statistic
 # 
-# Next we're going to look at the overall source statistics in our signal region. For more info about what debug plots you can create check out the [ObservationSummary](http://docs.gammapy.org/dev/api/gammapy.data.ObservationSummary.html#gammapy.data.ObservationSummary) class.
+# Next we're going to look at the overall source statistics in our signal region. For more info about what debug plots you can create check out the [ObservationSummary](http://docs.gammapy.org/0.7/api/gammapy.data.ObservationSummary.html#gammapy.data.ObservationSummary) class.
 
 # In[10]:
 
@@ -193,7 +193,7 @@ obs_summary.plot_significance_vs_livetime(ax=ax2)
 
 # ## Extract spectrum
 # 
-# Now, we're going to extract a spectrum using the [SpectrumExtraction](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumExtraction.html) class. We provide the reconstructed energy binning we want to use. It is expected to be a Quantity with unit energy, i.e. an array with an energy unit. We use a utility function to create it. We also provide the true energy binning to use.
+# Now, we're going to extract a spectrum using the [SpectrumExtraction](http://docs.gammapy.org/0.7/api/gammapy.spectrum.SpectrumExtraction.html) class. We provide the reconstructed energy binning we want to use. It is expected to be a Quantity with unit energy, i.e. an array with an energy unit. We use a utility function to create it. We also provide the true energy binning to use.
 
 # In[11]:
 
@@ -202,7 +202,7 @@ e_reco = EnergyBounds.equal_log_spacing(0.1, 40, 40, unit='TeV')
 e_true = EnergyBounds.equal_log_spacing(0.05, 100., 200, unit='TeV')
 
 
-# Instantiate a [SpectrumExtraction](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumExtraction.html) object that will do the extraction. The containment_correction parameter is there to allow for PSF leakage correction if one is working with full enclosure IRFs. We also compute a threshold energy and store the result in OGIP compliant files (pha, rmf, arf). This last step might be omitted though.
+# Instantiate a [SpectrumExtraction](http://docs.gammapy.org/0.7/api/gammapy.spectrum.SpectrumExtraction.html) object that will do the extraction. The containment_correction parameter is there to allow for PSF leakage correction if one is working with full enclosure IRFs. We also compute a threshold energy and store the result in OGIP compliant files (pha, rmf, arf). This last step might be omitted though.
 
 # In[12]:
 
@@ -226,7 +226,7 @@ print(extraction.observations[0])
 
 # ## Look at observations
 # 
-# Now we will look at the files we just created. We will use the [SpectrumObservation](http://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumObservation.html) object that are still in memory from the extraction step. Note, however, that you could also read them from disk if you have written them in the step above . The ``ANALYSIS_DIR`` folder contains 4 ``FITS`` files for each observation. These files are described in detail at https://gamma-astro-data-formats.readthedocs.io/en/latest/ogip/index.html. In short they correspond to the on vector, the off vector, the effectie area, and the energy dispersion.
+# Now we will look at the files we just created. We will use the [SpectrumObservation](http://docs.gammapy.org/0.7/api/gammapy.spectrum.SpectrumObservation.html) object that are still in memory from the extraction step. Note, however, that you could also read them from disk if you have written them in the step above . The ``ANALYSIS_DIR`` folder contains 4 ``FITS`` files for each observation. These files are described in detail at https://gamma-astro-data-formats.readthedocs.io/en/latest/ogip/index.html. In short they correspond to the on vector, the off vector, the effectie area, and the energy dispersion.
 
 # In[13]:
 
@@ -374,6 +374,6 @@ print(total_table['method', 'index', 'index_err', 'amplitude', 'amplitude_err'])
 # Here's some suggestions where to go next:
 # 
 # * if you want think this is way too complicated and just want to run a quick analysis check out [this notebook](spectrum_pipe.ipynb)
-# * if you interested in available fit statistics checkout [gammapy.stats](http://docs.gammapy.org/dev/stats/index.html)
-# * if you want to simulate spectral look at [this tutorial](http://docs.gammapy.org/dev/spectrum/simulation.html)
-# * if you want to compare your spectra to e.g. Fermi spectra published in catalogs have a look at [this](http://docs.gammapy.org/dev/spectrum/plotting_fermi_spectra.html)
+# * if you interested in available fit statistics checkout [gammapy.stats](http://docs.gammapy.org/0.7/stats/index.html)
+# * if you want to simulate spectral look at [this tutorial](http://docs.gammapy.org/0.7/spectrum/simulation.html)
+# * if you want to compare your spectra to e.g. Fermi spectra published in catalogs have a look at [this](http://docs.gammapy.org/0.7/spectrum/plotting_fermi_spectra.html)

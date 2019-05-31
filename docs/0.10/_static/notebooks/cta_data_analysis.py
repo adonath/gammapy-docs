@@ -186,7 +186,7 @@ images["excess"].smooth(3).plot(vmax=2);
 
 # ## Source Detection
 # 
-# Use the class [gammapy.detect.TSMapEstimator](https://docs.gammapy.org/dev/api/gammapy.detect.TSMapEstimator.html) and [gammapy.detect.find_peaks](https://docs.gammapy.org/dev/api/gammapy.detect.find_peaks.html) to detect sources on the images:
+# Use the class [gammapy.detect.TSMapEstimator](https://docs.gammapy.org/0.10/api/gammapy.detect.TSMapEstimator.html) and [gammapy.detect.find_peaks](https://docs.gammapy.org/0.10/api/gammapy.detect.find_peaks.html) to detect sources on the images:
 
 # In[ ]:
 

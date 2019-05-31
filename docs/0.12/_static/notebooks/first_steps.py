@@ -13,24 +13,24 @@
 # 
 # * **Sky maps**
 #   * We will learn how to handle image based data with gammapy using a Fermi-LAT 3FHL example image. We will work with the following classes:
-#     - [gammapy.maps.WcsNDMap](https://docs.gammapy.org/dev/api/gammapy.maps.WcsNDMap.html)
+#     - [gammapy.maps.WcsNDMap](https://docs.gammapy.org/0.12/api/gammapy.maps.WcsNDMap.html)
 #     - [astropy.coordinates.SkyCoord](http://astropy.readthedocs.io/en/latest/coordinates/index.html)
 #     - [numpy.ndarray](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html)
 # 
 # * **Event lists**
 #   * We will learn how to handle event lists with Gammapy. Important for this are the following classes: 
-#     - [gammapy.data.EventList](https://docs.gammapy.org/dev/api/gammapy.data.EventList.html)
+#     - [gammapy.data.EventList](https://docs.gammapy.org/0.12/api/gammapy.data.EventList.html)
 #     - [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html#astropy.table.Table)
 # 
 # * **Source catalogs**
 #   * We will show how to load source catalogs with Gammapy and explore the data using the following classes:
-#     - [gammapy.catalog.SourceCatalog](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalog.html), specifically [gammapy.catalog.SourceCatalog3FHL](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalog3FHL.html)
+#     - [gammapy.catalog.SourceCatalog](https://docs.gammapy.org/0.12/api/gammapy.catalog.SourceCatalog.html), specifically [gammapy.catalog.SourceCatalog3FHL](https://docs.gammapy.org/0.12/api/gammapy.catalog.SourceCatalog3FHL.html)
 #     - [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html#astropy.table.Table)
 # 
 # * **Spectral models and flux points**
 #   * We will pick an example source and show how to plot its spectral model and flux points. For this we will use the following classes:
-#     - [gammapy.spectrum.SpectralModel](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.SpectralModel.html), specifically the [PowerLaw2](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw2.html) model.
-#     - [gammapy.spectrum.FluxPoints](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html#gammapy.spectrum.FluxPoints)
+#     - [gammapy.spectrum.SpectralModel](https://docs.gammapy.org/0.12/api/gammapy.spectrum.models.SpectralModel.html), specifically the [PowerLaw2](https://docs.gammapy.org/0.12/api/gammapy.spectrum.models.PowerLaw2.html) model.
+#     - [gammapy.spectrum.FluxPoints](https://docs.gammapy.org/0.12/api/gammapy.spectrum.FluxPoints.html#gammapy.spectrum.FluxPoints)
 #     - [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html#astropy.table.Table)
 # 
 
@@ -53,7 +53,7 @@ else:
     print("Great your setup is correct!")
 
 
-# In case you encounter an error, you can un-comment and execute the following cell to continue. But we recommend to set up your enviroment correctly as decribed [here](https://docs.gammapy.org/dev/getting-started.html#download-tutorials) after you are done with this notebook.
+# In case you encounter an error, you can un-comment and execute the following cell to continue. But we recommend to set up your enviroment correctly as decribed [here](https://docs.gammapy.org/0.12/getting-started.html#download-tutorials) after you are done with this notebook.
 
 # In[ ]:
 
@@ -80,7 +80,7 @@ from astropy.coordinates import SkyCoord
 
 # ## Maps
 # 
-# The [gammapy.maps](https://docs.gammapy.org/dev/maps) package contains classes to work with sky images and cubes.
+# The [gammapy.maps](https://docs.gammapy.org/0.12/maps) package contains classes to work with sky images and cubes.
 # 
 # In this section, we will use a simple 2D sky image and will learn how to:
 # 
@@ -173,7 +173,7 @@ gc_3fhl_cutout.plot(stretch="sqrt");
 
 # ## Event lists
 # 
-# Almost any high-level gamma-ray data analysis starts with the raw measured counts data, which is stored in event lists. In Gammapy event lists are represented by the [gammapy.data.EventList](https://docs.gammapy.org/dev/api/gammapy.data.EventList.html) class. 
+# Almost any high-level gamma-ray data analysis starts with the raw measured counts data, which is stored in event lists. In Gammapy event lists are represented by the [gammapy.data.EventList](https://docs.gammapy.org/0.12/api/gammapy.data.EventList.html) class. 
 # 
 # In this section we will learn how to:
 # 
@@ -181,7 +181,7 @@ gc_3fhl_cutout.plot(stretch="sqrt");
 # * Access and work with the `EventList` attributes such as `.table` and `.energy` 
 # * Filter events lists using convenience methods
 # 
-# Let's start with the import from the [gammapy.data](https://docs.gammapy.org/dev/data/index.html) submodule:
+# Let's start with the import from the [gammapy.data](https://docs.gammapy.org/0.12/data/index.html) submodule:
 
 # In[ ]:
 
@@ -269,11 +269,11 @@ events_gc_3fhl.energy[-1].to("GeV")
 # 
 # In this section we will learn how to:
 # 
-# * Load builtins catalogs from [gammapy.catalog](https://docs.gammapy.org/dev/catalog/index.html)
+# * Load builtins catalogs from [gammapy.catalog](https://docs.gammapy.org/0.12/catalog/index.html)
 # * Sort and index the underlying Astropy tables
 # * Access data from individual sources
 # 
-# Let's start with importing the 3FHL catalog object from the [gammapy.catalog](https://docs.gammapy.org/dev/catalog/index.html) submodule:
+# Let's start with importing the 3FHL catalog object from the [gammapy.catalog](https://docs.gammapy.org/0.12/catalog/index.html) submodule:
 
 # In[ ]:
 
@@ -343,7 +343,7 @@ crab_3fhl = fermi_3fhl["Crab Nebula"]
 print(crab_3fhl.spectral_model)
 
 
-# The `crab_3fhl.spectral_model` is an instance of the [gammapy.spectrum.models.PowerLaw2](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw2.html#gammapy.spectrum.models.PowerLaw2) model, with the parameter values and errors taken from the 3FHL catalog. 
+# The `crab_3fhl.spectral_model` is an instance of the [gammapy.spectrum.models.PowerLaw2](https://docs.gammapy.org/0.12/api/gammapy.spectrum.models.PowerLaw2.html#gammapy.spectrum.models.PowerLaw2) model, with the parameter values and errors taken from the 3FHL catalog. 
 # 
 # Let's plot the spectral model in the energy range between 10 GeV and 2000 GeV:
 

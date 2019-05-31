@@ -9,18 +9,18 @@
 # 
 # The main class to load and handle the data is:
 # 
-# * [gammapy.dataset.FermiLATDataset](http://docs.gammapy.org/dev/api/gammapy.datasets.FermiLATDataset.html)
+# * [gammapy.dataset.FermiLATDataset](http://docs.gammapy.org/0.7/api/gammapy.datasets.FermiLATDataset.html)
 # 
 # 
 # Additionally we will use objects of these types:
 # 
-# * [gammapy.data.EventList](http://docs.gammapy.org/dev/api/gammapy.data.EventList.html) for event lists.
-# * [gammapy.irf.EnergyDependentTablePSF](http://docs.gammapy.org/dev/api/gammapy.irf.EnergyDependentTablePSF.html) for the point spread function.
-# * [gammapy.cube.SkyCube](http://docs.gammapy.org/dev/api/gammapy.cube.SkyCube.html) for the galactic diffuse background model. 
-# * [gammapy.cube.SkyCubeHPX](http://docs.gammapy.org/dev/api/gammapy.cube.SkyCubeHPX.html) for the exposure. 
+# * [gammapy.data.EventList](http://docs.gammapy.org/0.7/api/gammapy.data.EventList.html) for event lists.
+# * [gammapy.irf.EnergyDependentTablePSF](http://docs.gammapy.org/0.7/api/gammapy.irf.EnergyDependentTablePSF.html) for the point spread function.
+# * [gammapy.cube.SkyCube](http://docs.gammapy.org/0.7/api/gammapy.cube.SkyCube.html) for the galactic diffuse background model. 
+# * [gammapy.cube.SkyCubeHPX](http://docs.gammapy.org/0.7/api/gammapy.cube.SkyCubeHPX.html) for the exposure. 
 # 
-# * [gammapy.spectrum.models.TableModel](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.TableModel.html#gammapy.spectrum.models.TableModel) for the isotropic diffuse model.
-# * [gammapy.image.FermiLATBasicImageEstimator](http://docs.gammapy.org/dev/api/gammapy.image.FermiLATBasicImageEstimator.html) for generating a full WCS dataset, that can be used as an input for image based analyses.
+# * [gammapy.spectrum.models.TableModel](http://docs.gammapy.org/0.7/api/gammapy.spectrum.models.TableModel.html#gammapy.spectrum.models.TableModel) for the isotropic diffuse model.
+# * [gammapy.image.FermiLATBasicImageEstimator](http://docs.gammapy.org/0.7/api/gammapy.image.FermiLATBasicImageEstimator.html) for generating a full WCS dataset, that can be used as an input for image based analyses.
 # 
 # 
 # ## Setup
@@ -46,7 +46,7 @@ from gammapy.image import SkyImage, FermiLATBasicImageEstimator
 
 # ## FermiLATDataset class
 # 
-# To access the prepared Fermi-LAT datasets Gammapy provides a convenience class called [FermiLATDataset](http://docs.gammapy.org/dev/api/gammapy.datasets.FermiLATDataset.html#gammapy.datasets.FermiLATDataset). It is initialized with a path to an index configuration file, which tells the dataset class where to find the data. Once 
+# To access the prepared Fermi-LAT datasets Gammapy provides a convenience class called [FermiLATDataset](http://docs.gammapy.org/0.7/api/gammapy.datasets.FermiLATDataset.html#gammapy.datasets.FermiLATDataset). It is initialized with a path to an index configuration file, which tells the dataset class where to find the data. Once 
 # the object is initialized the data can be accessed as properties of this object, which return the corresponding Gammapy data objects for event lists, sky images and point spread functions (PSF). 
 # 
 # So let's start with exploring the Fermi-LAT 2FHL dataset:
@@ -61,7 +61,7 @@ print(dataset)
 
 # ## Events
 # 
-# The first data member we will inspect in more detail is the event list. It can be accessed by the `dataset.events` property and returns an instance of the Gammapy [gammapy.data.EventList](http://docs.gammapy.org/dev/api/gammapy.data.EventList.html) class:
+# The first data member we will inspect in more detail is the event list. It can be accessed by the `dataset.events` property and returns an instance of the Gammapy [gammapy.data.EventList](http://docs.gammapy.org/0.7/api/gammapy.data.EventList.html) class:
 
 # In[4]:
 
@@ -112,7 +112,7 @@ plt.legend()
 
 
 # ## PSF
-# Next we will tke a closer look at the PSF. The dataset contains a precomputed PSF model for one position of the sky (in this case the Galactic center). It can be accessed by the `dataset.psf` property and returns an instance of the Gammapy [gammapy.irf.EnergyDependentTablePSF](http://docs.gammapy.org/dev/api/gammapy.irf.EnergyDependentTablePSF.html) class:
+# Next we will tke a closer look at the PSF. The dataset contains a precomputed PSF model for one position of the sky (in this case the Galactic center). It can be accessed by the `dataset.psf` property and returns an instance of the Gammapy [gammapy.irf.EnergyDependentTablePSF](http://docs.gammapy.org/0.7/api/gammapy.irf.EnergyDependentTablePSF.html) class:
 
 # In[8]:
 
@@ -183,7 +183,7 @@ exposure_reprojected.show()
 # ## Galactic diffuse background
 
 # The Fermi-LAT collaboration provides a galactic diffuse emission model, that can be used as a background model for
-# Fermi-LAT data analysis. Currently Gammapy only supports the latest model (`gll_iem_v06.fits`). It can be accessed by the `dataset.galactic_diffuse` property and returns an instance of the Gammapy [gammapy.cube.SkyCube](http://docs.gammapy.org/dev/api/gammapy.cube.SkyCube.html) class:
+# Fermi-LAT data analysis. Currently Gammapy only supports the latest model (`gll_iem_v06.fits`). It can be accessed by the `dataset.galactic_diffuse` property and returns an instance of the Gammapy [gammapy.cube.SkyCube](http://docs.gammapy.org/0.7/api/gammapy.cube.SkyCube.html) class:
 
 # In[14]:
 
@@ -203,7 +203,7 @@ galactic_diffuse.show(norm=norm)
 
 # ## Isotropic diffuse background
 # 
-# Additionally to the galactic diffuse model, there is an isotropic diffuse component. It can be accessed by the `dataset.isotropic_diffuse` property and returns an instance of the Gammapy [gammapy.spectrum.models.TableModel](http://docs.gammapy.org/dev/api/gammapy.spectrum.models.TableModel.html#gammapy.spectrum.models.TableModel) class:
+# Additionally to the galactic diffuse model, there is an isotropic diffuse component. It can be accessed by the `dataset.isotropic_diffuse` property and returns an instance of the Gammapy [gammapy.spectrum.models.TableModel](http://docs.gammapy.org/0.7/api/gammapy.spectrum.models.TableModel.html#gammapy.spectrum.models.TableModel) class:
 
 # In[16]:
 
@@ -223,7 +223,7 @@ isotropic_diffuse.plot(erange)
 
 # ## Estimating basic input sky images for high level analyses
 # Finally we'd like to use the prepared 2FHL dataset to generate a set of basic sky images, that a can be used as input for high level analyses, e.g. morphology fits, region based flux measurements, computation of significance images etc.
-# For this purpose Gammapy provides a convenience class called [gammapy.image.FermiLATBasicImageEstimator](http://docs.gammapy.org/dev/api/gammapy.image.FermiLATBasicImageEstimator.html). First we define a reference image, that specifies the region we'd like to analyse. In this case we choose the Vela region.
+# For this purpose Gammapy provides a convenience class called [gammapy.image.FermiLATBasicImageEstimator](http://docs.gammapy.org/0.7/api/gammapy.image.FermiLATBasicImageEstimator.html). First we define a reference image, that specifies the region we'd like to analyse. In this case we choose the Vela region.
 
 # In[18]:
 
@@ -255,7 +255,7 @@ image_estimator = FermiLATBasicImageEstimator(
 images_basic = image_estimator.run(dataset)
 
 
-# The image estimator now computes a set of sky images for the reference region and energy range we defined above. The result `images_basic` is a [gammapy.image.SkyImageList](http://docs.gammapy.org/dev/api/gammapy.image.SkyImageList.html) object containing the following images:
+# The image estimator now computes a set of sky images for the reference region and energy range we defined above. The result `images_basic` is a [gammapy.image.SkyImageList](http://docs.gammapy.org/0.7/api/gammapy.image.SkyImageList.html) object containing the following images:
 # 
 # * **counts**: counts image containing the binned event list
 # * **background**: predicted number of background counts computed from the sum of the galactic and isotropic diffuse model, given the exposure.
