@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # HGPS
@@ -825,3 +825,9 @@ axes = plotter.plot(
 # * Try to reproduce some of the figures in the HGPS paper. Don't try to reproduce them exactly, but just try to write ~ 10 lines of code to access the relevant HGPS data and make a quick plot that shows the same or similar information.
 # * Fit a spectral model to the spectral points of Vela X and compare with the HGPS model fit. (they should be similar, but not identical, in HGPS a likelihood fit to counts data was done). For this task, the [sed_fitting_gammacat_fermi](sed_fitting_gammacat_fermi.ipynb) tutorials will be useful.
 # 
+
+# In[ ]:
+
+
+
+

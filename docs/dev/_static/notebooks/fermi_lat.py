@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Fermi-LAT data with Gammapy
@@ -243,8 +243,7 @@ data = diffuse_galactic_fermi.interp_by_coord(
     {
         "skycoord": coord.skycoord,
         "energy": coord["energy"]
-        * counts.geom.get_axis_by_name("energy").unit
-        
+        * counts.geom.get_axis_by_name("energy").unit,
     },
     interp=3,
 )

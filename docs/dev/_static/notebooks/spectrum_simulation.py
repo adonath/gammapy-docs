@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Spectrum simulation for CTA
@@ -126,7 +126,7 @@ sim.simulate_obs(seed=42, obs_id=0)
 # In[ ]:
 
 
-#Take a quick look at the simulated counts
+# Take a quick look at the simulated counts
 sim.obs.peek()
 print(sim.obs)
 
@@ -138,7 +138,7 @@ print(sim.obs)
 # In[ ]:
 
 
-#We assume a PowerLaw shape of the background as well
+# We assume a PowerLaw shape of the background as well
 bkg_model = PowerLaw(
     index=2.5, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV
 )
@@ -147,7 +147,7 @@ bkg_model = PowerLaw(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '#Now simulate 30 indepenent spectra using the same set of observation conditions.\nn_obs = 30\nseeds = np.arange(n_obs)\n\nsim = SpectrumSimulation(\n    aeff=aeff,\n    edisp=edisp,\n    source_model=model_ref,\n    livetime=livetime,\n    background_model=bkg_model,\n    alpha=0.2,\n)\n\nsim.run(seeds)\nprint(sim.result)\nprint(sim.result[0])')
+get_ipython().run_cell_magic('time', '', '# Now simulate 30 indepenent spectra using the same set of observation conditions.\nn_obs = 30\nseeds = np.arange(n_obs)\n\nsim = SpectrumSimulation(\n    aeff=aeff,\n    edisp=edisp,\n    source_model=model_ref,\n    livetime=livetime,\n    background_model=bkg_model,\n    alpha=0.2,\n)\n\nsim.run(seeds)\nprint(sim.result)\nprint(sim.result[0])')
 
 
 # Before moving on to the fit let's have a look at the simulated observations.

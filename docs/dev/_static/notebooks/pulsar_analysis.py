@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Pulsar analysis with Gammapy
@@ -33,7 +33,6 @@ from gammapy.cube import fill_map_counts
 from gammapy.data import DataStore
 from gammapy.background import PhaseBackgroundEstimator
 from gammapy.spectrum.models import PowerLaw
-from gammapy.utils.energy import EnergyBounds
 from gammapy.utils.fitting import Fit
 from gammapy.spectrum import (
     SpectrumExtraction,
@@ -273,8 +272,8 @@ bkg_estimate = bkg_estimator.result
 # In[ ]:
 
 
-etrue = EnergyBounds.equal_log_spacing(0.005, 10.0, 100, unit="TeV")
-ereco = EnergyBounds.equal_log_spacing(0.01, 10, 30, unit="TeV")
+etrue = np.logspace(-2.5, 1, 100) * u.TeV
+ereco = np.logspace(-2, 1, 30) * u.TeV
 
 extraction = SpectrumExtraction(
     observations=obs_list_vela,
@@ -307,11 +306,11 @@ model = PowerLaw(
     index=4, amplitude="1.3e-9 cm-2 s-1 TeV-1", reference="0.02 TeV"
 )
 
-fit_range = (0.04 * u.TeV, 0.4 * u.TeV)
+emin_fit, emax_fit = (0.04 * u.TeV, 0.4 * u.TeV)
 
 for obs in extraction.spectrum_observations:
     obs.model = model
-    obs.set_fit_energy_range(fit_range[0], fit_range[1])
+    obs.mask_fit = obs.counts.energy_mask(emin=emin_fit, emax=emax_fit)
 
 joint_fit = Fit(extraction.spectrum_observations)
 joint_result = joint_fit.run()
@@ -326,7 +325,7 @@ print(joint_result)
 # In[ ]:
 
 
-e_edges = EnergyBounds.equal_log_spacing(0.04, 0.4, 7, u.TeV)
+e_edges = np.logspace(np.log10(0.04), np.log10(0.4), 7) * u.TeV
 
 from gammapy.spectrum import SpectrumDatasetOnOffStacker
 
@@ -361,7 +360,7 @@ ax_residual.set_ylim([-1.7, 1.7])
 
 spec_model_true.plot(
     ax=ax_spectrum,
-    energy_range=fit_range,
+    energy_range=(emin_fit, emax_fit),
     label="Reference model",
     c="black",
     linestyle="dashed",

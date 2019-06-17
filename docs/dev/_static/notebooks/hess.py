@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # H.E.S.S. with Gammapy
@@ -218,7 +218,9 @@ model_kwargs.update(plot_kwargs)
 ax_spectrum, ax_residuals = dataset_fp.peek(model_kwargs=model_kwargs)
 
 crab_ref.plot(ax=ax_spectrum, label="H.E.S.S. 2006 PWL", **plot_kwargs)
-model.spectral_model.plot(ax=ax_spectrum, label="3D best fit model", **plot_kwargs)
+model.spectral_model.plot(
+    ax=ax_spectrum, label="3D best fit model", **plot_kwargs
+)
 
 ax_spectrum.set_ylim(1e-11, 1e-10)
 ax_spectrum.legend();
@@ -411,3 +413,9 @@ print(
 # 
 # - Try analysing another source, e.g. RX J1713.7−3946
 # - Try another model, e.g. a Gaussian spatial shape or exponential cutoff power-law spectrum.
+
+# In[ ]:
+
+
+
+

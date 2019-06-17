@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # ![CTA first data challenge logo](images/cta-1dc.png)

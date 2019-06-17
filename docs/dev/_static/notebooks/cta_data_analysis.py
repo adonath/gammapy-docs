@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # ![CTA first data challenge logo](images/cta-1dc.png)
@@ -38,7 +38,6 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 from astropy.convolution import Gaussian2DKernel
 from regions import CircleSkyRegion
-from gammapy.utils.energy import EnergyBounds
 from gammapy.utils.fitting import Fit
 from gammapy.data import DataStore
 from gammapy.spectrum import (
@@ -286,11 +285,11 @@ print(stacked_obs)
 # In[ ]:
 
 
-ebounds = EnergyBounds.equal_log_spacing(1, 40, 4, unit=u.TeV)
+e_edges = np.logspace(0, 1.5, 5) * u.TeV
 
 stacked_obs.model = model
 
-fpe = FluxPointsEstimator(datasets=[dataset], e_edges=ebounds)
+fpe = FluxPointsEstimator(datasets=[dataset], e_edges=e_edges)
 flux_points = fpe.run()
 flux_points.table_formatted
 

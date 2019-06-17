@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Fitting 2D images with Gammapy
@@ -193,3 +193,9 @@ result.parameters.covariance_to_table()
 # 1. Plot residual maps as done in the `analysis_3d` notebook
 # 2. Iteratively add and fit sources as explained in `image_fitting_with_sherpa` notebook
 # 
+
+# In[ ]:
+
+
+
+

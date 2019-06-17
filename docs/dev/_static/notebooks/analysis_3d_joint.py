@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Joint 3D Analysis
@@ -174,7 +174,7 @@ for obs_id in obs_ids:
     # optionally define a safe energy threshold
     emin = None
     mask = counts.geom.energy_mask(emin=emin)
-    
+
     dataset = MapDataset(
         model=model,
         counts=counts,
@@ -291,4 +291,10 @@ residual_stacked = (
 residual_stacked.plot(
     vmin=-1, vmax=1, cmap="coolwarm", add_cbar=True, stretch="linear"
 );
+
+
+# In[ ]:
+
+
+
 

@@ -1,11 +1,11 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Fitting gammapy spectra with sherpa
 # 
 # Once we have exported the spectral files (PHA, ARF, RMF and BKG) in the OGIP format, it becomes possible to fit them later with gammapy or with any existing OGIP compliant tool such as XSpec or sherpa.
 # 
-# We show here how to do so with sherpa using the high-level user interface. For a general view on how to use stand-alone sherpa, see https://sherpa.readthedocs.io.
+# We show here how to do so with sherpa using the high-level user interface. For a general view on how to use stand-alone sherpa, see https://sherpa.readthedocs.io
 
 # ## Load data stack
 # 
@@ -118,3 +118,9 @@ sh.reg_unc(p1.gamma, p1.ampl)
 # - Change the energy range of the fit to be only 2 to 10 TeV
 # - Fit the built-in Sherpa exponential cutoff powerlaw model
 # - Define your own spectral model class (e.g. powerlaw again to practice) and fit it
+
+# In[ ]:
+
+
+
+

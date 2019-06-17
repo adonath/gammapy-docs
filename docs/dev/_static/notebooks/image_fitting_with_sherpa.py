@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Fitting 2D images with Sherpa
@@ -35,7 +35,7 @@ from gammapy.maps import WcsGeom, MapAxis, Map
 from gammapy.cube import MapMaker, PSFKernel
 
 
-# ### Generate the required Maps
+# ## 1. Generating the required Maps
 # 
 # We first generate the required maps using 3 simulated runs on the Galactic center, exactly as in the [analysis_3d](analysis_3d.ipynb) tutorial.
 # 
@@ -122,6 +122,8 @@ maps["exposure"].write("analysis_3d/exposure_2D.fits", overwrite=True)
 fits.writeto("analysis_3d/psf_2D.fits", psf2D.data, overwrite=True)
 
 
+# ## 2. Analysis using sherpha
+# 
 # ### Read the maps and store them in a sherpa model
 # 
 # We now have the prepared files which sherpa can read. 
@@ -141,6 +143,24 @@ sh.set_coord("logical")
 sh.load_table_model("expo", "analysis_3d/exposure_2D.fits")
 sh.load_table_model("bkg", "analysis_3d/background_2D.fits")
 sh.load_psf("psf", "analysis_3d/psf_2D.fits")
+
+
+# To speed up this tutorial, we change the fit optimazation method to Levenberg-Marquardt and fix a required tolerance. This can make the fitting less robust, and in practise, you can skip this step unless you understand what is going on.
+
+# In[ ]:
+
+
+sh.set_method("levmar")
+sh.set_method_opt('xtol', 1e-5)
+sh.set_method_opt('ftol', 1e-5)
+sh.set_method_opt('gtol', 1e-5)
+sh.set_method_opt('epsfcn', 1e-5)
+
+
+# In[ ]:
+
+
+print(sh.get_method())
 
 
 # In principle one might first want to fit the background amplitude. However the background estimation method already yields the correct normalization, so we freeze the background amplitude to unity instead of adjusting it. The (smoothed) residuals from this background model are then computed and shown.
@@ -198,9 +218,7 @@ get_ipython().run_cell_magic('time', '', 'sh.fit()')
 # In[ ]:
 
 
-sh.thaw(g0.xpos, g0.ypos)
-sh.fit()
-sh.freeze(g0)
+get_ipython().run_cell_magic('time', '', 'sh.thaw(g0.xpos, g0.ypos)\nsh.fit()\nsh.freeze(g0)')
 
 
 # In[ ]:
@@ -212,25 +230,26 @@ resid_smooth.plot();
 
 
 # ### Iteratively find and fit additional sources
-# Instantiate additional Gaussian components, and use them to iteratively fit sources, repeating the steps performed above for component g0. (The residuals map is shown after each additional source included in the model.) This takes some time...
+# 
+# The residual map still shows the presence of additional components. Instantiate additional Gaussian components, and use them to iteratively fit sources, repeating the steps performed above for component g0. (The residuals map is shown after each additional source included in the model.) This would typically be done for many sources, but since this takes quite a bit of time, we demonstrate it for 3 iterations only here....
 
 # In[ ]:
 
 
 # initialize components with fixed, zero amplitude
-for i in range(1, 10):
+for i in range(1, 3):
     model = sh.create_model_component("gauss2d", "g" + str(i))
     model.ampl = 0
     sh.freeze(model)
 
-gs = [g0, g1, g2]
+sources = [g0, g1, g2]
 sh.set_full_model(bkg + psf(g0 + g1 + g2) * expo)
 
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'for i in range(1, len(gs)):\n    yp, xp = np.unravel_index(\n        np.nanargmax(resid_smooth.data), resid_smooth.data.shape\n    )\n    ampl = resid_smooth.get_by_pix((xp, yp))[0]\n    gs[i].xpos, gs[i].ypos = xp, yp\n    gs[i].fwhm = 10\n    gs[i].ampl = ampl\n\n    sh.thaw(gs[i].fwhm)\n    sh.thaw(gs[i].ampl)\n    sh.fit()\n\n    sh.thaw(gs[i].xpos)\n    sh.thaw(gs[i].ypos)\n    sh.fit()\n    sh.freeze(gs[i])\n\n    resid.data = sh.get_data_image().y - sh.get_model_image().y\n    resid_smooth = resid.smooth(width=6)')
+get_ipython().run_cell_magic('time', '', 'for gs in sources:\n    yp, xp = np.unravel_index(\n        np.nanargmax(resid_smooth.data), resid_smooth.data.shape\n    )\n    ampl = resid_smooth.get_by_pix((xp, yp))[0]\n    gs.xpos, gs.ypos = xp, yp\n    gs.fwhm = 10\n    gs.ampl = ampl\n\n    sh.thaw(gs.fwhm)\n    sh.thaw(gs.ampl)\n    sh.fit()\n\n    sh.thaw(gs.xpos)\n    sh.thaw(gs.ypos)\n    sh.fit()\n    sh.freeze(gs)\n\n    resid.data = sh.get_data_image().y - sh.get_model_image().y\n    resid_smooth = resid.smooth(width=6)')
 
 
 # In[ ]:
@@ -253,7 +272,7 @@ from astropy.stats import gaussian_fwhm_to_sigma
 from astropy.table import Table
 
 rows = []
-for g in gs:
+for g in sources:
     ampl = g.ampl.val
     g.ampl = 0
     stati = sh.get_stat_info()[0].statval
@@ -273,7 +292,7 @@ for g in gs:
 table = Table(rows=rows, names=rows[0])
 for name in table.colnames:
     table[name].format = ".5g"
-table
+print(table)
 
 
 # ### Exercises

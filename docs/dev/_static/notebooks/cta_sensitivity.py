@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Estimation of the CTA point source sensitivity
@@ -96,7 +96,7 @@ bkg_data = irfs["bkg"].evaluate_integrate(
     fov_lon=0 * u.deg, fov_lat=offset, energy_reco=energy_reco
 )
 bkg = CountsSpectrum(
-    energy_reco[:-1], energy_reco[1:], data=(bkg_data * solid_angles)
+    energy_reco[:-1], energy_reco[1:], data=(bkg_data * solid_angles).to_value("s-1"), unit="s-1"
 )
 
 
@@ -186,3 +186,9 @@ ax2.set_ylim(0.01, 0.5)
 # 
 # * Also compute the sensitivity for a 20 hour observation
 # * Compare how the sensitivity differs between 5 and 20 hours by plotting the ratio as a function of energy.
+
+# In[ ]:
+
+
+
+

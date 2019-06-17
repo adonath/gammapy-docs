@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Fitting and error estimation with MCMC
@@ -37,7 +37,7 @@
 # 
 # Just for fun: if each fit procedure takes 10s, we're talking about 5h of computing time to estimate the correlation plots. 
 # 
-# There are many MCMC packages in the python ecosystem but here we will focus on [emcee](http://url), a lightweight Python package. A description is provided here : [Foreman-Mackey, Hogg, Lang & Goodman (2012)](https://arxiv.org/abs/1202.3665).
+# There are many MCMC packages in the python ecosystem but here we will focus on [emcee](https://emcee.readthedocs.io), a lightweight Python package. A description is provided here : [Foreman-Mackey, Hogg, Lang & Goodman (2012)](https://arxiv.org/abs/1202.3665).
 
 # In[ ]:
 
@@ -234,7 +234,7 @@ dataset.parameters["index"].frozen = False
 dataset.parameters["lambda_"].frozen = False
 
 
-dataset.background_model.parameters["norm"].frozen = False
+dataset.background_model.parameters["norm"].frozen = True
 dataset.background_model.parameters["tilt"].frozen = True
 
 dataset.background_model.parameters["norm"].min = 0.5
@@ -258,7 +258,7 @@ dataset.parameters["sigma"].max = 1
 # Setting amplitude init values a bit offset to see evolution
 # Here starting close to the real value
 dataset.parameters["index"].value = 2.0
-dataset.parameters["amplitude"].value = 3.3e-12
+dataset.parameters["amplitude"].value = 3.2e-12
 dataset.parameters["lambda_"].value = 0.05
 
 print(dataset.model)
@@ -268,11 +268,12 @@ print("log(L) =", dataset.likelihood())
 # In[ ]:
 
 
+
 # Now let's define a function to init parameters and run the MCMC with emcee
 # Depending on your number of walkers, Nrun and dimensionality, this can take a while (> minutes)
 
 
-def run_mcmc(dataset, nwalkers=12, nrun=500, threads=1):
+def run_mcmc(dataset, nwalkers=8, nrun=1000, threads=1):
     """
     Run the MCMC sampler.
     
@@ -325,11 +326,9 @@ def run_mcmc(dataset, nwalkers=12, nrun=500, threads=1):
     return sampler
 
 
-sampler = run_mcmc(dataset, nwalkers=8, nrun=500)  # to speedup the notebook
-# sampler=run_mcmc(dataset,nwalkers=16,nrun=1000) # more accurate contours
+sampler = run_mcmc(dataset, nwalkers=6, nrun=150)  # to speedup the notebook
+# sampler=run_mcmc(dataset,nwalkers=12,nrun=1000) # more accurate contours
 
-
-# ## Plotting the results
 
 # ## Plot the results
 # 
@@ -388,7 +387,7 @@ def plot_corner(sampler, dataset, nburn=0):
     )
 
 
-plot_corner(sampler, dataset, nburn=200)
+plot_corner(sampler, dataset, nburn=50)
 
 
 # ## Plot the model dispersion
@@ -399,11 +398,11 @@ plot_corner(sampler, dataset, nburn=200)
 
 
 emin, emax = [0.1, 100] * u.TeV
-nburn = 300
+nburn = 50
 
 fig, ax = plt.subplots(1, 1, figsize=(12, 6))
 
-for nwalk in range(0, 8):
+for nwalk in range(0, 6):
     for n in range(nburn, nburn + 100):
         pars = sampler.chain[nwalk, n, :]
 

@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Light curves
@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 from regions import CircleSkyRegion
-from gammapy.utils.energy import EnergyBounds
+from gammapy.utils.energy import energy_logspace
 from gammapy.data import DataStore
 from gammapy.spectrum import SpectrumExtraction
 from gammapy.spectrum.models import PowerLaw
@@ -72,7 +72,7 @@ get_ipython().run_cell_magic('time', '', 'bkg_estimator = ReflectedRegionsBackgr
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'ebounds = EnergyBounds.equal_log_spacing(0.7, 100, 50, unit="TeV")\nextraction = SpectrumExtraction(\n    observations=observations,\n    bkg_estimate=bkg_estimator.result,\n    containment_correction=False,\n    e_reco=ebounds,\n    e_true=ebounds,\n)\nextraction.run()\nspectrum_observations = extraction.spectrum_observations')
+get_ipython().run_cell_magic('time', '', 'ebounds = energy_logspace(0.7, 100, 51, unit="TeV")\nextraction = SpectrumExtraction(\n    observations=observations,\n    bkg_estimate=bkg_estimator.result,\n    containment_correction=False,\n    e_reco=ebounds,\n    e_true=ebounds,\n)\nextraction.run()\nspectrum_observations = extraction.spectrum_observations')
 
 
 # ## Light curve estimation
@@ -161,3 +161,9 @@ ax.hlines(
 # * Try a time binning where you split the observation time for every run into two time bins.
 # * Try to analyse the PKS 2155 flare data from the H.E.S.S. first public test data release.
 #   Start with per-observation fluxes, and then try fluxes within 5 minute time bins for one or two of the observations where the source was very bright.
+
+# In[ ]:
+
+
+
+

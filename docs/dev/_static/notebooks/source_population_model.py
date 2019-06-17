@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python
 # coding: utf-8
 
 # # Astrophysical source population modeling with Gammapy
@@ -14,10 +14,10 @@
 # 
 # References:
 # 
-# * Section 6.2 in the Fermi-LAT collaboration paper ["The First Fermi-LAT Catalog of Sources Above 10 GeV"](http://adsabs.harvard.edu/abs/2013arXiv1306.6772T)
+# * Section 6.2 in the Fermi-LAT collaboration paper ["The First Fermi-LAT Catalog of Sources Above 10 GeV"](https://ui.adsabs.harvard.edu/abs/2013ApJS..209...34A)
 # * Axel Donath's bachelor thesis ["Modelling Galactic gamma-ray source populations"](http://pubman.mpdl.mpg.de/pubman/item/escidoc:912132:1/component/escidoc:912131/BScThesis_ddonath.pdf), specifically Chapter 4.
-# * Casanova & Dingus (2008), ["Constraints on the TeV source population and its contribution to the galactic diffuse TeV emission"](http://adsabs.harvard.edu/abs/2008APh....29...63C)
-# * Strong (2007), ["Source population synthesis and the Galactic diffuse gamma-ray emission"](http://adsabs.harvard.edu/abs/2007Ap%26SS.309...35S)
+# * Casanova & Dingus (2008), ["Constraints on the TeV source population and its contribution to the galactic diffuse TeV emission"](https://ui.adsabs.harvard.edu/abs/2008APh....29...63C)
+# * Strong (2007), ["Source population synthesis and the Galactic diffuse gamma-ray emission"](https://ui.adsabs.harvard.edu/abs/2007Ap%26SS.309...35S)
 
 # ## Setup
 
