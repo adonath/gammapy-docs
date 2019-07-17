@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 # In[ ]:
 
 
-from regions import CircleSkyRegion
+from gammapy.utils.regions import SphericalCircleSkyRegion
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 
@@ -66,11 +66,10 @@ print(obs_list_vela[0].events)
 
 pos_target = SkyCoord(ra=128.836 * u.deg, dec=-45.176 * u.deg, frame="icrs")
 on_radius = 0.2 * u.deg
+on_region = SphericalCircleSkyRegion(pos_target, on_radius)
 
 # Apply angular selection
-events_vela = obs_list_vela[0].events.select_sky_cone(
-    center=pos_target, radius=on_radius
-)
+events_vela = obs_list_vela[0].events.select_region(on_region)
 print(events_vela)
 
 
@@ -250,9 +249,6 @@ excess_map.smooth(kernel="gauss", width=0.2 * u.deg).plot(add_cbar=True);
 
 # In[ ]:
 
-
-# Defining an on-region around the pulsar to pass it to the background estimator
-on_region = CircleSkyRegion(pos_target, on_radius)
 
 # The PhaseBackgroundEstimator uses the OFF-phase in the ON-region to estimate the background
 bkg_estimator = PhaseBackgroundEstimator(

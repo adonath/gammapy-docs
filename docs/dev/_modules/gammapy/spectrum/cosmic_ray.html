@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.spectrum.cosmic_ray &mdash; gammapy v0.13.dev9173</title>
+  <title>gammapy.spectrum.cosmic_ray &mdash; gammapy v0.13.dev9351</title>
   
 
   
@@ -68,7 +68,7 @@
             
             
               <div class="version">
-                0.13.dev9173
+                0.13.dev9351
               </div>
             
           
@@ -571,12 +571,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#using-gammapy-image">Using <code class="docutils literal notranslate"><span class="pre">gammapy.image</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../image/models.html">Morphology models (<code class="docutils literal notranslate"><span class="pre">gammapy.image.models</span></code>)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#introduction">Introduction</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#getting-started">Getting Started</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#reference-api">Reference/API</a></li>
-</ul>
-</li>
 <li class="toctree-l3"><a class="reference internal" href="../../../image/plotting.html">Image plotting</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../image/plotting.html#colormaps">Colormaps</a></li>
 </ul>
@@ -634,7 +628,13 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#using-gammapy-background">Using <code class="docutils literal notranslate"><span class="pre">gammapy.background</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../background/reflected.html">Reflected regions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../background/reflected.html">Reflected regions background</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#overview">Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#using-regions">Using regions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#the-reflected-region-finder">The reflected region finder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#using-the-reflected-background-estimator">Using the reflected background estimator</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#reference-api">Reference/API</a><ul>
@@ -855,7 +855,6 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../catalog/index.html#reference-api">Reference/API</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../catalog/index.html#module-gammapy.catalog">gammapy.catalog Package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../catalog/index.html#functions">Functions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../catalog/index.html#classes">Classes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../catalog/index.html#variables">Variables</a></li>
 </ul>
@@ -981,36 +980,14 @@
 <span class="sd">For measurements, the &quot;Database of Charged Cosmic Rays (CRDB)&quot; is a great resource:</span>
 <span class="sd">http://lpsc.in2p3.fr/cosmic-rays-db/</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">astropy.units</span> <span class="k">import</span> <span class="n">Quantity</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;cosmic_ray_flux&quot;</span><span class="p">]</span>
+<span class="kn">from</span> <span class="nn">astropy</span> <span class="k">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
+<span class="kn">from</span> <span class="nn">.models</span> <span class="k">import</span> <span class="n">PowerLaw</span><span class="p">,</span> <span class="n">SpectralLogGaussian</span>
 
-
-<span class="k">def</span> <span class="nf">_power_law</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
-    <span class="n">E</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="s2">&quot;TeV&quot;</span><span class="p">)</span>
-    <span class="n">E0</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;TeV&quot;</span><span class="p">)</span>
-    <span class="n">N</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="s2">&quot;m^-2 s^-1 TeV^-1 sr^-1&quot;</span><span class="p">)</span>
-    <span class="n">flux</span> <span class="o">=</span> <span class="n">N</span> <span class="o">*</span> <span class="p">(</span><span class="n">E</span> <span class="o">/</span> <span class="n">E0</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="n">k</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">flux</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;cosmic_ray_spectrum&quot;</span><span class="p">]</span>
 
 
-<span class="k">def</span> <span class="nf">_log_normal</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">E_p</span><span class="p">,</span> <span class="n">w</span><span class="p">):</span>
-    <span class="n">E</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="s2">&quot;TeV&quot;</span><span class="p">)</span>
-    <span class="n">E_p</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="n">E_p</span><span class="p">,</span> <span class="s2">&quot;TeV&quot;</span><span class="p">)</span>
-    <span class="n">L</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="s2">&quot;m^-2 s^-1 sr^-1&quot;</span><span class="p">)</span>
-    <span class="n">term1</span> <span class="o">=</span> <span class="n">L</span> <span class="o">/</span> <span class="p">(</span><span class="n">E</span> <span class="o">*</span> <span class="n">w</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">))</span>
-    <span class="n">term2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">E</span> <span class="o">/</span> <span class="n">E_p</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">w</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">term1</span> <span class="o">*</span> <span class="n">term2</span>
-
-
-<span class="k">def</span> <span class="nf">_electron_spectrum</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">E_p</span><span class="p">,</span> <span class="n">w</span><span class="p">):</span>
-    <span class="n">flux</span> <span class="o">=</span> <span class="n">_power_law</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
-    <span class="n">flux</span> <span class="o">+=</span> <span class="n">_log_normal</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">L</span><span class="p">,</span> <span class="n">E_p</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">flux</span>
-
-
-<div class="viewcode-block" id="cosmic_ray_flux"><a class="viewcode-back" href="../../../api/gammapy.spectrum.cosmic_ray_flux.html#gammapy.spectrum.cosmic_ray_flux">[docs]</a><span class="k">def</span> <span class="nf">cosmic_ray_flux</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">particle</span><span class="o">=</span><span class="s2">&quot;proton&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="cosmic_ray_spectrum"><a class="viewcode-back" href="../../../api/gammapy.spectrum.cosmic_ray_spectrum.html#gammapy.spectrum.cosmic_ray_spectrum">[docs]</a><span class="k">def</span> <span class="nf">cosmic_ray_spectrum</span><span class="p">(</span><span class="n">particle</span><span class="o">=</span><span class="s2">&quot;proton&quot;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Cosmic ray flux at Earth.</span>
 
 <span class="sd">    These are the spectra assumed in this CTA study:</span>
@@ -1032,20 +1009,43 @@
 <span class="sd">    flux : `~astropy.units.Quantity`</span>
 <span class="sd">        Cosmic ray flux in unit ``m^-2 s^-1 TeV^-1 sr^-1``</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">pars</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;electron&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;N&quot;</span><span class="p">:</span> <span class="mf">6.85e-5</span><span class="p">,</span> <span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">3.21</span><span class="p">,</span> <span class="s2">&quot;L&quot;</span><span class="p">:</span> <span class="mf">3.19e-3</span><span class="p">,</span> <span class="s2">&quot;E_p&quot;</span><span class="p">:</span> <span class="mf">0.107</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">:</span> <span class="mf">0.776</span><span class="p">},</span>
-        <span class="s2">&quot;proton&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;N&quot;</span><span class="p">:</span> <span class="mf">0.096</span><span class="p">,</span> <span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">2.70</span><span class="p">},</span>
-        <span class="s2">&quot;N&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;N&quot;</span><span class="p">:</span> <span class="mf">0.0719</span><span class="p">,</span> <span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">2.64</span><span class="p">},</span>
-        <span class="s2">&quot;Si&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;N&quot;</span><span class="p">:</span> <span class="mf">0.0284</span><span class="p">,</span> <span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">2.66</span><span class="p">},</span>
-        <span class="s2">&quot;Fe&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;N&quot;</span><span class="p">:</span> <span class="mf">0.0134</span><span class="p">,</span> <span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mf">2.63</span><span class="p">},</span>
-    <span class="p">}</span>
 
-    <span class="k">if</span> <span class="n">particle</span> <span class="o">==</span> <span class="s2">&quot;electron&quot;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">_electron_spectrum</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="o">**</span><span class="n">pars</span><span class="p">[</span><span class="s2">&quot;electron&quot;</span><span class="p">])</span>
-    <span class="k">elif</span> <span class="n">particle</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;proton&quot;</span><span class="p">,</span> <span class="s2">&quot;He&quot;</span><span class="p">,</span> <span class="s2">&quot;N&quot;</span><span class="p">,</span> <span class="s2">&quot;Si&quot;</span><span class="p">,</span> <span class="s2">&quot;Fe&quot;</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="n">_power_law</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="o">**</span><span class="n">pars</span><span class="p">[</span><span class="n">particle</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">particle</span> <span class="o">==</span> <span class="s2">&quot;proton&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">PowerLaw</span><span class="p">(</span>
+            <span class="n">amplitude</span><span class="o">=</span><span class="mf">0.096</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (m2 s TeV sr)&quot;</span><span class="p">),</span>
+            <span class="n">index</span><span class="o">=</span><span class="mf">2.70</span><span class="p">,</span>
+            <span class="n">reference</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">particle</span> <span class="o">==</span> <span class="s2">&quot;N&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">PowerLaw</span><span class="p">(</span>
+            <span class="n">amplitude</span><span class="o">=</span><span class="mf">0.0719</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (m2 s TeV sr)&quot;</span><span class="p">),</span>
+            <span class="n">index</span><span class="o">=</span><span class="mf">2.64</span><span class="p">,</span>
+            <span class="n">reference</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">particle</span> <span class="o">==</span> <span class="s2">&quot;Si&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">PowerLaw</span><span class="p">(</span>
+            <span class="n">amplitude</span><span class="o">=</span><span class="mf">0.0284</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (m2 s TeV sr)&quot;</span><span class="p">),</span>
+            <span class="n">index</span><span class="o">=</span><span class="mf">2.66</span><span class="p">,</span>
+            <span class="n">reference</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">particle</span> <span class="o">==</span> <span class="s2">&quot;Fe&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">PowerLaw</span><span class="p">(</span>
+            <span class="n">amplitude</span><span class="o">=</span><span class="mf">0.0134</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (m2 s TeV sr)&quot;</span><span class="p">),</span>
+            <span class="n">index</span><span class="o">=</span><span class="mf">2.63</span><span class="p">,</span>
+            <span class="n">reference</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">particle</span> <span class="o">==</span> <span class="s2">&quot;electron&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">PowerLaw</span><span class="p">(</span>
+            <span class="n">amplitude</span><span class="o">=</span><span class="mf">6.85e-5</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (m2 s TeV sr)&quot;</span><span class="p">),</span>
+            <span class="n">index</span><span class="o">=</span><span class="mf">3.21</span><span class="p">,</span>
+            <span class="n">reference</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">+</span> <span class="n">SpectralLogGaussian</span><span class="p">(</span>
+            <span class="n">norm</span><span class="o">=</span><span class="mf">3.19e-3</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (m2 s sr)&quot;</span><span class="p">),</span> <span class="n">mean</span><span class="o">=</span><span class="mf">0.107</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">0.776</span>
+        <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid argument for particle: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">particle</span><span class="p">))</span></div>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid argument for particle: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">particle</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">model</span></div>
 </pre></div>
 
            </div>
@@ -1060,7 +1060,7 @@
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 17 Jun 2019.
+        Last updated on 17 Jul 2019.
       </span>
 
     </p>

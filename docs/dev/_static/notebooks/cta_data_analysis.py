@@ -253,7 +253,7 @@ get_ipython().run_cell_magic('time', '', 'bkg_estimator = ReflectedRegionsBackgr
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'extract = SpectrumExtraction(\n    observations=observations, bkg_estimate=bkg_estimate\n)\nextract.run()')
+get_ipython().run_cell_magic('time', '', 'extract = SpectrumExtraction(\n    observations=observations, bkg_estimate=bkg_estimate\n)\nextract.run()\nextract.compute_energy_threshold()')
 
 
 # ### Model fit

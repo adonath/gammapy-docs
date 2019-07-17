@@ -137,9 +137,9 @@ lc.plot();
 
 
 # Let's compare to the expected flux of this source
-from gammapy.spectrum import CrabSpectrum
+from gammapy.spectrum import create_crab_spectral_model
 
-crab_spec = CrabSpectrum().model
+crab_spec = create_crab_spectral_model()
 crab_flux = crab_spec.integral(*energy_range).to("cm-2 s-1")
 crab_flux
 

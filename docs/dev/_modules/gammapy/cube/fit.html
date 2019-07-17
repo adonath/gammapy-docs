@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.cube.fit &mdash; gammapy v0.13.dev9173</title>
+  <title>gammapy.cube.fit &mdash; gammapy v0.13.dev9351</title>
   
 
   
@@ -68,7 +68,7 @@
             
             
               <div class="version">
-                0.13.dev9173
+                0.13.dev9351
               </div>
             
           
@@ -571,12 +571,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#using-gammapy-image">Using <code class="docutils literal notranslate"><span class="pre">gammapy.image</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../image/models.html">Morphology models (<code class="docutils literal notranslate"><span class="pre">gammapy.image.models</span></code>)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#introduction">Introduction</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#getting-started">Getting Started</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#reference-api">Reference/API</a></li>
-</ul>
-</li>
 <li class="toctree-l3"><a class="reference internal" href="../../../image/plotting.html">Image plotting</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../image/plotting.html#colormaps">Colormaps</a></li>
 </ul>
@@ -634,7 +628,13 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#using-gammapy-background">Using <code class="docutils literal notranslate"><span class="pre">gammapy.background</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../background/reflected.html">Reflected regions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../background/reflected.html">Reflected regions background</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#overview">Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#using-regions">Using regions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#the-reflected-region-finder">The reflected region finder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#using-the-reflected-background-estimator">Using the reflected background estimator</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#reference-api">Reference/API</a><ul>
@@ -855,7 +855,6 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../catalog/index.html#reference-api">Reference/API</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../catalog/index.html#module-gammapy.catalog">gammapy.catalog Package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../catalog/index.html#functions">Functions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../catalog/index.html#classes">Classes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../catalog/index.html#variables">Variables</a></li>
 </ul>
@@ -981,10 +980,15 @@
 <span class="kn">from</span> <span class="nn">astropy.utils</span> <span class="k">import</span> <span class="n">lazyproperty</span>
 <span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
 <span class="kn">from</span> <span class="nn">astropy.nddata.utils</span> <span class="k">import</span> <span class="n">NoOverlapError</span>
+<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
+<span class="kn">from</span> <span class="nn">..utils.scripts</span> <span class="k">import</span> <span class="n">make_path</span>
 <span class="kn">from</span> <span class="nn">..utils.fitting</span> <span class="k">import</span> <span class="n">Parameters</span><span class="p">,</span> <span class="n">Dataset</span>
 <span class="kn">from</span> <span class="nn">..stats</span> <span class="k">import</span> <span class="n">cash</span><span class="p">,</span> <span class="n">cstat</span><span class="p">,</span> <span class="n">cash_sum_cython</span><span class="p">,</span> <span class="n">cstat_sum_cython</span>
 <span class="kn">from</span> <span class="nn">..maps</span> <span class="k">import</span> <span class="n">Map</span>
-<span class="kn">from</span> <span class="nn">.models</span> <span class="k">import</span> <span class="n">SkyModel</span><span class="p">,</span> <span class="n">SkyModels</span>
+<span class="kn">from</span> <span class="nn">..irf</span> <span class="k">import</span> <span class="n">EnergyDispersion</span>
+<span class="kn">from</span> <span class="nn">.models</span> <span class="k">import</span> <span class="n">SkyModel</span><span class="p">,</span> <span class="n">SkyModels</span><span class="p">,</span> <span class="n">BackgroundModel</span>
+<span class="kn">from</span> <span class="nn">.psf_kernel</span> <span class="k">import</span> <span class="n">PSFKernel</span>
+
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;MapEvaluator&quot;</span><span class="p">,</span> <span class="s2">&quot;MapDataset&quot;</span><span class="p">]</span>
 
@@ -1028,7 +1032,7 @@
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">model</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">counts</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">exposure</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">mask_fit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -1073,13 +1077,16 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="n">model</span>
 
-        <span class="n">evaluators</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">evaluators</span> <span class="o">=</span> <span class="p">[]</span>
 
-        <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">skymodels</span><span class="p">:</span>
-            <span class="n">evaluator</span> <span class="o">=</span> <span class="n">MapEvaluator</span><span class="p">(</span><span class="n">component</span><span class="p">,</span> <span class="n">evaluation_mode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">evaluation_mode</span><span class="p">)</span>
-            <span class="n">evaluators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">evaluator</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">skymodels</span><span class="p">:</span>
+                <span class="n">evaluator</span> <span class="o">=</span> <span class="n">MapEvaluator</span><span class="p">(</span>
+                    <span class="n">component</span><span class="p">,</span> <span class="n">evaluation_mode</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">evaluation_mode</span>
+                <span class="p">)</span>
+                <span class="n">evaluators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">evaluator</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_evaluators</span> <span class="o">=</span> <span class="n">evaluators</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_evaluators</span> <span class="o">=</span> <span class="n">evaluators</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1147,7 +1154,130 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">stat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stat_sum</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">npred</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span>
 
-        <span class="k">return</span> <span class="n">stat</span></div></div>
+        <span class="k">return</span> <span class="n">stat</span></div>
+
+<div class="viewcode-block" id="MapDataset.to_hdulist"><a class="viewcode-back" href="../../../api/gammapy.cube.MapDataset.html#gammapy.cube.MapDataset.to_hdulist">[docs]</a>    <span class="k">def</span> <span class="nf">to_hdulist</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert map dataset to list of HDUs.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        hdulist : `~astropy.io.fits.HDUList`</span>
+<span class="sd">            Map dataset list of HDUs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: what todo about the model and background model parameters?</span>
+        <span class="n">exclude_primary</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">hdu_primary</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">()</span>
+        <span class="n">hdulist</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">([</span><span class="n">hdu_primary</span><span class="p">])</span>
+        <span class="n">hdulist</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">(</span><span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;counts&quot;</span><span class="p">)[</span><span class="n">exclude_primary</span><span class="p">]</span>
+        <span class="n">hdulist</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">(</span><span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;exposure&quot;</span><span class="p">)[</span><span class="n">exclude_primary</span><span class="p">]</span>
+        <span class="n">hdulist</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">(</span><span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;background&quot;</span><span class="p">)[</span>
+            <span class="n">exclude_primary</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="p">,</span> <span class="n">EnergyDispersion</span><span class="p">):</span>
+                <span class="n">hdus</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">()</span>
+                <span class="n">hdus</span><span class="p">[</span><span class="s2">&quot;MATRIX&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;edisp_matrix&quot;</span>
+                <span class="n">hdus</span><span class="p">[</span><span class="s2">&quot;EBOUNDS&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;edisp_matrix_ebounds&quot;</span>
+                <span class="n">hdulist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hdus</span><span class="p">[</span><span class="s2">&quot;EDISP_MATRIX&quot;</span><span class="p">])</span>
+                <span class="n">hdulist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">hdus</span><span class="p">[</span><span class="s2">&quot;EDISP_MATRIX_EBOUNDS&quot;</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">hdulist</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">edisp_map</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">(</span><span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;EDISP&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">psf</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="p">,</span> <span class="n">PSFKernel</span><span class="p">):</span>
+                <span class="n">hdulist</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">.</span><span class="n">psf_kernel_map</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">(</span><span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;psf_kernel&quot;</span><span class="p">)[</span>
+                    <span class="n">exclude_primary</span>
+                <span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">hdulist</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">.</span><span class="n">psf_map</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">(</span><span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;psf&quot;</span><span class="p">)[</span><span class="n">exclude_primary</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mask_safe_map</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">hdulist</span> <span class="o">+=</span> <span class="n">mask_safe_map</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">(</span><span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;mask_safe&quot;</span><span class="p">)[</span><span class="n">exclude_primary</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_fit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mask_fit_map</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_fit</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">hdulist</span> <span class="o">+=</span> <span class="n">mask_fit_map</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">(</span><span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;mask_fit&quot;</span><span class="p">)[</span><span class="n">exclude_primary</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">hdulist</span></div>
+
+<div class="viewcode-block" id="MapDataset.from_hdulist"><a class="viewcode-back" href="../../../api/gammapy.cube.MapDataset.html#gammapy.cube.MapDataset.from_hdulist">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_hdulist</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hdulist</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create map dataset from list of HDUs.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        hdulist : `~astropy.io.fits.HDUList`</span>
+<span class="sd">            List of HDUs.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dataset : `MapDataset`</span>
+<span class="sd">            Map dataset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">init_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">init_kwargs</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;counts&quot;</span><span class="p">)</span>
+        <span class="n">init_kwargs</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;exposure&quot;</span><span class="p">)</span>
+
+        <span class="n">background_map</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;background&quot;</span><span class="p">)</span>
+        <span class="n">init_kwargs</span><span class="p">[</span><span class="s2">&quot;background_model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">BackgroundModel</span><span class="p">(</span><span class="n">background_map</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;EDISP_MATRIX&quot;</span> <span class="ow">in</span> <span class="n">hdulist</span><span class="p">:</span>
+            <span class="n">init_kwargs</span><span class="p">[</span><span class="s2">&quot;edisp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">EnergyDispersion</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span>
+                <span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu1</span><span class="o">=</span><span class="s2">&quot;EDISP_MATRIX&quot;</span><span class="p">,</span> <span class="n">hdu2</span><span class="o">=</span><span class="s2">&quot;EDISP_MATRIX_EBOUNDS&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;PSF_KERNEL&quot;</span> <span class="ow">in</span> <span class="n">hdulist</span><span class="p">:</span>
+            <span class="n">psf_map</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;psf_kernel&quot;</span><span class="p">)</span>
+            <span class="n">init_kwargs</span><span class="p">[</span><span class="s2">&quot;psf&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PSFKernel</span><span class="p">(</span><span class="n">psf_map</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;MASK_SAFE&quot;</span> <span class="ow">in</span> <span class="n">hdulist</span><span class="p">:</span>
+            <span class="n">mask_safe_map</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;mask_safe&quot;</span><span class="p">)</span>
+            <span class="n">init_kwargs</span><span class="p">[</span><span class="s2">&quot;mask_safe&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mask_safe_map</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;MASK_FIT&quot;</span> <span class="ow">in</span> <span class="n">hdulist</span><span class="p">:</span>
+            <span class="n">mask_fit_map</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;mask_fit&quot;</span><span class="p">)</span>
+            <span class="n">init_kwargs</span><span class="p">[</span><span class="s2">&quot;mask_fit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mask_fit_map</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">init_kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapDataset.write"><a class="viewcode-back" href="../../../api/gammapy.cube.MapDataset.html#gammapy.cube.MapDataset.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Write map dataset to file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filename : str</span>
+<span class="sd">            Filename to write to.</span>
+<span class="sd">        overwrite : bool</span>
+<span class="sd">            Overwrite file if it exists.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">make_path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">hdulist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">()</span>
+        <span class="n">hdulist</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">filename</span><span class="p">),</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapDataset.read"><a class="viewcode-back" href="../../../api/gammapy.cube.MapDataset.html#gammapy.cube.MapDataset.read">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Read map dataset from file.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filename : str</span>
+<span class="sd">            Filename to read from.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dataset : `MapDataset`</span>
+<span class="sd">            Map dataset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">make_path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">hdulist</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="MapEvaluator"><a class="viewcode-back" href="../../../api/gammapy.cube.MapEvaluator.html#gammapy.cube.MapEvaluator">[docs]</a><span class="k">class</span> <span class="nc">MapEvaluator</span><span class="p">:</span>
@@ -1428,7 +1558,7 @@
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 17 Jun 2019.
+        Last updated on 17 Jul 2019.
       </span>
 
     </p>

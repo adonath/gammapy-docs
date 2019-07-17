@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.spectrum.core &mdash; gammapy v0.13.dev9173</title>
+  <title>gammapy.spectrum.core &mdash; gammapy v0.13.dev9351</title>
   
 
   
@@ -68,7 +68,7 @@
             
             
               <div class="version">
-                0.13.dev9173
+                0.13.dev9351
               </div>
             
           
@@ -571,12 +571,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#using-gammapy-image">Using <code class="docutils literal notranslate"><span class="pre">gammapy.image</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../image/models.html">Morphology models (<code class="docutils literal notranslate"><span class="pre">gammapy.image.models</span></code>)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#introduction">Introduction</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#getting-started">Getting Started</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#reference-api">Reference/API</a></li>
-</ul>
-</li>
 <li class="toctree-l3"><a class="reference internal" href="../../../image/plotting.html">Image plotting</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../image/plotting.html#colormaps">Colormaps</a></li>
 </ul>
@@ -634,7 +628,13 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#using-gammapy-background">Using <code class="docutils literal notranslate"><span class="pre">gammapy.background</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../background/reflected.html">Reflected regions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../background/reflected.html">Reflected regions background</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#overview">Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#using-regions">Using regions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#the-reflected-region-finder">The reflected region finder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#using-the-reflected-background-estimator">Using the reflected background estimator</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#reference-api">Reference/API</a><ul>
@@ -855,7 +855,6 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../catalog/index.html#reference-api">Reference/API</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../catalog/index.html#module-gammapy.catalog">gammapy.catalog Package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../catalog/index.html#functions">Functions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../catalog/index.html#classes">Classes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../catalog/index.html#variables">Variables</a></li>
 </ul>
@@ -978,7 +977,6 @@
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">copy</span>
-<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="k">import</span> <span class="n">Table</span>
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
@@ -989,7 +987,7 @@
 <span class="kn">from</span> <span class="nn">..utils.fits</span> <span class="k">import</span> <span class="n">energy_axis_to_ebounds</span><span class="p">,</span> <span class="n">ebounds_to_energy_axis</span>
 <span class="kn">from</span> <span class="nn">..data</span> <span class="k">import</span> <span class="n">EventList</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;CountsSpectrum&quot;</span><span class="p">,</span> <span class="s2">&quot;PHACountsSpectrum&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;CountsSpectrum&quot;</span><span class="p">]</span>
 
 <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;__name__&quot;</span><span class="p">)</span>
 
@@ -1026,6 +1024,7 @@
 <span class="sd">        )</span>
 <span class="sd">        spec.plot(show_poisson_errors=True)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">energy_lo</span><span class="p">,</span> <span class="n">energy_hi</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="n">e_edges</span> <span class="o">=</span> <span class="n">edges_from_lo_hi</span><span class="p">(</span><span class="n">energy_lo</span><span class="p">,</span> <span class="n">energy_hi</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">energy</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_edges</span><span class="p">(</span><span class="n">e_edges</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s2">&quot;log&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
@@ -1217,13 +1216,10 @@
 <span class="sd">            Downsampled spectrum.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">from</span> <span class="nn">..extern.skimage</span> <span class="k">import</span> <span class="n">block_reduce</span>
+
         <span class="n">data</span> <span class="o">=</span> <span class="n">block_reduce</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="p">(</span><span class="n">factor</span><span class="p">,))</span>
         <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">factor</span><span class="p">)</span><span class="o">.</span><span class="n">edges</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
-            <span class="n">energy_lo</span><span class="o">=</span><span class="n">energy</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
-            <span class="n">energy_hi</span><span class="o">=</span><span class="n">energy</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
-            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
-        <span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">energy_lo</span><span class="o">=</span><span class="n">energy</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">energy_hi</span><span class="o">=</span><span class="n">energy</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="CountsSpectrum.energy_mask"><a class="viewcode-back" href="../../../api/gammapy.spectrum.CountsSpectrum.html#gammapy.spectrum.CountsSpectrum.energy_mask">[docs]</a>    <span class="k">def</span> <span class="nf">energy_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">emin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">emax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Create a mask for a given energy range.</span>
@@ -1240,288 +1236,6 @@
         <span class="n">emax</span> <span class="o">=</span> <span class="n">emax</span> <span class="k">if</span> <span class="n">emax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">edges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="p">(</span><span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">emin</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">&lt;=</span> <span class="n">emax</span><span class="p">)</span></div></div>
-
-
-<div class="viewcode-block" id="PHACountsSpectrum"><a class="viewcode-back" href="../../../api/gammapy.spectrum.PHACountsSpectrum.html#gammapy.spectrum.PHACountsSpectrum">[docs]</a><span class="k">class</span> <span class="nc">PHACountsSpectrum</span><span class="p">(</span><span class="n">CountsSpectrum</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Counts spectrum corresponding to OGIP PHA format.</span>
-
-<span class="sd">    The ``bkg`` flag controls whether the PHA counts spectrum represents a</span>
-<span class="sd">    background estimate or not (this slightly affects the FITS header</span>
-<span class="sd">    information when writing to disk).</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    energy_lo : `~astropy.units.Quantity`</span>
-<span class="sd">        Lower bin edges of energy axis</span>
-<span class="sd">    energy_hi : `~astropy.units.Quantity`</span>
-<span class="sd">        Upper bin edges of energy axis</span>
-<span class="sd">    data : array-like, optional</span>
-<span class="sd">        Counts</span>
-<span class="sd">    quality : int, array-like, optional</span>
-<span class="sd">        Mask bins in safe energy range (1 = bad, 0 = good)</span>
-<span class="sd">    backscal : float, array-like, optional</span>
-<span class="sd">        Background scaling factor</span>
-<span class="sd">    areascal : float, array-like, optional</span>
-<span class="sd">        Area scaling factor</span>
-<span class="sd">    is_bkg : bool, optional</span>
-<span class="sd">        Background or soure spectrum, default: False</span>
-<span class="sd">    obs_id : int</span>
-<span class="sd">        Observation identifier, optional</span>
-<span class="sd">    livetime : `~astropy.units.Quantity`, optional</span>
-<span class="sd">        Observation livetime</span>
-<span class="sd">    offset : `~astropy.units.Quantity`, optional</span>
-<span class="sd">        Field of view offset</span>
-<span class="sd">    meta : dict, optional</span>
-<span class="sd">        Meta information</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">energy_lo</span><span class="p">,</span>
-        <span class="n">energy_hi</span><span class="p">,</span>
-        <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">quality</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">backscal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">areascal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">is_bkg</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">obs_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">livetime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">offset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">energy_lo</span><span class="p">,</span> <span class="n">energy_hi</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">quality</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">quality</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">nbin</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;i2&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">quality</span> <span class="o">=</span> <span class="n">quality</span>
-        <span class="k">if</span> <span class="n">backscal</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">backscal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">nbin</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">backscal</span> <span class="o">=</span> <span class="n">backscal</span>
-        <span class="k">if</span> <span class="n">areascal</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">areascal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">nbin</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">areascal</span> <span class="o">=</span> <span class="n">areascal</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">is_bkg</span> <span class="o">=</span> <span class="n">is_bkg</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">obs_id</span> <span class="o">=</span> <span class="n">obs_id</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">livetime</span> <span class="o">=</span> <span class="n">livetime</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="n">offset</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">meta</span> <span class="ow">or</span> <span class="n">OrderedDict</span><span class="p">()</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">phafile</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;PHA file associated with the observation.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_id</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-            <span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;pha_stacked.fits&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;pha_obs</span><span class="si">{}</span><span class="s2">.fits&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_id</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">filename</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">arffile</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;ARF associated with the observation.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">phafile</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;pha&quot;</span><span class="p">,</span> <span class="s2">&quot;arf&quot;</span><span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">rmffile</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;RMF associated with the observation.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">phafile</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;pha&quot;</span><span class="p">,</span> <span class="s2">&quot;rmf&quot;</span><span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">bkgfile</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Background PHA files associated with the observation.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">phafile</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;pha&quot;</span><span class="p">,</span> <span class="s2">&quot;bkg&quot;</span><span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">bins_in_safe_range</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Indices of bins within the energy thresholds&quot;&quot;&quot;</span>
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quality</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">idx</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">counts_in_safe_range</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Counts with bins outside safe range set to 0.&quot;&quot;&quot;</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">data</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quality</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">return</span> <span class="n">data</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">lo_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Low energy threshold of the observation (lower bin edge).&quot;&quot;&quot;</span>
-        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bins_in_safe_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span>
-
-    <span class="nd">@lo_threshold</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">lo_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">thres</span><span class="p">):</span>
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">&lt;</span> <span class="n">thres</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">quality</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">hi_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;High energy threshold of the observation (upper bin edge).&quot;&quot;&quot;</span>
-        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bins_in_safe_range</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:][</span><span class="n">idx</span><span class="p">]</span>
-
-    <span class="nd">@hi_threshold</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">hi_threshold</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">thres</span><span class="p">):</span>
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">&gt;</span> <span class="n">thres</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">quality</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-
-<div class="viewcode-block" id="PHACountsSpectrum.reset_thresholds"><a class="viewcode-back" href="../../../api/gammapy.spectrum.PHACountsSpectrum.html#gammapy.spectrum.PHACountsSpectrum.reset_thresholds">[docs]</a>    <span class="k">def</span> <span class="nf">reset_thresholds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Reset energy thresholds (declare all energy bins valid).&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">quality</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quality</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="PHACountsSpectrum.rebin"><a class="viewcode-back" href="../../../api/gammapy.spectrum.PHACountsSpectrum.html#gammapy.spectrum.PHACountsSpectrum.rebin">[docs]</a>    <span class="k">def</span> <span class="nf">rebin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Rebin.</span>
-
-<span class="sd">        See `~gammapy.spectrum.CountsSpectrum`.</span>
-<span class="sd">        This function treats the quality vector correctly.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">..extern.skimage</span> <span class="k">import</span> <span class="n">block_reduce</span>
-
-        <span class="n">retval</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">parameter</span><span class="p">)</span>
-
-        <span class="n">quality_summed</span> <span class="o">=</span> <span class="n">block_reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quality</span><span class="p">),</span> <span class="n">block_size</span><span class="o">=</span><span class="p">(</span><span class="n">parameter</span><span class="p">,))</span>
-
-        <span class="c1"># Exclude groups where not all bins are within the safe threshold</span>
-        <span class="n">condition</span> <span class="o">=</span> <span class="n">quality_summed</span> <span class="o">==</span> <span class="n">parameter</span>
-        <span class="n">quality_rebinned</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
-            <span class="n">condition</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">retval</span><span class="o">.</span><span class="n">data</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">retval</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
-        <span class="p">)</span>
-        <span class="n">retval</span><span class="o">.</span><span class="n">quality</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">quality_rebinned</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
-
-        <span class="c1"># if backscal is not the same in all channels cannot merge</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">retval</span><span class="o">.</span><span class="n">backscal</span><span class="p">):</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">retval</span><span class="o">.</span><span class="n">backscal</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot merge energy dependent backscal&quot;</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">retval</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">backscal</span> <span class="o">=</span> <span class="n">retval</span><span class="o">.</span><span class="n">backscal</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">retval</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">nbin</span><span class="p">)</span>
-
-        <span class="n">retval</span><span class="o">.</span><span class="n">areascal</span> <span class="o">=</span> <span class="n">block_reduce</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">areascal</span><span class="p">,</span> <span class="n">block_size</span><span class="o">=</span><span class="p">(</span><span class="n">parameter</span><span class="p">,),</span> <span class="n">func</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="n">retval</span></div>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">_backscal_array</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Helper function to always return backscal as an array.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backscal</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">nbin</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">backscal</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">backscal</span>
-
-<div class="viewcode-block" id="PHACountsSpectrum.to_table"><a class="viewcode-back" href="../../../api/gammapy.spectrum.PHACountsSpectrum.html#gammapy.spectrum.PHACountsSpectrum.to_table">[docs]</a>    <span class="k">def</span> <span class="nf">to_table</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Convert to `~astropy.table.Table`.&quot;&quot;&quot;</span>
-        <span class="n">table</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
-
-        <span class="n">table</span><span class="p">[</span><span class="s2">&quot;QUALITY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">quality</span>
-        <span class="n">table</span><span class="p">[</span><span class="s2">&quot;BACKSCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backscal_array</span>
-        <span class="n">table</span><span class="p">[</span><span class="s2">&quot;AREASCAL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">areascal</span>
-
-        <span class="n">meta</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
-        <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;SPECTRUM&quot;</span>
-        <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;hduclass&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;OGIP&quot;</span>
-        <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;hduclas1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;SPECTRUM&quot;</span>
-        <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;corrscal&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-        <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;chantype&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;PHA&quot;</span>
-        <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;detchans&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">nbin</span>
-        <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;filter&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;None&quot;</span>
-        <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;corrfile&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-        <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;poisserr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;hduclas3&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;COUNT&quot;</span>
-        <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;hduclas4&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;TYPE:1&quot;</span>
-        <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;lo_thres&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lo_threshold</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s2">&quot;TeV&quot;</span><span class="p">)</span>
-        <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;hi_thres&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hi_threshold</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s2">&quot;TeV&quot;</span><span class="p">)</span>
-        <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">livetime</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s2">&quot;s&quot;</span><span class="p">)</span>
-        <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;obs_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obs_id</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_bkg</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rmffile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;respfile&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rmffile</span>
-
-            <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;backfile&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bkgfile</span>
-            <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;ancrfile&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">arffile</span>
-            <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;hduclas2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;TOTAL&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;hduclas2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;BKG&quot;</span>
-
-        <span class="n">meta</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="p">)</span>
-
-        <span class="n">table</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">meta</span>
-        <span class="k">return</span> <span class="n">table</span></div>
-
-<div class="viewcode-block" id="PHACountsSpectrum.from_hdulist"><a class="viewcode-back" href="../../../api/gammapy.spectrum.PHACountsSpectrum.html#gammapy.spectrum.PHACountsSpectrum.from_hdulist">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_hdulist</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu1</span><span class="o">=</span><span class="s2">&quot;SPECTRUM&quot;</span><span class="p">,</span> <span class="n">hdu2</span><span class="o">=</span><span class="s2">&quot;EBOUNDS&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Create from `~astropy.io.fits.HDUList`.&quot;&quot;&quot;</span>
-        <span class="n">counts_table</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">hdulist</span><span class="p">[</span><span class="n">hdu1</span><span class="p">])</span>
-        <span class="n">ebounds</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">hdulist</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
-        <span class="n">emin</span> <span class="o">=</span> <span class="n">ebounds</span><span class="p">[</span><span class="s2">&quot;E_MIN&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
-        <span class="n">emax</span> <span class="o">=</span> <span class="n">ebounds</span><span class="p">[</span><span class="s2">&quot;E_MAX&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
-
-        <span class="c1"># Check if column are present in the header</span>
-        <span class="n">quality</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="n">areascal</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="n">backscal</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="s2">&quot;QUALITY&quot;</span> <span class="ow">in</span> <span class="n">counts_table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
-            <span class="n">quality</span> <span class="o">=</span> <span class="n">counts_table</span><span class="p">[</span><span class="s2">&quot;QUALITY&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
-        <span class="k">if</span> <span class="s2">&quot;AREASCAL&quot;</span> <span class="ow">in</span> <span class="n">counts_table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
-            <span class="n">areascal</span> <span class="o">=</span> <span class="n">counts_table</span><span class="p">[</span><span class="s2">&quot;AREASCAL&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
-        <span class="k">if</span> <span class="s2">&quot;BACKSCAL&quot;</span> <span class="ow">in</span> <span class="n">counts_table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
-            <span class="n">backscal</span> <span class="o">=</span> <span class="n">counts_table</span><span class="p">[</span><span class="s2">&quot;BACKSCAL&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
-
-        <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-            <span class="n">data</span><span class="o">=</span><span class="n">counts_table</span><span class="p">[</span><span class="s2">&quot;COUNTS&quot;</span><span class="p">],</span>
-            <span class="n">backscal</span><span class="o">=</span><span class="n">backscal</span><span class="p">,</span>
-            <span class="n">energy_lo</span><span class="o">=</span><span class="n">emin</span><span class="p">,</span>
-            <span class="n">energy_hi</span><span class="o">=</span><span class="n">emax</span><span class="p">,</span>
-            <span class="n">quality</span><span class="o">=</span><span class="n">quality</span><span class="p">,</span>
-            <span class="n">areascal</span><span class="o">=</span><span class="n">areascal</span><span class="p">,</span>
-            <span class="n">livetime</span><span class="o">=</span><span class="n">counts_table</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s2">&quot;EXPOSURE&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">s</span><span class="p">,</span>
-            <span class="n">obs_id</span><span class="o">=</span><span class="n">counts_table</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s2">&quot;OBS_ID&quot;</span><span class="p">],</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">hdulist</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s2">&quot;HDUCLAS2&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;BKG&quot;</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;is_bkg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="PHACountsSpectrum.read"><a class="viewcode-back" href="../../../api/gammapy.spectrum.PHACountsSpectrum.html#gammapy.spectrum.PHACountsSpectrum.read">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">hdu1</span><span class="o">=</span><span class="s2">&quot;SPECTRUM&quot;</span><span class="p">,</span> <span class="n">hdu2</span><span class="o">=</span><span class="s2">&quot;EBOUNDS&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Read from file.&quot;&quot;&quot;</span>
-        <span class="n">filename</span> <span class="o">=</span> <span class="n">make_path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-        <span class="k">with</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">filename</span><span class="p">),</span> <span class="n">memmap</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">hdulist</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu1</span><span class="o">=</span><span class="n">hdu1</span><span class="p">,</span> <span class="n">hdu2</span><span class="o">=</span><span class="n">hdu2</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="PHACountsSpectrum.to_sherpa"><a class="viewcode-back" href="../../../api/gammapy.spectrum.PHACountsSpectrum.html#gammapy.spectrum.PHACountsSpectrum.to_sherpa">[docs]</a>    <span class="k">def</span> <span class="nf">to_sherpa</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Convert to `sherpa.astro.data.DataPHA`.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        name : str</span>
-<span class="sd">            Instance name</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">sherpa.utils</span> <span class="k">import</span> <span class="n">SherpaFloat</span>
-        <span class="kn">from</span> <span class="nn">sherpa.astro.data</span> <span class="k">import</span> <span class="n">DataPHA</span>
-
-        <span class="n">table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
-
-        <span class="c1"># Workaround to avoid https://github.com/sherpa/sherpa/issues/248</span>
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backscal</span><span class="p">):</span>
-            <span class="n">backscal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">backscal</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">backscal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">backscal</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">backscal</span><span class="o">.</span><span class="n">mean</span><span class="p">(),</span> <span class="n">backscal</span><span class="p">):</span>
-                <span class="n">backscal</span> <span class="o">=</span> <span class="n">backscal</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-
-        <span class="k">return</span> <span class="n">DataPHA</span><span class="p">(</span>
-            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
-            <span class="n">channel</span><span class="o">=</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;CHANNEL&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">SherpaFloat</span><span class="p">),</span>
-            <span class="n">counts</span><span class="o">=</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;COUNTS&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">SherpaFloat</span><span class="p">),</span>
-            <span class="n">quality</span><span class="o">=</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;QUALITY&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-            <span class="n">exposure</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">livetime</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s2">&quot;s&quot;</span><span class="p">),</span>
-            <span class="n">backscal</span><span class="o">=</span><span class="n">backscal</span><span class="p">,</span>
-            <span class="n">areascal</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">areascal</span><span class="p">,</span>
-            <span class="n">syserror</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-            <span class="n">staterror</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-            <span class="n">grouping</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="p">)</span></div></div>
 </pre></div>
 
            </div>
@@ -1536,7 +1250,7 @@
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 17 Jun 2019.
+        Last updated on 17 Jul 2019.
       </span>
 
     </p>

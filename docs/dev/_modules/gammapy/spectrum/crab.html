@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.spectrum.crab &mdash; gammapy v0.13.dev9173</title>
+  <title>gammapy.spectrum.crab &mdash; gammapy v0.13.dev9351</title>
   
 
   
@@ -68,7 +68,7 @@
             
             
               <div class="version">
-                0.13.dev9173
+                0.13.dev9351
               </div>
             
           
@@ -571,12 +571,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#using-gammapy-image">Using <code class="docutils literal notranslate"><span class="pre">gammapy.image</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../image/models.html">Morphology models (<code class="docutils literal notranslate"><span class="pre">gammapy.image.models</span></code>)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#introduction">Introduction</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#getting-started">Getting Started</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#reference-api">Reference/API</a></li>
-</ul>
-</li>
 <li class="toctree-l3"><a class="reference internal" href="../../../image/plotting.html">Image plotting</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../image/plotting.html#colormaps">Colormaps</a></li>
 </ul>
@@ -634,7 +628,13 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#using-gammapy-background">Using <code class="docutils literal notranslate"><span class="pre">gammapy.background</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../background/reflected.html">Reflected regions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../background/reflected.html">Reflected regions background</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#overview">Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#using-regions">Using regions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#the-reflected-region-finder">The reflected region finder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#using-the-reflected-background-estimator">Using the reflected background estimator</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#reference-api">Reference/API</a><ul>
@@ -855,7 +855,6 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../catalog/index.html#reference-api">Reference/API</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../catalog/index.html#module-gammapy.catalog">gammapy.catalog Package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../catalog/index.html#functions">Functions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../catalog/index.html#classes">Classes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../catalog/index.html#variables">Variables</a></li>
 </ul>
@@ -980,47 +979,7 @@
 <span class="kn">from</span> <span class="nn">astropy</span> <span class="k">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
 <span class="kn">from</span> <span class="nn">.models</span> <span class="k">import</span> <span class="n">PowerLaw</span><span class="p">,</span> <span class="n">LogParabola</span><span class="p">,</span> <span class="n">ExponentialCutoffPowerLaw</span><span class="p">,</span> <span class="n">SpectralModel</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;CrabSpectrum&quot;</span><span class="p">]</span>
-
-<span class="c1"># HESS publication: 2006A&amp;A...457..899A</span>
-<span class="n">hess_pl</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;amplitude&quot;</span><span class="p">:</span> <span class="mf">3.45e-11</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s TeV)&quot;</span><span class="p">),</span>
-    <span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="mf">2.63</span><span class="p">,</span>
-    <span class="s2">&quot;reference&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
-<span class="p">}</span>
-
-<span class="n">hess_ecpl</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;amplitude&quot;</span><span class="p">:</span> <span class="mf">3.76e-11</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s TeV)&quot;</span><span class="p">),</span>
-    <span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="mf">2.39</span><span class="p">,</span>
-    <span class="s2">&quot;lambda_&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mf">14.3</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">),</span>
-    <span class="s2">&quot;reference&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
-<span class="p">}</span>
-
-<span class="c1"># HEGRA publication : 2004ApJ...614..897A</span>
-<span class="n">hegra</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;amplitude&quot;</span><span class="p">:</span> <span class="mf">2.83e-11</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s TeV)&quot;</span><span class="p">),</span>
-    <span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="mf">2.62</span><span class="p">,</span>
-    <span class="s2">&quot;reference&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
-<span class="p">}</span>
-
-<span class="c1"># MAGIC publication: 2015JHEAp...5...30A</span>
-<span class="c1"># note that in the paper the beta of the LogParabola is given as negative in</span>
-<span class="c1"># Table 1 (pag. 33), but should be positive to match gammapy LogParabola expression</span>
-<span class="c1"># Also MAGIC uses log10 in the LogParabola expression, gammapy uses ln, hence</span>
-<span class="c1"># the conversion factor</span>
-<span class="n">magic_lp</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;amplitude&quot;</span><span class="p">:</span> <span class="mf">3.23e-11</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s TeV)&quot;</span><span class="p">),</span>
-    <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="mf">2.47</span><span class="p">,</span>
-    <span class="s2">&quot;beta&quot;</span><span class="p">:</span> <span class="mf">0.24</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span>
-    <span class="s2">&quot;reference&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
-<span class="p">}</span>
-
-<span class="n">magic_ecpl</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;amplitude&quot;</span><span class="p">:</span> <span class="mf">3.80e-11</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s TeV)&quot;</span><span class="p">),</span>
-    <span class="s2">&quot;index&quot;</span><span class="p">:</span> <span class="mf">2.21</span><span class="p">,</span>
-    <span class="s2">&quot;lambda_&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mf">6.0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">),</span>
-    <span class="s2">&quot;reference&quot;</span><span class="p">:</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
-<span class="p">}</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;create_crab_spectral_model&quot;</span><span class="p">]</span>
 
 
 <span class="k">class</span> <span class="nc">MeyerCrabModel</span><span class="p">(</span><span class="n">SpectralModel</span><span class="p">):</span>
@@ -1040,8 +999,8 @@
         <span class="k">return</span> <span class="n">flux</span> <span class="o">/</span> <span class="n">energy</span> <span class="o">**</span> <span class="mi">2</span>
 
 
-<div class="viewcode-block" id="CrabSpectrum"><a class="viewcode-back" href="../../../api/gammapy.spectrum.CrabSpectrum.html#gammapy.spectrum.CrabSpectrum">[docs]</a><span class="k">class</span> <span class="nc">CrabSpectrum</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Crab nebula spectral model.</span>
+<div class="viewcode-block" id="create_crab_spectral_model"><a class="viewcode-back" href="../../../api/gammapy.spectrum.create_crab_spectral_model.html#gammapy.spectrum.create_crab_spectral_model">[docs]</a><span class="k">def</span> <span class="nf">create_crab_spectral_model</span><span class="p">(</span><span class="n">reference</span><span class="o">=</span><span class="s2">&quot;meyer&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create the Crab nebula spectral model depending of the reference given.</span>
 
 <span class="sd">    The Crab nebula is often used as a standard candle in gamma-ray astronomy.</span>
 <span class="sd">    Fluxes and sensitivities are often quoted relative to the Crab spectrum.</span>
@@ -1063,18 +1022,18 @@
 <span class="sd">    Let&#39;s first import what we need::</span>
 
 <span class="sd">        import astropy.units as u</span>
-<span class="sd">        from gammapy.spectrum import CrabSpectrum</span>
+<span class="sd">        from gammapy.spectrum import create_crab_spectral_model</span>
 <span class="sd">        from gammapy.spectrum.models import PowerLaw</span>
 
 <span class="sd">    Plot the &#39;hess_ecpl&#39; reference Crab spectrum between 1 TeV and 100 TeV::</span>
 
-<span class="sd">        crab_hess_ecpl = CrabSpectrum(&#39;hess_ecpl&#39;)</span>
-<span class="sd">        crab_hess_ecpl.model.plot([1, 100] * u.TeV)</span>
+<span class="sd">        crab_hess_ecpl = create_crab_spectral_model(&#39;hess_ecpl&#39;)</span>
+<span class="sd">        crab_hess_ecpl.plot([1, 100] * u.TeV)</span>
 
 <span class="sd">    Use a reference crab spectrum as unit to measure a differential flux (at 10 TeV)::</span>
 
 <span class="sd">        &gt;&gt;&gt; pwl = PowerLaw(index=2.3, amplitude=1e-12 * u.Unit(&#39;1 / (cm2 s TeV)&#39;), reference=1 * u.TeV)</span>
-<span class="sd">        &gt;&gt;&gt; crab = CrabSpectrum(&#39;hess_pl&#39;).model</span>
+<span class="sd">        &gt;&gt;&gt; crab = create_crab_spectral_model(&#39;hess_pl&#39;)</span>
 <span class="sd">        &gt;&gt;&gt; energy = 10 * u.TeV</span>
 <span class="sd">        &gt;&gt;&gt; dnde_cu = (pwl(energy) / crab(energy)).to(&#39;%&#39;)</span>
 <span class="sd">        &gt;&gt;&gt; print(dnde_cu)</span>
@@ -1089,29 +1048,55 @@
 <span class="sd">        3.5350582166 %</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">references</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;meyer&quot;</span><span class="p">,</span> <span class="s2">&quot;hegra&quot;</span><span class="p">,</span> <span class="s2">&quot;hess_pl&quot;</span><span class="p">,</span> <span class="s2">&quot;hess_ecpl&quot;</span><span class="p">,</span> <span class="s2">&quot;magic_lp&quot;</span><span class="p">,</span> <span class="s2">&quot;magic_ecpl&quot;</span><span class="p">]</span>
-    <span class="sd">&quot;&quot;&quot;Available references (see class docstring).&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">reference</span> <span class="o">==</span> <span class="s2">&quot;meyer&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">MeyerCrabModel</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">reference</span> <span class="o">==</span> <span class="s2">&quot;hegra&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">PowerLaw</span><span class="p">(</span>
+            <span class="n">amplitude</span><span class="o">=</span><span class="mf">2.83e-11</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s TeV)&quot;</span><span class="p">),</span>
+            <span class="n">index</span><span class="o">=</span><span class="mf">2.62</span><span class="p">,</span>
+            <span class="n">reference</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">reference</span> <span class="o">==</span> <span class="s2">&quot;hess_pl&quot;</span><span class="p">:</span>
+        <span class="c1"># HESS publication: 2006A&amp;A...457..899A</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">PowerLaw</span><span class="p">(</span>
+            <span class="n">amplitude</span><span class="o">=</span><span class="mf">3.45e-11</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s TeV)&quot;</span><span class="p">),</span>
+            <span class="n">index</span><span class="o">=</span><span class="mf">2.63</span><span class="p">,</span>
+            <span class="n">reference</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">reference</span> <span class="o">==</span> <span class="s2">&quot;hess_ecpl&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">ExponentialCutoffPowerLaw</span><span class="p">(</span>
+            <span class="n">amplitude</span><span class="o">=</span><span class="mf">3.76e-11</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s TeV)&quot;</span><span class="p">),</span>
+            <span class="n">index</span><span class="o">=</span><span class="mf">2.39</span><span class="p">,</span>
+            <span class="n">lambda_</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mf">14.3</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">),</span>
+            <span class="n">reference</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">reference</span> <span class="o">==</span> <span class="s2">&quot;magic_lp&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">LogParabola</span><span class="p">(</span>
+            <span class="n">amplitude</span><span class="o">=</span><span class="mf">3.23e-11</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s TeV)&quot;</span><span class="p">),</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="mf">2.47</span><span class="p">,</span>
+            <span class="n">beta</span><span class="o">=</span><span class="mf">0.24</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span>
+            <span class="n">reference</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">reference</span> <span class="o">==</span> <span class="s2">&quot;magic_ecpl&quot;</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">ExponentialCutoffPowerLaw</span><span class="p">(</span>
+            <span class="n">amplitude</span><span class="o">=</span><span class="mf">3.80e-11</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s TeV)&quot;</span><span class="p">),</span>
+            <span class="n">index</span><span class="o">=</span><span class="mf">2.21</span><span class="p">,</span>
+            <span class="n">lambda_</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mf">6.0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">),</span>
+            <span class="n">reference</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">fmt</span> <span class="o">=</span> <span class="s2">&quot;Invalid reference: </span><span class="si">{!r}</span><span class="s2">. Choices: </span><span class="si">{!r}</span><span class="s2">&quot;</span>
+        <span class="n">references</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;meyer&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;hegra&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;hess_pl&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;hess_ecpl&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;magic_lp&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;magic_ecpl&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">reference</span><span class="p">,</span> <span class="n">references</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reference</span><span class="o">=</span><span class="s2">&quot;meyer&quot;</span><span class="p">):</span>
-
-        <span class="k">if</span> <span class="n">reference</span> <span class="o">==</span> <span class="s2">&quot;meyer&quot;</span><span class="p">:</span>
-            <span class="n">model</span> <span class="o">=</span> <span class="n">MeyerCrabModel</span><span class="p">()</span>
-        <span class="k">elif</span> <span class="n">reference</span> <span class="o">==</span> <span class="s2">&quot;hegra&quot;</span><span class="p">:</span>
-            <span class="n">model</span> <span class="o">=</span> <span class="n">PowerLaw</span><span class="p">(</span><span class="o">**</span><span class="n">hegra</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">reference</span> <span class="o">==</span> <span class="s2">&quot;hess_pl&quot;</span><span class="p">:</span>
-            <span class="n">model</span> <span class="o">=</span> <span class="n">PowerLaw</span><span class="p">(</span><span class="o">**</span><span class="n">hess_pl</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">reference</span> <span class="o">==</span> <span class="s2">&quot;hess_ecpl&quot;</span><span class="p">:</span>
-            <span class="n">model</span> <span class="o">=</span> <span class="n">ExponentialCutoffPowerLaw</span><span class="p">(</span><span class="o">**</span><span class="n">hess_ecpl</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">reference</span> <span class="o">==</span> <span class="s2">&quot;magic_lp&quot;</span><span class="p">:</span>
-            <span class="n">model</span> <span class="o">=</span> <span class="n">LogParabola</span><span class="p">(</span><span class="o">**</span><span class="n">magic_lp</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">reference</span> <span class="o">==</span> <span class="s2">&quot;magic_ecpl&quot;</span><span class="p">:</span>
-            <span class="n">model</span> <span class="o">=</span> <span class="n">ExponentialCutoffPowerLaw</span><span class="p">(</span><span class="o">**</span><span class="n">magic_ecpl</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">fmt</span> <span class="o">=</span> <span class="s2">&quot;Invalid reference: </span><span class="si">{!r}</span><span class="s2">. Choices: </span><span class="si">{!r}</span><span class="s2">&quot;</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">reference</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">references</span><span class="p">))</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">reference</span> <span class="o">=</span> <span class="n">reference</span></div>
+    <span class="k">return</span> <span class="n">model</span></div>
 </pre></div>
 
            </div>
@@ -1126,7 +1111,7 @@
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 17 Jun 2019.
+        Last updated on 17 Jul 2019.
       </span>
 
     </p>

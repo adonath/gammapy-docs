@@ -256,7 +256,10 @@ events_3fhl.time
 
 
 # select all events within a radius of 0.5 deg around center
-events_gc_3fhl = events_3fhl.select_sky_cone(center=center, radius=0.5 * u.deg)
+from gammapy.utils.regions import SphericalCircleSkyRegion
+
+region = SphericalCircleSkyRegion(center, radius=0.5 * u.deg)
+events_gc_3fhl = events_3fhl.select_region(region)
 
 # sort events by energy
 events_gc_3fhl.table.sort("ENERGY")

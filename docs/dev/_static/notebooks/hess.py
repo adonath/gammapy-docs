@@ -32,7 +32,7 @@ from gammapy.maps import Map, MapAxis, WcsGeom
 from gammapy.cube import MapMaker, MapDataset, PSFKernel, MapMakerRing
 from gammapy.cube.models import SkyModel, BackgroundModel
 from gammapy.spectrum.models import PowerLaw
-from gammapy.spectrum import CrabSpectrum
+from gammapy.spectrum import create_crab_spectral_model
 from gammapy.image.models import SkyPointSource
 from gammapy.detect import compute_lima_on_off_image
 from gammapy.scripts import SpectrumAnalysisIACT
@@ -203,7 +203,7 @@ print(model_pwl)
 
 
 plt.figure(figsize=(10, 8))
-crab_ref = CrabSpectrum("hess_pl").model
+crab_ref = create_crab_spectral_model("hess_pl")
 
 dataset_fp = analysis.spectrum_result
 

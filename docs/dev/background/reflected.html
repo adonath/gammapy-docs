@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Reflected regions &mdash; gammapy v0.13.dev9173</title>
+  <title>Reflected regions background &mdash; gammapy v0.13.dev9351</title>
   
 
   
@@ -70,7 +70,7 @@
             
             
               <div class="version">
-                0.13.dev9173
+                0.13.dev9351
               </div>
             
           
@@ -573,12 +573,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../image/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../image/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../image/index.html#using-gammapy-image">Using <code class="docutils literal notranslate"><span class="pre">gammapy.image</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../image/models.html">Morphology models (<code class="docutils literal notranslate"><span class="pre">gammapy.image.models</span></code>)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../image/models.html#introduction">Introduction</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../image/models.html#getting-started">Getting Started</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../image/models.html#reference-api">Reference/API</a></li>
-</ul>
-</li>
 <li class="toctree-l3"><a class="reference internal" href="../image/plotting.html">Image plotting</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../image/plotting.html#colormaps">Colormaps</a></li>
 </ul>
@@ -636,7 +630,13 @@
 <li class="toctree-l2"><a class="reference internal" href="index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="index.html#using-gammapy-background">Using <code class="docutils literal notranslate"><span class="pre">gammapy.background</span></code></a><ul class="current">
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Reflected regions</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Reflected regions background</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#using-regions">Using regions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-reflected-region-finder">The reflected region finder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#using-the-reflected-background-estimator">Using the reflected background estimator</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="index.html#reference-api">Reference/API</a><ul>
@@ -857,7 +857,6 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../catalog/index.html#reference-api">Reference/API</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../catalog/index.html#module-gammapy.catalog">gammapy.catalog Package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../catalog/index.html#functions">Functions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../catalog/index.html#classes">Classes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../catalog/index.html#variables">Variables</a></li>
 </ul>
@@ -961,7 +960,7 @@
         
           <li><a href="index.html">background - Background modeling</a> &raquo;</li>
         
-      <li>Reflected regions</li>
+      <li>Reflected regions background</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -1004,11 +1003,88 @@
     text-align: unset;
 }
 </style>
-<div class="section" id="reflected-regions">
-<span id="region-reflected"></span><h1>Reflected regions<a class="headerlink" href="#reflected-regions" title="Permalink to this headline">¶</a></h1>
-<p>Details on the reflected regions method can be found in <a class="reference internal" href="../references.html#berge2007" id="id1">[Berge2007]</a></p>
+<div class="section" id="reflected-regions-background">
+<span id="region-reflected"></span><h1>Reflected regions background<a class="headerlink" href="#reflected-regions-background" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>This technique is used in classical Cherenkov astronomy for the 1D spectral
+extraction. A region on the sky, the ON region, is chosen to select events
+around the studied source position. In the absence of a solid template of the
+residual hadronic background, a classical method to estimate it is the so-called
+Reflected Region Background. The underlying assumption is that the background is
+approximately purely radial in the field-of-view. A set of OFF counts is found
+in the observation, by rotating the ON region selected around the pointing
+position. To avoid that the reflectd regions contain actual gamma-ray signal
+from other objects, one has to remove the gamma-ray bright parts of the
+field-of-view with a exclusion mask. Details on the reflected regions method can
+be found in <a class="reference internal" href="../references.html#berge2007" id="id1">[Berge2007]</a></p>
+<p>The extraction of the ON and OFF events from the <a class="reference internal" href="../api/gammapy.data.EventList.html#gammapy.data.EventList" title="gammapy.data.EventList"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EventList</span></code></a> of a
+set of observations is performed by the
+<a class="reference internal" href="../api/gammapy.background.ReflectedRegionsBackgroundEstimator.html#gammapy.background.ReflectedRegionsBackgroundEstimator" title="gammapy.background.ReflectedRegionsBackgroundEstimator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ReflectedRegionsBackgroundEstimator</span></code></a>. The latter uses the
+<a class="reference internal" href="../api/gammapy.background.ReflectedRegionsFinder.html#gammapy.background.ReflectedRegionsFinder" title="gammapy.background.ReflectedRegionsFinder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ReflectedRegionsFinder</span></code></a> to create reflected regions for a
+given circular on region and exclusion mask.</p>
+</div>
+<div class="section" id="using-regions">
+<h2>Using regions<a class="headerlink" href="#using-regions" title="Permalink to this headline">¶</a></h2>
+<p>The on region is a <a class="reference external" href="https://astropy-regions.readthedocs.io/en/latest/api/regions.SkyRegion.html#regions.SkyRegion" title="(in regions v0.5.dev470)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SkyRegion</span></code></a>. It is typically a circle
+(<a class="reference external" href="https://astropy-regions.readthedocs.io/en/latest/api/regions.CircleSkyRegion.html#regions.CircleSkyRegion" title="(in regions v0.5.dev470)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CircleSkyRegion</span></code></a>) for pointlike source analysis, but can be a more
+complex region such as a <a class="reference external" href="https://astropy-regions.readthedocs.io/en/latest/api/regions.CircleAnnulusSkyRegion.html#regions.CircleAnnulusSkyRegion" title="(in regions v0.5.dev470)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CircleAnnulusSkyRegion</span></code></a> a
+<a class="reference external" href="https://astropy-regions.readthedocs.io/en/latest/api/regions.EllipseSkyRegion.html#regions.EllipseSkyRegion" title="(in regions v0.5.dev470)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EllipseSkyRegion</span></code></a>, a <a class="reference external" href="https://astropy-regions.readthedocs.io/en/latest/api/regions.RectangleSkyRegion.html#regions.RectangleSkyRegion" title="(in regions v0.5.dev470)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RectangleSkyRegion</span></code></a> etc.</p>
+<p>The following example shows how to create such regions:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;Example how to compute and plot reflected regions.&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">astropy.units</span> <span class="kn">as</span> <span class="nn">u</span>
+<span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">SkyCoord</span>
+<span class="kn">from</span> <span class="nn">regions</span> <span class="kn">import</span> <span class="n">CircleSkyRegion</span><span class="p">,</span> <span class="n">RectangleSkyRegion</span><span class="p">,</span> <span class="n">EllipseAnnulusSkyRegion</span>
+<span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">WcsNDMap</span>
+
+<span class="n">position</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="mf">83.63</span><span class="p">,</span> <span class="mf">22.01</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;deg&quot;</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s2">&quot;icrs&quot;</span><span class="p">)</span>
+
+<span class="n">on_circle</span> <span class="o">=</span> <span class="n">CircleSkyRegion</span><span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="mf">0.3</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">)</span>
+
+<span class="n">on_ellipse_annulus</span> <span class="o">=</span> <span class="n">EllipseAnnulusSkyRegion</span><span class="p">(</span>
+    <span class="n">center</span><span class="o">=</span><span class="n">position</span><span class="p">,</span>
+    <span class="n">inner_width</span><span class="o">=</span><span class="mf">1.5</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
+    <span class="n">outer_width</span><span class="o">=</span><span class="mf">2.5</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
+    <span class="n">inner_height</span><span class="o">=</span><span class="mi">3</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
+    <span class="n">outer_height</span><span class="o">=</span><span class="mi">4</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
+    <span class="n">angle</span><span class="o">=</span><span class="mi">130</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">another_position</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="mf">80.3</span><span class="p">,</span> <span class="mf">22.0</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;deg&quot;</span><span class="p">)</span>
+<span class="n">on_rectangle</span> <span class="o">=</span> <span class="n">RectangleSkyRegion</span><span class="p">(</span>
+    <span class="n">center</span><span class="o">=</span><span class="n">another_position</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mf">4.0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span> <span class="n">angle</span><span class="o">=</span><span class="mi">50</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span>
+<span class="p">)</span>
+
+<span class="c1"># Now we plot those regions. We first create an empty map</span>
+<span class="n">empty_map</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">skydir</span><span class="o">=</span><span class="n">position</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span> <span class="n">binsz</span><span class="o">=</span><span class="mf">0.1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span> <span class="n">proj</span><span class="o">=</span><span class="s2">&quot;TAN&quot;</span>
+<span class="p">)</span>
+<span class="n">empty_map</span><span class="o">.</span><span class="n">data</span> <span class="o">+=</span> <span class="mf">1.0</span>
+<span class="n">empty_map</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;gray&quot;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># To plot the regions, we convert them to PixelRegion with the map wcs</span>
+<span class="n">on_circle</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="n">empty_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">wcs</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">on_rectangle</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="n">empty_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">wcs</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">on_ellipse_annulus</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="n">empty_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">wcs</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>(<a class="reference external" href="../background/create_region.png">png</a>, <a class="reference external" href="../background/create_region.hires.png">hires.png</a>, <a class="reference external" href="../background/create_region.pdf">pdf</a>)</p>
+<div class="figure">
+<img alt="../_images/create_region.png" src="../_images/create_region.png" />
+</div>
+</div>
+<div class="section" id="the-reflected-region-finder">
+<h2>The reflected region finder<a class="headerlink" href="#the-reflected-region-finder" title="Permalink to this headline">¶</a></h2>
 <p>The following example illustrates how to create reflected regions for a given
-circular on region and exclusion mask using the <a class="reference internal" href="../api/gammapy.background.ReflectedRegionsFinder.html#gammapy.background.ReflectedRegionsFinder" title="gammapy.background.ReflectedRegionsFinder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ReflectedRegionsFinder</span></code></a>.</p>
+circular on region and exclusion mask using the
+<a class="reference internal" href="../api/gammapy.background.ReflectedRegionsFinder.html#gammapy.background.ReflectedRegionsFinder" title="gammapy.background.ReflectedRegionsFinder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ReflectedRegionsFinder</span></code></a>. In particular, it shows how to
+change the minimal distance between the ON region and the reflected regions.
+This is useful to limit contamination by events leaking out the ON region. It
+also shows how to change the minimum distance between adjacent regions as well
+as the maximum number of reflected regions.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;Example how to compute and plot reflected regions.&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
@@ -1082,6 +1158,80 @@ circular on region and exclusion mask using the <a class="reference internal" hr
 <p class="caption"><span class="caption-text">(<a class="reference external" href="../background/make_reflected_regions_02.png">png</a>, <a class="reference external" href="../background/make_reflected_regions_02.hires.png">hires.png</a>, <a class="reference external" href="../background/make_reflected_regions_02.pdf">pdf</a>)</span></p>
 </div>
 </div>
+<div class="section" id="using-the-reflected-background-estimator">
+<h2>Using the reflected background estimator<a class="headerlink" href="#using-the-reflected-background-estimator" title="Permalink to this headline">¶</a></h2>
+<p>In practice, the user does not usually need to directly interact with the
+<a class="reference internal" href="../api/gammapy.background.ReflectedRegionsFinder.html#gammapy.background.ReflectedRegionsFinder" title="gammapy.background.ReflectedRegionsFinder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ReflectedRegionsFinder</span></code></a>. This actually is done via the
+<a class="reference internal" href="../api/gammapy.background.ReflectedRegionsBackgroundEstimator.html#gammapy.background.ReflectedRegionsBackgroundEstimator" title="gammapy.background.ReflectedRegionsBackgroundEstimator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ReflectedRegionsBackgroundEstimator</span></code></a>, which extracts the ON
+and OFF events for an <a class="reference internal" href="../api/gammapy.data.Observations.html#gammapy.data.Observations" title="gammapy.data.Observations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Observations</span></code></a> object. The last example
+shows how to run it on a few observations with a rectangular region.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="sd">&quot;&quot;&quot;Example how to compute and plot reflected regions.&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">astropy.units</span> <span class="kn">as</span> <span class="nn">u</span>
+<span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">SkyCoord</span>
+<span class="kn">from</span> <span class="nn">regions</span> <span class="kn">import</span> <span class="n">RectangleSkyRegion</span>
+<span class="kn">from</span> <span class="nn">gammapy.data</span> <span class="kn">import</span> <span class="n">DataStore</span>
+<span class="kn">from</span> <span class="nn">gammapy.background</span> <span class="kn">import</span> <span class="n">ReflectedRegionsBackgroundEstimator</span>
+
+<span class="n">data_store</span> <span class="o">=</span> <span class="n">DataStore</span><span class="o">.</span><span class="n">from_dir</span><span class="p">(</span><span class="s2">&quot;$GAMMAPY_DATA/hess-dl3-dr1/&quot;</span><span class="p">)</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">data_store</span><span class="o">.</span><span class="n">obs_table</span><span class="p">[</span><span class="s2">&quot;TARGET_NAME&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Crab&quot;</span>
+<span class="n">obs_ids</span> <span class="o">=</span> <span class="n">data_store</span><span class="o">.</span><span class="n">obs_table</span><span class="p">[</span><span class="s2">&quot;OBS_ID&quot;</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+<span class="n">observations</span> <span class="o">=</span> <span class="n">data_store</span><span class="o">.</span><span class="n">get_observations</span><span class="p">(</span><span class="n">obs_ids</span><span class="p">)</span>
+
+<span class="n">crab_position</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="mf">83.63</span><span class="p">,</span> <span class="mf">22.01</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;deg&quot;</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s2">&quot;icrs&quot;</span><span class="p">)</span>
+
+<span class="c1"># The ON region center is defined in the icrs frame. The angle is defined w.r.t. to its axis.</span>
+<span class="n">on_region</span> <span class="o">=</span> <span class="n">RectangleSkyRegion</span><span class="p">(</span>
+    <span class="n">center</span><span class="o">=</span><span class="n">crab_position</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mf">0.4</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span> <span class="n">angle</span><span class="o">=</span><span class="mi">0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span>
+<span class="p">)</span>
+
+
+<span class="n">background_estimator</span> <span class="o">=</span> <span class="n">ReflectedRegionsBackgroundEstimator</span><span class="p">(</span>
+    <span class="n">observations</span><span class="o">=</span><span class="n">observations</span><span class="p">,</span> <span class="n">on_region</span><span class="o">=</span><span class="n">on_region</span><span class="p">,</span> <span class="n">min_distance</span><span class="o">=</span><span class="mf">0.1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">rad</span>
+<span class="p">)</span>
+
+<span class="n">background_estimator</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+<span class="c1"># Let&#39;s inspect the data extracted in the first observation</span>
+<span class="k">print</span><span class="p">(</span><span class="n">background_estimator</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="n">background_estimator</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+
+<span class="c1"># Now we change the ON region, and use a center defined in the galactic frame</span>
+<span class="n">on_region_galactic</span> <span class="o">=</span> <span class="n">RectangleSkyRegion</span><span class="p">(</span>
+    <span class="n">center</span><span class="o">=</span><span class="n">crab_position</span><span class="o">.</span><span class="n">galactic</span><span class="p">,</span>
+    <span class="n">width</span><span class="o">=</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
+    <span class="n">height</span><span class="o">=</span><span class="mf">0.4</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
+    <span class="n">angle</span><span class="o">=</span><span class="mi">0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">background_estimator</span> <span class="o">=</span> <span class="n">ReflectedRegionsBackgroundEstimator</span><span class="p">(</span>
+    <span class="n">observations</span><span class="o">=</span><span class="n">observations</span><span class="p">,</span> <span class="n">on_region</span><span class="o">=</span><span class="n">on_region_galactic</span><span class="p">,</span> <span class="n">min_distance</span><span class="o">=</span><span class="mf">0.1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">rad</span>
+<span class="p">)</span>
+
+<span class="n">background_estimator</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="c1"># The reflected regions are rotated copies of a box aligned with the galactic frame</span>
+<span class="n">background_estimator</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="figure" id="id5">
+<img alt="../_images/make_rectangular_reflected_background_00.png" src="../_images/make_rectangular_reflected_background_00.png" />
+<p class="caption"><span class="caption-text">(<a class="reference external" href="../background/make_rectangular_reflected_background_00.png">png</a>, <a class="reference external" href="../background/make_rectangular_reflected_background_00.hires.png">hires.png</a>, <a class="reference external" href="../background/make_rectangular_reflected_background_00.pdf">pdf</a>)</span></p>
+</div>
+<div class="figure" id="id6">
+<img alt="../_images/make_rectangular_reflected_background_01.png" src="../_images/make_rectangular_reflected_background_01.png" />
+<p class="caption"><span class="caption-text">(<a class="reference external" href="../background/make_rectangular_reflected_background_01.png">png</a>, <a class="reference external" href="../background/make_rectangular_reflected_background_01.hires.png">hires.png</a>, <a class="reference external" href="../background/make_rectangular_reflected_background_01.pdf">pdf</a>)</span></p>
+</div>
+<p>The following notebook shows an example using
+<a class="reference internal" href="../api/gammapy.background.ReflectedRegionsBackgroundEstimator.html#gammapy.background.ReflectedRegionsBackgroundEstimator" title="gammapy.background.ReflectedRegionsBackgroundEstimator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ReflectedRegionsBackgroundEstimator</span></code></a> to perform a spectral
+extraction and fitting:</p>
+<ul class="simple">
+<li><a class="reference external" href="../notebooks/spectrum_analysis.html">spectrum_analysis.html</a></li>
+</ul>
+</div>
+</div>
 
 
            </div>
@@ -1105,7 +1255,7 @@ circular on region and exclusion mask using the <a class="reference internal" hr
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 17 Jun 2019.
+        Last updated on 17 Jul 2019.
       </span>
 
     </p>

@@ -147,7 +147,7 @@ bkg_model = PowerLaw(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '# Now simulate 30 indepenent spectra using the same set of observation conditions.\nn_obs = 30\nseeds = np.arange(n_obs)\n\nsim = SpectrumSimulation(\n    aeff=aeff,\n    edisp=edisp,\n    source_model=model_ref,\n    livetime=livetime,\n    background_model=bkg_model,\n    alpha=0.2,\n)\n\nsim.run(seeds)\nprint(sim.result)\nprint(sim.result[0])')
+get_ipython().run_cell_magic('time', '', '# Now simulate 30 indepenent spectra using the same set of observation conditions.\nn_obs = 30\nseeds = np.arange(n_obs)\n\nsim = SpectrumSimulation(\n    aeff=aeff,\n    edisp=edisp,\n    source_model=model_ref,\n    livetime=livetime,\n    background_model=bkg_model,\n    alpha=0.2,\n)\n\nsim.run(seeds)')
 
 
 # Before moving on to the fit let's have a look at the simulated observations.
@@ -155,9 +155,9 @@ get_ipython().run_cell_magic('time', '', '# Now simulate 30 indepenent spectra u
 # In[ ]:
 
 
-n_on = [obs.total_stats.n_on for obs in sim.result]
-n_off = [obs.total_stats.n_off for obs in sim.result]
-excess = [obs.total_stats.excess for obs in sim.result]
+n_on = [obs.counts.data.sum() for obs in sim.result]
+n_off = [obs.counts_off.data.sum() for obs in sim.result]
+excess = [obs.excess.data.sum() for obs in sim.result]
 
 fix, axes = plt.subplots(1, 3, figsize=(12, 4))
 axes[0].hist(n_on)

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.data.event_list &mdash; gammapy v0.13.dev9173</title>
+  <title>gammapy.data.event_list &mdash; gammapy v0.13.dev9351</title>
   
 
   
@@ -68,7 +68,7 @@
             
             
               <div class="version">
-                0.13.dev9173
+                0.13.dev9351
               </div>
             
           
@@ -571,12 +571,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../image/index.html#using-gammapy-image">Using <code class="docutils literal notranslate"><span class="pre">gammapy.image</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../image/models.html">Morphology models (<code class="docutils literal notranslate"><span class="pre">gammapy.image.models</span></code>)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#introduction">Introduction</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#getting-started">Getting Started</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../image/models.html#reference-api">Reference/API</a></li>
-</ul>
-</li>
 <li class="toctree-l3"><a class="reference internal" href="../../../image/plotting.html">Image plotting</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../image/plotting.html#colormaps">Colormaps</a></li>
 </ul>
@@ -634,7 +628,13 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#using-gammapy-background">Using <code class="docutils literal notranslate"><span class="pre">gammapy.background</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../background/reflected.html">Reflected regions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../background/reflected.html">Reflected regions background</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#overview">Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#using-regions">Using regions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#the-reflected-region-finder">The reflected region finder</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../background/reflected.html#using-the-reflected-background-estimator">Using the reflected background estimator</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../background/index.html#reference-api">Reference/API</a><ul>
@@ -855,7 +855,6 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../catalog/index.html#reference-api">Reference/API</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../catalog/index.html#module-gammapy.catalog">gammapy.catalog Package</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../catalog/index.html#functions">Functions</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../catalog/index.html#classes">Classes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../catalog/index.html#variables">Variables</a></li>
 </ul>
@@ -989,6 +988,7 @@
 <span class="kn">from</span> <span class="nn">..utils.scripts</span> <span class="k">import</span> <span class="n">make_path</span>
 <span class="kn">from</span> <span class="nn">..utils.time</span> <span class="k">import</span> <span class="n">time_ref_from_dict</span>
 <span class="kn">from</span> <span class="nn">..utils.testing</span> <span class="k">import</span> <span class="n">Checker</span>
+<span class="kn">from</span> <span class="nn">..utils.regions</span> <span class="k">import</span> <span class="n">make_region</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;EventListBase&quot;</span><span class="p">,</span> <span class="s2">&quot;EventList&quot;</span><span class="p">,</span> <span class="s2">&quot;EventListLAT&quot;</span><span class="p">]</span>
 
@@ -1260,101 +1260,24 @@
         <span class="n">mask</span> <span class="o">&amp;=</span> <span class="n">time</span> <span class="o">&lt;</span> <span class="n">time_interval</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">select_row_subset</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="EventListBase.select_sky_cone"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.select_sky_cone">[docs]</a>    <span class="k">def</span> <span class="nf">select_sky_cone</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Select events in sky circle.</span>
+<div class="viewcode-block" id="EventListBase.select_region"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.select_region">[docs]</a>    <span class="k">def</span> <span class="nf">select_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">region</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Select events in given region.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        center : `~astropy.coordinates.SkyCoord`</span>
-<span class="sd">            Sky circle center</span>
-<span class="sd">        radius : `~astropy.coordinates.Angle`</span>
-<span class="sd">            Sky circle radius</span>
+<span class="sd">        region : `~regions.SkyRegion` or str</span>
+<span class="sd">            Sky region or string defining a sky region</span>
+<span class="sd">        wcs : `~astropy.wcs.WCS`</span>
+<span class="sd">            World coordinate system transformation</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        event_list : `EventList`</span>
 <span class="sd">            Copy of event list with selection applied.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">radec</span>
-        <span class="n">separation</span> <span class="o">=</span> <span class="n">center</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">position</span><span class="p">)</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="n">separation</span> <span class="o">&lt;</span> <span class="n">radius</span>
+        <span class="n">region</span> <span class="o">=</span> <span class="n">make_region</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">radec</span><span class="p">,</span> <span class="n">wcs</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">select_row_subset</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="EventListBase.select_sky_ring"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.select_sky_ring">[docs]</a>    <span class="k">def</span> <span class="nf">select_sky_ring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">inner_radius</span><span class="p">,</span> <span class="n">outer_radius</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Select events in ring region on the sky.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        center : `~astropy.coordinates.SkyCoord`</span>
-<span class="sd">            Sky ring center</span>
-<span class="sd">        inner_radius, outer_radius : `~astropy.coordinates.Angle`</span>
-<span class="sd">            Sky ring inner and outer radius</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        event_list : `EventList`</span>
-<span class="sd">            Copy of event list with selection applied.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">radec</span>
-        <span class="n">separation</span> <span class="o">=</span> <span class="n">center</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">position</span><span class="p">)</span>
-        <span class="n">mask1</span> <span class="o">=</span> <span class="n">inner_radius</span> <span class="o">&lt;</span> <span class="n">separation</span>
-        <span class="n">mask2</span> <span class="o">=</span> <span class="n">separation</span> <span class="o">&lt;</span> <span class="n">outer_radius</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="n">mask1</span> <span class="o">*</span> <span class="n">mask2</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">select_row_subset</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="EventListBase.select_sky_box"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.select_sky_box">[docs]</a>    <span class="k">def</span> <span class="nf">select_sky_box</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lon_lim</span><span class="p">,</span> <span class="n">lat_lim</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s2">&quot;icrs&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Select events in sky box.</span>
-
-<span class="sd">        TODO: move `gammapy.catalog.select_sky_box` to gammapy.utils.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">..catalog</span> <span class="k">import</span> <span class="n">select_sky_box</span>
-
-        <span class="n">selected</span> <span class="o">=</span> <span class="n">select_sky_box</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">,</span> <span class="n">lon_lim</span><span class="p">,</span> <span class="n">lat_lim</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="EventListBase.select_circular_region"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.select_circular_region">[docs]</a>    <span class="k">def</span> <span class="nf">select_circular_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">region</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Select events in circular regions.</span>
-
-<span class="sd">        TODO: Extend to support generic regions</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        region : `~regions.CircleSkyRegion` or list of `~regions.CircleSkyRegion`</span>
-<span class="sd">            (List of) sky region(s)</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        event_list : `EventList`</span>
-<span class="sd">            Copy of event list with selection applied.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-            <span class="n">region</span> <span class="o">=</span> <span class="nb">list</span><span class="p">([</span><span class="n">region</span><span class="p">])</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_circular_region</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">select_row_subset</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="EventListBase.filter_circular_region"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.filter_circular_region">[docs]</a>    <span class="k">def</span> <span class="nf">filter_circular_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">region</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Create selection mask for event in given circular regions.</span>
-
-<span class="sd">        TODO: Extend to support generic regions</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        region : list of `~regions.SkyRegion`</span>
-<span class="sd">            List of sky regions</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        index_array : `numpy.ndarray`</span>
-<span class="sd">            Index array of selected events</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">radec</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">reg</span> <span class="ow">in</span> <span class="n">region</span><span class="p">:</span>
-            <span class="n">separation</span> <span class="o">=</span> <span class="n">reg</span><span class="o">.</span><span class="n">center</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">position</span><span class="p">)</span>
-            <span class="n">temp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">separation</span> <span class="o">&lt;</span> <span class="n">reg</span><span class="o">.</span><span class="n">radius</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">union1d</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">temp</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">mask</span></div>
 
 <div class="viewcode-block" id="EventListBase.select_parameter"><a class="viewcode-back" href="../../../api/gammapy.data.EventListBase.html#gammapy.data.EventListBase.select_parameter">[docs]</a>    <span class="k">def</span> <span class="nf">select_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">,</span> <span class="n">band</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Select events with respect to a specified parameter.</span>
@@ -1914,7 +1837,7 @@
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 17 Jun 2019.
+        Last updated on 17 Jul 2019.
       </span>
 
     </p>

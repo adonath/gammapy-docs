@@ -78,7 +78,7 @@ from gammapy.spectrum import (
     SpectrumExtraction,
     SpectrumDatasetOnOff,
     SpectrumDatasetOnOffStacker,
-    CrabSpectrum,
+    create_crab_spectral_model,
     FluxPointsEstimator,
     FluxPointsDataset,
 )
@@ -409,7 +409,7 @@ model_best_stacked.plot_error(**plot_kwargs)
 model_best_joint.plot(**plot_kwargs, label="Joint analysis result", ls="--")
 model_best_joint.plot_error(**plot_kwargs)
 
-CrabSpectrum().model.plot(**plot_kwargs, label="Crab reference")
+create_crab_spectral_model().plot(**plot_kwargs, label="Crab reference")
 plt.legend()
 
 
