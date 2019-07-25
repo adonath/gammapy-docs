@@ -151,10 +151,10 @@ sh.load_psf("psf", "analysis_3d/psf_2D.fits")
 
 
 sh.set_method("levmar")
-sh.set_method_opt('xtol', 1e-5)
-sh.set_method_opt('ftol', 1e-5)
-sh.set_method_opt('gtol', 1e-5)
-sh.set_method_opt('epsfcn', 1e-5)
+sh.set_method_opt("xtol", 1e-5)
+sh.set_method_opt("ftol", 1e-5)
+sh.set_method_opt("gtol", 1e-5)
+sh.set_method_opt("epsfcn", 1e-5)
 
 
 # In[ ]:

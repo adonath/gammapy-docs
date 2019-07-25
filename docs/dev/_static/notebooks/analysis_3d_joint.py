@@ -18,6 +18,7 @@ import numpy as np
 from pathlib import Path
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from regions import CircleSkyRegion
 
 
 # In[ ]:
@@ -225,76 +226,56 @@ for dataset in datasets:
 
 # ## Plotting residuals
 
-# In[ ]:
-
-
-def plot_residuals(dataset):
-    npred = dataset.npred()
-    residual = (dataset.counts - npred).sum_over_axes().smooth("0.08 deg")
-    _, ax, _ = residual.plot(
-        vmin=-0.5, vmax=0.5, cmap="coolwarm", add_cbar=True, stretch="linear"
-    )
-    x_center, y_center, _ = dataset.counts.geom.center_coord
-    fov = Circle(
-        (x_center, y_center), radius=4, transform=ax.get_transform("galactic")
-    )
-    ax.images[0].set_clip_path(fov)
-
-
-# Each observation has different energy threshold. Keep in mind that the residuals are not meaningful below the energy threshold.
+# Each `MapDataset` object is equipped with a method called `plot.residuals()`, which displays the spatial and spectral residuals (computed as *counts-model*) for the dataset. Optionally, these can be normalized as *(counts-model)/model* or *(counts-model)/sqrt(model)*, by passing the parameter `norm='model` or `norm=sqrt_model`.
+# 
+# First of all, let's define a region for the spectral extraction:
 
 # In[ ]:
 
 
-plot_residuals(datasets[0])
+region = CircleSkyRegion(spatial_model.position, radius=0.15 * u.deg)
 
 
-# In[ ]:
-
-
-plot_residuals(datasets[1])
-
+# We can now inspect the residuals for each dataset, separately:
 
 # In[ ]:
 
 
-plot_residuals(datasets[2])
-
-
-# Finally we compute as stacked residual map (this requires to run the `analysis_3d` tutorial first):
-
-# In[ ]:
-
-
-npred_stacked = Map.from_geom(geom)
-counts_stacked = Map.from_geom(geom)
-
-for dataset in datasets:
-    npred = dataset.npred()
-    coords = npred.geom.get_coord()
-
-    npred_stacked.fill_by_coord(coords, npred.data)
-    counts_stacked.fill_by_coord(coords, dataset.counts.data)
-
-
-# In[ ]:
-
-
-residual_stacked = (
-    (counts_stacked - npred_stacked).sum_over_axes().smooth("0.1 deg")
+ax_image, ax_spec = datasets[0].plot_residuals(
+    region=region, vmin=-0.5, vmax=0.5, method="diff"
 )
 
 
 # In[ ]:
 
 
-residual_stacked.plot(
-    vmin=-1, vmax=1, cmap="coolwarm", add_cbar=True, stretch="linear"
-);
+datasets[1].plot_residuals(region=region, vmin=-0.5, vmax=0.5);
 
 
 # In[ ]:
 
 
+datasets[2].plot_residuals(region=region, vmin=-0.5, vmax=0.5);
 
+
+# Finally, we can compute a stacked residual map:
+
+# In[ ]:
+
+
+residuals_stacked = Map.from_geom(geom)
+
+for dataset in datasets:
+    residuals = dataset.residuals()
+    coords = residuals.geom.get_coord()
+
+    residuals_stacked.fill_by_coord(coords, residuals.data)
+
+
+# In[ ]:
+
+
+residuals_stacked.sum_over_axes().smooth("0.1 deg").plot(
+    vmin=-1, vmax=1, cmap="coolwarm", add_cbar=True, stretch="linear"
+);
 

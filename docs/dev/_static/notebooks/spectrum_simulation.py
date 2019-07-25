@@ -10,7 +10,8 @@
 # We will use the following classes:
 # 
 # * [gammapy.spectrum.SpectrumDatasetOnOff](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDatasetOnOff.html)
-# * [gammapy.spectrum.SpectrumSimulation](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumSimulation.html)
+# * [gammapy.spectrum.SpectrumEvaluator](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumEvaluator.html)
+# * [gammapy.spectrum.SpectrumDataset](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDataset.html)
 # * [gammapy.irf.load_cta_irfs](https://docs.gammapy.org/dev/api/gammapy.irf.load_cta_irfs.html)
 # * [gammapy.spectrum.models.PowerLaw](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html)
 
@@ -30,7 +31,7 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 import astropy.units as u
-from gammapy.spectrum import SpectrumSimulation
+from gammapy.spectrum import SpectrumDatasetOnOff, SpectrumEvaluator, SpectrumDataset
 from gammapy.utils.fitting import Fit, Parameter
 from gammapy.spectrum.models import PowerLaw
 from gammapy.spectrum import models
@@ -111,24 +112,21 @@ edisp.plot_matrix()
 print(edisp.data)
 
 
-# The `SpectrumSimulation` class does the work of convolving the model with the effective area and the energy dispersion, and then Poission fluctuating the counts. An `obs_id` is needed by `SpectrumSimulation.simulate_obs()` to keep track of the simulated spectra. Here, we just pass a dummy index, but while simulating observations in a loop, this needs to be updated.
-
 # In[ ]:
 
 
-# Simulate data
-sim = SpectrumSimulation(
-    aeff=aeff, edisp=edisp, source_model=model_ref, livetime=livetime
+dataset = SpectrumDataset(
+    aeff=aeff, edisp=edisp, model=model_ref, livetime=livetime, obs_id=0
 )
-sim.simulate_obs(seed=42, obs_id=0)
+
+dataset.fake(random_state=42)
 
 
 # In[ ]:
 
 
 # Take a quick look at the simulated counts
-sim.obs.peek()
-print(sim.obs)
+dataset.counts.plot()
 
 
 # ## Include Background 
@@ -143,11 +141,32 @@ bkg_model = PowerLaw(
     index=2.5, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV
 )
 
+evaluator = SpectrumEvaluator(
+    model=bkg_model,
+    aeff=aeff,
+    livetime=livetime,
+)
+
+npred_bkg = evaluator.compute_npred()
+
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '# Now simulate 30 indepenent spectra using the same set of observation conditions.\nn_obs = 30\nseeds = np.arange(n_obs)\n\nsim = SpectrumSimulation(\n    aeff=aeff,\n    edisp=edisp,\n    source_model=model_ref,\n    livetime=livetime,\n    background_model=bkg_model,\n    alpha=0.2,\n)\n\nsim.run(seeds)')
+dataset = SpectrumDatasetOnOff(
+    aeff=aeff,
+    edisp=edisp,
+    model=model_ref,
+    livetime=livetime,
+    acceptance=1,
+    acceptance_off=5,
+)
+
+
+# In[ ]:
+
+
+get_ipython().run_cell_magic('time', '', '# Now simulate 30 indepenent spectra using the same set of observation conditions.\nn_obs = 100\nseeds = np.arange(n_obs)\n\ndatasets = []\n\nfor idx in range(n_obs):\n    dataset.fake(random_state=idx, background_model=npred_bkg)\n    datasets.append(dataset.copy())')
 
 
 # Before moving on to the fit let's have a look at the simulated observations.
@@ -155,9 +174,9 @@ get_ipython().run_cell_magic('time', '', '# Now simulate 30 indepenent spectra u
 # In[ ]:
 
 
-n_on = [obs.counts.data.sum() for obs in sim.result]
-n_off = [obs.counts_off.data.sum() for obs in sim.result]
-excess = [obs.excess.data.sum() for obs in sim.result]
+n_on = [dataset.counts.data.sum() for dataset in datasets]
+n_off = [dataset.counts_off.data.sum()for dataset in datasets]
+excess = [dataset.excess.data.sum() for dataset in datasets]
 
 fix, axes = plt.subplots(1, 3, figsize=(12, 4))
 axes[0].hist(n_on)
@@ -173,7 +192,7 @@ axes[2].set_xlabel("excess");
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'results = []\nfor obs in sim.result:\n    dataset = obs\n    dataset.model = model_ref.copy()\n    fit = Fit([dataset])\n    result = fit.optimize()\n    results.append(\n        {\n            "index": result.parameters["index"].value,\n            "amplitude": result.parameters["amplitude"].value,\n        }\n    )')
+get_ipython().run_cell_magic('time', '', 'results = []\nfor dataset in datasets:\n    dataset.model = model_ref.copy()\n    fit = Fit([dataset])\n    result = fit.optimize()\n    results.append(\n        {\n            "index": result.parameters["index"].value,\n            "amplitude": result.parameters["amplitude"].value,\n        }\n    )')
 
 
 # We take a look at the distribution of the fitted indices. This matches very well with the spectrum that we initially injected, index=2.1

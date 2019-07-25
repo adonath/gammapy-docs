@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.maps.wcsnd &mdash; gammapy v0.13.dev9351</title>
+  <title>gammapy.maps.wcsnd &mdash; gammapy v0.13.dev9490</title>
   
 
   
@@ -68,7 +68,7 @@
             
             
               <div class="version">
-                0.13.dev9351
+                0.13.dev9490
               </div>
             
           
@@ -267,13 +267,15 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/fermi_lat.html#Summary">Summary</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="../../../notebooks/light_curve.html">Light curves</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../notebooks/light_curve.html">Light curve estimation</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/light_curve.html#Introduction">Introduction</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/light_curve.html#Setup">Setup</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/light_curve.html#Spectrum">Spectrum</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/light_curve.html#Light-curve-estimation">Light curve estimation</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/light_curve.html#Results">Results</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/light_curve.html#Exercises">Exercises</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/light_curve.html#Select-the-data">Select the data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/light_curve.html#Define-time-intervals">Define time intervals</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/light_curve.html#3D-data-reduction">3D data reduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/light_curve.html#Light-Curve-estimation:-the-3D-case">Light Curve estimation: the 3D case</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/light_curve.html#Performing-the-same-analysis-with-1D-spectra">Performing the same analysis with 1D spectra</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/light_curve.html#Light-Curve-estimation-for-1D-spectra">Light Curve estimation for 1D spectra</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../notebooks/cta_sensitivity.html">Estimation of the CTA point source sensitivity</a><ul>
@@ -560,7 +562,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../maps/index.html#reference-api">Reference/API</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../maps/index.html#module-gammapy.maps">gammapy.maps Package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../maps/index.html#classes">Classes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../maps/index.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
 </ul>
 </li>
 </ul>
@@ -985,6 +986,7 @@
 <span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="k">import</span> <span class="n">fftconvolve</span>
 <span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="k">import</span> <span class="n">griddata</span>
 <span class="kn">from</span> <span class="nn">scipy.ndimage</span> <span class="k">import</span> <span class="n">map_coordinates</span>
+<span class="kn">from</span> <span class="nn">regions</span> <span class="k">import</span> <span class="n">RectangleSkyRegion</span>
 <span class="kn">from</span> <span class="nn">..extern.skimage</span> <span class="k">import</span> <span class="n">block_reduce</span>
 <span class="kn">from</span> <span class="nn">..utils.units</span> <span class="k">import</span> <span class="n">unit_from_fits_image_hdu</span>
 <span class="kn">from</span> <span class="nn">..utils.interpolation</span> <span class="k">import</span> <span class="n">ScaledRegularGridInterpolator</span>
@@ -1443,6 +1445,7 @@
         <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;interpolation&quot;</span><span class="p">,</span> <span class="s2">&quot;nearest&quot;</span><span class="p">)</span>
         <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;origin&quot;</span><span class="p">,</span> <span class="s2">&quot;lower&quot;</span><span class="p">)</span>
         <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;cmap&quot;</span><span class="p">,</span> <span class="s2">&quot;afmhot&quot;</span><span class="p">)</span>
+
         <span class="n">norm</span> <span class="o">=</span> <span class="n">simple_norm</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">data</span><span class="p">)],</span> <span class="n">stretch</span><span class="p">)</span>
         <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;norm&quot;</span><span class="p">,</span> <span class="n">norm</span><span class="p">)</span>
 
@@ -1543,6 +1546,38 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">smoothed_data</span><span class="p">)</span></div>
 
+<div class="viewcode-block" id="WcsNDMap.get_spectrum"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.get_spectrum">[docs]</a>    <span class="k">def</span> <span class="nf">get_spectrum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">region</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extract spectrum in a given region.</span>
+
+<span class="sd">        The spectrum can be computed by summing (or, more generally, applying `func`)</span>
+<span class="sd">        along the spatial axes in each energy bin. This occurs only inside the `region`,</span>
+<span class="sd">        which by default is assumed to be the whole spatial extension of the map.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        region: `~regions.Region`</span>
+<span class="sd">             Region (pixel or sky regions accepted).</span>
+<span class="sd">        func : `~numpy.ufunc`</span>
+<span class="sd">            Function to reduce the data.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        spectrum : `CountsSpectrum`</span>
+<span class="sd">            Spectrum in the given region.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">..spectrum</span> <span class="k">import</span> <span class="n">CountsSpectrum</span>
+        <span class="n">energy_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">region</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">region_mask</span><span class="p">([</span><span class="n">region</span><span class="p">])</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">nbin</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+
+        <span class="n">edges</span> <span class="o">=</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span>
+        <span class="k">return</span> <span class="n">CountsSpectrum</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">energy_lo</span><span class="o">=</span><span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">energy_hi</span><span class="o">=</span><span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">unit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="WcsNDMap.convolve"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.convolve">[docs]</a>    <span class="k">def</span> <span class="nf">convolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">use_fft</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Convolve map with a kernel.</span>
@@ -1638,7 +1673,7 @@
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 17 Jul 2019.
+        Last updated on 25 Jul 2019.
       </span>
 
     </p>

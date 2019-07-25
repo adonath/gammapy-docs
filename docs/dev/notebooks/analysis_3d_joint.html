@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Joint 3D Analysis &mdash; gammapy v0.13.dev9351</title>
+  <title>Joint 3D Analysis &mdash; gammapy v0.13.dev9490</title>
   
 
   
@@ -70,7 +70,7 @@
             
             
               <div class="version">
-                0.13.dev9351
+                0.13.dev9490
               </div>
             
           
@@ -269,13 +269,15 @@
 <li class="toctree-l4"><a class="reference internal" href="fermi_lat.html#Summary">Summary</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="light_curve.html">Light curves</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="light_curve.html">Light curve estimation</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="light_curve.html#Introduction">Introduction</a></li>
 <li class="toctree-l4"><a class="reference internal" href="light_curve.html#Setup">Setup</a></li>
-<li class="toctree-l4"><a class="reference internal" href="light_curve.html#Spectrum">Spectrum</a></li>
-<li class="toctree-l4"><a class="reference internal" href="light_curve.html#Light-curve-estimation">Light curve estimation</a></li>
-<li class="toctree-l4"><a class="reference internal" href="light_curve.html#Results">Results</a></li>
-<li class="toctree-l4"><a class="reference internal" href="light_curve.html#Exercises">Exercises</a></li>
+<li class="toctree-l4"><a class="reference internal" href="light_curve.html#Select-the-data">Select the data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="light_curve.html#Define-time-intervals">Define time intervals</a></li>
+<li class="toctree-l4"><a class="reference internal" href="light_curve.html#3D-data-reduction">3D data reduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="light_curve.html#Light-Curve-estimation:-the-3D-case">Light Curve estimation: the 3D case</a></li>
+<li class="toctree-l4"><a class="reference internal" href="light_curve.html#Performing-the-same-analysis-with-1D-spectra">Performing the same analysis with 1D spectra</a></li>
+<li class="toctree-l4"><a class="reference internal" href="light_curve.html#Light-Curve-estimation-for-1D-spectra">Light Curve estimation for 1D spectra</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="cta_sensitivity.html">Estimation of the CTA point source sensitivity</a><ul>
@@ -562,7 +564,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../maps/index.html#reference-api">Reference/API</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../maps/index.html#module-gammapy.maps">gammapy.maps Package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../maps/index.html#classes">Classes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../maps/index.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
 </ul>
 </li>
 </ul>
@@ -1231,6 +1232,7 @@ div.rendered_html tbody tr:hover {
 <span></span><span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">SkyCoord</span>
+<span class="kn">from</span> <span class="nn">regions</span> <span class="kn">import</span> <span class="n">CircleSkyRegion</span>
 </pre></div>
 </div>
 </div>
@@ -1343,8 +1345,8 @@ WARNING: Tried to get polar motions for times after IERS data is valid. Defaulti
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-CPU times: user 10.4 s, sys: 1.48 s, total: 11.9 s
-Wall time: 11.9 s
+CPU times: user 10.4 s, sys: 2.02 s, total: 12.4 s
+Wall time: 12.5 s
 </pre></div></div>
 </div>
 </div>
@@ -1482,8 +1484,8 @@ Wall time: 11.9 s
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-CPU times: user 27 s, sys: 2.61 s, total: 29.6 s
-Wall time: 29.6 s
+CPU times: user 32.1 s, sys: 7.31 s, total: 39.4 s
+Wall time: 39.6 s
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -1527,7 +1529,7 @@ OptimizeResult
 </div>
 <div class="output_area rendered_html docutils container">
 <i>Table length=14</i>
-<table id="table4727336464" class="table-striped table-bordered table-condensed">
+<table id="table4842635504" class="table-striped table-bordered table-condensed">
 <thead><tr><th>name</th><th>value</th><th>error</th><th>unit</th><th>min</th><th>max</th><th>frozen</th></tr></thead>
 <thead><tr><th>str9</th><th>float64</th><th>float64</th><th>str14</th><th>float64</th><th>float64</th><th>bool</th></tr></thead>
 <tr><td>lon_0</td><td>-5.248e-02</td><td>2.234e-03</td><td>deg</td><td>-1.800e+02</td><td>1.800e+02</td><td>False</td></tr>
@@ -1571,48 +1573,26 @@ OptimizeResult
 </div>
 <div class="section" id="Plotting-residuals">
 <h2>Plotting residuals<a class="headerlink" href="#Plotting-residuals" title="Permalink to this headline">¶</a></h2>
+<p>Each <code class="docutils literal notranslate"><span class="pre">MapDataset</span></code> object is equipped with a method called <code class="docutils literal notranslate"><span class="pre">plot.residuals()</span></code>, which displays the spatial and spectral residuals (computed as <em>counts-model</em>) for the dataset. Optionally, these can be normalized as <em>(counts-model)/model</em> or <em>(counts-model)/sqrt(model)</em>, by passing the parameter <code class="docutils literal notranslate"><span class="pre">norm='model</span></code> or <code class="docutils literal notranslate"><span class="pre">norm=sqrt_model</span></code>.</p>
+<p>First of all, let’s define a region for the spectral extraction:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span> <span class="nf">plot_residuals</span><span class="p">(</span><span class="n">dataset</span><span class="p">):</span>
-    <span class="n">npred</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span>
-    <span class="n">residual</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">counts</span> <span class="o">-</span> <span class="n">npred</span><span class="p">)</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">()</span><span class="o">.</span><span class="n">smooth</span><span class="p">(</span><span class="s2">&quot;0.08 deg&quot;</span><span class="p">)</span>
-    <span class="n">_</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">residual</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
-        <span class="n">vmin</span><span class="o">=-</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;coolwarm&quot;</span><span class="p">,</span> <span class="n">add_cbar</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">stretch</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span>
-    <span class="p">)</span>
-    <span class="n">x_center</span><span class="p">,</span> <span class="n">y_center</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">center_coord</span>
-    <span class="n">fov</span> <span class="o">=</span> <span class="n">Circle</span><span class="p">(</span>
-        <span class="p">(</span><span class="n">x_center</span><span class="p">,</span> <span class="n">y_center</span><span class="p">),</span> <span class="n">radius</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">get_transform</span><span class="p">(</span><span class="s2">&quot;galactic&quot;</span><span class="p">)</span>
-    <span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">images</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_clip_path</span><span class="p">(</span><span class="n">fov</span><span class="p">)</span>
+<span></span><span class="n">region</span> <span class="o">=</span> <span class="n">CircleSkyRegion</span><span class="p">(</span><span class="n">spatial_model</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.15</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<p>Each observation has different energy threshold. Keep in mind that the residuals are not meaningful below the energy threshold.</p>
+<p>We can now inspect the residuals for each dataset, separately:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">plot_residuals</span><span class="p">(</span><span class="n">datasets</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_analysis_3d_joint_33_0.png" src="../_images/notebooks_analysis_3d_joint_33_0.png" />
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">plot_residuals</span><span class="p">(</span><span class="n">datasets</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span></span><span class="n">ax_image</span><span class="p">,</span> <span class="n">ax_spec</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot_residuals</span><span class="p">(</span>
+    <span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=-</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;diff&quot;</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1624,11 +1604,11 @@ OptimizeResult
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">plot_residuals</span><span class="p">(</span><span class="n">datasets</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+<span></span><span class="n">datasets</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot_residuals</span><span class="p">(</span><span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=-</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">0.5</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -1639,41 +1619,44 @@ OptimizeResult
 <img alt="../_images/notebooks_analysis_3d_joint_35_0.png" src="../_images/notebooks_analysis_3d_joint_35_0.png" />
 </div>
 </div>
-<p>Finally we compute as stacked residual map (this requires to run the <code class="docutils literal notranslate"><span class="pre">analysis_3d</span></code> tutorial first):</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">datasets</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">plot_residuals</span><span class="p">(</span><span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=-</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">0.5</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_analysis_3d_joint_36_0.png" src="../_images/notebooks_analysis_3d_joint_36_0.png" />
+</div>
+</div>
+<p>Finally, we can compute a stacked residual map:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">npred_stacked</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span>
-<span class="n">counts_stacked</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span>
+<span></span><span class="n">residuals_stacked</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span>
 
 <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="n">datasets</span><span class="p">:</span>
-    <span class="n">npred</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span>
-    <span class="n">coords</span> <span class="o">=</span> <span class="n">npred</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span>
+    <span class="n">residuals</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">residuals</span><span class="p">()</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">residuals</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span>
 
-    <span class="n">npred_stacked</span><span class="o">.</span><span class="n">fill_by_coord</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">npred</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-    <span class="n">counts_stacked</span><span class="o">.</span><span class="n">fill_by_coord</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">residual_stacked</span> <span class="o">=</span> <span class="p">(</span>
-    <span class="p">(</span><span class="n">counts_stacked</span> <span class="o">-</span> <span class="n">npred_stacked</span><span class="p">)</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">()</span><span class="o">.</span><span class="n">smooth</span><span class="p">(</span><span class="s2">&quot;0.1 deg&quot;</span><span class="p">)</span>
-<span class="p">)</span>
+    <span class="n">residuals_stacked</span><span class="o">.</span><span class="n">fill_by_coord</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">residuals</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">residual_stacked</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+<span></span><span class="n">residuals_stacked</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">()</span><span class="o">.</span><span class="n">smooth</span><span class="p">(</span><span class="s2">&quot;0.1 deg&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
     <span class="n">vmin</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;coolwarm&quot;</span><span class="p">,</span> <span class="n">add_cbar</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">stretch</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span>
 <span class="p">);</span>
 </pre></div>
@@ -1684,15 +1667,6 @@ OptimizeResult
 </div>
 <div class="output_area docutils container">
 <img alt="../_images/notebooks_analysis_3d_joint_39_0.png" src="../_images/notebooks_analysis_3d_joint_39_0.png" />
-</div>
-</div>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>
-</pre></div>
 </div>
 </div>
 </div>
@@ -1720,7 +1694,7 @@ OptimizeResult
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 17 Jul 2019.
+        Last updated on 25 Jul 2019.
       </span>
 
     </p>

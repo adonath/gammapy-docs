@@ -96,7 +96,10 @@ bkg_data = irfs["bkg"].evaluate_integrate(
     fov_lon=0 * u.deg, fov_lat=offset, energy_reco=energy_reco
 )
 bkg = CountsSpectrum(
-    energy_reco[:-1], energy_reco[1:], data=(bkg_data * solid_angles).to_value("s-1"), unit="s-1"
+    energy_reco[:-1],
+    energy_reco[1:],
+    data=(bkg_data * solid_angles).to_value("s-1"),
+    unit="s-1",
 )
 
 

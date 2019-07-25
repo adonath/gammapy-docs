@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Light curves &mdash; gammapy v0.13.dev9351</title>
+  <title>Light curve estimation &mdash; gammapy v0.13.dev9490</title>
   
 
   
@@ -70,7 +70,7 @@
             
             
               <div class="version">
-                0.13.dev9351
+                0.13.dev9490
               </div>
             
           
@@ -269,13 +269,15 @@
 <li class="toctree-l4"><a class="reference internal" href="fermi_lat.html#Summary">Summary</a></li>
 </ul>
 </li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Light curves</a><ul>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Light curve estimation</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#Introduction">Introduction</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup">Setup</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Spectrum">Spectrum</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Light-curve-estimation">Light curve estimation</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Results">Results</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Exercises">Exercises</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Select-the-data">Select the data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Define-time-intervals">Define time intervals</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#3D-data-reduction">3D data reduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Light-Curve-estimation:-the-3D-case">Light Curve estimation: the 3D case</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Performing-the-same-analysis-with-1D-spectra">Performing the same analysis with 1D spectra</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Light-Curve-estimation-for-1D-spectra">Light Curve estimation for 1D spectra</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="cta_sensitivity.html">Estimation of the CTA point source sensitivity</a><ul>
@@ -562,7 +564,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../maps/index.html#reference-api">Reference/API</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../maps/index.html#module-gammapy.maps">gammapy.maps Package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../maps/index.html#classes">Classes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../maps/index.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
 </ul>
 </li>
 </ul>
@@ -960,7 +961,7 @@
         
           <li><a href="../tutorials.html">Tutorial notebooks</a> &raquo;</li>
         
-      <li>Light curves</li>
+      <li>Light curve estimation</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -1209,11 +1210,11 @@ div.rendered_html tbody tr:hover {
 <li><strong>Source files:</strong> <a class="reference external" href="../_static/notebooks/light_curve.ipynb">light_curve.ipynb</a> | <a class="reference external" href="../_static/notebooks/light_curve.py">light_curve.py</a></li>
 </ul>
 </div>
-<div class="section" id="Light-curves">
-<h1>Light curves<a class="headerlink" href="#Light-curves" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="Light-curve-estimation">
+<h1>Light curve estimation<a class="headerlink" href="#Light-curve-estimation" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="Introduction">
 <h2>Introduction<a class="headerlink" href="#Introduction" title="Permalink to this headline">¶</a></h2>
-<p>This tutorial explain how to compute a light curve with Gammapy.</p>
+<p>This tutorial presents a new light curve estimator that works with dataset objects. We will demonstrate how to compute a light curve from 3D data cubes as well as 1D spectral data using the <code class="docutils literal notranslate"><span class="pre">MapDataset</span></code>, <code class="docutils literal notranslate"><span class="pre">SpectrumDatasetOnOff</span></code> and <code class="docutils literal notranslate"><span class="pre">LightCurveEstimator</span></code> classes.</p>
 <p>We will use the four Crab nebula observations from the <a class="reference external" href="https://www.mpi-hd.mpg.de/hfm/HESS/pages/dl3-dr1/">H.E.S.S. first public test data release</a> and compute per-observation fluxes. The Crab nebula is not known to be variable at TeV energies, so we expect constant brightness within statistical and systematic errors.</p>
 <p>The main classes we will use are:</p>
 <ul class="simple">
@@ -1223,7 +1224,7 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="section" id="Setup">
 <h2>Setup<a class="headerlink" href="#Setup" title="Permalink to this headline">¶</a></h2>
-<p>As usual, we’ll start with some setup…</p>
+<p>As usual, we’ll start with some general imports…</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
@@ -1231,206 +1232,253 @@ div.rendered_html tbody tr:hover {
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="o">%</span><span class="k">matplotlib</span> inline
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+
 <span class="kn">import</span> <span class="nn">astropy.units</span> <span class="kn">as</span> <span class="nn">u</span>
-<span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">SkyCoord</span><span class="p">,</span> <span class="n">Angle</span>
-<span class="kn">from</span> <span class="nn">regions</span> <span class="kn">import</span> <span class="n">CircleSkyRegion</span>
-<span class="kn">from</span> <span class="nn">gammapy.utils.energy</span> <span class="kn">import</span> <span class="n">energy_logspace</span>
-<span class="kn">from</span> <span class="nn">gammapy.data</span> <span class="kn">import</span> <span class="n">DataStore</span>
-<span class="kn">from</span> <span class="nn">gammapy.spectrum</span> <span class="kn">import</span> <span class="n">SpectrumExtraction</span>
-<span class="kn">from</span> <span class="nn">gammapy.spectrum.models</span> <span class="kn">import</span> <span class="n">PowerLaw</span>
-<span class="kn">from</span> <span class="nn">gammapy.background</span> <span class="kn">import</span> <span class="n">ReflectedRegionsBackgroundEstimator</span>
-<span class="kn">from</span> <span class="nn">gammapy.time</span> <span class="kn">import</span> <span class="n">LightCurveEstimator</span>
+<span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">SkyCoord</span>
+<span class="kn">from</span> <span class="nn">astropy.time</span> <span class="kn">import</span> <span class="n">Time</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-</div>
-<div class="section" id="Spectrum">
-<h2>Spectrum<a class="headerlink" href="#Spectrum" title="Permalink to this headline">¶</a></h2>
-<p>The <code class="docutils literal notranslate"><span class="pre">LightCurveEstimator</span></code> is based on a 1d spectral analysis within each time bin. So before we can make the light curve, we have to extract 1d spectra.</p>
+<p>Now let’s import gammapy specific classes and functions</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">data_store</span> <span class="o">=</span> <span class="n">DataStore</span><span class="o">.</span><span class="n">from_dir</span><span class="p">(</span><span class="s2">&quot;$GAMMAPY_DATA/hess-dl3-dr1/&quot;</span><span class="p">)</span>
+<span></span><span class="kn">from</span> <span class="nn">gammapy.data</span> <span class="kn">import</span> <span class="n">ObservationFilter</span><span class="p">,</span> <span class="n">DataStore</span>
+<span class="kn">from</span> <span class="nn">gammapy.spectrum.models</span> <span class="kn">import</span> <span class="n">PowerLaw</span>
+<span class="kn">from</span> <span class="nn">gammapy.image.models</span> <span class="kn">import</span> <span class="n">SkyPointSource</span>
+<span class="kn">from</span> <span class="nn">gammapy.cube.models</span> <span class="kn">import</span> <span class="n">SkyModel</span><span class="p">,</span> <span class="n">BackgroundModel</span>
+<span class="kn">from</span> <span class="nn">gammapy.cube</span> <span class="kn">import</span> <span class="n">PSFKernel</span><span class="p">,</span> <span class="n">MapMaker</span><span class="p">,</span> <span class="n">MapDataset</span>
+<span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">WcsGeom</span><span class="p">,</span> <span class="n">MapAxis</span>
+<span class="kn">from</span> <span class="nn">gammapy.irf</span> <span class="kn">import</span> <span class="n">make_mean_psf</span><span class="p">,</span> <span class="n">make_mean_edisp</span>
+<span class="kn">from</span> <span class="nn">gammapy.time</span> <span class="kn">import</span> <span class="n">LightCurveEstimator</span>
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
+</div>
+<div class="section" id="Select-the-data">
+<h2>Select the data<a class="headerlink" href="#Select-the-data" title="Permalink to this headline">¶</a></h2>
+<p>We look for relevant observations in the datastore.</p>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">mask</span> <span class="o">=</span> <span class="n">data_store</span><span class="o">.</span><span class="n">obs_table</span><span class="p">[</span><span class="s2">&quot;TARGET_NAME&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Crab&quot;</span>
+<span></span><span class="n">data_store</span> <span class="o">=</span> <span class="n">DataStore</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span>
+    <span class="s2">&quot;$GAMMAPY_DATA/hess-dl3-dr1/hess-dl3-dr3-with-background.fits.gz&quot;</span>
+<span class="p">)</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">data_store</span><span class="o">.</span><span class="n">obs_table</span><span class="p">[</span><span class="s2">&quot;TARGET_NAME&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Crab&quot;</span>
 <span class="n">obs_ids</span> <span class="o">=</span> <span class="n">data_store</span><span class="o">.</span><span class="n">obs_table</span><span class="p">[</span><span class="s2">&quot;OBS_ID&quot;</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
-<span class="n">observations</span> <span class="o">=</span> <span class="n">data_store</span><span class="o">.</span><span class="n">get_observations</span><span class="p">(</span><span class="n">obs_ids</span><span class="p">)</span>
-<span class="k">print</span><span class="p">(</span><span class="n">observations</span><span class="p">)</span>
+<span class="n">crab_obs</span> <span class="o">=</span> <span class="n">data_store</span><span class="o">.</span><span class="n">get_observations</span><span class="p">(</span><span class="n">obs_ids</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
 </div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-Observations
-Number of observations: 4
-Info for OBS_ID = 23523
-- Start time: 53343.92
-- Pointing pos: RA 83.63 deg / Dec 21.51 deg
-- Observation duration: 1687.0 s
-- Dead-time fraction: 6.240 %
-Info for OBS_ID = 23526
-- Start time: 53343.95
-- Pointing pos: RA 83.63 deg / Dec 22.51 deg
-- Observation duration: 1683.0 s
-- Dead-time fraction: 6.555 %
-Info for OBS_ID = 23559
-- Start time: 53345.96
-- Pointing pos: RA 85.25 deg / Dec 22.01 deg
-- Observation duration: 1686.0 s
-- Dead-time fraction: 6.398 %
-Info for OBS_ID = 23592
-- Start time: 53347.91
-- Pointing pos: RA 82.01 deg / Dec 22.01 deg
-- Observation duration: 1686.0 s
-- Dead-time fraction: 6.212 %
-
-</pre></div></div>
-</div>
+<div class="section" id="Define-time-intervals">
+<h2>Define time intervals<a class="headerlink" href="#Define-time-intervals" title="Permalink to this headline">¶</a></h2>
+<p>We create a list of time intervals. Here we use one time bin per observation.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># Target definition</span>
-<span class="n">target_position</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">ra</span><span class="o">=</span><span class="mf">83.63308</span><span class="p">,</span> <span class="n">dec</span><span class="o">=</span><span class="mf">22.01450</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;deg&quot;</span><span class="p">)</span>
-<span class="n">on_region_radius</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="s2">&quot;0.2 deg&quot;</span><span class="p">)</span>
-<span class="n">on_region</span> <span class="o">=</span> <span class="n">CircleSkyRegion</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="n">target_position</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="n">on_region_radius</span><span class="p">)</span>
+<span></span><span class="n">time_intervals</span> <span class="o">=</span> <span class="p">[(</span><span class="n">obs</span><span class="o">.</span><span class="n">tstart</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">tstop</span><span class="p">)</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">crab_obs</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
+</div>
+<div class="section" id="3D-data-reduction">
+<h2>3D data reduction<a class="headerlink" href="#3D-data-reduction" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Define-the-analysis-geometry">
+<h3>Define the analysis geometry<a class="headerlink" href="#Define-the-analysis-geometry" title="Permalink to this headline">¶</a></h3>
+<p>Here we define the geometry used in the analysis. We use the same WCS map structure but we use two different binnings for reco and true energy axes. This allows for a broader coverage of the response.</p>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="o">%%time</span>
-<span class="n">bkg_estimator</span> <span class="o">=</span> <span class="n">ReflectedRegionsBackgroundEstimator</span><span class="p">(</span>
-    <span class="n">on_region</span><span class="o">=</span><span class="n">on_region</span><span class="p">,</span> <span class="n">observations</span><span class="o">=</span><span class="n">observations</span>
+<span></span><span class="c1"># Target definition</span>
+<span class="n">target_position</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">ra</span><span class="o">=</span><span class="mf">83.63308</span><span class="p">,</span> <span class="n">dec</span><span class="o">=</span><span class="mf">22.01450</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;deg&quot;</span><span class="p">)</span>
+
+<span class="c1"># Define geoms</span>
+<span class="n">emin</span><span class="p">,</span> <span class="n">emax</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.7</span><span class="p">,</span> <span class="mi">10</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span>
+<span class="n">energy_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_bounds</span><span class="p">(</span>
+    <span class="n">emin</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">emax</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;TeV&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;energy&quot;</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s2">&quot;log&quot;</span>
 <span class="p">)</span>
-<span class="n">bkg_estimator</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="n">geom</span> <span class="o">=</span> <span class="n">WcsGeom</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">skydir</span><span class="o">=</span><span class="n">target_position</span><span class="p">,</span>
+    <span class="n">binsz</span><span class="o">=</span><span class="mf">0.04</span><span class="p">,</span>
+    <span class="n">width</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="n">coordsys</span><span class="o">=</span><span class="s2">&quot;CEL&quot;</span><span class="p">,</span>
+    <span class="n">proj</span><span class="o">=</span><span class="s2">&quot;CAR&quot;</span><span class="p">,</span>
+    <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">energy_axis</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">etrue_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_bounds</span><span class="p">(</span>
+    <span class="mf">0.1</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;TeV&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;energy&quot;</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s2">&quot;log&quot;</span>
+<span class="p">)</span>
+
+<span class="n">geom_true</span> <span class="o">=</span> <span class="n">WcsGeom</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">skydir</span><span class="o">=</span><span class="n">target_position</span><span class="p">,</span>
+    <span class="n">binsz</span><span class="o">=</span><span class="mf">0.04</span><span class="p">,</span>
+    <span class="n">width</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span>
+    <span class="n">coordsys</span><span class="o">=</span><span class="s2">&quot;CEL&quot;</span><span class="p">,</span>
+    <span class="n">proj</span><span class="o">=</span><span class="s2">&quot;CAR&quot;</span><span class="p">,</span>
+    <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">etrue_axis</span><span class="p">],</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
 </div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-CPU times: user 833 ms, sys: 35.2 ms, total: 868 ms
-Wall time: 869 ms
-</pre></div></div>
-</div>
-<div class="nbinput docutils container">
+<div class="section" id="Define-the-3D-model">
+<h3>Define the 3D model<a class="headerlink" href="#Define-the-3D-model" title="Permalink to this headline">¶</a></h3>
+<p>The light curve is based on a 3D fit of a map dataset in time bins. We therefore need to define the source model to be applied. Here a point source with power law spectrum. We freeze its parameters assuming they were previously extracted</p>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="o">%%time</span>
-<span class="n">ebounds</span> <span class="o">=</span> <span class="n">energy_logspace</span><span class="p">(</span><span class="mf">0.7</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">51</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;TeV&quot;</span><span class="p">)</span>
-<span class="n">extraction</span> <span class="o">=</span> <span class="n">SpectrumExtraction</span><span class="p">(</span>
-    <span class="n">observations</span><span class="o">=</span><span class="n">observations</span><span class="p">,</span>
-    <span class="n">bkg_estimate</span><span class="o">=</span><span class="n">bkg_estimator</span><span class="o">.</span><span class="n">result</span><span class="p">,</span>
-    <span class="n">containment_correction</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
-    <span class="n">e_reco</span><span class="o">=</span><span class="n">ebounds</span><span class="p">,</span>
-    <span class="n">e_true</span><span class="o">=</span><span class="n">ebounds</span><span class="p">,</span>
+<span></span><span class="c1"># Define the source model - Use a pointsource + integrated power law model to directly get flux</span>
+
+<span class="n">spatial_model</span> <span class="o">=</span> <span class="n">SkyPointSource</span><span class="p">(</span>
+    <span class="n">lon_0</span><span class="o">=</span><span class="n">target_position</span><span class="o">.</span><span class="n">ra</span><span class="p">,</span> <span class="n">lat_0</span><span class="o">=</span><span class="n">target_position</span><span class="o">.</span><span class="n">dec</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s2">&quot;icrs&quot;</span>
 <span class="p">)</span>
-<span class="n">extraction</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
-<span class="n">spectrum_observations</span> <span class="o">=</span> <span class="n">extraction</span><span class="o">.</span><span class="n">spectrum_observations</span>
+
+<span class="n">spectral_model</span> <span class="o">=</span> <span class="n">PowerLaw</span><span class="p">(</span>
+    <span class="n">index</span><span class="o">=</span><span class="mf">2.6</span><span class="p">,</span>
+    <span class="n">amplitude</span><span class="o">=</span><span class="mf">2.0e-11</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s TeV)&quot;</span><span class="p">),</span>
+    <span class="n">reference</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">spectral_model</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;index&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">frozen</span> <span class="o">=</span> <span class="bp">False</span>
+
+<span class="n">sky_model</span> <span class="o">=</span> <span class="n">SkyModel</span><span class="p">(</span>
+    <span class="n">spatial_model</span><span class="o">=</span><span class="n">spatial_model</span><span class="p">,</span> <span class="n">spectral_model</span><span class="o">=</span><span class="n">spectral_model</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
+<span class="p">)</span>
+<span class="n">sky_model</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;lon_0&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">frozen</span> <span class="o">=</span> <span class="bp">True</span>
+<span class="n">sky_model</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;lat_0&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">frozen</span> <span class="o">=</span> <span class="bp">True</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
 </div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-CPU times: user 724 ms, sys: 18.5 ms, total: 742 ms
-Wall time: 743 ms
-</pre></div></div>
-</div>
-</div>
-<div class="section" id="Light-curve-estimation">
-<h2>Light curve estimation<a class="headerlink" href="#Light-curve-estimation" title="Permalink to this headline">¶</a></h2>
-<p>OK, so now that we have prepared 1D spectra (not spectral models, just the 1D counts and exposure and 2D energy dispersion matrix), we can compute a lightcurve.</p>
-<p>To compute the light curve, a spectral model shape has to be assumed, and an energy band chosen. The method is then to adjust the amplitude parameter of the spectral model in each time bin to the data, resulting in a flux measurement in each time bin.</p>
+<div class="section" id="Make-the-map-datasets">
+<h3>Make the map datasets<a class="headerlink" href="#Make-the-map-datasets" title="Permalink to this headline">¶</a></h3>
+<p>The following function is in charge of the MapDataset production. It will later be fully covered in the data reduction chain</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># Creat list of time bin intervals</span>
-<span class="c1"># Here we do one time bin per observation</span>
-<span class="n">time_intervals</span> <span class="o">=</span> <span class="p">[(</span><span class="n">obs</span><span class="o">.</span><span class="n">tstart</span><span class="p">,</span> <span class="n">obs</span><span class="o">.</span><span class="n">tstop</span><span class="p">)</span> <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">observations</span><span class="p">]</span>
+<span></span><span class="c1"># psf_kernel and MapMaker for each segment</span>
+<span class="k">def</span> <span class="nf">make_map_dataset</span><span class="p">(</span>
+    <span class="n">observations</span><span class="p">,</span> <span class="n">target_pos</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">geom_true</span><span class="p">,</span> <span class="n">offset_max</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span>
+<span class="p">):</span>
+    <span class="n">maker</span> <span class="o">=</span> <span class="n">MapMaker</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">offset_max</span><span class="p">,</span> <span class="n">geom_true</span><span class="o">=</span><span class="n">geom_true</span><span class="p">)</span>
+    <span class="n">maps</span> <span class="o">=</span> <span class="n">maker</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">observations</span><span class="p">)</span>
+    <span class="n">table_psf</span> <span class="o">=</span> <span class="n">make_mean_psf</span><span class="p">(</span><span class="n">observations</span><span class="p">,</span> <span class="n">target_pos</span><span class="p">)</span>
+
+    <span class="c1"># PSF kernel used for the model convolution</span>
+    <span class="n">psf_kernel</span> <span class="o">=</span> <span class="n">PSFKernel</span><span class="o">.</span><span class="n">from_table_psf</span><span class="p">(</span>
+        <span class="n">table_psf</span><span class="p">,</span> <span class="n">geom_true</span><span class="p">,</span> <span class="n">max_radius</span><span class="o">=</span><span class="s2">&quot;0.3 deg&quot;</span>
+    <span class="p">)</span>
+    <span class="n">edisp</span> <span class="o">=</span> <span class="n">make_mean_edisp</span><span class="p">(</span>
+        <span class="n">observations</span><span class="p">,</span>
+        <span class="n">target_pos</span><span class="p">,</span>
+        <span class="n">e_true</span><span class="o">=</span><span class="n">geom_true</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span><span class="p">,</span>
+        <span class="n">e_reco</span><span class="o">=</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">background_model</span> <span class="o">=</span> <span class="n">BackgroundModel</span><span class="p">(</span><span class="n">maps</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">])</span>
+    <span class="n">background_model</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;norm&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">frozen</span> <span class="o">=</span> <span class="bp">False</span>
+    <span class="n">background_model</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;tilt&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">frozen</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">MapDataset</span><span class="p">(</span>
+        <span class="n">counts</span><span class="o">=</span><span class="n">maps</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">],</span>
+        <span class="n">exposure</span><span class="o">=</span><span class="n">maps</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">],</span>
+        <span class="n">background_model</span><span class="o">=</span><span class="n">background_model</span><span class="p">,</span>
+        <span class="n">psf</span><span class="o">=</span><span class="n">psf_kernel</span><span class="p">,</span>
+        <span class="n">edisp</span><span class="o">=</span><span class="n">edisp</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">dataset</span>
 </pre></div>
 </div>
 </div>
-<div class="nbinput nblast docutils container">
+<p>Now we perform the actual data reduction in time bins</p>
+<div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># Assumed spectral model</span>
-<span class="n">spectral_model</span> <span class="o">=</span> <span class="n">PowerLaw</span><span class="p">(</span>
-    <span class="n">index</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="mf">2.0e-11</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s TeV)&quot;</span><span class="p">),</span> <span class="n">reference</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span>
-<span class="p">)</span>
+<span></span><span class="o">%%time</span>
+
+<span class="n">datasets</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">for</span> <span class="n">time_interval</span> <span class="ow">in</span> <span class="n">time_intervals</span><span class="p">:</span>
+    <span class="c1"># get filtered observation lists in time interval</span>
+    <span class="n">obs</span> <span class="o">=</span> <span class="n">crab_obs</span><span class="o">.</span><span class="n">select_time</span><span class="p">(</span><span class="n">time_interval</span><span class="p">)</span>
+    <span class="c1"># Proceed with further analysis only if there are observations</span>
+    <span class="c1"># in the selected time window</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">&quot;No observations found in time interval:&quot;</span>
+            <span class="s2">&quot;{t_min} - {t_max}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">t_min</span><span class="o">=</span><span class="n">time_interval</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">t_max</span><span class="o">=</span><span class="n">time_interval</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">continue</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">make_map_dataset</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">target_position</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">geom_true</span><span class="p">)</span>
+    <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s2">&quot;t_start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time_interval</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s2">&quot;t_stop&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time_interval</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">datasets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 2.96 s, sys: 161 ms, total: 3.12 s
+Wall time: 3.13 s
+</pre></div></div>
+</div>
+</div>
+</div>
+<div class="section" id="Light-Curve-estimation:-the-3D-case">
+<h2>Light Curve estimation: the 3D case<a class="headerlink" href="#Light-Curve-estimation:-the-3D-case" title="Permalink to this headline">¶</a></h2>
+<p>Now that we have created the datasets we assign them the model to be fitted:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">energy_range</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">100</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span>
+<span></span><span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="n">datasets</span><span class="p">:</span>
+    <span class="c1"># Copy the source model</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">sky_model</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;crab&quot;</span><span class="p">)</span>
+    <span class="n">dataset</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
+<p>We can now create the light curve estimator by passing it the list of datasets. We can optionally ask for parameters reoptimization during fit, e.g.&nbsp;to fit background normalization in each time bin.</p>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="o">%%time</span>
-<span class="n">lc_estimator</span> <span class="o">=</span> <span class="n">LightCurveEstimator</span><span class="p">(</span><span class="n">extraction</span><span class="p">)</span>
-<span class="n">lc</span> <span class="o">=</span> <span class="n">lc_estimator</span><span class="o">.</span><span class="n">light_curve</span><span class="p">(</span>
-    <span class="n">time_intervals</span><span class="o">=</span><span class="n">time_intervals</span><span class="p">,</span>
-    <span class="n">spectral_model</span><span class="o">=</span><span class="n">spectral_model</span><span class="p">,</span>
-    <span class="n">energy_range</span><span class="o">=</span><span class="n">energy_range</span><span class="p">,</span>
-<span class="p">)</span>
+<span></span><span class="n">lc_maker</span> <span class="o">=</span> <span class="n">LightCurveEstimator</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;crab&quot;</span><span class="p">,</span> <span class="n">reoptimize</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-CPU times: user 668 ms, sys: 19.1 ms, total: 687 ms
-Wall time: 687 ms
-</pre></div></div>
-</div>
-</div>
-<div class="section" id="Results">
-<h2>Results<a class="headerlink" href="#Results" title="Permalink to this headline">¶</a></h2>
-<p>The light curve measurement result is stored in a table. Let’s have a look at the results:</p>
+<p>We now run the estimator once we pass it the energy interval on which to compute the integral flux of the source.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">print</span><span class="p">(</span><span class="n">lc</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">)</span>
+<span></span><span class="o">%%time</span>
+<span class="n">lc</span> <span class="o">=</span> <span class="n">lc_maker</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">e_ref</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span> <span class="n">e_min</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span> <span class="n">e_max</span><span class="o">=</span><span class="mf">10.0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1439,9 +1487,11 @@ Wall time: 687 ms
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-[&#39;time_min&#39;, &#39;time_max&#39;, &#39;flux&#39;, &#39;flux_err&#39;, &#39;flux_ul&#39;, &#39;is_ul&#39;, &#39;livetime&#39;, &#39;alpha&#39;, &#39;n_on&#39;, &#39;n_off&#39;, &#39;measured_excess&#39;, &#39;expected_excess&#39;]
+CPU times: user 15 s, sys: 241 ms, total: 15.3 s
+Wall time: 15.3 s
 </pre></div></div>
 </div>
+<p>The LightCurve object contains a table which we can explore.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
@@ -1457,22 +1507,32 @@ Wall time: 687 ms
 </div>
 <div class="output_area rendered_html docutils container">
 <i>Table length=4</i>
-<table id="table4424872624" class="table-striped table-bordered table-condensed">
+<table id="table4769561568" class="table-striped table-bordered table-condensed">
 <thead><tr><th>time_min</th><th>time_max</th><th>flux</th><th>flux_err</th></tr></thead>
 <thead><tr><th></th><th></th><th>1 / (cm2 s)</th><th>1 / (cm2 s)</th></tr></thead>
 <thead><tr><th>float64</th><th>float64</th><th>float64</th><th>float64</th></tr></thead>
-<tr><td>53343.92234009259</td><td>53343.94186555556</td><td>1.8146297133610075e-11</td><td>1.9030024008573683e-12</td></tr>
-<tr><td>53343.95421509259</td><td>53343.97369425926</td><td>2.021512918192134e-11</td><td>2.0197699838963666e-12</td></tr>
-<tr><td>53345.96198129629</td><td>53345.98149518518</td><td>2.1946481289003035e-11</td><td>2.5542764764051463e-12</td></tr>
-<tr><td>53347.913196574074</td><td>53347.93271046296</td><td>2.3206878724784264e-11</td><td>2.570008209682963e-12</td></tr>
+<tr><td>53343.92234009259</td><td>53343.94186555556</td><td>2.7339067197215866e-11</td><td>2.100460186805052e-12</td></tr>
+<tr><td>53343.95421509259</td><td>53343.97369425926</td><td>2.4575209334948127e-11</td><td>2.027293009588302e-12</td></tr>
+<tr><td>53345.96198129629</td><td>53345.98149518518</td><td>3.147648428762074e-11</td><td>2.783720854376958e-12</td></tr>
+<tr><td>53347.913196574074</td><td>53347.93271046296</td><td>2.8951354849167565e-11</td><td>2.626377535137574e-12</td></tr>
 </table></div>
 </div>
+<p>We finally plot the light curve</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lc</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
+<span></span><span class="n">lc</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="output_area highlight-none notranslate"><div class="highlight"><pre>
+<span></span>&lt;matplotlib.axes._subplots.AxesSubplot at 0x117555240&gt;
 </pre></div>
 </div>
 </div>
@@ -1480,42 +1540,133 @@ Wall time: 687 ms
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_light_curve_17_0.png" src="../_images/notebooks_light_curve_17_0.png" />
+<img alt="../_images/notebooks_light_curve_26_1.png" src="../_images/notebooks_light_curve_26_1.png" />
 </div>
 </div>
-<div class="nbinput docutils container">
+</div>
+<div class="section" id="Performing-the-same-analysis-with-1D-spectra">
+<h2>Performing the same analysis with 1D spectra<a class="headerlink" href="#Performing-the-same-analysis-with-1D-spectra" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="First-the-relevant-imports">
+<h3>First the relevant imports<a class="headerlink" href="#First-the-relevant-imports" title="Permalink to this headline">¶</a></h3>
+<p>We import the missing classes for spectral data reduction</p>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># Let&#39;s compare to the expected flux of this source</span>
-<span class="kn">from</span> <span class="nn">gammapy.spectrum</span> <span class="kn">import</span> <span class="n">create_crab_spectral_model</span>
+<span></span><span class="kn">from</span> <span class="nn">regions</span> <span class="kn">import</span> <span class="n">CircleSkyRegion</span>
+<span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">Angle</span>
 
-<span class="n">crab_spec</span> <span class="o">=</span> <span class="n">create_crab_spectral_model</span><span class="p">()</span>
-<span class="n">crab_flux</span> <span class="o">=</span> <span class="n">crab_spec</span><span class="o">.</span><span class="n">integral</span><span class="p">(</span><span class="o">*</span><span class="n">energy_range</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;cm-2 s-1&quot;</span><span class="p">)</span>
-<span class="n">crab_flux</span>
+<span class="kn">from</span> <span class="nn">gammapy.background</span> <span class="kn">import</span> <span class="n">ReflectedRegionsBackgroundEstimator</span>
+<span class="kn">from</span> <span class="nn">gammapy.spectrum</span> <span class="kn">import</span> <span class="n">SpectrumExtraction</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
-</pre></div>
 </div>
-<div class="output_area docutils container">
-<div class="math notranslate nohighlight">
-$$2.0740149 \times 10^{-11} \; \mathrm{\frac{1}{s\,cm^{2}}}$$</div></div>
-</div>
-<div class="nbinput docutils container">
+<div class="section" id="Defining-the-geometry">
+<h3>Defining the geometry<a class="headerlink" href="#Defining-the-geometry" title="Permalink to this headline">¶</a></h3>
+<p>We need to define the ON extraction region. We will keep the same reco and true energy axes as in 3D.</p>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">ax</span> <span class="o">=</span> <span class="n">lc</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">hlines</span><span class="p">(</span>
-    <span class="n">crab_flux</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-    <span class="n">xmin</span><span class="o">=</span><span class="n">lc</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;time_min&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span>
-    <span class="n">xmax</span><span class="o">=</span><span class="n">lc</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;time_max&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span>
-<span class="p">);</span>
+<span></span><span class="c1"># Target definition</span>
+<span class="n">on_region_radius</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="s2">&quot;0.11 deg&quot;</span><span class="p">)</span>
+<span class="n">on_region</span> <span class="o">=</span> <span class="n">CircleSkyRegion</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="n">target_position</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="n">on_region_radius</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Extracting-the-background">
+<h3>Extracting the background<a class="headerlink" href="#Extracting-the-background" title="Permalink to this headline">¶</a></h3>
+<p>We perform here an ON - OFF measurement with reflected regions. We perform first the background extraction.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">bkg_estimator</span> <span class="o">=</span> <span class="n">ReflectedRegionsBackgroundEstimator</span><span class="p">(</span>
+    <span class="n">on_region</span><span class="o">=</span><span class="n">on_region</span><span class="p">,</span> <span class="n">observations</span><span class="o">=</span><span class="n">crab_obs</span>
+<span class="p">)</span>
+<span class="n">bkg_estimator</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Creation-of-the-datasets">
+<h3>Creation of the datasets<a class="headerlink" href="#Creation-of-the-datasets" title="Permalink to this headline">¶</a></h3>
+<p>We now apply spectral extraction to create the datasets.</p>
+<p>NB: we are using here time intervals defined by the observations start and stop times. The standard observation based spectral extraction is therefore defined in the right time bins.</p>
+<p>A proper time resolved spectral extraction will be included in a coming gammapy release.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Note that we are not performing the extraction in time bins</span>
+<span class="n">extraction</span> <span class="o">=</span> <span class="n">SpectrumExtraction</span><span class="p">(</span>
+    <span class="n">observations</span><span class="o">=</span><span class="n">crab_obs</span><span class="p">,</span>
+    <span class="n">bkg_estimate</span><span class="o">=</span><span class="n">bkg_estimator</span><span class="o">.</span><span class="n">result</span><span class="p">,</span>
+    <span class="n">containment_correction</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+    <span class="n">e_reco</span><span class="o">=</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">,</span>
+    <span class="n">e_true</span><span class="o">=</span><span class="n">etrue_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">extraction</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="n">datasets_1d</span> <span class="o">=</span> <span class="n">extraction</span><span class="o">.</span><span class="n">spectrum_observations</span>
+
+<span class="c1"># we need to set the times manually for now</span>
+<span class="k">for</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">time_interval</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">datasets_1d</span><span class="p">,</span> <span class="n">time_intervals</span><span class="p">):</span>
+    <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s2">&quot;t_start&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time_interval</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s2">&quot;t_stop&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time_interval</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/Users/adonath/github/adonath/gammapy/gammapy/spectrum/extract.py:232: RuntimeWarning: invalid value encountered in true_divide
+  self.containment = new_aeff.data.data.value / self._aeff.data.data.value
+</pre></div></div>
+</div>
+</div>
+</div>
+<div class="section" id="Light-Curve-estimation-for-1D-spectra">
+<h2>Light Curve estimation for 1D spectra<a class="headerlink" href="#Light-Curve-estimation-for-1D-spectra" title="Permalink to this headline">¶</a></h2>
+<p>Now that we’ve reduced the 1D data we assign again the model to the datasets</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="n">datasets_1d</span><span class="p">:</span>
+    <span class="c1"># Copy the source model</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">spectral_model</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;crab&quot;</span>
+    <span class="n">dataset</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+</pre></div>
+</div>
+</div>
+<p>We can now call the LightCurveEstimator in a perfectly identical manner.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">lc_maker_1d</span> <span class="o">=</span> <span class="n">LightCurveEstimator</span><span class="p">(</span><span class="n">datasets_1d</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;crab&quot;</span><span class="p">,</span> <span class="n">reoptimize</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%%time</span>
+<span class="n">lc_1d</span> <span class="o">=</span> <span class="n">lc_maker_1d</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">e_ref</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span> <span class="n">e_min</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span> <span class="n">e_max</span><span class="o">=</span><span class="mf">10.0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1523,17 +1674,41 @@ $$2.0740149 \times 10^{-11} \; \mathrm{\frac{1}{s\,cm^{2}}}$$</div></div>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_light_curve_19_0.png" src="../_images/notebooks_light_curve_19_0.png" />
+<div class="highlight"><pre>
+CPU times: user 223 ms, sys: 4.26 ms, total: 227 ms
+Wall time: 225 ms
+</pre></div></div>
+</div>
+<div class="section" id="Compare-results">
+<h3>Compare results<a class="headerlink" href="#Compare-results" title="Permalink to this headline">¶</a></h3>
+<p>Finally we compare the result for the 1D and 3D lightcurve in a single figure:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">ax</span> <span class="o">=</span> <span class="n">lc_1d</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;1D&quot;</span><span class="p">)</span>
+<span class="n">lc</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;3D&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+</pre></div>
 </div>
 </div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
 </div>
-<div class="section" id="Exercises">
-<h2>Exercises<a class="headerlink" href="#Exercises" title="Permalink to this headline">¶</a></h2>
-<ul class="simple">
-<li>Change the assumed spectral model shape (e.g.&nbsp;to a steeper power-law), and see how the integral flux estimate for the lightcurve changes.</li>
-<li>Try a time binning where you split the observation time for every run into two time bins.</li>
-<li>Try to analyse the PKS 2155 flare data from the H.E.S.S. first public test data release. Start with per-observation fluxes, and then try fluxes within 5 minute time bins for one or two of the observations where the source was very bright.</li>
-</ul>
+<div class="output_area highlight-none notranslate"><div class="highlight"><pre>
+<span></span>&lt;matplotlib.legend.Legend at 0x116c620f0&gt;
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_light_curve_41_1.png" src="../_images/notebooks_light_curve_41_1.png" />
+</div>
+</div>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
@@ -1541,6 +1716,7 @@ $$2.0740149 \times 10^{-11} \; \mathrm{\frac{1}{s\,cm^{2}}}$$</div></div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span>
 </pre></div>
+</div>
 </div>
 </div>
 </div>
@@ -1568,7 +1744,7 @@ $$2.0740149 \times 10^{-11} \; \mathrm{\frac{1}{s\,cm^{2}}}$$</div></div>
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 17 Jul 2019.
+        Last updated on 25 Jul 2019.
       </span>
 
     </p>

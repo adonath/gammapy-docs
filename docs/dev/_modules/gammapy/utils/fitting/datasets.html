@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.utils.fitting.datasets &mdash; gammapy v0.13.dev9351</title>
+  <title>gammapy.utils.fitting.datasets &mdash; gammapy v0.13.dev9490</title>
   
 
   
@@ -68,7 +68,7 @@
             
             
               <div class="version">
-                0.13.dev9351
+                0.13.dev9490
               </div>
             
           
@@ -267,13 +267,15 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/fermi_lat.html#Summary">Summary</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="../../../../notebooks/light_curve.html">Light curves</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../notebooks/light_curve.html">Light curve estimation</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/light_curve.html#Introduction">Introduction</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/light_curve.html#Setup">Setup</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/light_curve.html#Spectrum">Spectrum</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/light_curve.html#Light-curve-estimation">Light curve estimation</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/light_curve.html#Results">Results</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/light_curve.html#Exercises">Exercises</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/light_curve.html#Select-the-data">Select the data</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/light_curve.html#Define-time-intervals">Define time intervals</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/light_curve.html#3D-data-reduction">3D data reduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/light_curve.html#Light-Curve-estimation:-the-3D-case">Light Curve estimation: the 3D case</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/light_curve.html#Performing-the-same-analysis-with-1D-spectra">Performing the same analysis with 1D spectra</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/light_curve.html#Light-Curve-estimation-for-1D-spectra">Light Curve estimation for 1D spectra</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../notebooks/cta_sensitivity.html">Estimation of the CTA point source sensitivity</a><ul>
@@ -560,7 +562,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../maps/index.html#reference-api">Reference/API</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../../maps/index.html#module-gammapy.maps">gammapy.maps Package</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="../../../../maps/index.html#classes">Classes</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../maps/index.html#class-inheritance-diagram">Class Inheritance Diagram</a></li>
 </ul>
 </li>
 </ul>
@@ -996,6 +997,11 @@
 <span class="sd">    - `gammapy.spectrum.SpectrumDataset`</span>
 <span class="sd">    - `gammapy.spectrum.FluxPointsDataset`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">_residuals_labels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;diff&quot;</span><span class="p">:</span> <span class="s2">&quot;data - model&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;diff/model&quot;</span><span class="p">:</span> <span class="s2">&quot;(data - model) / model&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;diff/sqrt(model)&quot;</span><span class="p">:</span> <span class="s2">&quot;(data - model) / sqrt(model)&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">mask</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1026,7 +1032,23 @@
 
 <div class="viewcode-block" id="Dataset.copy"><a class="viewcode-back" href="../../../../api/gammapy.utils.fitting.Dataset.html#gammapy.cube.Dataset.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;A deep copy.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_compute_residuals</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;diff&quot;</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;diff&quot;</span><span class="p">:</span>
+                <span class="n">residuals</span> <span class="o">=</span> <span class="n">data</span> <span class="o">-</span> <span class="n">model</span>
+            <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;diff/model&quot;</span><span class="p">:</span>
+                <span class="n">residuals</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span> <span class="o">-</span> <span class="n">model</span><span class="p">)</span> <span class="o">/</span> <span class="n">model</span>
+            <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;diff/sqrt(model)&quot;</span><span class="p">:</span>
+                <span class="n">residuals</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span> <span class="o">-</span> <span class="n">model</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
+                    <span class="s2">&quot;Invalid method: </span><span class="si">{}</span><span class="s2">. Choose between &#39;diff&#39;,&quot;</span>
+                    <span class="s2">&quot; &#39;diff/model&#39; and &#39;diff/sqrt(model)&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="n">residuals</span></div>
 
 
 <div class="viewcode-block" id="Datasets"><a class="viewcode-back" href="../../../../api/gammapy.utils.fitting.Datasets.html#gammapy.cube.Datasets">[docs]</a><span class="k">class</span> <span class="nc">Datasets</span><span class="p">:</span>
@@ -1109,7 +1131,7 @@
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 17 Jul 2019.
+        Last updated on 25 Jul 2019.
       </span>
 
     </p>
