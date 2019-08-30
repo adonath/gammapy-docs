@@ -20,6 +20,6 @@ ax.scatter(2, 2, transform=transform, s=20, edgecolor='red', facecolor='red')
 ax.text(1.7, 1.85, r"$(l_0, b_0)$", transform=transform, ha="center")
 ax.plot([2, 2 + np.sin(np.pi / 6)], [2, 2 + np.cos(np.pi / 6)], color="r", transform=transform)
 ax.vlines(x=2, color='r', linestyle='--', transform=transform, ymin=0, ymax=5)
-ax.text(2.15, 2.3, r"$\theta$", transform=transform);
+ax.text(2.15, 2.3, r"$\phi$", transform=transform);
 
 plt.show()

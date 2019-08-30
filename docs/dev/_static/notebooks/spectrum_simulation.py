@@ -31,7 +31,11 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 import astropy.units as u
-from gammapy.spectrum import SpectrumDatasetOnOff, SpectrumEvaluator, SpectrumDataset
+from gammapy.spectrum import (
+    SpectrumDatasetOnOff,
+    SpectrumEvaluator,
+    SpectrumDataset,
+)
 from gammapy.utils.fitting import Fit, Parameter
 from gammapy.spectrum.models import PowerLaw
 from gammapy.spectrum import models
@@ -141,11 +145,7 @@ bkg_model = PowerLaw(
     index=2.5, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV
 )
 
-evaluator = SpectrumEvaluator(
-    model=bkg_model,
-    aeff=aeff,
-    livetime=livetime,
-)
+evaluator = SpectrumEvaluator(model=bkg_model, aeff=aeff, livetime=livetime)
 
 npred_bkg = evaluator.compute_npred()
 
@@ -175,7 +175,7 @@ get_ipython().run_cell_magic('time', '', '# Now simulate 30 indepenent spectra u
 
 
 n_on = [dataset.counts.data.sum() for dataset in datasets]
-n_off = [dataset.counts_off.data.sum()for dataset in datasets]
+n_off = [dataset.counts_off.data.sum() for dataset in datasets]
 excess = [dataset.excess.data.sum() for dataset in datasets]
 
 fix, axes = plt.subplots(1, 3, figsize=(12, 4))
