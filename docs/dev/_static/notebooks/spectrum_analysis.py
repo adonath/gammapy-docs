@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# 
 # # Spectral analysis with Gammapy
 
 # ## Introduction
@@ -20,15 +21,15 @@
 # To extract the 1-dim spectral information:
 # 
 # * [gammapy.spectrum.SpectrumExtraction](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumExtraction.html)
-# * [gammapy.background.ReflectedRegionsBackgroundEstimator](https://docs.gammapy.org/dev/api/gammapy.background.ReflectedRegionsBackgroundEstimator.html)
+# * [gammapy.spectrum.ReflectedRegionsBackgroundEstimator](https://docs.gammapy.org/dev/api/gammapy.spectrum.ReflectedRegionsBackgroundEstimator.html)
 # 
 # To perform the joint fit:
 # 
 # * [gammapy.spectrum.SpectrumDatasetOnOff](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDatasetOnOff.html)
 # * [gammapy.spectrum.SpectrumDatasetOnOffStacker](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDatasetOnOffStacker.html)
-# * [gammapy.spectrum.models.PowerLaw](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html)
-# * [gammapy.spectrum.models.ExponentialCutoffPowerLaw](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.ExponentialCutoffPowerLaw.html)
-# * [gammapy.spectrum.models.LogParabola](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.LogParabola.html)
+# * [gammapy.modeling.models.PowerLaw](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLaw.html)
+# * [gammapy.modeling.models.ExponentialCutoffPowerLaw](https://docs.gammapy.org/dev/api/gammapy.modeling.models.ExponentialCutoffPowerLaw.html)
+# * [gammapy.modeling.models.LogParabola](https://docs.gammapy.org/dev/api/gammapy.modeling.models.LogParabola.html)
 # 
 # To compute flux points (a.k.a. "SED" = "spectral energy distribution")
 # 
@@ -70,17 +71,16 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 from regions import CircleSkyRegion
 from gammapy.maps import Map
-from gammapy.utils.fitting import Fit
+from gammapy.modeling import Fit
 from gammapy.data import ObservationStats, ObservationSummary, DataStore
-from gammapy.background import ReflectedRegionsBackgroundEstimator
-from gammapy.spectrum.models import PowerLaw
+from gammapy.modeling.models import PowerLaw, create_crab_spectral_model
 from gammapy.spectrum import (
     SpectrumExtraction,
     SpectrumDatasetOnOff,
     SpectrumDatasetOnOffStacker,
-    create_crab_spectral_model,
     FluxPointsEstimator,
     FluxPointsDataset,
+    ReflectedRegionsBackgroundEstimator,
 )
 
 
@@ -100,7 +100,7 @@ observations = datastore.get_observations(obs_ids)
 
 # ## Define Target Region
 # 
-# The next step is to define a signal extraction region, also known as on region. In the simplest case this is just a [CircleSkyRegion](http://astropy-regions.readthedocs.io/en/latest/api/regions.CircleSkyRegion.html#regions.CircleSkyRegion), but here we will use the ``Target`` class in gammapy that is useful for book-keeping if you run several analysis in a script.
+# The next step is to define a signal extraction region, also known as on region. In the simplest case this is just a [CircleSkyRegion](http://astropy-regions.readthedocs.io/en/latest/api/regions.CircleSkyRegion.html), but here we will use the ``Target`` class in gammapy that is useful for book-keeping if you run several analysis in a script.
 
 # In[ ]:
 
@@ -137,7 +137,7 @@ exclusion_mask.plot();
 
 # ## Estimate background
 # 
-# Next we will manually perform a background estimate by placing [reflected regions](https://docs.gammapy.org/dev/background/reflected.html) around the pointing position and looking at the source statistics. This will result in a  [gammapy.background.BackgroundEstimate](https://docs.gammapy.org/dev/api/gammapy.background.BackgroundEstimate.html) that serves as input for other classes in gammapy.
+# Next we will manually perform a background estimate by placing [reflected regions](https://docs.gammapy.org/dev/spectrum/reflected.html) around the pointing position and looking at the source statistics. This will result in a  [gammapy.spectrum.BackgroundEstimate](https://docs.gammapy.org/dev/api/gammapy.spectrum.BackgroundEstimate.html) that serves as input for other classes in gammapy.
 
 # In[ ]:
 
@@ -160,7 +160,7 @@ background_estimator.plot(add_legend=True);
 
 # ## Source statistic
 # 
-# Next we're going to look at the overall source statistics in our signal region. For more info about what debug plots you can create check out the [ObservationSummary](https://docs.gammapy.org/dev/api/gammapy.data.ObservationSummary.html#gammapy.data.ObservationSummary) class.
+# Next we're going to look at the overall source statistics in our signal region. For more info about what debug plots you can create check out the [ObservationSummary](https://docs.gammapy.org/dev/api/gammapy.data.ObservationSummary.html) class.
 
 # In[ ]:
 

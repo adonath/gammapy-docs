@@ -29,9 +29,9 @@
 # 
 # * **Spectral models and flux points**
 #   * We will pick an example source and show how to plot its spectral model and flux points. For this we will use the following classes:
-#     - [gammapy.spectrum.SpectralModel](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.SpectralModel.html), specifically the [PowerLaw2](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw2.html) model.
-#     - [gammapy.spectrum.FluxPoints](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html#gammapy.spectrum.FluxPoints)
-#     - [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html#astropy.table.Table)
+#     - [gammapy.spectrum.SpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.SpectralModel.html), specifically the [PowerLaw2](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLaw2.html) model.
+#     - [gammapy.spectrum.FluxPoints](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html)
+#     - [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html)
 # 
 
 # ## Setup
@@ -364,7 +364,7 @@ crab_3fhl = fermi_3fhl["Crab Nebula"]
 print(crab_3fhl.spectral_model)
 
 
-# The `crab_3fhl.spectral_model` is an instance of the [gammapy.spectrum.models.PowerLaw2](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw2.html#gammapy.spectrum.models.PowerLaw2) model, with the parameter values and errors taken from the 3FHL catalog. 
+# The `crab_3fhl.spectral_model` is an instance of the [gammapy.modeling.models.PowerLaw2](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLaw2.html#gammapy.modeling.models.PowerLaw2) model, with the parameter values and errors taken from the 3FHL catalog. 
 # 
 # Let's plot the spectral model in the energy range between 10 GeV and 2000 GeV:
 

@@ -22,6 +22,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
+    "\n",
     "# Spectral analysis with Gammapy"
    ]
   },
@@ -46,15 +47,15 @@
     "To extract the 1-dim spectral information:\n",
     "\n",
     "* [gammapy.spectrum.SpectrumExtraction](..\/api/gammapy.spectrum.SpectrumExtraction.rst)\n",
-    "* [gammapy.background.ReflectedRegionsBackgroundEstimator](..\/api/gammapy.background.ReflectedRegionsBackgroundEstimator.rst)\n",
+    "* [gammapy.spectrum.ReflectedRegionsBackgroundEstimator](..\/api/gammapy.spectrum.ReflectedRegionsBackgroundEstimator.rst)\n",
     "\n",
     "To perform the joint fit:\n",
     "\n",
     "* [gammapy.spectrum.SpectrumDatasetOnOff](..\/api/gammapy.spectrum.SpectrumDatasetOnOff.rst)\n",
     "* [gammapy.spectrum.SpectrumDatasetOnOffStacker](..\/api/gammapy.spectrum.SpectrumDatasetOnOffStacker.rst)\n",
-    "* [gammapy.spectrum.models.PowerLaw](..\/api/gammapy.spectrum.models.PowerLaw.rst)\n",
-    "* [gammapy.spectrum.models.ExponentialCutoffPowerLaw](..\/api/gammapy.spectrum.models.ExponentialCutoffPowerLaw.rst)\n",
-    "* [gammapy.spectrum.models.LogParabola](..\/api/gammapy.spectrum.models.LogParabola.rst)\n",
+    "* [gammapy.modeling.models.PowerLaw](..\/api/gammapy.modeling.models.PowerLaw.rst)\n",
+    "* [gammapy.modeling.models.ExponentialCutoffPowerLaw](..\/api/gammapy.modeling.models.ExponentialCutoffPowerLaw.rst)\n",
+    "* [gammapy.modeling.models.LogParabola](..\/api/gammapy.modeling.models.LogParabola.rst)\n",
     "\n",
     "To compute flux points (a.k.a. \"SED\" = \"spectral energy distribution\")\n",
     "\n",
@@ -92,7 +93,7 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "gammapy: 0.14.dev184+g09061bc77\n",
+      "gammapy: 0.14.dev424+gca47bd347\n",
       "numpy: 1.16.4\n",
       "astropy 3.2.1\n",
       "regions 0.4\n"
@@ -122,17 +123,16 @@
     "from astropy.coordinates import SkyCoord, Angle\n",
     "from regions import CircleSkyRegion\n",
     "from gammapy.maps import Map\n",
-    "from gammapy.utils.fitting import Fit\n",
+    "from gammapy.modeling import Fit\n",
     "from gammapy.data import ObservationStats, ObservationSummary, DataStore\n",
-    "from gammapy.background import ReflectedRegionsBackgroundEstimator\n",
-    "from gammapy.spectrum.models import PowerLaw\n",
+    "from gammapy.modeling.models import PowerLaw, create_crab_spectral_model\n",
     "from gammapy.spectrum import (\n",
     "    SpectrumExtraction,\n",
     "    SpectrumDatasetOnOff,\n",
     "    SpectrumDatasetOnOffStacker,\n",
-    "    create_crab_spectral_model,\n",
     "    FluxPointsEstimator,\n",
     "    FluxPointsDataset,\n",
+    "    ReflectedRegionsBackgroundEstimator,\n",
     ")"
    ]
   },
@@ -164,7 +164,7 @@
    "source": [
     "## Define Target Region\n",
     "\n",
-    "The next step is to define a signal extraction region, also known as on region. In the simplest case this is just a [CircleSkyRegion](http://astropy-regions.readthedocs.io/en/latest/api/regions.CircleSkyRegion.html#regions.CircleSkyRegion), but here we will use the ``Target`` class in gammapy that is useful for book-keeping if you run several analysis in a script."
+    "The next step is to define a signal extraction region, also known as on region. In the simplest case this is just a [CircleSkyRegion](http://astropy-regions.readthedocs.io/en/latest/api/regions.CircleSkyRegion.html), but here we will use the ``Target`` class in gammapy that is useful for book-keeping if you run several analysis in a script."
    ]
   },
   {
@@ -232,7 +232,7 @@
    "source": [
     "## Estimate background\n",
     "\n",
-    "Next we will manually perform a background estimate by placing [reflected regions](..\/background/reflected.rst) around the pointing position and looking at the source statistics. This will result in a  [gammapy.background.BackgroundEstimate](..\/api/gammapy.background.BackgroundEstimate.rst) that serves as input for other classes in gammapy."
+    "Next we will manually perform a background estimate by placing [reflected regions](..\/spectrum/reflected.rst) around the pointing position and looking at the source statistics. This will result in a  [gammapy.spectrum.BackgroundEstimate](..\/api/gammapy.spectrum.BackgroundEstimate.rst) that serves as input for other classes in gammapy."
    ]
   },
   {
@@ -288,7 +288,7 @@
    "source": [
     "## Source statistic\n",
     "\n",
-    "Next we're going to look at the overall source statistics in our signal region. For more info about what debug plots you can create check out the [ObservationSummary](..\/api/gammapy.data.ObservationSummary.rst#gammapy.data.ObservationSummary) class."
+    "Next we're going to look at the overall source statistics in our signal region. For more info about what debug plots you can create check out the [ObservationSummary](..\/api/gammapy.data.ObservationSummary.rst) class."
    ]
   },
   {
@@ -394,8 +394,8 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "CPU times: user 1.73 s, sys: 28.7 ms, total: 1.76 s\n",
-      "Wall time: 1.82 s\n"
+      "CPU times: user 1.6 s, sys: 16.5 ms, total: 1.62 s\n",
+      "Wall time: 1.62 s\n"
      ]
     }
    ],
@@ -632,7 +632,7 @@
      "data": {
       "text/html": [
        "<i>Table length=10</i>\n",
-       "<table id=\"table4894817248\" class=\"table-striped table-bordered table-condensed\">\n",
+       "<table id=\"table4696321384\" class=\"table-striped table-bordered table-condensed\">\n",
        "<thead><tr><th>e_ref</th><th>e_min</th><th>e_max</th><th>ref_dnde</th><th>ref_flux</th><th>ref_eflux</th><th>ref_e2dnde</th><th>norm</th><th>loglike</th><th>norm_err</th><th>counts [4]</th><th>norm_errp</th><th>norm_errn</th><th>norm_ul</th><th>sqrt_ts</th><th>ts</th><th>norm_scan [11]</th><th>dloglike_scan [11]</th><th>dnde</th><th>dnde_ul</th><th>dnde_err</th><th>dnde_errp</th><th>dnde_errn</th></tr></thead>\n",
        "<thead><tr><th>TeV</th><th>TeV</th><th>TeV</th><th>1 / (cm2 s TeV)</th><th>1 / (cm2 s)</th><th>TeV / (cm2 s)</th><th>TeV / (cm2 s)</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th>1 / (cm2 s TeV)</th><th>1 / (cm2 s TeV)</th><th>1 / (cm2 s TeV)</th><th>1 / (cm2 s TeV)</th><th>1 / (cm2 s TeV)</th></tr></thead>\n",
        "<thead><tr><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>int64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th></tr></thead>\n",
@@ -690,7 +690,7 @@
     {
      "data": {
       "text/plain": [
-       "<matplotlib.axes._subplots.AxesSubplot at 0x123369b00>"
+       "<matplotlib.axes._subplots.AxesSubplot at 0x118cc8a20>"
       ]
      },
      "execution_count": 23,
@@ -835,7 +835,7 @@
      "data": {
       "text/html": [
        "<i>Table length=3</i>\n",
-       "<table id=\"table4910944832\" class=\"table-striped table-bordered table-condensed\">\n",
+       "<table id=\"table4724672664\" class=\"table-striped table-bordered table-condensed\">\n",
        "<thead><tr><th>name</th><th>value</th><th>error</th><th>unit</th><th>min</th><th>max</th><th>frozen</th></tr></thead>\n",
        "<thead><tr><th>str9</th><th>float64</th><th>float64</th><th>str14</th><th>float64</th><th>float64</th><th>bool</th></tr></thead>\n",
        "<tr><td>index</td><td>2.635e+00</td><td>7.617e-02</td><td></td><td>nan</td><td>nan</td><td>False</td></tr>\n",
@@ -871,7 +871,7 @@
      "data": {
       "text/html": [
        "<i>Table length=3</i>\n",
-       "<table id=\"table4910700248\" class=\"table-striped table-bordered table-condensed\">\n",
+       "<table id=\"table4727826416\" class=\"table-striped table-bordered table-condensed\">\n",
        "<thead><tr><th>name</th><th>value</th><th>error</th><th>unit</th><th>min</th><th>max</th><th>frozen</th></tr></thead>\n",
        "<thead><tr><th>str9</th><th>float64</th><th>float64</th><th>str14</th><th>float64</th><th>float64</th><th>bool</th></tr></thead>\n",
        "<tr><td>index</td><td>2.637e+00</td><td>7.619e-02</td><td></td><td>nan</td><td>nan</td><td>False</td></tr>\n",
@@ -913,7 +913,7 @@
     {
      "data": {
       "text/plain": [
-       "<matplotlib.legend.Legend at 0x124b1d128>"
+       "<matplotlib.legend.Legend at 0x1183a19e8>"
       ]
      },
      "execution_count": 31,

@@ -286,13 +286,23 @@ for g in sources:
     pix_scale = geom.pixel_scales.mean().deg
     sigma = g.fwhm.val * pix_scale * gaussian_fwhm_to_sigma
     rows.append(
-        dict(delstat=delstat, glon=coord[0], glat=coord[1], sigma=sigma)
+        dict(
+            delstat=delstat,
+            glon=coord[0].to_value("deg"),
+            glat=coord[1].to_value("deg"),
+            sigma=sigma,
+        )
     )
 
 table = Table(rows=rows, names=rows[0])
 for name in table.colnames:
     table[name].format = ".5g"
-print(table)
+
+
+# In[ ]:
+
+
+table
 
 
 # ### Exercises

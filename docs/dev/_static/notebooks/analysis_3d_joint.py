@@ -28,10 +28,10 @@ from gammapy.data import DataStore
 from gammapy.irf import EnergyDispersion, make_psf
 from gammapy.maps import WcsGeom, MapAxis, Map
 from gammapy.cube import MapMaker, PSFKernel, MapDataset
-from gammapy.cube.models import SkyModel, BackgroundModel
-from gammapy.spectrum.models import PowerLaw
-from gammapy.image.models import SkyPointSource
-from gammapy.utils.fitting import Fit
+from gammapy.modeling.models import SkyModel, BackgroundModel
+from gammapy.modeling.models import PowerLaw
+from gammapy.modeling.models import SkyPointSource
+from gammapy.modeling import Fit
 
 
 # ## Prepare modeling input data

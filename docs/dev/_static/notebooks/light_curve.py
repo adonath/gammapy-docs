@@ -38,9 +38,9 @@ log = logging.getLogger(__name__)
 
 
 from gammapy.data import ObservationFilter, DataStore
-from gammapy.spectrum.models import PowerLaw
-from gammapy.image.models import SkyPointSource
-from gammapy.cube.models import SkyModel, BackgroundModel
+from gammapy.modeling.models import PowerLaw
+from gammapy.modeling.models import SkyPointSource
+from gammapy.modeling.models import SkyModel, BackgroundModel
 from gammapy.cube import PSFKernel, MapMaker, MapDataset
 from gammapy.maps import WcsGeom, MapAxis
 from gammapy.irf import make_mean_psf, make_mean_edisp
@@ -242,9 +242,10 @@ lc.plot(marker="o")
 
 from regions import CircleSkyRegion
 from astropy.coordinates import Angle
-
-from gammapy.background import ReflectedRegionsBackgroundEstimator
-from gammapy.spectrum import SpectrumExtraction
+from gammapy.spectrum import (
+    SpectrumExtraction,
+    ReflectedRegionsBackgroundEstimator,
+)
 
 
 # ### Defining the geometry

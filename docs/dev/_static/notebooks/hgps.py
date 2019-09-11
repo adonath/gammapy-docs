@@ -42,7 +42,7 @@
 # 
 # * From [astropy](http://docs.astropy.org/), we will use [astropy.io.fits](http://docs.astropy.org/en/stable/io/fits/index.html) to read the FITS data, [astropy.table.Table](http://docs.astropy.org/en/stable/table/index.html) to work with the tables, but also [astropy.coordinates.SkyCoord](http://docs.astropy.org/en/stable/coordinates/index.html) and [astropy.wcs.WCS](http://docs.astropy.org/en/stable/wcs/index.html) to work with sky and pixel coordinates and [astropy.units.Quantity](http://docs.astropy.org/en/stable/units/index.html) to work with quantities.
 # 
-# * From [gammapy](https://docs.gammapy.org/), we will use [gammapy.maps.WcsNDMap](https://docs.gammapy.org/dev/api/gammapy.maps.WcsNDMap.html) to work with the HGPS sky maps, and [gammapy.catalog.SourceCatalogHGPS](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogHGPS.html) and [gammapy.catalog.SourceCatalogObjectHGPS](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogObjectHGPS.html) to work with the HGPS catalog data, especially the HGPS spectral data using [gammapy.spectrum.models.SpectralModel](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.SpectralModel.html) and [gammapy.spectrum.FluxPoints](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html) objects.
+# * From [gammapy](https://docs.gammapy.org/), we will use [gammapy.maps.WcsNDMap](https://docs.gammapy.org/dev/api/gammapy.maps.WcsNDMap.html) to work with the HGPS sky maps, and [gammapy.catalog.SourceCatalogHGPS](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogHGPS.html) and [gammapy.catalog.SourceCatalogObjectHGPS](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogObjectHGPS.html) to work with the HGPS catalog data, especially the HGPS spectral data using [gammapy.modeling.models.SpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.SpectralModel.html) and [gammapy.spectrum.FluxPoints](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html) objects.
 # 
 # * [matplotlib](https://matplotlib.org/) for all plotting. For sky image plotting, we will use matplotlib via [astropy.visualization](http://docs.astropy.org/en/stable/visualization/index.html) and [gammapy.maps.WcsNDMap.plot](https://docs.gammapy.org/dev/api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.plot).
 # 
@@ -79,8 +79,7 @@ print(astropy.__version__)
 # In[ ]:
 
 
-from gammapy.maps import Map
-from gammapy.image import MapPanelPlotter
+from gammapy.maps import Map, MapPanelPlotter
 
 from gammapy.catalog import SourceCatalogHGPS
 

@@ -5,7 +5,7 @@
 
 # ## Introduction
 
-# This notebook shows how to do a pulsar analysis with Gammapy. It's based on a Vela simulation file from the CTA DC1, which already contains a column of phases. We will produce a phasogram, a phase-resolved map and a phase-resolved spectrum of the Vela pulsar using the class PhaseBackgroundEstimator from gammapy.background.phase. 
+# This notebook shows how to do a pulsar analysis with Gammapy. It's based on a Vela simulation file from the CTA DC1, which already contains a column of phases. We will produce a phasogram, a phase-resolved map and a phase-resolved spectrum of the Vela pulsar using the class PhaseBackgroundEstimator. 
 # 
 # The phasing in itself is not done here, and it requires specific packages like Tempo2 or PINT (https://nanograv-pint.readthedocs.io/en/latest/readme.html).
 
@@ -31,10 +31,10 @@ import astropy.units as u
 from gammapy.maps import Map, WcsGeom
 from gammapy.cube import fill_map_counts
 from gammapy.data import DataStore
-from gammapy.background import PhaseBackgroundEstimator
-from gammapy.spectrum.models import PowerLaw
-from gammapy.utils.fitting import Fit
+from gammapy.modeling.models import PowerLaw
+from gammapy.modeling import Fit
 from gammapy.spectrum import (
+    PhaseBackgroundEstimator,
     SpectrumExtraction,
     FluxPointsEstimator,
     FluxPointsDataset,
@@ -245,7 +245,7 @@ excess_map.smooth(kernel="gauss", width=0.2 * u.deg).plot(add_cbar=True);
 
 # We can also do a phase-resolved spectrum. In order to do that, there is the class PhaseBackgroundEstimator. In a phase-resolved analysis, the background is estimated in the same sky region but in the OFF-phase zone.
 # 
-# We start by estimating the background with the class PhaseBackgroundEstimator. It takes the observations, the ON-region, and an ON- and OFF-phase zones (the same we defined for the phasogram and the phase-resolved map). It results in a gammapy.background.phase.PhaseBackgroundEstimator that serves as an input for other spectral analysis classes in Gammapy.
+# We start by estimating the background with the class PhaseBackgroundEstimator. It takes the observations, the ON-region, and an ON- and OFF-phase zones (the same we defined for the phasogram and the phase-resolved map). It results in a PhaseBackgroundEstimator that serves as an input for other spectral analysis classes in Gammapy.
 
 # In[ ]:
 

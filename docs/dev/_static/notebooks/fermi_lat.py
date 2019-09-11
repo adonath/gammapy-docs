@@ -46,11 +46,11 @@ from astropy.coordinates import SkyCoord
 from gammapy.data import EventList
 from gammapy.irf import EnergyDependentTablePSF, EnergyDispersion
 from gammapy.maps import Map, MapAxis, WcsNDMap, WcsGeom
-from gammapy.spectrum.models import TableModel, PowerLaw
-from gammapy.image.models import SkyPointSource, SkyDiffuseConstant
-from gammapy.cube.models import SkyModel, SkyDiffuseCube, BackgroundModel
-from gammapy.cube import MapDataset, PSFKernel
-from gammapy.utils.fitting import Fit
+from gammapy.modeling.models import TableModel, PowerLaw
+from gammapy.modeling.models import SkyPointSource, SkyDiffuseConstant
+from gammapy.modeling.models import SkyModel, SkyDiffuseCube, SkyModels
+from gammapy.cube import MapDataset, PSFKernel, MapEvaluator
+from gammapy.modeling import Fit
 
 
 # ## Events
@@ -122,6 +122,7 @@ counts = Map.create(
     coordsys="GAL",
     binsz=0.1,
     axes=[energy_axis],
+    dtype=float,
 )
 # We put this call into the same Jupyter cell as the Map.create
 # because otherwise we could accidentally fill the counts
@@ -165,6 +166,7 @@ exposure_hpx = Map.read(
 )
 # Unit is not stored in the file, set it manually
 exposure_hpx.unit = "cm2 s"
+exposure_hpx.geom.axes[0].unit = "GeV"
 print(exposure_hpx.geom)
 print(exposure_hpx.geom.axes[0])
 
@@ -192,7 +194,7 @@ data = exposure_hpx.interp_by_coord(coord)
 # In[ ]:
 
 
-exposure = WcsNDMap(geom, data, unit=exposure_hpx.unit)
+exposure = WcsNDMap(geom, data, unit=exposure_hpx.unit, dtype=float)
 print(exposure.geom)
 print(exposure.geom.axes[0])
 
@@ -240,12 +242,7 @@ print(diffuse_galactic_fermi.geom.axes[0])
 coord = counts.geom.get_coord()
 
 data = diffuse_galactic_fermi.interp_by_coord(
-    {
-        "skycoord": coord.skycoord,
-        "energy": coord["energy"]
-        * counts.geom.get_axis_by_name("energy").unit,
-    },
-    interp=3,
+    {"skycoord": coord.skycoord, "energy": coord["energy"]}, interp=3
 )
 diffuse_galactic = WcsNDMap(
     exposure.geom, data, unit=diffuse_galactic_fermi.unit
@@ -285,7 +282,7 @@ plt.ylabel("Flux (cm-2 s-1 MeV-1 sr-1)")
 
 # ## Isotropic diffuse background
 # 
-# To load the isotropic diffuse model with Gammapy, use the [gammapy.spectrum.models.TableModel](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.TableModel.html). We are using `'fill_value': 'extrapolate'` to extrapolate the model above 500 GeV:
+# To load the isotropic diffuse model with Gammapy, use the [gammapy.modeling.models.TableModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.TableModel.html). We are using `'fill_value': 'extrapolate'` to extrapolate the model above 500 GeV:
 
 # In[ ]:
 
@@ -382,31 +379,28 @@ edisp = EnergyDispersion.from_diagonal_response(e_true=e_true, e_reco=e_reco)
 # In[ ]:
 
 
-model = SkyDiffuseCube(diffuse_galactic)
-
-background_gal = BackgroundModel.from_skymodel(
-    model, exposure=exposure, psf=psf_kernel, edisp=edisp
+model_diffuse = SkyDiffuseCube(diffuse_galactic, name="diffuse")
+eval_diffuse = MapEvaluator(
+    model=model_diffuse, exposure=exposure, psf=psf_kernel, edisp=edisp
 )
 
-background_gal.map.sum_over_axes().plot()
-print(
-    "Background counts from Galactic diffuse: ", background_gal.map.data.sum()
-)
+background_gal = eval_diffuse.compute_npred()
+
+background_gal.sum_over_axes().plot()
+print("Background counts from Galactic diffuse: ", background_gal.data.sum())
 
 
 # In[ ]:
 
 
-model = SkyModel(SkyDiffuseConstant(), diffuse_iso)
+model_iso = SkyModel(SkyDiffuseConstant(), diffuse_iso, name="diffuse-iso")
 
-background_iso = BackgroundModel.from_skymodel(
-    model, exposure=exposure, edisp=edisp
-)
+eval_iso = MapEvaluator(model=model_iso, exposure=exposure, edisp=edisp)
 
-background_iso.map.sum_over_axes().plot(add_cbar=True)
-print(
-    "Background counts from isotropic diffuse: ", background_iso.map.data.sum()
-)
+background_iso = eval_iso.compute_npred()
+
+background_iso.sum_over_axes().plot(add_cbar=True)
+print("Background counts from isotropic diffuse: ", background_iso.data.sum())
 
 
 # In[ ]:
@@ -423,7 +417,7 @@ background_total = background_iso + background_gal
 
 
 excess = counts.copy()
-excess.data -= background_total.evaluate().data
+excess.data -= background_total.data
 excess.sum_over_axes().smooth("0.1 deg").plot(
     cmap="coolwarm", vmin=-5, vmax=5, add_cbar=True
 )
@@ -451,12 +445,10 @@ model = SkyModel(
     PowerLaw(index=2.5, amplitude="1e-11 cm-2 s-1 TeV-1", reference="100 GeV"),
 )
 
+model_total = SkyModels([model, model_diffuse, model_iso])
+
 dataset = MapDataset(
-    model=model,
-    counts=counts,
-    exposure=exposure,
-    background_model=background_total,
-    psf=psf_kernel,
+    model=model_total, counts=counts, exposure=exposure, psf=psf_kernel
 )
 fit = Fit(dataset)
 result = fit.run()

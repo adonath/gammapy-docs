@@ -21,9 +21,9 @@
 # 
 # And the following spectral model classes:
 # 
-# - [PowerLaw](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html)
-# - [ExponentialCutoffPowerLaw](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.ExponentialCutoffPowerLaw.html)
-# - [LogParabola](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.LogParabola.html)
+# - [PowerLaw](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLaw.html)
+# - [ExponentialCutoffPowerLaw](https://docs.gammapy.org/dev/api/gammapy.modeling.models.ExponentialCutoffPowerLaw.html)
+# - [LogParabola](https://docs.gammapy.org/dev/api/gammapy.modeling.models.LogParabola.html)
 
 # ## Setup
 # 
@@ -41,7 +41,7 @@ import matplotlib.pyplot as plt
 
 
 from astropy import units as u
-from gammapy.spectrum.models import (
+from gammapy.modeling.models import (
     PowerLaw,
     ExponentialCutoffPowerLaw,
     LogParabola,
@@ -52,7 +52,7 @@ from gammapy.catalog import (
     SourceCatalogGammaCat,
     SourceCatalog3FHL,
 )
-from gammapy.utils.fitting import Fit
+from gammapy.modeling import Fit
 
 
 # ## Load spectral points
@@ -113,7 +113,7 @@ flux_points = flux_points.drop_ul()
 
 # ## Power Law Fit
 # 
-# First we start with fitting a simple [power law](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html#gammapy.spectrum.models.PowerLaw).
+# First we start with fitting a simple [power law](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLaw.html).
 
 # In[ ]:
 
@@ -162,7 +162,7 @@ ax.set_ylim(1e-13, 1e-11);
 
 # ## Exponential Cut-Off Powerlaw Fit
 # 
-# Next we fit an [exponential cut-off power](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.ExponentialCutoffPowerLaw.html#gammapy.spectrum.models.ExponentialCutoffPowerLaw) law to the data.
+# Next we fit an [exponential cut-off power](https://docs.gammapy.org/dev/api/gammapy.modeling.models.ExponentialCutoffPowerLaw.html) law to the data.
 
 # In[ ]:
 
@@ -203,7 +203,7 @@ ax.set_ylim(1e-13, 1e-11)
 
 # ## Log-Parabola Fit
 # 
-# Finally we try to fit a [log-parabola](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.LogParabola.html#gammapy.spectrum.models.LogParabola) model:
+# Finally we try to fit a [log-parabola](https://docs.gammapy.org/dev/api/gammapy.modeling.models.LogParabola.html) model:
 
 # In[ ]:
 

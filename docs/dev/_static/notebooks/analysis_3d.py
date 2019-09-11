@@ -25,11 +25,11 @@ from gammapy.data import DataStore
 from gammapy.irf import EnergyDispersion, make_mean_psf, make_mean_edisp
 from gammapy.maps import WcsGeom, MapAxis, Map, WcsNDMap
 from gammapy.cube import MapMaker, PSFKernel, MapDataset
-from gammapy.cube.models import SkyModel, SkyDiffuseCube, BackgroundModel
-from gammapy.spectrum.models import PowerLaw, ExponentialCutoffPowerLaw
+from gammapy.modeling.models import SkyModel, SkyDiffuseCube, BackgroundModel
+from gammapy.modeling.models import PowerLaw, ExponentialCutoffPowerLaw
+from gammapy.modeling.models import SkyPointSource
 from gammapy.spectrum import FluxPointsEstimator
-from gammapy.image.models import SkyPointSource
-from gammapy.utils.fitting import Fit
+from gammapy.modeling import Fit
 
 
 # ## Prepare modeling input data
@@ -155,12 +155,7 @@ print("counts: ", maps["counts"].geom)
 coord = maps["counts"].geom.get_coord()
 
 data = diffuse_gal.interp_by_coord(
-    {
-        "skycoord": coord.skycoord,
-        "energy": coord["energy"]
-        * maps["counts"].geom.get_axis_by_name("energy").unit,
-    },
-    interp=3,
+    {"skycoord": coord.skycoord, "energy": coord["energy"]}, interp=3
 )
 diffuse_galactic = WcsNDMap(maps["counts"].geom, data)
 print("Before: \n", diffuse_gal.geom)
@@ -288,7 +283,7 @@ edisp = EnergyDispersion.read(str(path / "edisp.fits"))
 
 
 coords = maps["counts"].geom.get_coord()
-mask = coords["energy"] > 0.3
+mask = coords["energy"] > 0.3 * u.TeV
 
 
 # ### Model fit
@@ -400,17 +395,6 @@ diffuse_model = SkyDiffuseCube.read(
     "$GAMMAPY_DATA/fermi-3fhl-gc/gll_iem_v06_gc.fits.gz"
 )
 
-background_diffuse = BackgroundModel.from_skymodel(
-    diffuse_model, exposure=maps["exposure"], psf=psf_kernel
-)
-
-
-# In[ ]:
-
-
-background_irf = BackgroundModel(maps["background"], norm=1.0, tilt=0.0)
-background_total = background_irf + background_diffuse
-
 
 # In[ ]:
 
@@ -434,10 +418,10 @@ model_ecpl = SkyModel(
 
 
 dataset_combined = MapDataset(
-    model=model_ecpl,
+    model=model_ecpl + diffuse_model,
     counts=maps["counts"],
     exposure=maps["exposure"],
-    background_model=background_total,
+    background_model=background_model,
     psf=psf_kernel,
     edisp=edisp,
 )
@@ -456,8 +440,8 @@ get_ipython().run_cell_magic('time', '', 'fit_combined = Fit(dataset_combined)\n
 
 # Checking normalization value (the closer to 1 the better)
 print(model_ecpl, "\n")
-print(background_irf, "\n")
-print(background_diffuse, "\n")
+print(background_model, "\n")
+print(diffuse_model, "\n")
 
 
 # You can see that the normalisation of the background has vastly improved

@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 # In[ ]:
 
 
+import yaml
 import numpy as np
 from scipy.stats import norm
 import astropy.units as u
@@ -29,15 +30,20 @@ from astropy.convolution import Tophat2DKernel
 from regions import CircleSkyRegion
 from gammapy.data import DataStore
 from gammapy.maps import Map, MapAxis, WcsGeom
-from gammapy.cube import MapMaker, MapDataset, PSFKernel, MapMakerRing
-from gammapy.cube.models import SkyModel, BackgroundModel
-from gammapy.spectrum.models import PowerLaw
-from gammapy.spectrum import create_crab_spectral_model
-from gammapy.image.models import SkyPointSource
+from gammapy.cube import (
+    MapMaker,
+    MapDataset,
+    PSFKernel,
+    MapMakerRing,
+    RingBackgroundEstimator,
+)
+from gammapy.modeling.models import SkyModel, BackgroundModel
+from gammapy.modeling.models import PowerLaw
+from gammapy.modeling.models import create_crab_spectral_model
+from gammapy.modeling.models import SkyPointSource
 from gammapy.detect import compute_lima_on_off_image
-from gammapy.scripts import SpectrumAnalysisIACT
-from gammapy.utils.fitting import Fit
-from gammapy.background import RingBackgroundEstimator
+from gammapy.scripts import Analysis
+from gammapy.modeling import Fit
 
 
 # ## Data access
@@ -186,17 +192,79 @@ residual.sum_over_axes().smooth("0.1 deg").plot(
 # ## Spectrum
 # 
 # We could try to improve the background modeling and spatial model of the source. But let's instead turn to one of the classic IACT analysis techniques: use a circular on region and reflected regions for background estimation, and derive a spectrum for the source without having to assume a spatial model, or without needing a 3D background model.
+# 
+# We will use the high-level interface with the following configuration:
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'on_region = CircleSkyRegion(pos_crab, 0.11 * u.deg)\nexclusion_mask = Map.from_geom(geom.to_image())\nexclusion_mask.data = np.ones_like(exclusion_mask.data, dtype=bool)\n\nmodel_pwl = PowerLaw(\n    index=2.6, amplitude="5e-11 cm-2 s-1 TeV-1", reference="1 TeV"\n)\n\nconfig = {\n    "outdir": ".",\n    "background": {"on_region": on_region, "exclusion_mask": exclusion_mask},\n    "extraction": {"containment_correction": True},\n    "fit": {"model": model_pwl, "fit_range": [1, 10] * u.TeV},\n    "fp_binning": np.logspace(0, 1, 11) * u.TeV,\n}\nanalysis = SpectrumAnalysisIACT(observations=observations, config=config)\nanalysis.run()')
+config = """
+model:
+    components:
+    - name: source
+      spectral:
+            parameters:
+            - factor: 2.0
+              frozen: false
+              name: index
+              unit: ''
+              value: 2.6
+            - factor: 1.0e-12
+              frozen: false
+              name: amplitude
+              unit: cm-2 s-1 TeV-1
+              value: 5.0e-11
+            - factor: 1.0
+              frozen: true
+              name: reference
+              unit: TeV
+              value: 1.0
+            type: PowerLaw
+observations:
+  datastore: $GAMMAPY_DATA/hess-dl3-dr1/hess-dl3-dr3-with-background.fits.gz
+  filters:
+  - filter_type: par_value
+    variable: TARGET_NAME
+    value_param: Crab
+reduction:
+    background:
+        background_estimator: reflected
+        on_region:
+            center:
+            - 83.633 deg
+            - 22.014 deg
+            frame: icrs
+            radius: 0.11 deg
+    containment_correction: true
+    data_reducer: 1d 
+fit:
+    fit_range:
+        min: 1 TeV
+        max: 10 TeV
+flux:
+    fp_binning:
+        lo_bnd: 1
+        hi_bnd: 10
+        nbin: 10
+        unit: TeV
+        interp: log      
+"""
+config = yaml.safe_load(config)
 
 
 # In[ ]:
 
 
-print(model_pwl)
+get_ipython().run_cell_magic('time', '', 'analysis = Analysis(config)\nanalysis.get_observations()\nanalysis.reduce()\nanalysis.fit()\nanalysis.get_flux_points()')
+
+
+# In[ ]:
+
+
+analysis.flux_points_dataset.model.parameters.covariance = (
+    analysis.fit_result.parameters.covariance
+)
+print(analysis.flux_points_dataset.model)
 
 
 # In[ ]:
@@ -205,7 +273,7 @@ print(model_pwl)
 plt.figure(figsize=(10, 8))
 crab_ref = create_crab_spectral_model("hess_pl")
 
-dataset_fp = analysis.spectrum_result
+dataset_fp = analysis.flux_points_dataset
 
 plot_kwargs = {
     "energy_range": [1, 10] * u.TeV,

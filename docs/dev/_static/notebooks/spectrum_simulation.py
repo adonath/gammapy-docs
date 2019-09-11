@@ -13,7 +13,7 @@
 # * [gammapy.spectrum.SpectrumEvaluator](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumEvaluator.html)
 # * [gammapy.spectrum.SpectrumDataset](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDataset.html)
 # * [gammapy.irf.load_cta_irfs](https://docs.gammapy.org/dev/api/gammapy.irf.load_cta_irfs.html)
-# * [gammapy.spectrum.models.PowerLaw](https://docs.gammapy.org/dev/api/gammapy.spectrum.models.PowerLaw.html)
+# * [gammapy.modeling.models.PowerLaw](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLaw.html)
 
 # ## Setup
 # 
@@ -36,9 +36,8 @@ from gammapy.spectrum import (
     SpectrumEvaluator,
     SpectrumDataset,
 )
-from gammapy.utils.fitting import Fit, Parameter
-from gammapy.spectrum.models import PowerLaw
-from gammapy.spectrum import models
+from gammapy.modeling import Fit, Parameter
+from gammapy.modeling.models import PowerLaw, SpectralModel
 from gammapy.irf import load_cta_irfs
 
 
@@ -213,7 +212,7 @@ print("spectral index: {:.2f} +/- {:.2f}".format(index.mean(), index.std()))
 # In[ ]:
 
 
-models.SpectralModel.__subclasses__()
+SpectralModel.__subclasses__()
 
 
 # This section shows how to add a user defined spectral model. 
@@ -225,7 +224,7 @@ models.SpectralModel.__subclasses__()
 # In[ ]:
 
 
-class UserModel(models.SpectralModel):
+class UserModel(SpectralModel):
     def __init__(self, index, amplitude, reference, mean, width):
         super().__init__(
             [
@@ -239,7 +238,7 @@ class UserModel(models.SpectralModel):
 
     @staticmethod
     def evaluate(energy, index, amplitude, reference, mean, width):
-        pwl = models.PowerLaw.evaluate(
+        pwl = PowerLaw.evaluate(
             energy=energy,
             index=index,
             amplitude=amplitude,
