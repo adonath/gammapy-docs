@@ -38,7 +38,7 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 from astropy.convolution import Gaussian2DKernel
 from regions import CircleSkyRegion
-from gammapy.modeling import Fit
+from gammapy.modeling import Fit, Datasets
 from gammapy.data import DataStore
 from gammapy.modeling.models import PowerLaw
 from gammapy.spectrum import (
@@ -274,10 +274,7 @@ get_ipython().run_cell_magic('time', '', 'model = PowerLaw(\n    index=2, amplit
 
 
 # Flux points are computed on stacked observation
-from gammapy.spectrum import SpectrumDatasetOnOffStacker
-
-stacker = SpectrumDatasetOnOffStacker(extract.spectrum_observations)
-stacked_obs = stacker.run()
+stacked_obs = Datasets(extract.spectrum_observations).stack_reduce()
 
 print(stacked_obs)
 

@@ -71,13 +71,11 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 from regions import CircleSkyRegion
 from gammapy.maps import Map
-from gammapy.modeling import Fit
+from gammapy.modeling import Fit, Datasets
 from gammapy.data import ObservationStats, ObservationSummary, DataStore
 from gammapy.modeling.models import PowerLaw, create_crab_spectral_model
 from gammapy.spectrum import (
     SpectrumExtraction,
-    SpectrumDatasetOnOff,
-    SpectrumDatasetOnOffStacker,
     FluxPointsEstimator,
     FluxPointsDataset,
     ReflectedRegionsBackgroundEstimator,
@@ -354,8 +352,7 @@ flux_points_dataset.peek();
 # In[ ]:
 
 
-stacker = SpectrumDatasetOnOffStacker(datasets_joint)
-dataset_stacked = stacker.run()
+dataset_stacked = Datasets(datasets_joint).stack_reduce()
 
 
 # Again we set the model on the dataset we would like to fit (in this case it's only a singel one) and pass it to the `Fit` object:

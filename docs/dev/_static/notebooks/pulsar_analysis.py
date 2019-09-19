@@ -32,7 +32,7 @@ from gammapy.maps import Map, WcsGeom
 from gammapy.cube import fill_map_counts
 from gammapy.data import DataStore
 from gammapy.modeling.models import PowerLaw
-from gammapy.modeling import Fit
+from gammapy.modeling import Fit, Datasets
 from gammapy.spectrum import (
     PhaseBackgroundEstimator,
     SpectrumExtraction,
@@ -323,10 +323,7 @@ print(joint_result)
 
 e_edges = np.logspace(np.log10(0.04), np.log10(0.4), 7) * u.TeV
 
-from gammapy.spectrum import SpectrumDatasetOnOffStacker
-
-stacker = SpectrumDatasetOnOffStacker(extraction.spectrum_observations)
-dataset = stacker.run()
+dataset = Datasets(extraction.spectrum_observations).stack_reduce()
 
 dataset.model = model
 
