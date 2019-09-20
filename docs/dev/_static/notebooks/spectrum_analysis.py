@@ -26,7 +26,6 @@
 # To perform the joint fit:
 # 
 # * [gammapy.spectrum.SpectrumDatasetOnOff](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDatasetOnOff.html)
-# * [gammapy.spectrum.SpectrumDatasetOnOffStacker](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDatasetOnOffStacker.html)
 # * [gammapy.modeling.models.PowerLaw](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLaw.html)
 # * [gammapy.modeling.models.ExponentialCutoffPowerLaw](https://docs.gammapy.org/dev/api/gammapy.modeling.models.ExponentialCutoffPowerLaw.html)
 # * [gammapy.modeling.models.LogParabola](https://docs.gammapy.org/dev/api/gammapy.modeling.models.LogParabola.html)
@@ -347,7 +346,7 @@ flux_points_dataset.peek();
 
 # ## Stack observations
 # 
-# And alternative approach to fitting the spectrum is stacking all observations first and the fitting a model. For this we first stack the individual datasets using the `SpectrumDatasetOnOffStacker` class:
+# And alternative approach to fitting the spectrum is stacking all observations first and the fitting a model. For this we first stack the individual datasets:
 
 # In[ ]:
 

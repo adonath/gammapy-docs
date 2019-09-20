@@ -166,7 +166,6 @@ exposure_hpx = Map.read(
 )
 # Unit is not stored in the file, set it manually
 exposure_hpx.unit = "cm2 s"
-exposure_hpx.geom.axes[0].unit = "GeV"
 print(exposure_hpx.geom)
 print(exposure_hpx.geom.axes[0])
 
