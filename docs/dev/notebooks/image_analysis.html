@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Fitting 2D images with Gammapy &mdash; gammapy v0.14.dev550+gd4956d864</title>
+  <title>Fitting 2D images with Gammapy &mdash; gammapy v0.14.dev738+g051524cbf</title>
   
 
   
@@ -73,7 +73,7 @@
             
             
               <div class="version">
-                0.14.dev550+gd4956d864
+                0.14.dev738+g051524cbf
               </div>
             
           
@@ -225,7 +225,6 @@
 <li class="toctree-l4"><a class="reference internal" href="hess.html#Map-fit">Map fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="hess.html#Residual-image">Residual image</a></li>
 <li class="toctree-l4"><a class="reference internal" href="hess.html#Spectrum">Spectrum</a></li>
-<li class="toctree-l4"><a class="reference internal" href="hess.html#Classical-Ring-Background-Analysis">Classical Ring Background Analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="hess.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -343,7 +342,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#Define-a-mask">Define a mask</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Modeling-the-source">Modeling the source</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Modeling-the-background">Modeling the background</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Todo:-Demonstrate-plotting-a-flux-map">Todo: Demonstrate plotting a flux map</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Classical-Ring-Background-Analysis">Classical Ring Background Analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -795,11 +794,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../scripts/index.html#configuration-and-methods">Configuration and methods</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#general-settings">General settings</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#observations-selection">Observations selection</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#data-reduction">Data reduction</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#geometry">Geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#data-reduction-and-datasets">Data reduction and datasets</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#model">Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#fitting">Fitting</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#flux-points">Flux points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#residuals">Residuals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#using-the-high-level-interface">Using the high-level interface</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../scripts/index.html#command-line-tools">Command line tools</a><ul>
@@ -1213,16 +1213,32 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">norm</span>
+
 <span class="kn">import</span> <span class="nn">astropy.units</span> <span class="kn">as</span> <span class="nn">u</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">SkyCoord</span>
+<span class="kn">from</span> <span class="nn">astropy.convolution</span> <span class="kn">import</span> <span class="n">Tophat2DKernel</span>
 <span class="kn">from</span> <span class="nn">regions</span> <span class="kn">import</span> <span class="n">CircleSkyRegion</span>
+
+<span class="kn">from</span> <span class="nn">gammapy.detect</span> <span class="kn">import</span> <span class="n">compute_lima_on_off_image</span>
 <span class="kn">from</span> <span class="nn">gammapy.data</span> <span class="kn">import</span> <span class="n">DataStore</span>
 <span class="kn">from</span> <span class="nn">gammapy.irf</span> <span class="kn">import</span> <span class="n">make_mean_psf</span>
 <span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">Map</span><span class="p">,</span> <span class="n">MapAxis</span><span class="p">,</span> <span class="n">WcsGeom</span>
-<span class="kn">from</span> <span class="nn">gammapy.cube</span> <span class="kn">import</span> <span class="n">MapMaker</span><span class="p">,</span> <span class="n">PSFKernel</span><span class="p">,</span> <span class="n">MapDataset</span>
-<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">SkyModel</span><span class="p">,</span> <span class="n">BackgroundModel</span>
-<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">PowerLaw2</span>
-<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">SkyPointSource</span>
+<span class="kn">from</span> <span class="nn">gammapy.cube</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MapMaker</span><span class="p">,</span>
+    <span class="n">PSFKernel</span><span class="p">,</span>
+    <span class="n">MapDataset</span><span class="p">,</span>
+    <span class="n">MapMakerRing</span><span class="p">,</span>
+    <span class="n">RingBackgroundEstimator</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SkyModel</span><span class="p">,</span>
+    <span class="n">BackgroundModel</span><span class="p">,</span>
+    <span class="n">PowerLaw2SpectralModel</span><span class="p">,</span>
+    <span class="n">PointSpatialModel</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span> <span class="nn">gammapy.modeling</span> <span class="kn">import</span> <span class="n">Fit</span>
 </pre></div>
 </div>
@@ -1269,21 +1285,17 @@ Number of observations: 4
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">print</span><span class="p">(</span>
-    <span class="s2">&quot;Total observation time: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-        <span class="n">data_store</span><span class="o">.</span><span class="n">obs_table</span><span class="p">[</span><span class="s2">&quot;ONTIME&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;hour&quot;</span><span class="p">)</span>
-    <span class="p">)</span>
-<span class="p">)</span>
+<span></span><span class="n">data_store</span><span class="o">.</span><span class="n">obs_table</span><span class="p">[</span><span class="s2">&quot;ONTIME&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;hour&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
 </div>
 <div class="output_area docutils container">
-<div class="highlight"><pre>
-Total observation time: 2.0 h
-</pre></div></div>
+<div class="math notranslate nohighlight">
+$$2 \; \mathrm{h}$$</div></div>
 </div>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
@@ -1324,7 +1336,7 @@ Total observation time: 2.0 h
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="o">%%time</span>
 <span class="n">maker</span> <span class="o">=</span> <span class="n">MapMaker</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">offset_max</span><span class="o">=</span><span class="mf">4.0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">)</span>
-<span class="n">spectrum</span> <span class="o">=</span> <span class="n">PowerLaw2</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">spectrum</span> <span class="o">=</span> <span class="n">PowerLaw2SpectralModel</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 <span class="n">maps2D</span> <span class="o">=</span> <span class="n">maker</span><span class="o">.</span><span class="n">run_images</span><span class="p">(</span><span class="n">observations</span><span class="p">,</span> <span class="n">spectrum</span><span class="o">=</span><span class="n">spectrum</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1342,52 +1354,13 @@ WARNING: Tried to get polar motions for times after IERS data is valid. Defaulti
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-CPU times: user 14 s, sys: 2.73 s, total: 16.8 s
-Wall time: 16.9 s
+CPU times: user 21.7 s, sys: 3.91 s, total: 25.6 s
+Wall time: 26.3 s
 </pre></div></div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">maps2D</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
-</pre></div>
-</div>
-<div class="output_area highlight-none notranslate"><div class="highlight"><pre>
-<span></span>{&#39;counts&#39;: WcsNDMap
-
-    geom  : WcsGeom
-    axes  : [&#39;lon&#39;, &#39;lat&#39;, &#39;energy&#39;]
-    shape : (500, 400, 1)
-    ndim  : 3
-    unit  :
-    dtype : float32, &#39;exposure&#39;: WcsNDMap
-
-    geom  : WcsGeom
-    axes  : [&#39;lon&#39;, &#39;lat&#39;, &#39;energy&#39;]
-    shape : (500, 400, 1)
-    ndim  : 3
-    unit  : m2 s
-    dtype : float32, &#39;background&#39;: WcsNDMap
-
-    geom  : WcsGeom
-    axes  : [&#39;lon&#39;, &#39;lat&#39;, &#39;energy&#39;]
-    shape : (500, 400, 1)
-    ndim  : 3
-    unit  :
-    dtype : float32}
-</pre></div>
-</div>
 </div>
 <p>For a typical 2D analysis, using an energy dispersion usually does not make sense. A PSF map can be made as in the regular 3D case, taking care to weight it properly with the spectrum.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1413,7 +1386,7 @@ Wall time: 16.9 s
 <div class="section" id="Define-a-mask">
 <h2>Define a mask<a class="headerlink" href="#Define-a-mask" title="Permalink to this headline">¶</a></h2>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1425,14 +1398,16 @@ Wall time: 16.9 s
 </div>
 <div class="section" id="Modeling-the-source">
 <h2>Modeling the source<a class="headerlink" href="#Modeling-the-source" title="Permalink to this headline">¶</a></h2>
-<p>This is the important thing to note in this analysis. Since modelling and fitting in <code class="docutils literal notranslate"><span class="pre">gammapy.maps</span></code> needs to have a combination of spectral models, we have to use a dummy Powerlaw as for the spectral model and fix its index to 2. Since we are interested only in the integral flux, we will use the <code class="docutils literal notranslate"><span class="pre">PowerLaw2</span></code> model which directly fits an integral flux.</p>
+<p>This is the important thing to note in this analysis. Since modelling and fitting in <code class="docutils literal notranslate"><span class="pre">gammapy.maps</span></code> needs to have a combination of spectral models, we have to use a dummy Powerlaw as for the spectral model and fix its index to 2. Since we are interested only in the integral flux, we will use the <code class="docutils literal notranslate"><span class="pre">PowerLaw2SpectralModel</span></code> model which directly fits an integral flux.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">spatial_model</span> <span class="o">=</span> <span class="n">SkyPointSource</span><span class="p">(</span><span class="n">lon_0</span><span class="o">=</span><span class="s2">&quot;0.01 deg&quot;</span><span class="p">,</span> <span class="n">lat_0</span><span class="o">=</span><span class="s2">&quot;0.01 deg&quot;</span><span class="p">)</span>
-<span class="n">spectral_model</span> <span class="o">=</span> <span class="n">PowerLaw2</span><span class="p">(</span>
+<span></span><span class="n">spatial_model</span> <span class="o">=</span> <span class="n">PointSpatialModel</span><span class="p">(</span>
+    <span class="n">lon_0</span><span class="o">=</span><span class="s2">&quot;0.01 deg&quot;</span><span class="p">,</span> <span class="n">lat_0</span><span class="o">=</span><span class="s2">&quot;0.01 deg&quot;</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s2">&quot;galactic&quot;</span>
+<span class="p">)</span>
+<span class="n">spectral_model</span> <span class="o">=</span> <span class="n">PowerLaw2SpectralModel</span><span class="p">(</span>
     <span class="n">emin</span><span class="o">=</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="o">=</span><span class="n">emax</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="s2">&quot;3e-12 cm-2 s-1&quot;</span>
 <span class="p">)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">SkyModel</span><span class="p">(</span><span class="n">spatial_model</span><span class="o">=</span><span class="n">spatial_model</span><span class="p">,</span> <span class="n">spectral_model</span><span class="o">=</span><span class="n">spectral_model</span><span class="p">)</span>
@@ -1445,7 +1420,7 @@ Wall time: 16.9 s
 <h2>Modeling the background<a class="headerlink" href="#Modeling-the-background" title="Permalink to this headline">¶</a></h2>
 <p>Gammapy fitting framework assumes the background to be an integrated model. Thus, we will define the background as a model, and freeze its parameters for now.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1456,7 +1431,7 @@ Wall time: 16.9 s
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1472,7 +1447,7 @@ Wall time: 16.9 s
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1487,13 +1462,13 @@ Wall time: 16.9 s
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-CPU times: user 1.22 s, sys: 9.99 ms, total: 1.23 s
-Wall time: 1.23 s
+CPU times: user 969 ms, sys: 10.2 ms, total: 979 ms
+Wall time: 979 ms
 </pre></div></div>
 </div>
 <p>To see the actual best-fit parameters, do a print on the result</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1512,8 +1487,8 @@ Parameters:
 
            name     value    error   unit      min        max    frozen
         --------- ---------- ----- -------- ---------- --------- ------
-            lon_0 -5.363e-02   nan      deg -1.800e+02 1.800e+02  False
-            lat_0 -5.057e-02   nan      deg -9.000e+01 9.000e+01  False
+            lon_0 -5.364e-02   nan      deg        nan       nan  False
+            lat_0 -5.058e-02   nan      deg -9.000e+01 9.000e+01  False
             index  2.000e+00   nan                 nan       nan   True
         amplitude  4.292e-11   nan cm-2 s-1        nan       nan  False
              emin  1.000e-01   nan      TeV        nan       nan   True
@@ -1521,7 +1496,7 @@ Parameters:
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1531,18 +1506,18 @@ Parameters:
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
 <i>Table length=9</i>
-<table id="table4691476664" class="table-striped table-bordered table-condensed">
+<table id="table4668738976" class="table-striped table-bordered table-condensed">
 <thead><tr><th>name</th><th>lon_0</th><th>lat_0</th><th>index</th><th>amplitude</th><th>emin</th><th>emax</th><th>norm</th><th>tilt</th><th>reference</th></tr></thead>
 <thead><tr><th>str9</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th></tr></thead>
-<tr><td>lon_0</td><td>1.069e-05</td><td>-1.344e-08</td><td>0.000e+00</td><td>-2.817e-16</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>
-<tr><td>lat_0</td><td>-1.344e-08</td><td>1.135e-05</td><td>0.000e+00</td><td>-4.704e-16</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>
+<tr><td>lon_0</td><td>1.083e-05</td><td>5.277e-07</td><td>0.000e+00</td><td>-4.312e-16</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>
+<tr><td>lat_0</td><td>5.277e-07</td><td>1.099e-05</td><td>0.000e+00</td><td>-3.271e-16</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>
 <tr><td>index</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>
-<tr><td>amplitude</td><td>-2.817e-16</td><td>-4.704e-16</td><td>0.000e+00</td><td>3.236e-24</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>
+<tr><td>amplitude</td><td>-4.312e-16</td><td>-3.271e-16</td><td>0.000e+00</td><td>3.282e-24</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>
 <tr><td>emin</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>
 <tr><td>emax</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>
 <tr><td>norm</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>
@@ -1551,12 +1526,210 @@ Parameters:
 </table></div>
 </div>
 </div>
-<div class="section" id="Todo:-Demonstrate-plotting-a-flux-map">
-<h2>Todo: Demonstrate plotting a flux map<a class="headerlink" href="#Todo:-Demonstrate-plotting-a-flux-map" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="Classical-Ring-Background-Analysis">
+<h2>Classical Ring Background Analysis<a class="headerlink" href="#Classical-Ring-Background-Analysis" title="Permalink to this headline">¶</a></h2>
+<p>No we repeat the same analyis but useing a classical ring background estimation. This is currently support with a separate <code class="docutils literal notranslate"><span class="pre">MapMakerRing</span></code>. However We start by defining an exclusion mask:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">geom_image</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span>
+
+<span class="n">regions</span> <span class="o">=</span> <span class="n">CircleSkyRegion</span><span class="p">(</span><span class="n">center</span><span class="o">=</span><span class="n">spatial_model</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">0.3</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">)</span>
+
+<span class="n">exclusion_mask</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom_image</span><span class="p">)</span>
+<span class="n">exclusion_mask</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">geom_image</span><span class="o">.</span><span class="n">region_mask</span><span class="p">([</span><span class="n">regions</span><span class="p">],</span> <span class="n">inside</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="n">exclusion_mask</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_image_analysis_26_0.png" src="../_images/notebooks_image_analysis_26_0.png" />
+</div>
+</div>
+<p>Next we define the parameters of the ring background and create the <code class="docutils literal notranslate"><span class="pre">RingBackgroundEstimator</span></code>:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">ring_bkg</span> <span class="o">=</span> <span class="n">RingBackgroundEstimator</span><span class="p">(</span><span class="n">r_in</span><span class="o">=</span><span class="s2">&quot;0.3 deg&quot;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="s2">&quot;0.3 deg&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%%time</span>
+<span class="n">im</span> <span class="o">=</span> <span class="n">MapMakerRing</span><span class="p">(</span>
+    <span class="n">geom</span><span class="o">=</span><span class="n">geom</span><span class="p">,</span>
+    <span class="n">offset_max</span><span class="o">=</span><span class="mf">3.0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
+    <span class="n">exclusion_mask</span><span class="o">=</span><span class="n">exclusion_mask</span><span class="p">,</span>
+    <span class="n">background_estimator</span><span class="o">=</span><span class="n">ring_bkg</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">observations</span><span class="p">:</span>
+    <span class="n">im</span><span class="o">.</span><span class="n">_get_obs_maker</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span>
+
+<span class="n">images</span> <span class="o">=</span> <span class="n">im</span><span class="o">.</span><span class="n">run_images</span><span class="p">(</span><span class="n">observations</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+WARNING: Tried to get polar motions for times after IERS data is valid. Defaulting to polar motion from the 50-yr mean for those. This may affect precision at the 10s of arcsec level [astropy.coordinates.builtin_frames.utils]
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+CPU times: user 6.45 s, sys: 1.3 s, total: 7.74 s
+Wall time: 7.78 s
+</pre></div></div>
+</div>
+<p>Based on the estimate of the ring background we compute a Li&amp;Ma significance image:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">scale</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">pixel_scales</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;deg&quot;</span><span class="p">)</span>
+<span class="c1"># Using a convolution radius of 0.05 degrees</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span> <span class="o">/</span> <span class="n">scale</span>
+<span class="n">tophat</span> <span class="o">=</span> <span class="n">Tophat2DKernel</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
+<span class="n">tophat</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s2">&quot;peak&quot;</span><span class="p">)</span>
+
+<span class="n">lima_maps</span> <span class="o">=</span> <span class="n">compute_lima_on_off_image</span><span class="p">(</span>
+    <span class="n">images</span><span class="p">[</span><span class="s2">&quot;on&quot;</span><span class="p">],</span>
+    <span class="n">images</span><span class="p">[</span><span class="s2">&quot;off&quot;</span><span class="p">],</span>
+    <span class="n">images</span><span class="p">[</span><span class="s2">&quot;exposure_on&quot;</span><span class="p">],</span>
+    <span class="n">images</span><span class="p">[</span><span class="s2">&quot;exposure_off&quot;</span><span class="p">],</span>
+    <span class="n">tophat</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">significance_map</span> <span class="o">=</span> <span class="n">lima_maps</span><span class="p">[</span><span class="s2">&quot;significance&quot;</span><span class="p">]</span>
+<span class="n">excess_map</span> <span class="o">=</span> <span class="n">lima_maps</span><span class="p">[</span><span class="s2">&quot;excess&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>That is what the excess and significance look like:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="n">ax1</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">221</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="n">significance_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">wcs</span><span class="p">)</span>
+<span class="n">ax2</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">222</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="n">excess_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">wcs</span><span class="p">)</span>
+
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Significance map&quot;</span><span class="p">)</span>
+<span class="n">significance_map</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax1</span><span class="p">,</span> <span class="n">add_cbar</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="n">ax2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Excess map&quot;</span><span class="p">)</span>
+<span class="n">excess_map</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax2</span><span class="p">,</span> <span class="n">add_cbar</span><span class="o">=</span><span class="bp">True</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_image_analysis_34_0.png" src="../_images/notebooks_image_analysis_34_0.png" />
+</div>
+</div>
+<p>Finally we take a look at the signficance distribution outside the exclusion region:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># create a 2D mask for the images</span>
+<span class="n">significance_map_off</span> <span class="o">=</span> <span class="n">significance_map</span> <span class="o">*</span> <span class="n">exclusion_mask</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">significance_all</span> <span class="o">=</span> <span class="n">significance_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">significance_map</span><span class="o">.</span><span class="n">data</span><span class="p">)]</span>
+<span class="n">significance_off</span> <span class="o">=</span> <span class="n">significance_map_off</span><span class="o">.</span><span class="n">data</span><span class="p">[</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">significance_map_off</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+<span class="p">]</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span>
+    <span class="n">significance_all</span><span class="p">,</span>
+    <span class="n">density</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">color</span><span class="o">=</span><span class="s2">&quot;red&quot;</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;all bins&quot;</span><span class="p">,</span>
+    <span class="n">bins</span><span class="o">=</span><span class="mi">21</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span>
+    <span class="n">significance_off</span><span class="p">,</span>
+    <span class="n">density</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">color</span><span class="o">=</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;off bins&quot;</span><span class="p">,</span>
+    <span class="n">bins</span><span class="o">=</span><span class="mi">21</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Now, fit the off distribution with a Gaussian</span>
+<span class="n">mu</span><span class="p">,</span> <span class="n">std</span> <span class="o">=</span> <span class="n">norm</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">significance_off</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+<span class="n">p</span> <span class="o">=</span> <span class="n">norm</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">std</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Significance&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">yscale</span><span class="p">(</span><span class="s2">&quot;log&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mf">1e-5</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">significance_all</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">significance_all</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlim</span><span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s2">&quot;Fit results: mu = {:.2f}, std = {:.2f}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">std</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Fit results: mu = -0.03, std = 1.00
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_image_analysis_37_1.png" src="../_images/notebooks_image_analysis_37_1.png" />
+</div>
+</div>
 </div>
 <div class="section" id="Exercises">
 <h2>Exercises<a class="headerlink" href="#Exercises" title="Permalink to this headline">¶</a></h2>
 <ol class="arabic simple">
+<li>Update the exclusion mask in the ring background example by thresholding the significance map and re-run the background estimator</li>
 <li>Plot residual maps as done in the <code class="docutils literal notranslate"><span class="pre">analysis_3d</span></code> notebook</li>
 <li>Iteratively add and fit sources as explained in <code class="docutils literal notranslate"><span class="pre">image_fitting_with_sherpa</span></code> notebook</li>
 </ol>
@@ -1594,7 +1767,7 @@ Parameters:
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 20 Sep 2019.
+        Last updated on 27 Sep 2019.
       </span>
 
     </p>

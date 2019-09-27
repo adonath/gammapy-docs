@@ -40,7 +40,7 @@ from astropy.convolution import Gaussian2DKernel
 from regions import CircleSkyRegion
 from gammapy.modeling import Fit, Datasets
 from gammapy.data import DataStore
-from gammapy.modeling.models import PowerLaw
+from gammapy.modeling.models import PowerLawSpectralModel
 from gammapy.spectrum import (
     SpectrumExtraction,
     FluxPointsEstimator,
@@ -263,7 +263,7 @@ get_ipython().run_cell_magic('time', '', 'extract = SpectrumExtraction(\n    obs
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'model = PowerLaw(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\n\nfor dataset in extract.spectrum_observations:\n    dataset.model = model\n\nfit = Fit(extract.spectrum_observations)\nresult = fit.run()\nprint(result)')
+get_ipython().run_cell_magic('time', '', 'model = PowerLawSpectralModel(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\n\nfor dataset in extract.spectrum_observations:\n    dataset.model = model\n\nfit = Fit(extract.spectrum_observations)\nresult = fit.run()\nprint(result)')
 
 
 # ### Spectral points

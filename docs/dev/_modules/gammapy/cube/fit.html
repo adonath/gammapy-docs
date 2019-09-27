@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.cube.fit &mdash; gammapy v0.14.dev550+gd4956d864</title>
+  <title>gammapy.cube.fit &mdash; gammapy v0.14.dev738+g051524cbf</title>
   
 
   
@@ -71,7 +71,7 @@
             
             
               <div class="version">
-                0.14.dev550+gd4956d864
+                0.14.dev738+g051524cbf
               </div>
             
           
@@ -223,7 +223,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Map-fit">Map fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Residual-image">Residual image</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Spectrum">Spectrum</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Classical-Ring-Background-Analysis">Classical Ring Background Analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -341,7 +340,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Define-a-mask">Define a mask</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Modeling-the-source">Modeling the source</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Modeling-the-background">Modeling the background</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Todo:-Demonstrate-plotting-a-flux-map">Todo: Demonstrate plotting a flux map</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Classical-Ring-Background-Analysis">Classical Ring Background Analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -793,11 +792,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../scripts/index.html#configuration-and-methods">Configuration and methods</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#general-settings">General settings</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#observations-selection">Observations selection</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#data-reduction">Data reduction</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#geometry">Geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#data-reduction-and-datasets">Data reduction and datasets</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#model">Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#fitting">Fitting</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#flux-points">Flux points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#residuals">Residuals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#using-the-high-level-interface">Using the high-level interface</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../scripts/index.html#command-line-tools">Command line tools</a><ul>
@@ -969,14 +969,20 @@
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
 <span class="kn">from</span> <span class="nn">astropy.nddata.utils</span> <span class="k">import</span> <span class="n">NoOverlapError</span>
 <span class="kn">from</span> <span class="nn">astropy.utils</span> <span class="k">import</span> <span class="n">lazyproperty</span>
+<span class="kn">from</span> <span class="nn">regions</span> <span class="k">import</span> <span class="n">CircleSkyRegion</span>
 <span class="kn">from</span> <span class="nn">gammapy.cube.edisp_map</span> <span class="k">import</span> <span class="n">EDispMap</span>
 <span class="kn">from</span> <span class="nn">gammapy.cube.psf_kernel</span> <span class="k">import</span> <span class="n">PSFKernel</span>
 <span class="kn">from</span> <span class="nn">gammapy.cube.psf_map</span> <span class="k">import</span> <span class="n">PSFMap</span>
 <span class="kn">from</span> <span class="nn">gammapy.data</span> <span class="k">import</span> <span class="n">GTI</span>
-<span class="kn">from</span> <span class="nn">gammapy.irf</span> <span class="k">import</span> <span class="n">EnergyDispersion</span>
+<span class="kn">from</span> <span class="nn">gammapy.irf</span> <span class="k">import</span> <span class="n">EffectiveAreaTable</span><span class="p">,</span> <span class="n">EnergyDispersion</span><span class="p">,</span> <span class="n">apply_containment_fraction</span>
 <span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="k">import</span> <span class="n">Map</span><span class="p">,</span> <span class="n">MapAxis</span>
 <span class="kn">from</span> <span class="nn">gammapy.modeling</span> <span class="k">import</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">Parameters</span>
-<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="k">import</span> <span class="n">BackgroundModel</span><span class="p">,</span> <span class="n">SkyModel</span><span class="p">,</span> <span class="n">SkyModels</span>
+<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">BackgroundModel</span><span class="p">,</span>
+    <span class="n">SkyModel</span><span class="p">,</span>
+    <span class="n">SkyModels</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">gammapy.spectrum</span> <span class="k">import</span> <span class="n">SpectrumDataset</span>
 <span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="k">import</span> <span class="n">cash</span><span class="p">,</span> <span class="n">cash_sum_cython</span><span class="p">,</span> <span class="n">cstat</span><span class="p">,</span> <span class="n">cstat_sum_cython</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.random</span> <span class="k">import</span> <span class="n">get_random_state</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.scripts</span> <span class="k">import</span> <span class="n">make_path</span>
@@ -1214,6 +1220,10 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">geom</span>
 
     <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_energy_axis</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_geom</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">data_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Shape of the counts data (tuple)&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span>
@@ -1250,6 +1260,7 @@
         <span class="n">migra_axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">rad_axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">reference_time</span><span class="o">=</span><span class="s2">&quot;2000-01-01&quot;</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
     <span class="p">):</span>
 
         <span class="sd">&quot;&quot;&quot;Creates a MapDataset object with zero filled maps</span>
@@ -1264,6 +1275,8 @@
 <span class="sd">            Migration axis for the energy dispersion map</span>
 <span class="sd">        rad_axis: `~gammapy.maps.MapAxis`</span>
 <span class="sd">            Rad axis for the psf map</span>
+<span class="sd">        name : str</span>
+<span class="sd">            Name of the dataset.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">geom_irf</span> <span class="o">=</span> <span class="n">geom_irf</span> <span class="ow">or</span> <span class="n">geom</span>
@@ -1281,7 +1294,7 @@
         <span class="n">exposure</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">exposure_geom</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m2 s&quot;</span><span class="p">)</span>
         <span class="n">exposure_irf</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom_irf</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;m2 s&quot;</span><span class="p">)</span>
 
-        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">data_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">mask_safe</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">data_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
 
         <span class="n">gti</span> <span class="o">=</span> <span class="n">GTI</span><span class="o">.</span><span class="n">create</span><span class="p">([]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">s</span><span class="p">,</span> <span class="p">[]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">s</span><span class="p">,</span> <span class="n">reference_time</span><span class="o">=</span><span class="n">reference_time</span><span class="p">)</span>
 
@@ -1296,19 +1309,61 @@
         <span class="n">psf</span> <span class="o">=</span> <span class="n">PSFMap</span><span class="p">(</span><span class="n">psf_map</span><span class="p">,</span> <span class="n">exposure_irf</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
-            <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">counts</span><span class="o">=</span><span class="n">counts</span><span class="p">,</span>
             <span class="n">exposure</span><span class="o">=</span><span class="n">exposure</span><span class="p">,</span>
-            <span class="n">mask_fit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
             <span class="n">psf</span><span class="o">=</span><span class="n">psf</span><span class="p">,</span>
             <span class="n">edisp</span><span class="o">=</span><span class="n">edisp</span><span class="p">,</span>
             <span class="n">background_model</span><span class="o">=</span><span class="n">background_model</span><span class="p">,</span>
-            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
-            <span class="n">likelihood</span><span class="o">=</span><span class="s2">&quot;cash&quot;</span><span class="p">,</span>
-            <span class="n">evaluation_mode</span><span class="o">=</span><span class="s2">&quot;local&quot;</span><span class="p">,</span>
-            <span class="n">mask_safe</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span>
             <span class="n">gti</span><span class="o">=</span><span class="n">gti</span><span class="p">,</span>
+            <span class="n">mask_safe</span><span class="o">=</span><span class="n">mask_safe</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
         <span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapDataset.stack"><a class="viewcode-back" href="../../../api/gammapy.cube.MapDataset.html#gammapy.cube.MapDataset.stack">[docs]</a>    <span class="k">def</span> <span class="nf">stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Stack another dataset in place.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        other: `~gammapy.cube.MapDataset`</span>
+<span class="sd">            Map dataset to be stacked with this one.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">counts</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">coadd</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">counts</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">exposure</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">coadd</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">exposure</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">background_model</span><span class="p">:</span>
+            <span class="n">bkg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+            <span class="n">bkg</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">other_bkg</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+            <span class="n">other_bkg</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">~</span><span class="n">other</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">bkg</span><span class="o">.</span><span class="n">coadd</span><span class="p">(</span><span class="n">other_bkg</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span> <span class="o">=</span> <span class="n">BackgroundModel</span><span class="p">(</span><span class="n">bkg</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mask_safe</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
+            <span class="n">mask_safe_other</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
+            <span class="n">mask_safe</span><span class="o">.</span><span class="n">coadd</span><span class="p">(</span><span class="n">mask_safe_other</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="o">=</span> <span class="n">mask_safe</span><span class="o">.</span><span class="n">data</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">psf</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">psf</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="p">,</span> <span class="n">PSFMap</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">psf</span><span class="p">,</span> <span class="n">PSFMap</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">psf</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Stacking of PSF kernels not supported&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">edisp</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="p">,</span> <span class="n">EDispMap</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">edisp</span><span class="p">,</span> <span class="n">EDispMap</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">edisp</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Stacking of edisp kernels not supported&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gti</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">gti</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">gti</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gti</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">gti</span><span class="p">)</span><span class="o">.</span><span class="n">union</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="MapDataset.likelihood_per_bin"><a class="viewcode-back" href="../../../api/gammapy.cube.MapDataset.html#gammapy.cube.MapDataset.likelihood_per_bin">[docs]</a>    <span class="k">def</span> <span class="nf">likelihood_per_bin</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Likelihood per bin given the current model parameters&quot;&quot;&quot;</span>
@@ -1604,7 +1659,87 @@
         <span class="n">data</span><span class="p">[</span><span class="s2">&quot;models&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">names</span>
         <span class="n">data</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">name</span>
         <span class="n">data</span><span class="p">[</span><span class="s2">&quot;filename&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">filename</span>
-        <span class="k">return</span> <span class="n">data</span></div></div>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+<div class="viewcode-block" id="MapDataset.to_spectrum_dataset"><a class="viewcode-back" href="../../../api/gammapy.cube.MapDataset.html#gammapy.cube.MapDataset.to_spectrum_dataset">[docs]</a>    <span class="k">def</span> <span class="nf">to_spectrum_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">on_region</span><span class="p">,</span> <span class="n">containment_correction</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a ~gammapy.spectrum.SpectrumDataset from on_region.</span>
+
+<span class="sd">        Counts and background are summed in the on_region.</span>
+
+<span class="sd">        Effective area is taken from the average exposure divided by the livetime.</span>
+<span class="sd">        Here we assume it is the sum of the GTIs.</span>
+
+<span class="sd">        EnergyDispersion is obtained at the on_region center.</span>
+<span class="sd">        Only regions with centers are supported.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        on_region : `~regions.SkyRegion`</span>
+<span class="sd">            the input ON region on which to extract the spectrum</span>
+<span class="sd">        containment_correction : bool</span>
+<span class="sd">            Apply containment correction for point sources and circular on regions</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dataset : `~gammapy.spectrum.SpectrumDataset`</span>
+<span class="sd">            the resulting reduced dataset</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gti</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">livetime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gti</span><span class="o">.</span><span class="n">time_sum</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No GTI in `MapDataset`, cannot compute livetime&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">counts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">get_spectrum</span><span class="p">(</span><span class="n">on_region</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">counts</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">background</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span><span class="o">.</span><span class="n">get_spectrum</span><span class="p">(</span>
+                <span class="n">on_region</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">background</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">exposure</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">get_spectrum</span><span class="p">(</span><span class="n">on_region</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span>
+            <span class="n">aeff</span> <span class="o">=</span> <span class="n">EffectiveAreaTable</span><span class="p">(</span>
+                <span class="n">energy_lo</span><span class="o">=</span><span class="n">exposure</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                <span class="n">energy_hi</span><span class="o">=</span><span class="n">exposure</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
+                <span class="n">data</span><span class="o">=</span><span class="n">exposure</span><span class="o">.</span><span class="n">data</span> <span class="o">/</span> <span class="n">livetime</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">aeff</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">containment_correction</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">on_region</span><span class="p">,</span> <span class="n">CircleSkyRegion</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                    <span class="s2">&quot;Containement correction is only supported for&quot;</span>
+                    <span class="s2">&quot; `CircleSkyRegion`.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">psf</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="p">,</span> <span class="n">PSFKernel</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No PSFMap set. Containement correction impossible&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">psf_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">.</span><span class="n">get_energy_dependent_table_psf</span><span class="p">(</span><span class="n">on_region</span><span class="o">.</span><span class="n">center</span><span class="p">)</span>
+                <span class="n">aeff</span> <span class="o">=</span> <span class="n">apply_containment_fraction</span><span class="p">(</span><span class="n">aeff</span><span class="p">,</span> <span class="n">psf_table</span><span class="p">,</span> <span class="n">on_region</span><span class="o">.</span><span class="n">radius</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="p">,</span> <span class="n">EnergyDispersion</span><span class="p">):</span>
+                <span class="n">edisp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">get_energy_dispersion</span><span class="p">(</span><span class="n">on_region</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_energy_axis</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">edisp</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">SpectrumDataset</span><span class="p">(</span>
+            <span class="n">counts</span><span class="o">=</span><span class="n">counts</span><span class="p">,</span>
+            <span class="n">background</span><span class="o">=</span><span class="n">background</span><span class="p">,</span>
+            <span class="n">aeff</span><span class="o">=</span><span class="n">aeff</span><span class="p">,</span>
+            <span class="n">edisp</span><span class="o">=</span><span class="n">edisp</span><span class="p">,</span>
+            <span class="n">livetime</span><span class="o">=</span><span class="n">livetime</span><span class="p">,</span>
+            <span class="n">gti</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gti</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="MapEvaluator"><a class="viewcode-back" href="../../../api/gammapy.cube.MapEvaluator.html#gammapy.cube.MapEvaluator">[docs]</a><span class="k">class</span> <span class="nc">MapEvaluator</span><span class="p">:</span>
@@ -1632,16 +1767,6 @@
 <span class="sd">        Model evaluation mode.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">_cached_properties</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="s2">&quot;lon_lat&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;solid_angle&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;bin_volume&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;geom_reco&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;energy_bin_width&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;energy_edges&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;energy_center&quot;</span><span class="p">,</span>
-    <span class="p">]</span>
-
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">psf</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edisp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">evaluation_mode</span><span class="o">=</span><span class="s2">&quot;local&quot;</span>
     <span class="p">):</span>
@@ -1657,82 +1782,8 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">geom</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;True energy map geometry (`~gammapy.maps.MapGeom`)&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;True energy map geometry (`~gammapy.maps.Geom`)&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">geom</span>
-
-    <span class="nd">@lazyproperty</span>
-    <span class="k">def</span> <span class="nf">geom_reco</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Reco energy map geometry (`~gammapy.maps.MapGeom`)&quot;&quot;&quot;</span>
-        <span class="n">e_reco_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">e_reco</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom_image</span><span class="o">.</span><span class="n">to_cube</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">e_reco_axis</span><span class="p">])</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">geom_image</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Image map geometry (`~gammapy.maps.MapGeom`)&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span>
-
-    <span class="nd">@lazyproperty</span>
-    <span class="k">def</span> <span class="nf">energy_center</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;True energy axis bin centers (`~astropy.units.Quantity`)&quot;&quot;&quot;</span>
-        <span class="n">energy_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">center</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
-
-    <span class="nd">@lazyproperty</span>
-    <span class="k">def</span> <span class="nf">energy_edges</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;True energy axis bin edges (`~astropy.units.Quantity`)&quot;&quot;&quot;</span>
-        <span class="n">energy_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
-
-    <span class="nd">@lazyproperty</span>
-    <span class="k">def</span> <span class="nf">energy_bin_width</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Energy axis bin widths (`astropy.units.Quantity`)&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energy_edges</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-
-    <span class="nd">@lazyproperty</span>
-    <span class="k">def</span> <span class="nf">lon_lat</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Spatial coordinate pixel centers (``lon, lat`` tuple of `~astropy.units.Quantity`).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">coord</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom_image</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span>
-        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">frame</span>
-
-        <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">coordsys</span> <span class="o">=</span> <span class="s2">&quot;CEL&quot;</span> <span class="k">if</span> <span class="n">frame</span> <span class="o">==</span> <span class="s2">&quot;icrs&quot;</span> <span class="k">else</span> <span class="s2">&quot;GAL&quot;</span>
-
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">coord</span><span class="o">.</span><span class="n">coordsys</span> <span class="o">==</span> <span class="n">coordsys</span><span class="p">:</span>
-                <span class="n">coord</span> <span class="o">=</span> <span class="n">coord</span><span class="o">.</span><span class="n">to_coordsys</span><span class="p">(</span><span class="n">coordsys</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="p">(</span><span class="n">coord</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="n">coord</span><span class="o">.</span><span class="n">lat</span><span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">lon</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lon_lat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">lat</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">lon_lat</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-
-    <span class="nd">@lazyproperty</span>
-    <span class="k">def</span> <span class="nf">solid_angle</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Solid angle per pixel&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">solid_angle</span><span class="p">()</span>
-
-    <span class="nd">@lazyproperty</span>
-    <span class="k">def</span> <span class="nf">bin_volume</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Map pixel bin volume (solid angle times energy bin width).&quot;&quot;&quot;</span>
-        <span class="n">omega</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">solid_angle</span>
-        <span class="n">de</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_bin_width</span>
-        <span class="k">return</span> <span class="n">omega</span> <span class="o">*</span> <span class="n">de</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">coords</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return evaluator coords&quot;&quot;&quot;</span>
-        <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lon_lat</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="p">:</span>
-            <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">e_reco</span><span class="o">.</span><span class="n">center</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_center</span>
-
-        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;lon&quot;</span><span class="p">:</span> <span class="n">lon</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;lat&quot;</span><span class="p">:</span> <span class="n">lat</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;energy&quot;</span><span class="p">:</span> <span class="n">energy</span><span class="p">}</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">needs_update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1756,7 +1807,7 @@
 <span class="sd">            PSF map.</span>
 <span class="sd">        edisp : `gammapy.cube.EDispMap`</span>
 <span class="sd">            Edisp map.</span>
-<span class="sd">        geom : `gammapy.maps.MapGeom`</span>
+<span class="sd">        geom : `gammapy.maps.Geom`</span>
 <span class="sd">            Reference geometry of the data.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Updating model evaluator&quot;</span><span class="p">)</span>
@@ -1786,11 +1837,9 @@
                     <span class="s2">&quot; Please check the starting values or position parameter boundaries of the model.&quot;</span>
                 <span class="p">)</span>
 
-            <span class="c1"># Reset cached quantities</span>
-            <span class="k">for</span> <span class="n">cached_property</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cached_properties</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">cached_property</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">coords_idx</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">coord_to_idx</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">coords</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">coords</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span>
+            <span class="n">idx_x</span><span class="p">,</span> <span class="n">idx_y</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span><span class="o">.</span><span class="n">coord_to_idx</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">coords_idx</span> <span class="o">=</span> <span class="p">(</span><span class="bp">Ellipsis</span><span class="p">,</span> <span class="n">idx_y</span><span class="p">,</span> <span class="n">idx_x</span><span class="p">)</span>
 
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">=</span> <span class="n">exposure</span></div>
@@ -1804,9 +1853,7 @@
 <span class="sd">            Sky cube with data filled with evaluated model values.</span>
 <span class="sd">            Units: ``cm-2 s-1 TeV-1 deg-2``</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">coord</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_center</span><span class="p">)</span>
-        <span class="n">dnde</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="o">*</span><span class="n">coord</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">dnde</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">evaluate_geom</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="MapEvaluator.compute_flux"><a class="viewcode-back" href="../../../api/gammapy.cube.MapEvaluator.html#gammapy.cube.MapEvaluator.compute_flux">[docs]</a>    <span class="k">def</span> <span class="nf">compute_flux</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compute model integral flux over map pixel volumes.</span>
@@ -1814,9 +1861,8 @@
 <span class="sd">        For now, we simply multiply dnde with bin volume.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">dnde</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_dnde</span><span class="p">()</span>
-        <span class="n">volume</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bin_volume</span>
-        <span class="n">flux</span> <span class="o">=</span> <span class="n">dnde</span> <span class="o">*</span> <span class="n">volume</span>
-        <span class="k">return</span> <span class="n">flux</span></div>
+        <span class="n">volume</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">bin_volume</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">dnde</span> <span class="o">*</span> <span class="n">volume</span></div>
 
 <div class="viewcode-block" id="MapEvaluator.apply_exposure"><a class="viewcode-back" href="../../../api/gammapy.cube.MapEvaluator.html#gammapy.cube.MapEvaluator.apply_exposure">[docs]</a>    <span class="k">def</span> <span class="nf">apply_exposure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flux</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compute npred cube</span>
@@ -1845,11 +1891,7 @@
 <span class="sd">        npred_reco : `~gammapy.maps.Map`</span>
 <span class="sd">            Predicted counts in reco energy bins</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">loc</span> <span class="o">=</span> <span class="n">npred</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_axis_index_by_name</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rollaxis</span><span class="p">(</span><span class="n">npred</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">loc</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">npred</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">pdf_matrix</span><span class="p">)</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rollaxis</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">loc</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom_reco</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">npred</span><span class="o">.</span><span class="n">apply_edisp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="MapEvaluator.compute_npred"><a class="viewcode-back" href="../../../api/gammapy.cube.MapEvaluator.html#gammapy.cube.MapEvaluator.compute_npred">[docs]</a>    <span class="k">def</span> <span class="nf">compute_npred</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1882,7 +1924,7 @@
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 20 Sep 2019.
+        Last updated on 27 Sep 2019.
       </span>
 
     </p>

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.modeling.models.spectral_crab &mdash; gammapy v0.14.dev550+gd4956d864</title>
+  <title>gammapy.modeling.models.spectral_crab &mdash; gammapy v0.14.dev738+g051524cbf</title>
   
 
   
@@ -71,7 +71,7 @@
             
             
               <div class="version">
-                0.14.dev550+gd4956d864
+                0.14.dev738+g051524cbf
               </div>
             
           
@@ -223,7 +223,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/hess.html#Map-fit">Map fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/hess.html#Residual-image">Residual image</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/hess.html#Spectrum">Spectrum</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/hess.html#Classical-Ring-Background-Analysis">Classical Ring Background Analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/hess.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -341,7 +340,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/image_analysis.html#Define-a-mask">Define a mask</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/image_analysis.html#Modeling-the-source">Modeling the source</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/image_analysis.html#Modeling-the-background">Modeling the background</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/image_analysis.html#Todo:-Demonstrate-plotting-a-flux-map">Todo: Demonstrate plotting a flux map</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/image_analysis.html#Classical-Ring-Background-Analysis">Classical Ring Background Analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/image_analysis.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -793,11 +792,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../scripts/index.html#configuration-and-methods">Configuration and methods</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#general-settings">General settings</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#observations-selection">Observations selection</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#data-reduction">Data reduction</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#geometry">Geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#data-reduction-and-datasets">Data reduction and datasets</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#model">Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#fitting">Fitting</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#flux-points">Flux points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#residuals">Residuals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#using-the-high-level-interface">Using the high-level interface</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../scripts/index.html#command-line-tools">Command line tools</a><ul>
@@ -965,22 +965,27 @@
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">astropy</span> <span class="k">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
-<span class="kn">from</span> <span class="nn">.spectral</span> <span class="k">import</span> <span class="n">ExponentialCutoffPowerLaw</span><span class="p">,</span> <span class="n">LogParabola</span><span class="p">,</span> <span class="n">PowerLaw</span><span class="p">,</span> <span class="n">SpectralModel</span>
+<span class="kn">from</span> <span class="nn">.spectral</span> <span class="k">import</span> <span class="p">(</span>
+    <span class="n">ExpCutoffPowerLawSpectralModel</span><span class="p">,</span>
+    <span class="n">LogParabolaSpectralModel</span><span class="p">,</span>
+    <span class="n">PowerLawSpectralModel</span><span class="p">,</span>
+    <span class="n">SpectralModel</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;create_crab_spectral_model&quot;</span><span class="p">]</span>
 
 
-<span class="k">class</span> <span class="nc">MeyerCrabModel</span><span class="p">(</span><span class="n">SpectralModel</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">MeyerCrabSpectralModel</span><span class="p">(</span><span class="n">SpectralModel</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Meyer 2010 log polynomial Crab spectral model.</span>
 
-<span class="sd">    See 2010A%26A...523A...2M, Appendix D.</span>
+<span class="sd">    Reference: https://ui.adsabs.harvard.edu/abs/2010A%26A...523A...2M, Appendix D</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">coefficients</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.00449161</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.0473174</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.179475</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.53616</span><span class="p">,</span> <span class="o">-</span><span class="mf">10.2708</span><span class="p">]</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="n">energy</span><span class="p">):</span>
-        <span class="n">polynomial</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">poly1d</span><span class="p">(</span><span class="n">MeyerCrabModel</span><span class="o">.</span><span class="n">coefficients</span><span class="p">)</span>
+        <span class="n">polynomial</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">poly1d</span><span class="p">(</span><span class="n">MeyerCrabSpectralModel</span><span class="o">.</span><span class="n">coefficients</span><span class="p">)</span>
         <span class="n">log_energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">energy</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s2">&quot;TeV&quot;</span><span class="p">))</span>
         <span class="n">log_flux</span> <span class="o">=</span> <span class="n">polynomial</span><span class="p">(</span><span class="n">log_energy</span><span class="p">)</span>
         <span class="n">flux</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">log_flux</span><span class="p">),</span> <span class="s2">&quot;erg / (cm2 s)&quot;</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -1020,7 +1025,7 @@
 
 <span class="sd">    Use a reference crab spectrum as unit to measure a differential flux (at 10 TeV)::</span>
 
-<span class="sd">        &gt;&gt;&gt; pwl = PowerLaw(index=2.3, amplitude=1e-12 * u.Unit(&#39;1 / (cm2 s TeV)&#39;), reference=1 * u.TeV)</span>
+<span class="sd">        &gt;&gt;&gt; pwl = PowerLawSpectralModel(index=2.3, amplitude=1e-12 * u.Unit(&#39;1 / (cm2 s TeV)&#39;), reference=1 * u.TeV)</span>
 <span class="sd">        &gt;&gt;&gt; crab = create_crab_spectral_model(&#39;hess_pl&#39;)</span>
 <span class="sd">        &gt;&gt;&gt; energy = 10 * u.TeV</span>
 <span class="sd">        &gt;&gt;&gt; dnde_cu = (pwl(energy) / crab(energy)).to(&#39;%&#39;)</span>
@@ -1036,35 +1041,35 @@
 <span class="sd">        3.5350582166 %</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">reference</span> <span class="o">==</span> <span class="s2">&quot;meyer&quot;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">MeyerCrabModel</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">MeyerCrabSpectralModel</span><span class="p">()</span>
     <span class="k">elif</span> <span class="n">reference</span> <span class="o">==</span> <span class="s2">&quot;hegra&quot;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">PowerLaw</span><span class="p">(</span>
+        <span class="k">return</span> <span class="n">PowerLawSpectralModel</span><span class="p">(</span>
             <span class="n">amplitude</span><span class="o">=</span><span class="mf">2.83e-11</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s TeV)&quot;</span><span class="p">),</span>
             <span class="n">index</span><span class="o">=</span><span class="mf">2.62</span><span class="p">,</span>
             <span class="n">reference</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">elif</span> <span class="n">reference</span> <span class="o">==</span> <span class="s2">&quot;hess_pl&quot;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">PowerLaw</span><span class="p">(</span>
+        <span class="k">return</span> <span class="n">PowerLawSpectralModel</span><span class="p">(</span>
             <span class="n">amplitude</span><span class="o">=</span><span class="mf">3.45e-11</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s TeV)&quot;</span><span class="p">),</span>
             <span class="n">index</span><span class="o">=</span><span class="mf">2.63</span><span class="p">,</span>
             <span class="n">reference</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">elif</span> <span class="n">reference</span> <span class="o">==</span> <span class="s2">&quot;hess_ecpl&quot;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">ExponentialCutoffPowerLaw</span><span class="p">(</span>
+        <span class="k">return</span> <span class="n">ExpCutoffPowerLawSpectralModel</span><span class="p">(</span>
             <span class="n">amplitude</span><span class="o">=</span><span class="mf">3.76e-11</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s TeV)&quot;</span><span class="p">),</span>
             <span class="n">index</span><span class="o">=</span><span class="mf">2.39</span><span class="p">,</span>
             <span class="n">lambda_</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mf">14.3</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">),</span>
             <span class="n">reference</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">elif</span> <span class="n">reference</span> <span class="o">==</span> <span class="s2">&quot;magic_lp&quot;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">LogParabola</span><span class="p">(</span>
+        <span class="k">return</span> <span class="n">LogParabolaSpectralModel</span><span class="p">(</span>
             <span class="n">amplitude</span><span class="o">=</span><span class="mf">3.23e-11</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s TeV)&quot;</span><span class="p">),</span>
             <span class="n">alpha</span><span class="o">=</span><span class="mf">2.47</span><span class="p">,</span>
             <span class="n">beta</span><span class="o">=</span><span class="mf">0.24</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span>
             <span class="n">reference</span><span class="o">=</span><span class="mi">1</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">elif</span> <span class="n">reference</span> <span class="o">==</span> <span class="s2">&quot;magic_ecpl&quot;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">ExponentialCutoffPowerLaw</span><span class="p">(</span>
+        <span class="k">return</span> <span class="n">ExpCutoffPowerLawSpectralModel</span><span class="p">(</span>
             <span class="n">amplitude</span><span class="o">=</span><span class="mf">3.80e-11</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s TeV)&quot;</span><span class="p">),</span>
             <span class="n">index</span><span class="o">=</span><span class="mf">2.21</span><span class="p">,</span>
             <span class="n">lambda_</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mf">6.0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">),</span>
@@ -1086,7 +1091,7 @@
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 20 Sep 2019.
+        Last updated on 27 Sep 2019.
       </span>
 
     </p>

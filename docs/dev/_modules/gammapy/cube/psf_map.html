@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.cube.psf_map &mdash; gammapy v0.14.dev550+gd4956d864</title>
+  <title>gammapy.cube.psf_map &mdash; gammapy v0.14.dev738+g051524cbf</title>
   
 
   
@@ -71,7 +71,7 @@
             
             
               <div class="version">
-                0.14.dev550+gd4956d864
+                0.14.dev738+g051524cbf
               </div>
             
           
@@ -223,7 +223,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Map-fit">Map fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Residual-image">Residual image</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Spectrum">Spectrum</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Classical-Ring-Background-Analysis">Classical Ring Background Analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -341,7 +340,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Define-a-mask">Define a mask</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Modeling-the-source">Modeling the source</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Modeling-the-background">Modeling the background</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Todo:-Demonstrate-plotting-a-flux-map">Todo: Demonstrate plotting a flux map</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Classical-Ring-Background-Analysis">Classical Ring Background Analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -793,11 +792,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../scripts/index.html#configuration-and-methods">Configuration and methods</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#general-settings">General settings</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#observations-selection">Observations selection</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#data-reduction">Data reduction</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#geometry">Geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#data-reduction-and-datasets">Data reduction and datasets</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#model">Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#fitting">Fitting</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#flux-points">Flux points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#residuals">Residuals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#using-the-high-level-interface">Using the high-level interface</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../scripts/index.html#command-line-tools">Command line tools</a><ul>
@@ -968,7 +968,6 @@
 <span class="kn">import</span> <span class="nn">astropy.io.fits</span> <span class="k">as</span> <span class="nn">fits</span>
 <span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="k">import</span> <span class="n">Angle</span>
-<span class="kn">from</span> <span class="nn">gammapy.cube.psf_kernel</span> <span class="k">import</span> <span class="n">PSFKernel</span>
 <span class="kn">from</span> <span class="nn">gammapy.irf</span> <span class="k">import</span> <span class="n">EnergyDependentTablePSF</span>
 <span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="k">import</span> <span class="n">Map</span>
 <span class="kn">from</span> <span class="nn">.psf_kernel</span> <span class="k">import</span> <span class="n">PSFKernel</span>
@@ -988,7 +987,7 @@
 <span class="sd">        the PSF IRF</span>
 <span class="sd">    pointing : `~astropy.coordinates.SkyCoord`</span>
 <span class="sd">        the pointing direction</span>
-<span class="sd">    geom : `~gammapy.maps.MapGeom`</span>
+<span class="sd">    geom : `~gammapy.maps.Geom`</span>
 <span class="sd">        the map geom to be used. It provides the target geometry.</span>
 <span class="sd">        rad and true energy axes should be given in this specific order.</span>
 <span class="sd">    max_offset : `~astropy.coordinates.Angle`</span>
@@ -1022,12 +1021,6 @@
     <span class="c1"># Create Map and fill relevant entries</span>
     <span class="n">psfmap</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;sr-1&quot;</span><span class="p">)</span>
     <span class="n">psfmap</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">valid</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">valid</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">+=</span> <span class="n">psf_values</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="n">psfmap</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">exposure_map</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">exposure_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-        <span class="n">geom_image</span> <span class="o">=</span> <span class="n">exposure_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span>
-        <span class="n">geom</span> <span class="o">=</span> <span class="n">geom_image</span><span class="o">.</span><span class="n">to_cube</span><span class="p">([</span><span class="n">rad_axis</span><span class="o">.</span><span class="n">squash</span><span class="p">(),</span> <span class="n">energy_axis</span><span class="p">])</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">exposure_map</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
-        <span class="n">exposure_map</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="o">=</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">PSFMap</span><span class="p">(</span><span class="n">psfmap</span><span class="p">,</span> <span class="n">exposure_map</span><span class="p">)</span></div>
 
@@ -1095,6 +1088,15 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Incorrect theta axis position in input Map&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">psf_map</span> <span class="o">=</span> <span class="n">psf_map</span>
+
+        <span class="k">if</span> <span class="n">exposure_map</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">exposure_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">psf_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
+            <span class="n">rad_axis</span> <span class="o">=</span> <span class="n">psf_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="s2">&quot;theta&quot;</span><span class="p">)</span>
+            <span class="n">geom_image</span> <span class="o">=</span> <span class="n">exposure_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span>
+            <span class="n">geom</span> <span class="o">=</span> <span class="n">geom_image</span><span class="o">.</span><span class="n">to_cube</span><span class="p">([</span><span class="n">rad_axis</span><span class="o">.</span><span class="n">squash</span><span class="p">(),</span> <span class="n">energy_axis</span><span class="p">])</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">exposure_map</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
+            <span class="n">exposure_map</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="o">=</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span> <span class="o">=</span> <span class="n">exposure_map</span>
 
 <div class="viewcode-block" id="PSFMap.from_hdulist"><a class="viewcode-back" href="../../../api/gammapy.cube.PSFMap.html#gammapy.cube.PSFMap.from_hdulist">[docs]</a>    <span class="nd">@classmethod</span>
@@ -1214,13 +1216,13 @@
 <div class="viewcode-block" id="PSFMap.get_psf_kernel"><a class="viewcode-back" href="../../../api/gammapy.cube.PSFMap.html#gammapy.cube.PSFMap.get_psf_kernel">[docs]</a>    <span class="k">def</span> <span class="nf">get_psf_kernel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">max_radius</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns a PSF kernel at the given position.</span>
 
-<span class="sd">        The PSF is returned in the form a WcsNDMap defined by the input MapGeom.</span>
+<span class="sd">        The PSF is returned in the form a WcsNDMap defined by the input Geom.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        position : `~astropy.coordinates.SkyCoord`</span>
 <span class="sd">            the target position. Should be a single coordinate</span>
-<span class="sd">        geom : `~gammapy.maps.MapGeom`</span>
+<span class="sd">        geom : `~gammapy.maps.Geom`</span>
 <span class="sd">            the target geometry to use</span>
 <span class="sd">        max_radius : `~astropy.coordinates.Angle`</span>
 <span class="sd">            maximum angular size of the kernel map</span>
@@ -1286,7 +1288,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">psf_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">slice_</span><span class="p">]</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">slice_</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">psf_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">slice_</span><span class="p">]</span> <span class="o">+=</span> <span class="n">other</span><span class="o">.</span><span class="n">psf_map</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">other</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">data</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">slice_</span><span class="p">]</span> <span class="o">+=</span> <span class="n">other</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">data</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">psf_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">slice_</span><span class="p">]</span> <span class="o">/=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">slice_</span><span class="p">]</span></div>
+        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">psf_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">slice_</span><span class="p">]</span> <span class="o">/=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">slice_</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">psf_map</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psf_map</span><span class="o">.</span><span class="n">data</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="PSFMap.copy"><a class="viewcode-back" href="../../../api/gammapy.cube.PSFMap.html#gammapy.cube.PSFMap.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Copy PSFMap&quot;&quot;&quot;</span>
@@ -1305,7 +1309,7 @@
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 20 Sep 2019.
+        Last updated on 27 Sep 2019.
       </span>
 
     </p>

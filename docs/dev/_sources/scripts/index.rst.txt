@@ -33,27 +33,42 @@ an IPython console or a notebook.
     >>> analysis = Analysis()
         INFO:gammapy.scripts.analysis:Setting logging config: {'level': 'INFO'}
 
+Configuration and methods
+=========================
 You can have a look at the configuration settings provided by default, and also dump
 them into a file that you can edit to start a new analysis from the modified config file.
 
 .. code-block:: python
 
     >>> print(analysis.config)
-    >>> analysis.config.dump("config.yaml")
-    >>> analysis = Analysis.from_file("config.yaml")
+    >>> analysis.config.to_yaml("config.yaml")
+    INFO:gammapy.scripts.analysis:Configuration settings saved into config.yaml
+    >>> analysis = Analysis.from_yaml("config.yaml")
 
-You could also have started the analysis with your custom settings declared in a Python
-nested dictionary which will overwrite the values provided by default. Note how the nested
-dictionary must follow the parameters hierarchical structure which may be prone to errors.
+You may choose to start an analysis using a predefined **settings template**. If no
+value for the settings template is provided, the `basic` template will be used by default.
+You may dump these settings into a file, edit the file and re-initialize your settings
+from the modified file.
+
+.. code-block:: python
+
+    >>> analysis = Analysis.from_template("1d")
+    >>> analysis.config.to_yaml("config.yaml")
+    >>> analysis = Analysis.from_yaml("config.yaml")
+
+You could also have started with a built-in analysis configuration and extend it with
+with your custom settings declared in a Python nested dictionary. Note how the nested
+dictionary must follow the hierarchical structure of the parameters. Declaring the
+configuration settings of the analysis in this way may be tedious and prone to errors
+if you have several parameters to set, so we suggest you to proceed using a configuration
+file.
 
 .. code-block:: python
 
     >>> config_dict = {"general": {"logging": {"level": "WARNING"}}}
-    >>> analysis = Analysis(config=config_dict)
-    >>> analysis = Analysis(config=config_dict, template="1d")
+    >>> analysis = Analysis("3d")
+    >>> analysis.config.update_settings(config_dict)
 
-Configuration and methods
-=========================
 The hierarchical structure of the tens of parameters needed may be hard to follow. You can
 print at any moment a *how-to* documentation with example values for all the sections and
 parameters or only for one specific section or group of parameters.
@@ -62,17 +77,6 @@ parameters or only for one specific section or group of parameters.
 
     >>> analysis.config.print_help()
     >>> analysis.config.print_help("flux")
-
-You may also choose to start an analysis using a predefined **settings template**. If no
-value for the settings template is provided, the basic template will be used by default.
-As we have seen before you may dump these settings into a file, edit the file and
-re-initialize your settings from the modified file.
-
-.. code-block:: python
-
-    >>> analysis = Analysis(template="1d")
-    >>> analysis.config.dump("config.yaml")
-    >>> analysis = Analysis.from_file("config.yaml")
 
 At any moment you can change the value of one specific parameter needed in the analysis. Note
 that it is a good practice to validate your settings when you modify the value of parameters.
@@ -84,14 +88,14 @@ that it is a good practice to validate your settings when you modify the value o
 
 It is also possible to add new configuration parameters and values or overwrite the ones already
 defined in your session analysis. In this case you may use the `config.update_settings()` method
-using a custom nested dictionary or custom YAML files (i.e. re-use config files for specific
-sections and/or from previous analysis).
+using a custom nested dictionary or custom YAML file (i.e. re-use a config file for specific
+sections and/or from a previous analysis).:
 
 .. code-block:: python
 
     >>> config_dict = {"observations": {"datastore": "$GAMMAPY_DATA/hess-dl3-dr1"}}
     >>> analysis.config.update_settings(config=config_dict)
-    >>> analysis.config.update_settings(configfile="model.yaml")
+    >>> analysis.config.update_settings(configfile="fit.yaml")
 
 In the following you may find more detailed information on the different sections which
 compose the YAML formatted nested configuration settings hierarchy.
@@ -124,24 +128,26 @@ The observations are stored as a list of `DataStoreObservation` containers.
          <gammapy.data.observations.DataStoreObservation at 0x110a84160>,
          <gammapy.data.observations.DataStoreObservation at 0x110a84b38>]
 
-Data reduction
---------------
-The data reduction process needs a method that is declared as the value (1d, 2d, or 3d)
-of the `data_reducer` parameter in the `reduction` section of the settings. For the
-estimation of the background, a `background_estimator` is needed, other parameters
-related with the `on_region` and `exclusion_mask` FITS file may be also present.
+Data reduction and datasets
+---------------------------
+The data reduction process needs a choice of a dataset type, declared as the class name
+(MapDataset, SpectrumDatasetOnOff) in the `reduction` section of the settings. For the
+estimation of the background with a dataset type SpectrumDatasetOnOff, a `background_estimator`
+is needed, other parameters related with the `on_region` and `exclusion_mask` FITS file
+may be also present. Parameters for geometry are also needed and declared in this section,
+as well as a boolean flag `stack-datasets`.
 
 .. gp-howto-hli:: reduction
 
-You may use the `reduce()` method to proceed to the data reduction process. For spectral
-data reduction the extracted spectra are stored in the `extraction` property as a
-The observations are stored as a list of `SpectrumDatasetOnOff` containers and information
-related with the background estimation is stored in the `background_estimator` property.
+You may use the `get_datasets()` method to proceed to the data reduction process.
+The final reduced datasets are stored in the `.datasets` attribute.
+For spectral reduction the information related with the background estimation is
+stored in the `background_estimator` property.
 
 .. code-block:: python
 
-    >>> analysis.reduce()
-    >>> analysis.extraction.spectrum_observations
+    >>> analysis.get_datasets()
+    >>> analysis.datasets.datasets
         [SpectrumDatasetOnOff,
          SpectrumDatasetOnOff,
          SpectrumDatasetOnOff,
@@ -154,48 +160,11 @@ related with the background estimation is stored in the `background_estimator` p
         <CircleSkyRegion(<SkyCoord (ICRS): (ra, dec) in deg
             (83.633, 22.014)>, radius=0.1 deg)>
 
-Geometry
---------
-The ranges and referential frames related with spatial, energy and time coordinates where to perform
-the data reduction and analysis process are declared in the `geometry` section.
-
-.. gp-howto-hli:: geometry
-
-The geometry is stored in the `geometry` property as a `WcsGeom` container.
-
-.. code-block:: python
-
-    >>> analysis.geom
-        WcsGeom
-
-            axes       : lon, lat
-            shape      : (250, 250)
-            ndim       : 2
-            coordsys   : GAL
-            projection : CAR
-            center     : 83.0 deg, 22.0 deg
-            width      : 5.0 deg x 5.0 deg
-
 Model
 -----
-The different spectral and spatial parameters describing a composed model are declared in the `model` section.
-
-.. gp-howto-hli:: model
-
-The model is stored in the `model` property.
-
-.. code-block:: python
-
-    >>> print(analysis.model)
-        PowerLaw
-
-        Parameters:
-
-               name     value   error      unit      min max frozen
-            --------- --------- ----- -------------- --- --- ------
-                index 2.678e+00   nan                nan nan  False
-            amplitude 2.801e-11   nan cm-2 s-1 TeV-1 nan nan  False
-            reference 1.000e+00   nan            TeV nan nan   True
+For now we simply declare the model as a reference to a separate yaml file.
+You may use the `get_model()` method to fetch the model and attach it to your
+datasets.
 
 Fitting
 -------
@@ -203,12 +172,12 @@ The parameters used in the fitting process are declared in the `fit` section.
 
 .. gp-howto-hli:: fit
 
-You may use the `fit()` method to proceed to the model fitting process. The result
+You may use the `run_fit()` method to proceed to the model fitting process. The result
 is stored in the `fit_result` property.
 
 .. code-block:: python
 
-    >>> analysis.fit()
+    >>> analysis.run_fit()
     >>> analysis.fit_result
         OptimizeResult
 
@@ -229,6 +198,8 @@ may declare the parameters needed in the `flux` section.
 You may use the `get_flux_points()` method to calculate the flux points. The result
 is stored in the `flux_points_dataset` property as a `FluxPointsDataset` container.
 
+.. code-block:: python
+
     >>> analysis.get_flux_points()
         INFO:gammapy.scripts.analysis:Calculating flux points.
         INFO:gammapy.scripts.analysis:
@@ -248,6 +219,26 @@ is stored in the `flux_points_dataset` property as a `FluxPointsDataset` contain
           8.79922543569107  1.877442373267013e-13  7.097738087032472e-14  1.254638299336029e-13 2.2705519890120373e-14 False
     >>> analysis.flux_points_dataset.peek()
 
+Residuals
+---------
+For 3D analysis we can compute a residual image to check how good are the models
+for the source and/or the background.
+
+.. code-block:: python
+
+    >>> analysis.datasets.datasets[0].residuals()
+            geom  : WcsGeom
+            axes  : ['lon', 'lat', 'energy']
+            shape : (250, 250, 4)
+            ndim  : 3
+            unit  :
+            dtype : float64
+
+Using the high-level interface
+------------------------------
+Gammapy tutorial notebooks that show examples using the high-level interface:
+
+* :gp-notebook:`hess`
 
 Command line tools
 ==================

@@ -46,9 +46,15 @@ from astropy.coordinates import SkyCoord
 from gammapy.data import EventList
 from gammapy.irf import EnergyDependentTablePSF, EnergyDispersion
 from gammapy.maps import Map, MapAxis, WcsNDMap, WcsGeom
-from gammapy.modeling.models import TableModel, PowerLaw
-from gammapy.modeling.models import SkyPointSource, SkyDiffuseConstant
-from gammapy.modeling.models import SkyModel, SkyDiffuseCube, SkyModels
+from gammapy.modeling.models import (
+    TemplateSpectralModel,
+    PowerLawSpectralModel,
+    PointSpatialModel,
+    ConstantSpatialModel,
+    SkyModel,
+    SkyDiffuseCube,
+    SkyModels,
+)
 from gammapy.cube import MapDataset, PSFKernel, MapEvaluator
 from gammapy.modeling import Fit
 
@@ -127,15 +133,7 @@ counts = Map.create(
 # We put this call into the same Jupyter cell as the Map.create
 # because otherwise we could accidentally fill the counts
 # multiple times when executing the ``fill_by_coord`` multiple times.
-counts.fill_by_coord(
-    {
-        "skycoord": events.radec,
-        # The coord-based interface doesn't use Quantity,
-        # so we need to pass energy in the same unit as
-        # used for the map axis
-        "energy": events.energy,
-    }
-)
+counts.fill_by_coord({"skycoord": events.radec, "energy": events.energy})
 
 
 # In[ ]:
@@ -281,15 +279,14 @@ plt.ylabel("Flux (cm-2 s-1 MeV-1 sr-1)")
 
 # ## Isotropic diffuse background
 # 
-# To load the isotropic diffuse model with Gammapy, use the [gammapy.modeling.models.TableModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.TableModel.html). We are using `'fill_value': 'extrapolate'` to extrapolate the model above 500 GeV:
+# To load the isotropic diffuse model with Gammapy, use the [gammapy.modeling.models.TemplateSpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.TemplateSpectralModel.html). We are using `'fill_value': 'extrapolate'` to extrapolate the model above 500 GeV:
 
 # In[ ]:
 
 
-filename = "$GAMMAPY_DATA/fermi_3fhl/iso_P8R2_SOURCE_V6_v06.txt"
-interp_kwargs = {"fill_value": None}
-diffuse_iso = TableModel.read_fermi_isotropic_model(
-    filename=filename, interp_kwargs=interp_kwargs
+diffuse_iso = TemplateSpectralModel.read_fermi_isotropic_model(
+    filename="$GAMMAPY_DATA/fermi_3fhl/iso_P8R2_SOURCE_V6_v06.txt",
+    interp_kwargs={"fill_value": None},
 )
 
 
@@ -338,7 +335,7 @@ for energy in [100, 300, 1000] * u.GeV:
     psf_at_energy.plot_psf_vs_rad(label="PSF @ {:.0f}".format(energy), lw=2)
 
 erange = [50, 2000] * u.GeV
-spectrum = PowerLaw(index=2.3)
+spectrum = PowerLawSpectralModel(index=2.3)
 psf_mean = psf.table_psf_in_energy_band(energy_band=erange, spectrum=spectrum)
 psf_mean.plot_psf_vs_rad(label="PSF Mean", lw=4, c="k", ls="--")
 
@@ -392,7 +389,7 @@ print("Background counts from Galactic diffuse: ", background_gal.data.sum())
 # In[ ]:
 
 
-model_iso = SkyModel(SkyDiffuseConstant(), diffuse_iso, name="diffuse-iso")
+model_iso = SkyModel(ConstantSpatialModel(), diffuse_iso, name="diffuse-iso")
 
 eval_iso = MapEvaluator(model=model_iso, exposure=exposure, edisp=edisp)
 
@@ -440,8 +437,8 @@ flux.sum_over_axes().smooth("0.1 deg").plot(stretch="sqrt", add_cbar=True);
 
 
 model = SkyModel(
-    SkyPointSource("0 deg", "0 deg"),
-    PowerLaw(index=2.5, amplitude="1e-11 cm-2 s-1 TeV-1", reference="100 GeV"),
+    PointSpatialModel("0 deg", "0 deg", frame="galactic"),
+    PowerLawSpectralModel(index=2.5, amplitude="1e-11 cm-2 s-1 TeV-1", reference="100 GeV"),
 )
 
 model_total = SkyModels([model, model_diffuse, model_iso])

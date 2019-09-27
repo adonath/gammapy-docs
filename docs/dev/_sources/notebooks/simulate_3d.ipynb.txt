@@ -59,8 +59,8 @@
     "from astropy.coordinates import Angle\n",
     "from gammapy.irf import load_cta_irfs\n",
     "from gammapy.maps import WcsGeom, MapAxis, WcsNDMap\n",
-    "from gammapy.modeling.models import PowerLaw\n",
-    "from gammapy.modeling.models import SkyGaussian\n",
+    "from gammapy.modeling.models import PowerLawSpectralModel\n",
+    "from gammapy.modeling.models import GaussianSpatialModel\n",
     "from gammapy.modeling.models import SkyModel, BackgroundModel\n",
     "from gammapy.cube import MapDataset, PSFKernel\n",
     "from gammapy.cube import make_map_exposure_true_energy, make_map_background_irf\n",
@@ -80,7 +80,7 @@
       "\r\n",
       "Gammapy package:\r\n",
       "\r\n",
-      "\tversion                : 0.14.dev550+gd4956d864 \r\n",
+      "\tversion                : 0.14.dev738+g051524cbf \r\n",
       "\tpath                   : /Users/deil/work/code/gammapy-docs/build/dev/gammapy/gammapy \r\n",
       "\r\n"
      ]
@@ -103,10 +103,9 @@
    "metadata": {},
    "outputs": [],
    "source": [
-    "filename = (\n",
+    "irfs = load_cta_irfs(\n",
     "    \"$GAMMAPY_DATA/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits\"\n",
-    ")\n",
-    "irfs = load_cta_irfs(filename)"
+    ")"
    ]
   },
   {
@@ -124,7 +123,7 @@
       "\n",
       "\t   name     value   error      unit         min        max    frozen\n",
       "\t--------- --------- ----- -------------- ---------- --------- ------\n",
-      "\t    lon_0 2.000e-01   nan            deg -1.800e+02 1.800e+02  False\n",
+      "\t    lon_0 2.000e-01   nan            deg        nan       nan  False\n",
       "\t    lat_0 1.000e-01   nan            deg -9.000e+01 9.000e+01  False\n",
       "\t    sigma 3.000e-01   nan            deg  0.000e+00       nan  False\n",
       "\t        e 0.000e+00   nan                 0.000e+00 1.000e+00   True\n",
@@ -137,8 +136,10 @@
    ],
    "source": [
     "# Define sky model to simulate the data\n",
-    "spatial_model = SkyGaussian(lon_0=\"0.2 deg\", lat_0=\"0.1 deg\", sigma=\"0.3 deg\")\n",
-    "spectral_model = PowerLaw(\n",
+    "spatial_model = GaussianSpatialModel(\n",
+    "    lon_0=\"0.2 deg\", lat_0=\"0.1 deg\", sigma=\"0.3 deg\", frame=\"galactic\"\n",
+    ")\n",
+    "spectral_model = PowerLawSpectralModel(\n",
     "    index=3, amplitude=\"1e-11 cm-2 s-1 TeV-1\", reference=\"1 TeV\"\n",
     ")\n",
     "sky_model = SkyModel(\n",
@@ -402,7 +403,7 @@
       "\n",
       "\t   name     value   error      unit         min        max    frozen\n",
       "\t--------- --------- ----- -------------- ---------- --------- ------\n",
-      "\t    lon_0 1.000e-01   nan            deg -1.800e+02 1.800e+02  False\n",
+      "\t    lon_0 1.000e-01   nan            deg        nan       nan  False\n",
       "\t    lat_0 1.000e-01   nan            deg -9.000e+01 9.000e+01  False\n",
       "\t    sigma 5.000e-01   nan            deg  0.000e+00       nan  False\n",
       "\t        e 0.000e+00   nan                 0.000e+00 1.000e+00   True\n",
@@ -415,8 +416,10 @@
    ],
    "source": [
     "# Define sky model to fit the data\n",
-    "spatial_model = SkyGaussian(lon_0=\"0.1 deg\", lat_0=\"0.1 deg\", sigma=\"0.5 deg\")\n",
-    "spectral_model = PowerLaw(\n",
+    "spatial_model = GaussianSpatialModel(\n",
+    "    lon_0=\"0.1 deg\", lat_0=\"0.1 deg\", sigma=\"0.5 deg\", frame=\"galactic\"\n",
+    ")\n",
+    "spectral_model = PowerLawSpectralModel(\n",
     "    index=2, amplitude=\"1e-11 cm-2 s-1 TeV-1\", reference=\"1 TeV\"\n",
     ")\n",
     "model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)\n",
@@ -480,7 +483,7 @@
      "text": [
       "------------------------------------------------------------------\n",
       "| FCN = 2.34E+05                |     Ncalls=214 (214 total)     |\n",
-      "| EDM = 4.54E-06 (Goal: 1E-05)  |            up = 1.0            |\n",
+      "| EDM = 4.94E-06 (Goal: 1E-05)  |            up = 1.0            |\n",
       "------------------------------------------------------------------\n",
       "|  Valid Min.   | Valid Param.  | Above EDM | Reached call limit |\n",
       "------------------------------------------------------------------\n",
@@ -490,8 +493,8 @@
       "------------------------------------------------------------------\n",
       "|     False     |     True      |   True    |   True    | False  |\n",
       "------------------------------------------------------------------\n",
-      "CPU times: user 10.1 s, sys: 326 ms, total: 10.4 s\n",
-      "Wall time: 10.5 s\n"
+      "CPU times: user 11.6 s, sys: 403 ms, total: 12 s\n",
+      "Wall time: 12 s\n"
      ]
     }
    ],
@@ -523,7 +526,7 @@
       "\n",
       "\t   name     value   error      unit         min        max    frozen\n",
       "\t--------- --------- ----- -------------- ---------- --------- ------\n",
-      "\t    lon_0 2.000e-01   nan            deg -1.800e+02 1.800e+02  False\n",
+      "\t    lon_0 2.000e-01   nan            deg        nan       nan  False\n",
       "\t    lat_0 1.000e-01   nan            deg -9.000e+01 9.000e+01  False\n",
       "\t    sigma 3.000e-01   nan            deg  0.000e+00       nan  False\n",
       "\t        e 0.000e+00   nan                 0.000e+00 1.000e+00   True\n",
@@ -560,7 +563,7 @@
       "\n",
       "\t   name     value   error      unit         min        max    frozen\n",
       "\t--------- --------- ----- -------------- ---------- --------- ------\n",
-      "\t    lon_0 1.859e-01   nan            deg -1.800e+02 1.800e+02  False\n",
+      "\t    lon_0 1.859e-01   nan            deg        nan       nan  False\n",
       "\t    lat_0 8.768e-02   nan            deg -9.000e+01 9.000e+01  False\n",
       "\t    sigma 2.963e-01   nan            deg  0.000e+00       nan  False\n",
       "\t        e 0.000e+00   nan                 0.000e+00 1.000e+00   True\n",
@@ -591,16 +594,16 @@
      "data": {
       "text/html": [
        "<i>Table length=11</i>\n",
-       "<table id=\"table4839867448\" class=\"table-striped table-bordered table-condensed\">\n",
+       "<table id=\"table4703460656\" class=\"table-striped table-bordered table-condensed\">\n",
        "<thead><tr><th>name</th><th>lon_0</th><th>lat_0</th><th>sigma</th><th>e</th><th>phi</th><th>index</th><th>amplitude</th><th>reference</th><th>norm</th><th>tilt</th></tr></thead>\n",
        "<thead><tr><th>str9</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th></tr></thead>\n",
-       "<tr><td>lon_0</td><td>7.777e-05</td><td>3.501e-07</td><td>-9.341e-08</td><td>0.000e+00</td><td>0.000e+00</td><td>-4.125e-06</td><td>5.047e-17</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
-       "<tr><td>lat_0</td><td>3.501e-07</td><td>7.652e-05</td><td>1.830e-06</td><td>0.000e+00</td><td>0.000e+00</td><td>3.133e-06</td><td>4.967e-17</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
-       "<tr><td>sigma</td><td>-9.341e-08</td><td>1.830e-06</td><td>3.720e-05</td><td>0.000e+00</td><td>0.000e+00</td><td>-5.808e-07</td><td>7.921e-16</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
+       "<tr><td>lon_0</td><td>7.777e-05</td><td>3.542e-07</td><td>-9.078e-08</td><td>0.000e+00</td><td>0.000e+00</td><td>-4.063e-06</td><td>4.966e-17</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
+       "<tr><td>lat_0</td><td>3.542e-07</td><td>7.651e-05</td><td>1.832e-06</td><td>0.000e+00</td><td>0.000e+00</td><td>3.122e-06</td><td>4.989e-17</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
+       "<tr><td>sigma</td><td>-9.078e-08</td><td>1.832e-06</td><td>3.719e-05</td><td>0.000e+00</td><td>0.000e+00</td><td>-5.590e-07</td><td>7.918e-16</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
        "<tr><td>e</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
        "<tr><td>phi</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
-       "<tr><td>index</td><td>-4.125e-06</td><td>3.133e-06</td><td>-5.808e-07</td><td>0.000e+00</td><td>0.000e+00</td><td>9.351e-04</td><td>-1.197e-14</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
-       "<tr><td>amplitude</td><td>5.047e-17</td><td>4.967e-17</td><td>7.921e-16</td><td>0.000e+00</td><td>0.000e+00</td><td>-1.197e-14</td><td>2.130e-25</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
+       "<tr><td>index</td><td>-4.063e-06</td><td>3.122e-06</td><td>-5.590e-07</td><td>0.000e+00</td><td>0.000e+00</td><td>9.348e-04</td><td>-1.197e-14</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
+       "<tr><td>amplitude</td><td>4.966e-17</td><td>4.989e-17</td><td>7.918e-16</td><td>0.000e+00</td><td>0.000e+00</td><td>-1.197e-14</td><td>2.129e-25</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
        "<tr><td>reference</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
        "<tr><td>norm</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
        "<tr><td>tilt</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td><td>0.000e+00</td></tr>\n",
@@ -612,13 +615,13 @@
        "   name     lon_0      lat_0     sigma    ... reference    norm      tilt  \n",
        "   str9    float64    float64   float64   ...  float64   float64   float64 \n",
        "--------- ---------- --------- ---------- ... --------- --------- ---------\n",
-       "    lon_0  7.777e-05 3.501e-07 -9.341e-08 ... 0.000e+00 0.000e+00 0.000e+00\n",
-       "    lat_0  3.501e-07 7.652e-05  1.830e-06 ... 0.000e+00 0.000e+00 0.000e+00\n",
-       "    sigma -9.341e-08 1.830e-06  3.720e-05 ... 0.000e+00 0.000e+00 0.000e+00\n",
+       "    lon_0  7.777e-05 3.542e-07 -9.078e-08 ... 0.000e+00 0.000e+00 0.000e+00\n",
+       "    lat_0  3.542e-07 7.651e-05  1.832e-06 ... 0.000e+00 0.000e+00 0.000e+00\n",
+       "    sigma -9.078e-08 1.832e-06  3.719e-05 ... 0.000e+00 0.000e+00 0.000e+00\n",
        "        e  0.000e+00 0.000e+00  0.000e+00 ... 0.000e+00 0.000e+00 0.000e+00\n",
        "      phi  0.000e+00 0.000e+00  0.000e+00 ... 0.000e+00 0.000e+00 0.000e+00\n",
-       "    index -4.125e-06 3.133e-06 -5.808e-07 ... 0.000e+00 0.000e+00 0.000e+00\n",
-       "amplitude  5.047e-17 4.967e-17  7.921e-16 ... 0.000e+00 0.000e+00 0.000e+00\n",
+       "    index -4.063e-06 3.122e-06 -5.590e-07 ... 0.000e+00 0.000e+00 0.000e+00\n",
+       "amplitude  4.966e-17 4.989e-17  7.918e-16 ... 0.000e+00 0.000e+00 0.000e+00\n",
        "reference  0.000e+00 0.000e+00  0.000e+00 ... 0.000e+00 0.000e+00 0.000e+00\n",
        "     norm  0.000e+00 0.000e+00  0.000e+00 ... 0.000e+00 0.000e+00 0.000e+00\n",
        "     tilt  0.000e+00 0.000e+00  0.000e+00 ... 0.000e+00 0.000e+00 0.000e+00\n",
@@ -643,7 +646,7 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "3.055576695016958 0.030579217826394115\n"
+      "3.055577332085187 0.03057392216430327\n"
      ]
     }
    ],
@@ -685,5 +688,5 @@
   }
  },
  "nbformat": 4,
- "nbformat_minor": 2
+ "nbformat_minor": 4
 }

@@ -38,8 +38,8 @@ log = logging.getLogger(__name__)
 
 
 from gammapy.data import ObservationFilter, DataStore
-from gammapy.modeling.models import PowerLaw
-from gammapy.modeling.models import SkyPointSource
+from gammapy.modeling.models import PowerLawSpectralModel
+from gammapy.modeling.models import PointSpatialModel
 from gammapy.modeling.models import SkyModel, BackgroundModel
 from gammapy.cube import PSFKernel, MapMaker, MapDataset
 from gammapy.maps import WcsGeom, MapAxis
@@ -120,11 +120,11 @@ geom_true = WcsGeom.create(
 
 # Define the source model - Use a pointsource + integrated power law model to directly get flux
 
-spatial_model = SkyPointSource(
+spatial_model = PointSpatialModel(
     lon_0=target_position.ra, lat_0=target_position.dec, frame="icrs"
 )
 
-spectral_model = PowerLaw(
+spectral_model = PowerLawSpectralModel(
     index=2.6,
     amplitude=2.0e-11 * u.Unit("1 / (cm2 s TeV)"),
     reference=1 * u.TeV,

@@ -20,7 +20,7 @@ from gammapy.astro.darkmatter import (
     profiles,
     JFactory,
     PrimaryFlux,
-    DMAnnihilation,
+    DarkMatterAnnihilationSpectralModel,
 )
 
 from gammapy.maps import WcsGeom, WcsNDMap
@@ -166,7 +166,7 @@ plt.subplots_adjust(hspace=0.5)
 
 channel = "Z"
 massDM = 10 * u.TeV
-diff_flux = DMAnnihilation(mass=massDM, channel=channel)
+diff_flux = DarkMatterAnnihilationSpectralModel(mass=massDM, channel=channel)
 int_flux = (jfact * diff_flux.integral(emin=0.1 * u.TeV, emax=10 * u.TeV)).to(
     "cm-2 s-1"
 )

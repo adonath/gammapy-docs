@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.maps.wcsnd &mdash; gammapy v0.14.dev550+gd4956d864</title>
+  <title>gammapy.maps.wcsnd &mdash; gammapy v0.14.dev738+g051524cbf</title>
   
 
   
@@ -71,7 +71,7 @@
             
             
               <div class="version">
-                0.14.dev550+gd4956d864
+                0.14.dev738+g051524cbf
               </div>
             
           
@@ -223,7 +223,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Map-fit">Map fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Residual-image">Residual image</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Spectrum">Spectrum</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Classical-Ring-Background-Analysis">Classical Ring Background Analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -341,7 +340,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Define-a-mask">Define a mask</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Modeling-the-source">Modeling the source</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Modeling-the-background">Modeling the background</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Todo:-Demonstrate-plotting-a-flux-map">Todo: Demonstrate plotting a flux map</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Classical-Ring-Background-Analysis">Classical Ring Background Analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -793,11 +792,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../scripts/index.html#configuration-and-methods">Configuration and methods</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#general-settings">General settings</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#observations-selection">Observations selection</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#data-reduction">Data reduction</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#geometry">Geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#data-reduction-and-datasets">Data reduction and datasets</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#model">Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#fitting">Fitting</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#flux-points">Flux points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#residuals">Residuals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#using-the-high-level-interface">Using the high-level interface</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../scripts/index.html#command-line-tools">Command line tools</a><ul>
@@ -973,14 +973,13 @@
 <span class="kn">from</span> <span class="nn">astropy.convolution</span> <span class="k">import</span> <span class="n">Tophat2DKernel</span>
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="k">import</span> <span class="n">fits</span>
 <span class="kn">from</span> <span class="nn">astropy.nddata</span> <span class="k">import</span> <span class="n">Cutout2D</span>
-<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="k">import</span> <span class="n">Table</span>
 <span class="kn">from</span> <span class="nn">gammapy.extern.skimage</span> <span class="k">import</span> <span class="n">block_reduce</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.interpolation</span> <span class="k">import</span> <span class="n">ScaledRegularGridInterpolator</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.random</span> <span class="k">import</span> <span class="n">InverseCDFSampler</span><span class="p">,</span> <span class="n">get_random_state</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.units</span> <span class="k">import</span> <span class="n">unit_from_fits_image_hdu</span>
 <span class="kn">from</span> <span class="nn">.geom</span> <span class="k">import</span> <span class="n">MapCoord</span><span class="p">,</span> <span class="n">pix_tuple_to_idx</span>
 <span class="kn">from</span> <span class="nn">.reproject</span> <span class="k">import</span> <span class="n">reproject_car_to_hpx</span><span class="p">,</span> <span class="n">reproject_car_to_wcs</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">INVALID_INDEX</span><span class="p">,</span> <span class="n">get_random_state</span><span class="p">,</span> <span class="n">interp_to_order</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="k">import</span> <span class="n">INVALID_INDEX</span><span class="p">,</span> <span class="n">interp_to_order</span>
 <span class="kn">from</span> <span class="nn">.wcs</span> <span class="k">import</span> <span class="n">_check_width</span>
 <span class="kn">from</span> <span class="nn">.wcsmap</span> <span class="k">import</span> <span class="n">WcsGeom</span><span class="p">,</span> <span class="n">WcsMap</span>
 
@@ -1616,6 +1615,28 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">convolved_data</span><span class="p">)</span></div>
 
+<div class="viewcode-block" id="WcsNDMap.apply_edisp"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.apply_edisp">[docs]</a>    <span class="k">def</span> <span class="nf">apply_edisp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">edisp</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Apply energy dispersion to map. Requires energy axis.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        edisp : `EnergyDispersion`</span>
+<span class="sd">            Energy dispersion.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        map : `WcsNDMap`</span>
+<span class="sd">            Map with energy dispersion applied.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">loc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_axis_index_by_name</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rollaxis</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">loc</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">edisp</span><span class="o">.</span><span class="n">pdf_matrix</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rollaxis</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">loc</span><span class="p">)</span>
+
+        <span class="n">e_reco_axis</span> <span class="o">=</span> <span class="n">edisp</span><span class="o">.</span><span class="n">e_reco</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
+        <span class="n">geom_reco</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span><span class="o">.</span><span class="n">to_cube</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">e_reco_axis</span><span class="p">])</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_copy</span><span class="p">(</span><span class="n">geom</span><span class="o">=</span><span class="n">geom_reco</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="WcsNDMap.cutout"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.cutout">[docs]</a>    <span class="k">def</span> <span class="nf">cutout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;trim&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a cutout around a given position.</span>
@@ -1697,7 +1718,7 @@
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 20 Sep 2019.
+        Last updated on 27 Sep 2019.
       </span>
 
     </p>

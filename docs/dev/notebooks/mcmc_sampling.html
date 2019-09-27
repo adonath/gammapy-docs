@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Fitting and error estimation with MCMC &mdash; gammapy v0.14.dev550+gd4956d864</title>
+  <title>Fitting and error estimation with MCMC &mdash; gammapy v0.14.dev738+g051524cbf</title>
   
 
   
@@ -73,7 +73,7 @@
             
             
               <div class="version">
-                0.14.dev550+gd4956d864
+                0.14.dev738+g051524cbf
               </div>
             
           
@@ -225,7 +225,6 @@
 <li class="toctree-l4"><a class="reference internal" href="hess.html#Map-fit">Map fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="hess.html#Residual-image">Residual image</a></li>
 <li class="toctree-l4"><a class="reference internal" href="hess.html#Spectrum">Spectrum</a></li>
-<li class="toctree-l4"><a class="reference internal" href="hess.html#Classical-Ring-Background-Analysis">Classical Ring Background Analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="hess.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -343,7 +342,7 @@
 <li class="toctree-l4"><a class="reference internal" href="image_analysis.html#Define-a-mask">Define a mask</a></li>
 <li class="toctree-l4"><a class="reference internal" href="image_analysis.html#Modeling-the-source">Modeling the source</a></li>
 <li class="toctree-l4"><a class="reference internal" href="image_analysis.html#Modeling-the-background">Modeling the background</a></li>
-<li class="toctree-l4"><a class="reference internal" href="image_analysis.html#Todo:-Demonstrate-plotting-a-flux-map">Todo: Demonstrate plotting a flux map</a></li>
+<li class="toctree-l4"><a class="reference internal" href="image_analysis.html#Classical-Ring-Background-Analysis">Classical Ring Background Analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="image_analysis.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -795,11 +794,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../scripts/index.html#configuration-and-methods">Configuration and methods</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#general-settings">General settings</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#observations-selection">Observations selection</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#data-reduction">Data reduction</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#geometry">Geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#data-reduction-and-datasets">Data reduction and datasets</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#model">Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#fitting">Fitting</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#flux-points">Flux points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#residuals">Residuals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../scripts/index.html#using-the-high-level-interface">Using the high-level interface</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../scripts/index.html#command-line-tools">Command line tools</a><ul>
@@ -1239,9 +1239,11 @@ value (when walkers have reached a stationary stage) can be done by eye but you 
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">SkyCoord</span>
 <span class="kn">from</span> <span class="nn">gammapy.irf</span> <span class="kn">import</span> <span class="n">load_cta_irfs</span>
 <span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">WcsGeom</span><span class="p">,</span> <span class="n">MapAxis</span>
-<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">ExponentialCutoffPowerLaw</span>
-<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">SkyGaussian</span>
-<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">SkyModel</span>
+<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ExpCutoffPowerLawSpectralModel</span><span class="p">,</span>
+    <span class="n">GaussianSpatialModel</span><span class="p">,</span>
+    <span class="n">SkyModel</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span> <span class="nn">gammapy.cube.simulate</span> <span class="kn">import</span> <span class="n">simulate_dataset</span>
 <span class="kn">from</span> <span class="nn">gammapy.modeling</span> <span class="kn">import</span> <span class="n">Fit</span>
 <span class="kn">from</span> <span class="nn">gammapy.modeling.sampling</span> <span class="kn">import</span> <span class="p">(</span>
@@ -1286,9 +1288,11 @@ value (when walkers have reached a stationary stage) can be done by eye but you 
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># Define sky model to simulate the data</span>
-<span class="n">spatial_model</span> <span class="o">=</span> <span class="n">SkyGaussian</span><span class="p">(</span><span class="n">lon_0</span><span class="o">=</span><span class="s2">&quot;0 deg&quot;</span><span class="p">,</span> <span class="n">lat_0</span><span class="o">=</span><span class="s2">&quot;0 deg&quot;</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="s2">&quot;0.2 deg&quot;</span><span class="p">)</span>
+<span class="n">spatial_model</span> <span class="o">=</span> <span class="n">GaussianSpatialModel</span><span class="p">(</span>
+    <span class="n">lon_0</span><span class="o">=</span><span class="s2">&quot;0 deg&quot;</span><span class="p">,</span> <span class="n">lat_0</span><span class="o">=</span><span class="s2">&quot;0 deg&quot;</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="s2">&quot;0.2 deg&quot;</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="s2">&quot;galactic&quot;</span>
+<span class="p">)</span>
 
-<span class="n">spectral_model</span> <span class="o">=</span> <span class="n">ExponentialCutoffPowerLaw</span><span class="p">(</span>
+<span class="n">spectral_model</span> <span class="o">=</span> <span class="n">ExpCutoffPowerLawSpectralModel</span><span class="p">(</span>
     <span class="n">index</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
     <span class="n">amplitude</span><span class="o">=</span><span class="s2">&quot;3e-12 cm-2 s-1 TeV-1&quot;</span><span class="p">,</span>
     <span class="n">reference</span><span class="o">=</span><span class="s2">&quot;1 TeV&quot;</span><span class="p">,</span>
@@ -1313,7 +1317,7 @@ Parameters:
 
            name     value   error      unit         min        max    frozen
         --------- --------- ----- -------------- ---------- --------- ------
-            lon_0 0.000e+00   nan            deg -1.800e+02 1.800e+02  False
+            lon_0 0.000e+00   nan            deg        nan       nan  False
             lat_0 0.000e+00   nan            deg -9.000e+01 9.000e+01  False
             sigma 2.000e-01   nan            deg  0.000e+00       nan  False
                 e 0.000e+00   nan                 0.000e+00 1.000e+00   True
@@ -1444,7 +1448,7 @@ Parameters:
 
            name     value   error      unit         min        max    frozen
         --------- --------- ----- -------------- ---------- --------- ------
-            lon_0 0.000e+00   nan            deg -1.800e+02 1.800e+02   True
+            lon_0 0.000e+00   nan            deg        nan       nan   True
             lat_0 0.000e+00   nan            deg -9.000e+01 9.000e+01   True
             sigma 2.000e-01   nan            deg  5.000e-02 1.000e+00   True
                 e 0.000e+00   nan                 0.000e+00 1.000e+00   True
@@ -1641,7 +1645,7 @@ INFO:gammapy.modeling.sampling:100% =&gt; sampling completed
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 20 Sep 2019.
+        Last updated on 27 Sep 2019.
       </span>
 
     </p>

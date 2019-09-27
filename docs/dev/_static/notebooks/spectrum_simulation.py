@@ -13,7 +13,7 @@
 # * [gammapy.spectrum.SpectrumEvaluator](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumEvaluator.html)
 # * [gammapy.spectrum.SpectrumDataset](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDataset.html)
 # * [gammapy.irf.load_cta_irfs](https://docs.gammapy.org/dev/api/gammapy.irf.load_cta_irfs.html)
-# * [gammapy.modeling.models.PowerLaw](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLaw.html)
+# * [gammapy.modeling.models.PowerLawSpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLawSpectralModel.html)
 
 # ## Setup
 # 
@@ -37,7 +37,7 @@ from gammapy.spectrum import (
     SpectrumDataset,
 )
 from gammapy.modeling import Fit, Parameter
-from gammapy.modeling.models import PowerLaw, SpectralModel
+from gammapy.modeling.models import PowerLawSpectralModel, SpectralModel
 from gammapy.irf import load_cta_irfs
 
 
@@ -59,7 +59,7 @@ energy = np.logspace(-1, 2, 31) * u.TeV
 
 
 # Define spectral model - a simple Power Law in this case
-model_ref = PowerLaw(
+model_ref = PowerLawSpectralModel(
     index=3.0,
     amplitude=2.5e-12 * u.Unit("cm-2 s-1 TeV-1"),
     reference=1 * u.TeV,
@@ -119,7 +119,7 @@ print(edisp.data)
 
 
 dataset = SpectrumDataset(
-    aeff=aeff, edisp=edisp, model=model_ref, livetime=livetime, obs_id=0
+    aeff=aeff, edisp=edisp, model=model_ref, livetime=livetime, name="obs-0"
 )
 
 dataset.fake(random_state=42)
@@ -139,8 +139,8 @@ dataset.counts.plot()
 # In[ ]:
 
 
-# We assume a PowerLaw shape of the background as well
-bkg_model = PowerLaw(
+# We assume a PowerLawSpectralModel shape of the background as well
+bkg_model = PowerLawSpectralModel(
     index=2.5, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV
 )
 
@@ -219,7 +219,7 @@ SpectralModel.__subclasses__()
 # 
 # To do that you need to subclass `SpectralModel`. All `SpectralModel` subclasses need to have an `__init__` function, which sets up the `Parameters` of the model and a `static` function called `evaluate` where the mathematical expression for the model is defined.
 # 
-# As an example we will use a PowerLaw plus a Gaussian (with fixed width).
+# As an example we will use a PowerLawSpectralModel plus a Gaussian (with fixed width).
 
 # In[ ]:
 
@@ -238,7 +238,7 @@ class UserModel(SpectralModel):
 
     @staticmethod
     def evaluate(energy, index, amplitude, reference, mean, width):
-        pwl = PowerLaw.evaluate(
+        pwl = PowerLawSpectralModel.evaluate(
             energy=energy,
             index=index,
             amplitude=amplitude,

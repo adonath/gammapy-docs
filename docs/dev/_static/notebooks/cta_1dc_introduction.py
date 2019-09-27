@@ -770,7 +770,7 @@ obs.bkg
 # * In addition we would like to support a second more human-friendly model format that looks something like [this](https://github.com/gammapy/gamma-cat/blob/b651de8d1d793e924764ffb13c8ec189bce9ea7d/input/data/2006/2006A%2526A...457..899A/tev-000025.yaml#L11)
 # * For now, you could use Gammalib to read the XML files, or you could read them directly with Python. The Python standard library contains [ElementTree](https://docs.python.org/3/library/xml.etree.elementtree.html) and there's [xmltodict](https://github.com/martinblech/xmltodict) which simply hands you back the XML file contents as a Python dictionary (containing a very nested hierarchical structure of Python dict and list objects and strings and numbers.
 # 
-# As an example, here's how you can read an XML sky model and access the spectral parameters of one source (the last, "Arp200" visible above in the XML printout) and create a [gammapy.modeling.models.PowerLaw](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLaw.html) object.
+# As an example, here's how you can read an XML sky model and access the spectral parameters of one source (the last, "Arp200" visible above in the XML printout) and create a [gammapy.modeling.models.PowerLawSpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLawSpectralModel.html) object.
 
 # In[ ]:
 
@@ -790,10 +790,10 @@ obs.bkg
 
 # Create a spectral model the the right units
 # from astropy import units as u
-# from gammapy.modeling.models import PowerLaw
+# from gammapy.modeling.models import PowerLawSpectralModel
 
 # par_to_val = lambda par: float(par["@value"]) * float(par["@scale"])
-# spec = PowerLaw(
+# spec = PowerLawSpectralModel(
 #     amplitude=par_to_val(data[0]) * u.Unit("cm-2 s-1 MeV-1"),
 #     index=par_to_val(data[1]),
 #     reference=par_to_val(data[2]) * u.Unit("MeV"),

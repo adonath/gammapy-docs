@@ -31,7 +31,7 @@ import astropy.units as u
 from gammapy.maps import Map, WcsGeom
 from gammapy.cube import fill_map_counts
 from gammapy.data import DataStore
-from gammapy.modeling.models import PowerLaw
+from gammapy.modeling.models import PowerLawSpectralModel
 from gammapy.modeling import Fit, Datasets
 from gammapy.spectrum import (
     PhaseBackgroundEstimator,
@@ -298,7 +298,7 @@ extraction.spectrum_observations[0].peek()
 # In[ ]:
 
 
-model = PowerLaw(
+model = PowerLawSpectralModel(
     index=4, amplitude="1.3e-9 cm-2 s-1 TeV-1", reference="0.02 TeV"
 )
 
@@ -333,7 +333,7 @@ flux_points = fpe.run()
 flux_points.table["is_ul"] = flux_points.table["ts"] < 1
 
 amplitude_ref = 0.57 * 19.4e-14 * u.Unit("1 / (cm2 s MeV)")
-spec_model_true = PowerLaw(
+spec_model_true = PowerLawSpectralModel(
     index=4.5, amplitude=amplitude_ref, reference="20 GeV"
 )
 

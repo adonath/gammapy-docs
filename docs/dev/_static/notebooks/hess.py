@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 
 
 import yaml
+from pathlib import Path
 import numpy as np
 from scipy.stats import norm
 import astropy.units as u
@@ -37,10 +38,10 @@ from gammapy.cube import (
     MapMakerRing,
     RingBackgroundEstimator,
 )
-from gammapy.modeling.models import SkyModel, BackgroundModel
-from gammapy.modeling.models import PowerLaw
+from gammapy.modeling.models import SkyModel, BackgroundModel, SkyModels
+from gammapy.modeling.models import PowerLawSpectralModel
 from gammapy.modeling.models import create_crab_spectral_model
-from gammapy.modeling.models import SkyPointSource
+from gammapy.modeling.models import PointSpatialModel
 from gammapy.detect import compute_lima_on_off_image
 from gammapy.scripts import Analysis
 from gammapy.modeling import Fit
@@ -136,10 +137,10 @@ psf_kernel_array = psf_kernel.psf_kernel_map.sum_over_axes().data
 # In[ ]:
 
 
-spatial_model = SkyPointSource(
+spatial_model = PointSpatialModel(
     lon_0="83.6 deg", lat_0="22.0 deg", frame="icrs"
 )
-spectral_model = PowerLaw(
+spectral_model = PowerLawSpectralModel(
     index=2.6, amplitude="5e-11 cm-2 s-1 TeV-1", reference="1 TeV"
 )
 model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
@@ -199,44 +200,42 @@ residual.sum_over_axes().smooth("0.1 deg").plot(
 
 
 config = """
-model:
-    components:
-    - name: source
-      spectral:
-            parameters:
-            - factor: 2.0
-              frozen: false
-              name: index
-              unit: ''
-              value: 2.6
-            - factor: 1.0e-12
-              frozen: false
-              name: amplitude
-              unit: cm-2 s-1 TeV-1
-              value: 5.0e-11
-            - factor: 1.0
-              frozen: true
-              name: reference
-              unit: TeV
-              value: 1.0
-            type: PowerLaw
+general:
+    logging:
+        level: INFO
+    outdir: .
+
 observations:
   datastore: $GAMMAPY_DATA/hess-dl3-dr1/hess-dl3-dr3-with-background.fits.gz
   filters:
   - filter_type: par_value
     variable: TARGET_NAME
     value_param: Crab
+
 reduction:
     background:
         background_estimator: reflected
-        on_region:
-            center:
+    containment_correction: true
+    dataset-type: SpectrumDatasetOnOff
+    stack-datasets: false
+    geom:
+        region:
+          center:
             - 83.633 deg
             - 22.014 deg
-            frame: icrs
-            radius: 0.11 deg
-    containment_correction: true
-    data_reducer: 1d 
+          frame: icrs
+          radius: 0.11 deg
+        axes:
+          - name: energy
+            hi_bnd: 100
+            lo_bnd: 0.01
+            nbin: 73
+            interp: log
+            node_type: edges
+            unit: TeV
+
+model: model.yaml
+
 fit:
     fit_range:
         min: 1 TeV
@@ -249,13 +248,51 @@ flux:
         unit: TeV
         interp: log      
 """
-config = yaml.safe_load(config)
+filename = Path("config.yaml")
+filename.write_text(config)
 
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'analysis = Analysis(config)\nanalysis.get_observations()\nanalysis.reduce()\nanalysis.fit()\nanalysis.get_flux_points()')
+model_config = """
+components:
+- name: source
+  type: SkyModel
+  spatial:
+    type: PointSpatialModel
+    frame: icrs
+    parameters:
+    - name: lon_0
+      value: 83.633
+      unit: deg
+      frozen: true
+    - name: lat_0 
+      value: 22.14    
+      unit: deg
+      frozen: true
+  spectral:
+    type: PowerLawSpectralModel
+    parameters:
+    - name: amplitude      
+      value: 1.0e-12
+      unit: cm-2 s-1 TeV-1
+    - name: index
+      value: 2.0
+      unit: ''
+    - name: reference
+      value: 1.0
+      unit: TeV
+      frozen: true
+"""
+filename = Path("model.yaml")
+filename.write_text(model_config)
+
+
+# In[ ]:
+
+
+get_ipython().run_cell_magic('time', '', 'analysis = Analysis.from_yaml("config.yaml")\nanalysis.get_observations()\nanalysis.get_datasets()\nanalysis.get_model()\nanalysis.run_fit()\nanalysis.get_flux_points()')
 
 
 # In[ ]:
@@ -292,187 +329,6 @@ model.spectral_model.plot(
 
 ax_spectrum.set_ylim(1e-11, 1e-10)
 ax_spectrum.legend();
-
-
-# ## Classical Ring Background Analysis
-# 
-# In this section, we do a classical ring background analysis on the MSH 15-52 region. Let us first select these runs in the datastore
-
-# In[ ]:
-
-
-data_store = DataStore.from_file(
-    "$GAMMAPY_DATA/hess-dl3-dr1/hess-dl3-dr3-with-background.fits.gz"
-)
-data_sel = data_store.obs_table["TARGET_NAME"] == "MSH 15-52"
-obs_table = data_store.obs_table[data_sel]
-observations = data_store.get_observations(obs_table["OBS_ID"])
-
-
-# In[ ]:
-
-
-# pos_msh1552 = SkyCoord.from_name('MSH15-52')
-pos_msh1552 = SkyCoord(228.32, -59.08, unit="deg")
-
-
-# We first have to define the geometry on which we make our 2D map.
-
-# In[ ]:
-
-
-energy_axis = MapAxis.from_edges(
-    np.logspace(0, 5.0, 5), unit="TeV", name="energy", interp="log"
-)
-geom = WcsGeom.create(
-    skydir=pos_msh1552,
-    binsz=0.02,
-    width=(5, 5),
-    coordsys="CEL",
-    proj="TAN",
-    axes=[energy_axis],
-)
-
-
-# ### Choose an exclusion mask.
-# We choose an exclusion mask on the position of MSH 1552. 
-
-# In[ ]:
-
-
-regions = CircleSkyRegion(center=pos_msh1552, radius=0.3 * u.deg)
-mask = Map.from_geom(geom)
-mask.data = mask.geom.region_mask([regions], inside=False)
-mask.get_image_by_idx([0]).plot();
-
-
-# Now, we instantiate the ring background
-
-# In[ ]:
-
-
-ring_bkg = RingBackgroundEstimator(r_in="0.5 deg", width="0.3 deg")
-
-
-# To facilitate classical image analysis, we have a special class called `MapMakerRing`. Here, we do the analysis over the integrated energy range. To do an analysis for each image slice of the map (eg: to investigate the significance of the source detection with energy, just call `run` instead of `run_images`
-
-# In[ ]:
-
-
-get_ipython().run_cell_magic('time', '', 'im = MapMakerRing(\n    geom=geom,\n    offset_max=2.0 * u.deg,\n    exclusion_mask=mask,\n    background_estimator=ring_bkg,\n)\nimages = im.run_images(observations)')
-
-
-# We will use `compute_lima_on_off_image` in `gammapy.detect` to compute significance and excess maps. A common debug plot during Ring Analysis is to make histograms of the `off` count rates, so we will plot that as well.
-# 
-# For this we will first create a Tophat2DKernel convolution kernel for the significance maps. To convert from angles to pixel scales, we use `geom.pixel_scales`:
-
-# In[ ]:
-
-
-scale = geom.pixel_scales[0].to("deg")
-# Using a convolution radius of 0.05 degrees
-theta = 0.05 * u.deg / scale
-tophat = Tophat2DKernel(theta)
-tophat.normalize("peak")
-
-
-# In[ ]:
-
-
-lima_maps = compute_lima_on_off_image(
-    images["on"],
-    images["off"],
-    images["exposure_on"],
-    images["exposure_off"],
-    tophat,
-)
-
-
-# In[ ]:
-
-
-significance_map = lima_maps["significance"]
-excess_map = lima_maps["excess"]
-
-
-# In[ ]:
-
-
-plt.figure(figsize=(10, 10))
-ax1 = plt.subplot(221, projection=significance_map.geom.wcs)
-ax2 = plt.subplot(222, projection=excess_map.geom.wcs)
-
-ax1.set_title("Significance map")
-significance_map.plot(ax=ax1, add_cbar=True)
-
-ax2.set_title("Excess map")
-excess_map.plot(ax=ax2, add_cbar=True);
-
-
-# In[ ]:
-
-
-# create a 2D mask for the images
-image_mask = mask.slice_by_idx({"energy": 0})
-significance_map_off = significance_map * image_mask
-
-
-# In[ ]:
-
-
-significance_all = significance_map.data[np.isfinite(significance_map.data)]
-significance_off = significance_map_off.data[
-    np.isfinite(significance_map_off.data)
-]
-
-plt.hist(
-    significance_all,
-    density=True,
-    alpha=0.5,
-    color="red",
-    label="all bins",
-    bins=21,
-)
-
-plt.hist(
-    significance_off,
-    density=True,
-    alpha=0.5,
-    color="blue",
-    label="off bins",
-    bins=21,
-)
-
-# Now, fit the off distribution with a Gaussian
-mu, std = norm.fit(significance_off)
-x = np.linspace(-8, 8, 50)
-p = norm.pdf(x, mu, std)
-plt.plot(x, p, lw=2, color="black")
-plt.legend()
-plt.xlabel("Significance")
-plt.yscale("log")
-plt.ylim(1e-5, 1)
-xmin, xmax = np.min(significance_all), np.max(significance_all)
-plt.xlim(xmin, xmax)
-
-print("Fit results: mu = {:.2f}, std = {:.2f}".format(mu, std))
-
-
-# The significance and excess maps clearly indicate a bright source at the position of MSH 1552. This is also evident from the significance distribution. The off distribution should ideally be a Gaussian with `mu=0`, `sigma=1`
-
-# In[ ]:
-
-
-print(
-    "Excess from entire map: {:.1f}".format(
-        np.nansum(lima_maps["excess"].data)
-    )
-)
-print(
-    "Excess from off regions: {:.1f}".format(
-        np.nansum((lima_maps["excess"] * image_mask).data)
-    )
-)
 
 
 # Again: please note that this tutorial notebook was put together quickly, the results obtained here are very preliminary. We will work on Gammapy and the analysis of data from the H.E.S.S. test release and update this tutorial soon.

@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.cube.psf_kernel &mdash; gammapy v0.14.dev550+gd4956d864</title>
+  <title>gammapy.cube.psf_kernel &mdash; gammapy v0.14.dev738+g051524cbf</title>
   
 
   
@@ -71,7 +71,7 @@
             
             
               <div class="version">
-                0.14.dev550+gd4956d864
+                0.14.dev738+g051524cbf
               </div>
             
           
@@ -223,7 +223,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Map-fit">Map fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Residual-image">Residual image</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Spectrum">Spectrum</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Classical-Ring-Background-Analysis">Classical Ring Background Analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -341,7 +340,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Define-a-mask">Define a mask</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Modeling-the-source">Modeling the source</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Modeling-the-background">Modeling the background</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Todo:-Demonstrate-plotting-a-flux-map">Todo: Demonstrate plotting a flux map</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Classical-Ring-Background-Analysis">Classical Ring Background Analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -793,11 +792,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../scripts/index.html#configuration-and-methods">Configuration and methods</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#general-settings">General settings</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#observations-selection">Observations selection</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#data-reduction">Data reduction</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#geometry">Geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#data-reduction-and-datasets">Data reduction and datasets</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#model">Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#fitting">Fitting</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#flux-points">Flux points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#residuals">Residuals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#using-the-high-level-interface">Using the high-level interface</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../scripts/index.html#command-line-tools">Command line tools</a><ul>
@@ -969,7 +969,7 @@
 <span class="kn">from</span> <span class="nn">astropy.coordinates.angle_utilities</span> <span class="k">import</span> <span class="n">angular_separation</span>
 <span class="kn">from</span> <span class="nn">gammapy.irf</span> <span class="k">import</span> <span class="n">TablePSF</span>
 <span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="k">import</span> <span class="n">Map</span><span class="p">,</span> <span class="n">WcsGeom</span>
-<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="k">import</span> <span class="n">PowerLaw</span>
+<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="k">import</span> <span class="n">PowerLawSpectralModel</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.gauss</span> <span class="k">import</span> <span class="n">Gauss2DPDF</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PSFKernel&quot;</span><span class="p">]</span>
@@ -1014,9 +1014,9 @@
 
 
 <span class="k">def</span> <span class="nf">table_psf_to_kernel_map</span><span class="p">(</span><span class="n">table_psf</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Compute a PSF kernel on a given MapGeom.</span>
+    <span class="sd">&quot;&quot;&quot;Compute a PSF kernel on a given Geom.</span>
 
-<span class="sd">    If the MapGeom is not an image, the same kernel will be present on all axes.</span>
+<span class="sd">    If the Geom is not an image, the same kernel will be present on all axes.</span>
 
 <span class="sd">    The PSF is estimated by oversampling defined by a given factor.</span>
 <span class="sd">    The PSF kernel is normalized</span>
@@ -1025,7 +1025,7 @@
 <span class="sd">    ----------</span>
 <span class="sd">    table_psf : `~gammapy.irf.TablePSF`</span>
 <span class="sd">        the input table PSF</span>
-<span class="sd">    geom : `~gammapy.maps.MapGeom`</span>
+<span class="sd">    geom : `~gammapy.maps.Geom`</span>
 <span class="sd">        the target geometry. The PSF kernel will be centered on the spatial center.</span>
 <span class="sd">    factor : int</span>
 <span class="sd">        the oversample factor to compute the PSF</span>
@@ -1043,7 +1043,7 @@
 
 
 <span class="k">def</span> <span class="nf">energy_dependent_table_psf_to_kernel_map</span><span class="p">(</span><span class="n">table_psf</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Compute an energy dependent PSF kernel on a given MapGeom.</span>
+    <span class="sd">&quot;&quot;&quot;Compute an energy dependent PSF kernel on a given Geom.</span>
 
 <span class="sd">    The PSF is estimated by oversampling defined by a given factor.</span>
 
@@ -1051,7 +1051,7 @@
 <span class="sd">    ----------</span>
 <span class="sd">    table_psf : `~gammapy.irf.EnergyDependentTablePSF`</span>
 <span class="sd">        the input table PSF</span>
-<span class="sd">    geom : `~gammapy.maps.MapGeom`</span>
+<span class="sd">    geom : `~gammapy.maps.Geom`</span>
 <span class="sd">        the target geometry.</span>
 <span class="sd">        The PSF kernel will be centered on the spatial centre.</span>
 <span class="sd">        the geometry axes should contain an &quot;energy&quot; axis.</span>
@@ -1140,9 +1140,9 @@
 
 <div class="viewcode-block" id="PSFKernel.from_table_psf"><a class="viewcode-back" href="../../../api/gammapy.cube.PSFKernel.html#gammapy.cube.PSFKernel.from_table_psf">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_table_psf</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">table_psf</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">max_radius</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Create a PSF kernel from a TablePSF or an EnergyDependentTablePSF on a given MapGeom.</span>
+        <span class="sd">&quot;&quot;&quot;Create a PSF kernel from a TablePSF or an EnergyDependentTablePSF on a given Geom.</span>
 
-<span class="sd">        If the MapGeom is not an image, the same kernel will be present on all axes.</span>
+<span class="sd">        If the Geom is not an image, the same kernel will be present on all axes.</span>
 
 <span class="sd">        The PSF is estimated by oversampling defined by a given factor.</span>
 
@@ -1247,7 +1247,7 @@
 <span class="sd">            Weighted 2D psf</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">spectrum</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">spectrum</span> <span class="o">=</span> <span class="n">PowerLaw</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+            <span class="n">spectrum</span> <span class="o">=</span> <span class="n">PowerLawSpectralModel</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
 
         <span class="n">energy_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">psf_kernel_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
         <span class="n">energy_width</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">)</span>
@@ -1275,7 +1275,7 @@
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 20 Sep 2019.
+        Last updated on 27 Sep 2019.
       </span>
 
     </p>

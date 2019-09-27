@@ -63,7 +63,7 @@ m_allsky = Map.create()
 print(m_allsky.geom)
 
 
-# The `.geom` attribute is a `MapGeom` object, that defines the basic geometry of the map, such as size of the pixels, width and height of the image, coordinate system etc., but we will learn more about this object later.
+# The `.geom` attribute is a `Geom` object, that defines the basic geometry of the map, such as size of the pixels, width and height of the image, coordinate system etc., but we will learn more about this object later.
 # 
 # Besides the `.geom` attribute the map has also a `.data` attribute, which is just a plain `numpy.ndarray` and stores the data associated with this map:
 
@@ -91,7 +91,7 @@ print(m_gc.geom)
 
 # ### 1.2 Creating from a Map Geometry
 # 
-# As we have seen in the first examples, the `Map` object couples the data (stored as a `numpy.ndarray`) with a `MapGeom` object. The `MapGeom` object can be seen as a generalization of an `astropy.wcs.WCS` object, providing the information on how the data maps to physical coordinate systems. In some cases e.g. when creating many maps with the same WCS geometry it can be advantegeous to first create the map geometry independent of the map object itsself: 
+# As we have seen in the first examples, the `Map` object couples the data (stored as a `numpy.ndarray`) with a `Geom` object. The `Geom` object can be seen as a generalization of an `astropy.wcs.WCS` object, providing the information on how the data maps to physical coordinate systems. In some cases e.g. when creating many maps with the same WCS geometry it can be advantegeous to first create the map geometry independent of the map object itsself: 
 
 # In[ ]:
 
@@ -112,7 +112,7 @@ for name in ["counts", "background"]:
     maps[name] = Map.from_geom(wcs_geom)
 
 
-# The `MapGeom` object also has a few helpful methods. E.g. we can check whether a given position on the sky is contained in the map geometry:
+# The `Geom` object also has a few helpful methods. E.g. we can check whether a given position on the sky is contained in the map geometry:
 
 # In[ ]:
 

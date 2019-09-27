@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.astro.darkmatter.spectra &mdash; gammapy v0.14.dev550+gd4956d864</title>
+  <title>gammapy.astro.darkmatter.spectra &mdash; gammapy v0.14.dev738+g051524cbf</title>
   
 
   
@@ -71,7 +71,7 @@
             
             
               <div class="version">
-                0.14.dev550+gd4956d864
+                0.14.dev738+g051524cbf
               </div>
             
           
@@ -223,7 +223,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/hess.html#Map-fit">Map fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/hess.html#Residual-image">Residual image</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/hess.html#Spectrum">Spectrum</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/hess.html#Classical-Ring-Background-Analysis">Classical Ring Background Analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/hess.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -341,7 +340,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/image_analysis.html#Define-a-mask">Define a mask</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/image_analysis.html#Modeling-the-source">Modeling the source</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/image_analysis.html#Modeling-the-background">Modeling the background</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/image_analysis.html#Todo:-Demonstrate-plotting-a-flux-map">Todo: Demonstrate plotting a flux map</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/image_analysis.html#Classical-Ring-Background-Analysis">Classical Ring Background Analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../notebooks/image_analysis.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -793,11 +792,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../scripts/index.html#configuration-and-methods">Configuration and methods</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#general-settings">General settings</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#observations-selection">Observations selection</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#data-reduction">Data reduction</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#geometry">Geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#data-reduction-and-datasets">Data reduction and datasets</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#model">Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#fitting">Fitting</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#flux-points">Flux points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#residuals">Residuals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../scripts/index.html#using-the-high-level-interface">Using the high-level interface</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../scripts/index.html#command-line-tools">Command line tools</a><ul>
@@ -968,10 +968,10 @@
 <span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="k">import</span> <span class="n">Table</span>
 <span class="kn">from</span> <span class="nn">gammapy.modeling</span> <span class="k">import</span> <span class="n">Parameter</span>
-<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="k">import</span> <span class="n">SpectralModel</span><span class="p">,</span> <span class="n">TableModel</span>
+<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="k">import</span> <span class="n">SpectralModel</span><span class="p">,</span> <span class="n">TemplateSpectralModel</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.scripts</span> <span class="k">import</span> <span class="n">make_path</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PrimaryFlux&quot;</span><span class="p">,</span> <span class="s2">&quot;DMAnnihilation&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PrimaryFlux&quot;</span><span class="p">,</span> <span class="s2">&quot;DarkMatterAnnihilationSpectralModel&quot;</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="PrimaryFlux"><a class="viewcode-back" href="../../../../api/gammapy.astro.darkmatter.PrimaryFlux.html#gammapy.astro.darkmatter.PrimaryFlux">[docs]</a><span class="k">class</span> <span class="nc">PrimaryFlux</span><span class="p">:</span>
@@ -980,7 +980,7 @@
 <span class="sd">    Based on the precomputed models by Cirelli et al. (2016). All available</span>
 <span class="sd">    annihilation channels can be found there. The dark matter mass will be set</span>
 <span class="sd">    to the nearest available value. The spectra will be available as</span>
-<span class="sd">    `~gammapy.modeling.models.TableModel` for a chosen dark matter mass and</span>
+<span class="sd">    `~gammapy.modeling.models.TemplateSpectralModel` for a chosen dark matter mass and</span>
 <span class="sd">    annihilation channel.</span>
 
 <span class="sd">    References</span>
@@ -1075,17 +1075,17 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">table_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Spectrum as `~gammapy.modeling.models.TableModel`.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Spectrum as `~gammapy.modeling.models.TemplateSpectralModel`.&quot;&quot;&quot;</span>
         <span class="n">subtable</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;mDM&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">mDM</span><span class="o">.</span><span class="n">value</span><span class="p">]</span>
         <span class="n">energies</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span> <span class="o">**</span> <span class="n">subtable</span><span class="p">[</span><span class="s2">&quot;Log[10,x]&quot;</span><span class="p">])</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mDM</span>
         <span class="n">channel_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel_registry</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">]</span>
         <span class="n">dN_dlogx</span> <span class="o">=</span> <span class="n">subtable</span><span class="p">[</span><span class="n">channel_name</span><span class="p">]</span>
         <span class="n">dN_dE</span> <span class="o">=</span> <span class="n">dN_dlogx</span> <span class="o">/</span> <span class="p">(</span><span class="n">energies</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">TableModel</span><span class="p">(</span><span class="n">energy</span><span class="o">=</span><span class="n">energies</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">dN_dE</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">TemplateSpectralModel</span><span class="p">(</span><span class="n">energy</span><span class="o">=</span><span class="n">energies</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">dN_dE</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="DMAnnihilation"><a class="viewcode-back" href="../../../../api/gammapy.astro.darkmatter.DMAnnihilation.html#gammapy.astro.darkmatter.DMAnnihilation">[docs]</a><span class="k">class</span> <span class="nc">DMAnnihilation</span><span class="p">(</span><span class="n">SpectralModel</span><span class="p">):</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Spectral model for dark matter annihilation.</span>
+<div class="viewcode-block" id="DarkMatterAnnihilationSpectralModel"><a class="viewcode-back" href="../../../../api/gammapy.astro.darkmatter.DarkMatterAnnihilationSpectralModel.html#gammapy.astro.darkmatter.DarkMatterAnnihilationSpectralModel">[docs]</a><span class="k">class</span> <span class="nc">DarkMatterAnnihilationSpectralModel</span><span class="p">(</span><span class="n">SpectralModel</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Dark matter annihilation spectral model.</span>
 
 <span class="sd">    The gamma-ray flux is computed as follows:</span>
 
@@ -1103,7 +1103,7 @@
 <span class="sd">    scale : float</span>
 <span class="sd">        Scale parameter for model fitting</span>
 <span class="sd">    jfactor : `~astropy.units.Quantity`</span>
-<span class="sd">        Integrated J-Factor needed when `~gammapy.modeling.models.SkyPointSource` spatial model is used</span>
+<span class="sd">        Integrated J-Factor needed when `~gammapy.modeling.models.PointSpatialModel` spatial model is used</span>
 <span class="sd">    z: float</span>
 <span class="sd">        Redshift value</span>
 <span class="sd">    k: int</span>
@@ -1111,15 +1111,15 @@
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
-<span class="sd">    This is how to instantiate a `DMAnnihilation` model::</span>
+<span class="sd">    This is how to instantiate a `DarkMatterAnnihilationSpectralModel` model::</span>
 
 <span class="sd">        from astropy import units as u</span>
-<span class="sd">        from gammapy.astro.darkmatter import DMAnnihilation</span>
+<span class="sd">        from gammapy.astro.darkmatter import DarkMatterAnnihilationSpectralModel</span>
 
 <span class="sd">        channel = &quot;b&quot;</span>
 <span class="sd">        massDM = 5000*u.Unit(&quot;GeV&quot;)</span>
 <span class="sd">        jfactor = 3.41e19 * u.Unit(&quot;GeV2 cm-5&quot;)</span>
-<span class="sd">        modelDM = DMAnnihilation(mass=massDM, channel=channel, jfactor=jfactor)</span>
+<span class="sd">        modelDM = DarkMatterAnnihilationSpectralModel(mass=massDM, channel=channel, jfactor=jfactor)</span>
 
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
@@ -1141,7 +1141,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">primary_flux</span> <span class="o">=</span> <span class="n">PrimaryFlux</span><span class="p">(</span><span class="n">mass</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">)</span><span class="o">.</span><span class="n">table_model</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">])</span>
 
-<div class="viewcode-block" id="DMAnnihilation.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.astro.darkmatter.DMAnnihilation.html#gammapy.astro.darkmatter.DMAnnihilation.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">scale</span><span class="p">):</span>
+<div class="viewcode-block" id="DarkMatterAnnihilationSpectralModel.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.astro.darkmatter.DarkMatterAnnihilationSpectralModel.html#gammapy.astro.darkmatter.DarkMatterAnnihilationSpectralModel.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">scale</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Evaluate dark matter annihilation model.&quot;&quot;&quot;</span>
         <span class="n">flux</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">scale</span>
@@ -1168,7 +1168,7 @@
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 20 Sep 2019.
+        Last updated on 27 Sep 2019.
       </span>
 
     </p>

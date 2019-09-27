@@ -26,8 +26,8 @@ import astropy.units as u
 from astropy.coordinates import Angle
 from gammapy.irf import load_cta_irfs
 from gammapy.maps import WcsGeom, MapAxis, WcsNDMap
-from gammapy.modeling.models import PowerLaw
-from gammapy.modeling.models import SkyGaussian
+from gammapy.modeling.models import PowerLawSpectralModel
+from gammapy.modeling.models import GaussianSpatialModel
 from gammapy.modeling.models import SkyModel, BackgroundModel
 from gammapy.cube import MapDataset, PSFKernel
 from gammapy.cube import make_map_exposure_true_energy, make_map_background_irf
@@ -46,18 +46,19 @@ get_ipython().system('gammapy info --no-envvar --no-dependencies --no-system')
 # In[ ]:
 
 
-filename = (
+irfs = load_cta_irfs(
     "$GAMMAPY_DATA/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
 )
-irfs = load_cta_irfs(filename)
 
 
 # In[ ]:
 
 
 # Define sky model to simulate the data
-spatial_model = SkyGaussian(lon_0="0.2 deg", lat_0="0.1 deg", sigma="0.3 deg")
-spectral_model = PowerLaw(
+spatial_model = GaussianSpatialModel(
+    lon_0="0.2 deg", lat_0="0.1 deg", sigma="0.3 deg", frame="galactic"
+)
+spectral_model = PowerLawSpectralModel(
     index=3, amplitude="1e-11 cm-2 s-1 TeV-1", reference="1 TeV"
 )
 sky_model = SkyModel(
@@ -182,8 +183,10 @@ counts_map.sum_over_axes().plot();
 
 
 # Define sky model to fit the data
-spatial_model = SkyGaussian(lon_0="0.1 deg", lat_0="0.1 deg", sigma="0.5 deg")
-spectral_model = PowerLaw(
+spatial_model = GaussianSpatialModel(
+    lon_0="0.1 deg", lat_0="0.1 deg", sigma="0.5 deg", frame="galactic"
+)
+spectral_model = PowerLawSpectralModel(
     index=2, amplitude="1e-11 cm-2 s-1 TeV-1", reference="1 TeV"
 )
 model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)

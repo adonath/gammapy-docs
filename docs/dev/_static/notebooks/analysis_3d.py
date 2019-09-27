@@ -25,9 +25,14 @@ from gammapy.data import DataStore
 from gammapy.irf import EnergyDispersion, make_mean_psf, make_mean_edisp
 from gammapy.maps import WcsGeom, MapAxis, Map, WcsNDMap
 from gammapy.cube import MapMaker, PSFKernel, MapDataset
-from gammapy.modeling.models import SkyModel, SkyDiffuseCube, BackgroundModel
-from gammapy.modeling.models import PowerLaw, ExponentialCutoffPowerLaw
-from gammapy.modeling.models import SkyPointSource
+from gammapy.modeling.models import (
+    SkyModel,
+    SkyDiffuseCube,
+    BackgroundModel,
+    PowerLawSpectralModel,
+    ExpCutoffPowerLawSpectralModel,
+    PointSpatialModel,
+)
 from gammapy.spectrum import FluxPointsEstimator
 from gammapy.modeling import Fit
 
@@ -45,8 +50,7 @@ from gammapy.modeling import Fit
 data_store = DataStore.from_dir("$GAMMAPY_DATA/cta-1dc/index/gps/")
 data_store.info()
 print(
-    "Total observation time (hours): ",
-    data_store.obs_table["ONTIME"].sum() / 3600,
+    "Observation time (hours): ", data_store.obs_table["ONTIME"].sum() / 3600
 )
 print("Observation table: ", data_store.obs_table.colnames)
 print("HDU table: ", data_store.hdu_table.colnames)
@@ -293,8 +297,10 @@ mask = coords["energy"] > 0.3 * u.TeV
 # In[ ]:
 
 
-spatial_model = SkyPointSource(lon_0="0.01 deg", lat_0="0.01 deg")
-spectral_model = PowerLaw(
+spatial_model = PointSpatialModel(
+    lon_0="0.01 deg", lat_0="0.01 deg", frame="galactic"
+)
+spectral_model = PowerLawSpectralModel(
     index=2.2, amplitude="3e-12 cm-2 s-1 TeV-1", reference="1 TeV"
 )
 model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
@@ -399,9 +405,11 @@ diffuse_model = SkyDiffuseCube.read(
 # In[ ]:
 
 
-spatial_model = SkyPointSource(lon_0="-0.05 deg", lat_0="-0.05 deg")
-spectral_model = ExponentialCutoffPowerLaw(
-    index=2 * u.Unit(""),
+spatial_model = PointSpatialModel(
+    lon_0="-0.05 deg", lat_0="-0.05 deg", frame="galactic"
+)
+spectral_model = ExpCutoffPowerLawSpectralModel(
+    index=2,
     amplitude=3e-12 * u.Unit("cm-2 s-1 TeV-1"),
     reference=1.0 * u.TeV,
     lambda_=0.1 / u.TeV,

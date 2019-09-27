@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.scripts.analysis &mdash; gammapy v0.14.dev550+gd4956d864</title>
+  <title>gammapy.scripts.analysis &mdash; gammapy v0.14.dev738+g051524cbf</title>
   
 
   
@@ -71,7 +71,7 @@
             
             
               <div class="version">
-                0.14.dev550+gd4956d864
+                0.14.dev738+g051524cbf
               </div>
             
           
@@ -223,7 +223,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Map-fit">Map fit</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Residual-image">Residual image</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Spectrum">Spectrum</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Classical-Ring-Background-Analysis">Classical Ring Background Analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/hess.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -341,7 +340,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Define-a-mask">Define a mask</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Modeling-the-source">Modeling the source</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Modeling-the-background">Modeling the background</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Todo:-Demonstrate-plotting-a-flux-map">Todo: Demonstrate plotting a flux map</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Classical-Ring-Background-Analysis">Classical Ring Background Analysis</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../notebooks/image_analysis.html#Exercises">Exercises</a></li>
 </ul>
 </li>
@@ -793,11 +792,12 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../scripts/index.html#configuration-and-methods">Configuration and methods</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#general-settings">General settings</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#observations-selection">Observations selection</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#data-reduction">Data reduction</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#geometry">Geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#data-reduction-and-datasets">Data reduction and datasets</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#model">Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#fitting">Fitting</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#flux-points">Flux points</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#residuals">Residuals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../scripts/index.html#using-the-high-level-interface">Using the high-level interface</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../scripts/index.html#command-line-tools">Command line tools</a><ul>
@@ -973,12 +973,11 @@
 <span class="kn">from</span> <span class="nn">regions</span> <span class="k">import</span> <span class="n">CircleSkyRegion</span>
 <span class="kn">import</span> <span class="nn">jsonschema</span>
 <span class="kn">import</span> <span class="nn">yaml</span>
-<span class="kn">from</span> <span class="nn">gammapy.cube</span> <span class="k">import</span> <span class="n">MapDataset</span><span class="p">,</span> <span class="n">MapMaker</span><span class="p">,</span> <span class="n">PSFKernel</span>
+<span class="kn">from</span> <span class="nn">gammapy.cube</span> <span class="k">import</span> <span class="n">MapDataset</span><span class="p">,</span> <span class="n">MapMakerObs</span>
 <span class="kn">from</span> <span class="nn">gammapy.data</span> <span class="k">import</span> <span class="n">DataStore</span><span class="p">,</span> <span class="n">ObservationTable</span>
-<span class="kn">from</span> <span class="nn">gammapy.irf</span> <span class="k">import</span> <span class="n">make_mean_psf</span>
 <span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="k">import</span> <span class="n">Map</span><span class="p">,</span> <span class="n">MapAxis</span><span class="p">,</span> <span class="n">WcsGeom</span>
 <span class="kn">from</span> <span class="nn">gammapy.modeling</span> <span class="k">import</span> <span class="n">Datasets</span><span class="p">,</span> <span class="n">Fit</span>
-<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="k">import</span> <span class="n">SPECTRAL_MODELS</span>
+<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="k">import</span> <span class="n">SkyModels</span>
 <span class="kn">from</span> <span class="nn">gammapy.spectrum</span> <span class="k">import</span> <span class="p">(</span>
     <span class="n">FluxPointsDataset</span><span class="p">,</span>
     <span class="n">FluxPointsEstimator</span><span class="p">,</span>
@@ -987,11 +986,17 @@
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.scripts</span> <span class="k">import</span> <span class="n">make_path</span><span class="p">,</span> <span class="n">read_yaml</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Analysis&quot;</span><span class="p">,</span> <span class="s2">&quot;Config&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Analysis&quot;</span><span class="p">,</span> <span class="s2">&quot;AnalysisConfig&quot;</span><span class="p">]</span>
 
 <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 <span class="n">CONFIG_PATH</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;config&quot;</span>
 <span class="n">SCHEMA_FILE</span> <span class="o">=</span> <span class="n">CONFIG_PATH</span> <span class="o">/</span> <span class="s2">&quot;schema.yaml&quot;</span>
+
+<span class="n">ANALYSIS_TEMPLATES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;basic&quot;</span><span class="p">:</span> <span class="s2">&quot;template-basic.yaml&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;1d&quot;</span><span class="p">:</span> <span class="s2">&quot;template-1d.yaml&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;3d&quot;</span><span class="p">:</span> <span class="s2">&quot;template-3d.yaml&quot;</span><span class="p">,</span>
+<span class="p">}</span>
 
 
 <div class="viewcode-block" id="Analysis"><a class="viewcode-back" href="../../../api/gammapy.scripts.Analysis.html#gammapy.scripts.Analysis">[docs]</a><span class="k">class</span> <span class="nc">Analysis</span><span class="p">:</span>
@@ -1004,40 +1009,44 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    config : dict</span>
-<span class="sd">        Configuration options following `Config` schema</span>
-<span class="sd">    template : str</span>
-<span class="sd">        Template for configuration settings</span>
+<span class="sd">    config : dict or `AnalysisConfig`</span>
+<span class="sd">        Configuration options following `AnalysisConfig` schema</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
 <span class="sd">    Example how to create an Analysis object:</span>
 
 <span class="sd">    &gt;&gt;&gt; from gammapy.scripts import Analysis</span>
-<span class="sd">    &gt;&gt;&gt; analysis = Analysis(template=&quot;1d&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; analysis = Analysis.from_template(template=&quot;1d&quot;)</span>
 
 <span class="sd">    TODO: show a working example of running an analysis.</span>
 <span class="sd">    Probably not here, but in high-level docs, linked to from class docstring.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">template</span><span class="o">=</span><span class="s2">&quot;basic&quot;</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">template</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_set_logging</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">CONFIG_PATH</span> <span class="o">/</span> <span class="n">ANALYSIS_TEMPLATES</span><span class="p">[</span><span class="s2">&quot;basic&quot;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="n">AnalysisConfig</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="n">AnalysisConfig</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">AnalysisConfig</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_config</span> <span class="o">=</span> <span class="n">config</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Dict or `AnalysiConfig` object required.&quot;</span><span class="p">)</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_logging</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">observations</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">background_estimator</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">extraction</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">images</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">maps</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">psf_kernel</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fit_result</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">flux_points_dataset</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Analysis configuration (`Config`)&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Analysis configuration (`AnalysisConfig`)&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span>
 
     <span class="nd">@property</span>
@@ -1045,54 +1054,95 @@
         <span class="sd">&quot;&quot;&quot;Configuration settings for the analysis session.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">settings</span>
 
-<div class="viewcode-block" id="Analysis.fit"><a class="viewcode-back" href="../../../api/gammapy.scripts.Analysis.html#gammapy.scripts.Analysis.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optimize_opts</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Fitting reduced data sets to model.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span><span class="s2">&quot;data_reducer&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;1d&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_fitting_settings_1d</span><span class="p">():</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_read_model</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_fit_reduced_data_1d</span><span class="p">(</span><span class="n">optimize_opts</span><span class="o">=</span><span class="n">optimize_opts</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># TODO raise error?</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Fitting available only for joint likelihood with 1D spectrum.&quot;</span><span class="p">)</span></div>
+<div class="viewcode-block" id="Analysis.run_fit"><a class="viewcode-back" href="../../../api/gammapy.scripts.Analysis.html#gammapy.scripts.Analysis.run_fit">[docs]</a>    <span class="k">def</span> <span class="nf">run_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optimize_opts</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Fitting reduced datasets to model.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_fitting_settings</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">ds</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">datasets</span><span class="p">:</span>
+                <span class="c1"># TODO: fit_range handled in jsonschema validation class</span>
+                <span class="k">if</span> <span class="s2">&quot;fit_range&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;fit&quot;</span><span class="p">]:</span>
+                    <span class="n">e_min</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;fit&quot;</span><span class="p">][</span><span class="s2">&quot;fit_range&quot;</span><span class="p">][</span><span class="s2">&quot;min&quot;</span><span class="p">])</span>
+                    <span class="n">e_max</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;fit&quot;</span><span class="p">][</span><span class="s2">&quot;fit_range&quot;</span><span class="p">][</span><span class="s2">&quot;max&quot;</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">MapDataset</span><span class="p">):</span>
+                        <span class="n">ds</span><span class="o">.</span><span class="n">mask_fit</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">energy_mask</span><span class="p">(</span><span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">ds</span><span class="o">.</span><span class="n">mask_fit</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">energy_mask</span><span class="p">(</span><span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Analysis.from_file"><a class="viewcode-back" href="../../../api/gammapy.scripts.Analysis.html#gammapy.scripts.Analysis.from_file">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">template</span><span class="o">=</span><span class="s2">&quot;basic&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Instantiation of analysis from settings in config file.</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Fitting reduced datasets.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fit</span> <span class="o">=</span> <span class="n">Fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">datasets</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fit_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">optimize_opts</span><span class="o">=</span><span class="n">optimize_opts</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_result</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Analysis.from_yaml"><a class="viewcode-back" href="../../../api/gammapy.scripts.Analysis.html#gammapy.scripts.Analysis.from_yaml">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_yaml</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create analysis from settings in config file.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        filename : str, Path</span>
 <span class="sd">            Configuration settings filename</span>
-<span class="sd">        template: str</span>
-<span class="sd">            Consider also values in configuration template</span>
-<span class="sd">            Default value basic</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">filename</span> <span class="o">=</span> <span class="n">make_path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-        <span class="n">config</span> <span class="o">=</span> <span class="n">read_yaml</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">template</span><span class="o">=</span><span class="n">template</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Analysis.get_flux_points"><a class="viewcode-back" href="../../../api/gammapy.scripts.Analysis.html#gammapy.scripts.Analysis.get_flux_points">[docs]</a>    <span class="k">def</span> <span class="nf">get_flux_points</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Calculate flux points.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span><span class="s2">&quot;data_reducer&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;1d&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_fp_settings</span><span class="p">():</span>
-                <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Calculating flux points.&quot;</span><span class="p">)</span>
-                <span class="n">stacked</span> <span class="o">=</span> <span class="n">Datasets</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extraction</span><span class="o">.</span><span class="n">spectrum_observations</span><span class="p">)</span><span class="o">.</span><span class="n">stack_reduce</span><span class="p">()</span>
-                <span class="n">flux_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-                <span class="n">flux_model</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">covariance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_result</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">covariance</span>
-                <span class="n">stacked</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">flux_model</span>
-                <span class="n">axis_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">][</span><span class="s2">&quot;fp_binning&quot;</span><span class="p">]</span>
-                <span class="n">e_edges</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_bounds</span><span class="p">(</span><span class="o">**</span><span class="n">axis_params</span><span class="p">)</span><span class="o">.</span><span class="n">edges</span>
-                <span class="n">flux_point_estimator</span> <span class="o">=</span> <span class="n">FluxPointsEstimator</span><span class="p">(</span>
-                    <span class="n">e_edges</span><span class="o">=</span><span class="n">e_edges</span><span class="p">,</span> <span class="n">datasets</span><span class="o">=</span><span class="n">stacked</span>
-                <span class="p">)</span>
-                <span class="n">fp</span> <span class="o">=</span> <span class="n">flux_point_estimator</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
-                <span class="n">fp</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;is_ul&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;ts&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">4</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">flux_points_dataset</span> <span class="o">=</span> <span class="n">FluxPointsDataset</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">fp</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
-                <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;e_ref&quot;</span><span class="p">,</span> <span class="s2">&quot;ref_flux&quot;</span><span class="p">,</span> <span class="s2">&quot;dnde&quot;</span><span class="p">,</span> <span class="s2">&quot;dnde_ul&quot;</span><span class="p">,</span> <span class="s2">&quot;dnde_err&quot;</span><span class="p">,</span> <span class="s2">&quot;is_ul&quot;</span><span class="p">]</span>
-                <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flux_points_dataset</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="n">cols</span><span class="p">]))</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        analysis : `Analysis`</span>
+<span class="sd">            Analysis class</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">AnalysisConfig</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Analysis.from_template"><a class="viewcode-back" href="../../../api/gammapy.scripts.Analysis.html#gammapy.scripts.Analysis.from_template">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_template</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">template</span><span class="o">=</span><span class="s2">&quot;basic&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create Analysis from existing templates.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        template : {&quot;basic&quot;, &quot;1d&quot;, &quot;3d&quot;}</span>
+<span class="sd">            Build in templates.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        analysis : `Analysis`</span>
+<span class="sd">            Analysis class</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">CONFIG_PATH</span> <span class="o">/</span> <span class="n">ANALYSIS_TEMPLATES</span><span class="p">[</span><span class="n">template</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Analysis.get_datasets"><a class="viewcode-back" href="../../../api/gammapy.scripts.Analysis.html#gammapy.scripts.Analysis.get_datasets">[docs]</a>    <span class="k">def</span> <span class="nf">get_datasets</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Produce reduced datasets.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_reduction_settings</span><span class="p">():</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span><span class="s2">&quot;dataset-type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;SpectrumDatasetOnOff&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_spectrum_extraction</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span><span class="s2">&quot;dataset-type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;MapDataset&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_map_making</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># TODO raise error?</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Flux point estimation available only for 1D spectrum.&quot;</span><span class="p">)</span></div>
+            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Data reduction method not available.&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Analysis.get_flux_points"><a class="viewcode-back" href="../../../api/gammapy.scripts.Analysis.html#gammapy.scripts.Analysis.get_flux_points">[docs]</a>    <span class="k">def</span> <span class="nf">get_flux_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;source&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calculate flux points for a specific model component.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        source : string</span>
+<span class="sd">            Name of the model component where to calculate the flux points.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_fp_settings</span><span class="p">():</span>
+            <span class="c1"># TODO: add &quot;source&quot; to config</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Calculating flux points.&quot;</span><span class="p">)</span>
+
+            <span class="n">axis_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">][</span><span class="s2">&quot;fp_binning&quot;</span><span class="p">]</span>
+            <span class="n">e_edges</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_bounds</span><span class="p">(</span><span class="o">**</span><span class="n">axis_params</span><span class="p">)</span><span class="o">.</span><span class="n">edges</span>
+
+            <span class="n">flux_point_estimator</span> <span class="o">=</span> <span class="n">FluxPointsEstimator</span><span class="p">(</span>
+                <span class="n">e_edges</span><span class="o">=</span><span class="n">e_edges</span><span class="p">,</span> <span class="n">datasets</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">datasets</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">source</span>
+            <span class="p">)</span>
+            <span class="n">fp</span> <span class="o">=</span> <span class="n">flux_point_estimator</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+            <span class="n">fp</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;is_ul&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;ts&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">4</span>
+
+            <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">[</span><span class="n">source</span><span class="p">]</span><span class="o">.</span><span class="n">spectral_model</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">flux_points_dataset</span> <span class="o">=</span> <span class="n">FluxPointsDataset</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">fp</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
+            <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;e_ref&quot;</span><span class="p">,</span> <span class="s2">&quot;ref_flux&quot;</span><span class="p">,</span> <span class="s2">&quot;dnde&quot;</span><span class="p">,</span> <span class="s2">&quot;dnde_ul&quot;</span><span class="p">,</span> <span class="s2">&quot;dnde_err&quot;</span><span class="p">,</span> <span class="s2">&quot;is_ul&quot;</span><span class="p">]</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">flux_points_dataset</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="n">cols</span><span class="p">]))</span></div>
 
 <div class="viewcode-block" id="Analysis.get_observations"><a class="viewcode-back" href="../../../api/gammapy.scripts.Analysis.html#gammapy.scripts.Analysis.get_observations">[docs]</a>    <span class="k">def</span> <span class="nf">get_observations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Fetch observations from the data store according to criteria defined in the configuration.&quot;&quot;&quot;</span>
@@ -1143,87 +1193,102 @@
         <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">observations</span><span class="o">.</span><span class="n">list</span><span class="p">:</span>
             <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">obs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Analysis.reduce"><a class="viewcode-back" href="../../../api/gammapy.scripts.Analysis.html#gammapy.scripts.Analysis.reduce">[docs]</a>    <span class="k">def</span> <span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Produce reduced data sets.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_reduction_settings</span><span class="p">():</span>
-            <span class="k">return</span> <span class="kc">False</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span><span class="s2">&quot;data_reducer&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;1d&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_spectrum_extraction</span><span class="p">()</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span><span class="s2">&quot;data_reducer&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;3d&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_create_geometry</span><span class="p">()</span>
-            <span class="n">maker_params</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">if</span> <span class="s2">&quot;offset_max&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;geometry&quot;</span><span class="p">]:</span>
-                <span class="n">maker_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;offset_max&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;geometry&quot;</span><span class="p">][</span><span class="s2">&quot;offset_max&quot;</span><span class="p">]}</span>
-            <span class="n">maker</span> <span class="o">=</span> <span class="n">MapMaker</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="o">**</span><span class="n">maker_params</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">maps</span> <span class="o">=</span> <span class="n">maker</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">observations</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">images</span> <span class="o">=</span> <span class="n">maker</span><span class="o">.</span><span class="n">run_images</span><span class="p">()</span>
-            <span class="n">table_psf</span> <span class="o">=</span> <span class="n">make_mean_psf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">observations</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">center_skydir</span><span class="p">)</span>
-            <span class="n">psf_params</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">if</span> <span class="s2">&quot;psf_max_radius&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;geometry&quot;</span><span class="p">]:</span>
-                <span class="n">psf_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;max_radius&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;geometry&quot;</span><span class="p">][</span><span class="s2">&quot;psf_max_radius&quot;</span><span class="p">]}</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">psf_kernel</span> <span class="o">=</span> <span class="n">PSFKernel</span><span class="o">.</span><span class="n">from_table_psf</span><span class="p">(</span>
-                <span class="n">table_psf</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="o">**</span><span class="n">psf_params</span>
-            <span class="p">)</span>
-
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># TODO raise error?</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Data reduction method not available.&quot;</span><span class="p">)</span></div>
-
-    <span class="k">def</span> <span class="nf">_create_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_create_geometry</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Create the geometry.&quot;&quot;&quot;</span>
         <span class="c1"># TODO: handled in jsonschema validation class</span>
-        <span class="n">geom_params</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;geometry&quot;</span><span class="p">])</span>
-        <span class="n">e_reco</span><span class="p">,</span> <span class="n">e_true</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_energy_axes</span><span class="p">()</span>
-        <span class="n">geom_params</span><span class="p">[</span><span class="s2">&quot;axes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">geom_params</span><span class="p">[</span><span class="s2">&quot;axes&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e_reco</span><span class="p">)</span>
+        <span class="n">geom_params</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+        <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">axis_params</span> <span class="ow">in</span> <span class="n">geom_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;axes&quot;</span><span class="p">,</span> <span class="p">[]):</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_bounds</span><span class="p">(</span><span class="o">**</span><span class="n">axis_params</span><span class="p">)</span>
+            <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+
+        <span class="n">geom_params</span><span class="p">[</span><span class="s2">&quot;axes&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">axes</span>
         <span class="n">geom_params</span><span class="p">[</span><span class="s2">&quot;skydir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">geom_params</span><span class="p">[</span><span class="s2">&quot;skydir&quot;</span><span class="p">])</span>
-        <span class="k">if</span> <span class="s2">&quot;offset_max&quot;</span> <span class="ow">in</span> <span class="n">geom_params</span><span class="p">:</span>
-            <span class="k">del</span> <span class="n">geom_params</span><span class="p">[</span><span class="s2">&quot;offset_max&quot;</span><span class="p">]</span>
-        <span class="k">if</span> <span class="s2">&quot;psf_max_radius&quot;</span> <span class="ow">in</span> <span class="n">geom_params</span><span class="p">:</span>
-            <span class="k">del</span> <span class="n">geom_params</span><span class="p">[</span><span class="s2">&quot;psf_max_radius&quot;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">geom</span> <span class="o">=</span> <span class="n">WcsGeom</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="o">**</span><span class="n">geom_params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">WcsGeom</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="o">**</span><span class="n">geom_params</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_energy_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Builds energy axes from settings in geometry.&quot;&quot;&quot;</span>
-        <span class="c1"># TODO: e_reco/e_true handled in jsonschema validation class</span>
-        <span class="n">e_reco</span> <span class="o">=</span> <span class="n">e_true</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="s2">&quot;e_reco&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;geometry&quot;</span><span class="p">][</span><span class="s2">&quot;axes&quot;</span><span class="p">]:</span>
-            <span class="n">axis_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;geometry&quot;</span><span class="p">][</span><span class="s2">&quot;axes&quot;</span><span class="p">][</span><span class="s2">&quot;e_reco&quot;</span><span class="p">]</span>
-            <span class="n">e_reco</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_bounds</span><span class="p">(</span><span class="o">**</span><span class="n">axis_params</span><span class="p">)</span>
-        <span class="k">if</span> <span class="s2">&quot;e_true&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;geometry&quot;</span><span class="p">][</span><span class="s2">&quot;axes&quot;</span><span class="p">]:</span>
-            <span class="n">axis_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;geometry&quot;</span><span class="p">][</span><span class="s2">&quot;axes&quot;</span><span class="p">][</span><span class="s2">&quot;e_true&quot;</span><span class="p">]</span>
-            <span class="n">e_true</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_bounds</span><span class="p">(</span><span class="o">**</span><span class="n">axis_params</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">e_reco</span><span class="p">,</span> <span class="n">e_true</span>
+    <span class="k">def</span> <span class="nf">_map_making</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make maps and datasets for 3d analysis.&quot;&quot;&quot;</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Creating geometry.&quot;</span><span class="p">)</span>
+        <span class="n">geom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_geometry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span><span class="s2">&quot;geom&quot;</span><span class="p">])</span>
+        <span class="n">geom_irf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_geometry</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span><span class="s2">&quot;geom-irf&quot;</span><span class="p">])</span>
+        <span class="n">offset_max</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span><span class="s2">&quot;offset-max&quot;</span><span class="p">])</span>
+        <span class="n">stack_datasets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span><span class="s2">&quot;stack-datasets&quot;</span><span class="p">]</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Creating datasets.&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_fit_reduced_data_1d</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">optimize_opts</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Fit data to models as joint-likelihood with 1D spectrum.&quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">extraction</span><span class="o">.</span><span class="n">spectrum_observations</span><span class="p">:</span>
-            <span class="c1"># TODO: fit_range handled in jsonschema validation class</span>
-            <span class="k">if</span> <span class="s2">&quot;fit_range&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;fit&quot;</span><span class="p">]:</span>
-                <span class="n">e_min</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;fit&quot;</span><span class="p">][</span><span class="s2">&quot;fit_range&quot;</span><span class="p">][</span><span class="s2">&quot;min&quot;</span><span class="p">])</span>
-                <span class="n">e_max</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;fit&quot;</span><span class="p">][</span><span class="s2">&quot;fit_range&quot;</span><span class="p">][</span><span class="s2">&quot;max&quot;</span><span class="p">])</span>
-                <span class="n">obs</span><span class="o">.</span><span class="n">mask_fit</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">energy_mask</span><span class="p">(</span><span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span><span class="p">)</span>
-            <span class="n">obs</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
-        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Fitting spectra to model with joint likelihood.&quot;</span><span class="p">)</span>
-        <span class="n">fit</span> <span class="o">=</span> <span class="n">Fit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extraction</span><span class="o">.</span><span class="n">spectrum_observations</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fit_result</span> <span class="o">=</span> <span class="n">fit</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">optimize_opts</span><span class="o">=</span><span class="n">optimize_opts</span><span class="p">)</span>
-        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fit_result</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">stack_datasets</span><span class="p">:</span>
+            <span class="n">stacked</span> <span class="o">=</span> <span class="n">MapDataset</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">geom</span><span class="o">=</span><span class="n">geom</span><span class="p">,</span> <span class="n">geom_irf</span><span class="o">=</span><span class="n">geom_irf</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;stacked&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_read_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Read the model from settings.&quot;&quot;&quot;</span>
-        <span class="c1"># TODO: make reading for generic spatial and spectral models with multiple components</span>
-        <span class="c1"># use models = serialisation.io.dict_to_models() or models = SkyModels.from_yaml(filename)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span><span class="s2">&quot;data_reducer&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;1d&quot;</span><span class="p">:</span>
-            <span class="n">model_yaml</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">][</span><span class="s2">&quot;components&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;spectral&quot;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">observations</span><span class="p">:</span>
+                <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_dataset</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">geom_irf</span><span class="p">,</span> <span class="n">offset_max</span><span class="p">)</span>
+                <span class="n">stacked</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_extract_irf_kernels</span><span class="p">(</span><span class="n">stacked</span><span class="p">)</span>
+            <span class="n">datasets</span> <span class="o">=</span> <span class="p">[</span><span class="n">stacked</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="s2">&quot;Model reading available only for single component spectral model.&quot;</span>
-            <span class="p">)</span>
-            <span class="k">return</span> <span class="kc">False</span>
+            <span class="n">datasets</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">observations</span><span class="p">:</span>
+                <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_dataset</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">geom_irf</span><span class="p">,</span> <span class="n">offset_max</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_extract_irf_kernels</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+                <span class="n">datasets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span> <span class="o">=</span> <span class="n">Datasets</span><span class="p">(</span><span class="n">datasets</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_dataset</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">geom_irf</span><span class="p">,</span> <span class="n">offset_max</span><span class="p">):</span>
+        <span class="n">position</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">pointing_radec</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">offset_max</span>
+        <span class="n">geom_cutout</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">cutout</span><span class="p">(</span><span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">)</span>
+        <span class="n">geom_irf_cutout</span> <span class="o">=</span> <span class="n">geom_irf</span><span class="o">.</span><span class="n">cutout</span><span class="p">(</span><span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">)</span>
+
+        <span class="n">maker</span> <span class="o">=</span> <span class="n">MapMakerObs</span><span class="p">(</span>
+            <span class="n">observation</span><span class="o">=</span><span class="n">obs</span><span class="p">,</span>
+            <span class="n">geom</span><span class="o">=</span><span class="n">geom_cutout</span><span class="p">,</span>
+            <span class="n">geom_true</span><span class="o">=</span><span class="n">geom_irf_cutout</span><span class="p">,</span>
+            <span class="n">offset_max</span><span class="o">=</span><span class="n">offset_max</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">maker</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_extract_irf_kernels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+        <span class="c1"># TODO: remove hard-coded default value</span>
+        <span class="n">max_radius</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;psf-kernel-radius&quot;</span><span class="p">,</span> <span class="s2">&quot;0.5 deg&quot;</span><span class="p">)</span>
+
+        <span class="c1"># TODO: handle IRF maps in fit</span>
+        <span class="n">geom</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span>
+        <span class="n">geom_irf</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">geom</span>
+
+        <span class="n">position</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">center_skydir</span>
+        <span class="n">geom_psf</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span><span class="o">.</span><span class="n">to_cube</span><span class="p">(</span><span class="n">geom_irf</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span>
+        <span class="n">dataset</span><span class="o">.</span><span class="n">psf</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">psf</span><span class="o">.</span><span class="n">get_psf_kernel</span><span class="p">(</span>
+            <span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="n">geom_psf</span><span class="p">,</span> <span class="n">max_radius</span><span class="o">=</span><span class="n">max_radius</span>
+        <span class="p">)</span>
+
+        <span class="n">e_reco</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">edges</span>
+        <span class="n">dataset</span><span class="o">.</span><span class="n">edisp</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">get_energy_dispersion</span><span class="p">(</span>
+            <span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span> <span class="n">e_reco</span><span class="o">=</span><span class="n">e_reco</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="Analysis.get_model"><a class="viewcode-back" href="../../../api/gammapy.scripts.Analysis.html#gammapy.scripts.Analysis.get_model">[docs]</a>    <span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Read the model from settings.&quot;&quot;&quot;</span>
+        <span class="c1"># TODO: Deal with multiple components</span>
         <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Reading model.&quot;</span><span class="p">)</span>
-        <span class="n">model_class</span> <span class="o">=</span> <span class="n">SPECTRAL_MODELS</span><span class="p">[</span><span class="n">model_yaml</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model_class</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">model_yaml</span><span class="p">)</span>
-        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span>
+        <span class="n">model_yaml</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">])</span>
+        <span class="n">base_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">filename</span><span class="o">.</span><span class="n">parent</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">SkyModels</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="n">base_path</span> <span class="o">/</span> <span class="n">model_yaml</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">datasets</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">MapDataset</span><span class="p">):</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">skymodels</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;Can only fit a single spectral model at one time.&quot;</span>
+                    <span class="p">)</span>
+                <span class="n">dataset</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">skymodels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">spectral_model</span>
+
+        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">_set_logging</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set logging parameters for API.&quot;&quot;&quot;</span>
@@ -1234,16 +1299,17 @@
 
     <span class="k">def</span> <span class="nf">_spectrum_extraction</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Run all steps for the spectrum extraction.&quot;&quot;&quot;</span>
-        <span class="n">background</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span><span class="s2">&quot;background&quot;</span><span class="p">]</span>
-        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Reducing spectrum data sets.&quot;</span><span class="p">)</span>
-        <span class="n">on</span> <span class="o">=</span> <span class="n">background</span><span class="p">[</span><span class="s2">&quot;on_region&quot;</span><span class="p">]</span>
-        <span class="n">on_lon</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">on</span><span class="p">[</span><span class="s2">&quot;center&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
-        <span class="n">on_lat</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">on</span><span class="p">[</span><span class="s2">&quot;center&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
-        <span class="n">on_center</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">on_lon</span><span class="p">,</span> <span class="n">on_lat</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">on</span><span class="p">[</span><span class="s2">&quot;frame&quot;</span><span class="p">])</span>
-        <span class="n">on_region</span> <span class="o">=</span> <span class="n">CircleSkyRegion</span><span class="p">(</span><span class="n">on_center</span><span class="p">,</span> <span class="n">Angle</span><span class="p">(</span><span class="n">on</span><span class="p">[</span><span class="s2">&quot;radius&quot;</span><span class="p">]))</span>
+        <span class="n">region</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span><span class="s2">&quot;geom&quot;</span><span class="p">][</span><span class="s2">&quot;region&quot;</span><span class="p">]</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Reducing spectrum datasets.&quot;</span><span class="p">)</span>
+        <span class="n">on_lon</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">region</span><span class="p">[</span><span class="s2">&quot;center&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">on_lat</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">region</span><span class="p">[</span><span class="s2">&quot;center&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">on_center</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">on_lon</span><span class="p">,</span> <span class="n">on_lat</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">region</span><span class="p">[</span><span class="s2">&quot;frame&quot;</span><span class="p">])</span>
+        <span class="n">on_region</span> <span class="o">=</span> <span class="n">CircleSkyRegion</span><span class="p">(</span><span class="n">on_center</span><span class="p">,</span> <span class="n">Angle</span><span class="p">(</span><span class="n">region</span><span class="p">[</span><span class="s2">&quot;radius&quot;</span><span class="p">]))</span>
         <span class="n">background_params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;on_region&quot;</span><span class="p">:</span> <span class="n">on_region</span><span class="p">}</span>
 
-        <span class="k">if</span> <span class="s2">&quot;exclusion_mask&quot;</span> <span class="ow">in</span> <span class="n">background_params</span><span class="p">:</span>
+        <span class="n">background</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span><span class="s2">&quot;background&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="s2">&quot;exclusion_mask&quot;</span> <span class="ow">in</span> <span class="n">background</span><span class="p">:</span>
             <span class="n">map_hdu</span> <span class="o">=</span> <span class="p">{}</span>
             <span class="n">filename</span> <span class="o">=</span> <span class="n">background</span><span class="p">[</span><span class="s2">&quot;exclusion_mask&quot;</span><span class="p">][</span><span class="s2">&quot;filename&quot;</span><span class="p">]</span>
             <span class="k">if</span> <span class="s2">&quot;hdu&quot;</span> <span class="ow">in</span> <span class="n">background</span><span class="p">[</span><span class="s2">&quot;exclusion_mask&quot;</span><span class="p">]:</span>
@@ -1266,46 +1332,62 @@
             <span class="n">extraction_params</span><span class="p">[</span><span class="s2">&quot;containment_correction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span>
                 <span class="s2">&quot;containment_correction&quot;</span>
             <span class="p">]</span>
-        <span class="n">e_reco</span><span class="p">,</span> <span class="n">e_true</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_energy_axes</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">e_reco</span><span class="p">:</span>
-            <span class="n">extraction_params</span><span class="p">[</span><span class="s2">&quot;e_reco&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">e_reco</span><span class="o">.</span><span class="n">center</span>
-        <span class="k">if</span> <span class="n">e_true</span><span class="p">:</span>
-            <span class="n">extraction_params</span><span class="p">[</span><span class="s2">&quot;e_true&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">e_true</span><span class="o">.</span><span class="n">center</span>
+
+        <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span><span class="s2">&quot;geom&quot;</span><span class="p">][</span><span class="s2">&quot;axes&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">e_reco</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_bounds</span><span class="p">(</span><span class="o">**</span><span class="n">params</span><span class="p">)</span><span class="o">.</span><span class="n">edges</span>
+        <span class="n">extraction_params</span><span class="p">[</span><span class="s2">&quot;e_reco&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">e_reco</span>
+        <span class="n">extraction_params</span><span class="p">[</span><span class="s2">&quot;e_true&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">extraction</span> <span class="o">=</span> <span class="n">SpectrumExtraction</span><span class="p">(</span>
             <span class="n">observations</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">observations</span><span class="p">,</span>
             <span class="n">bkg_estimate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">background_estimator</span><span class="o">.</span><span class="n">result</span><span class="p">,</span>
             <span class="o">**</span><span class="n">extraction_params</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">extraction</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span> <span class="o">=</span> <span class="n">Datasets</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extraction</span><span class="o">.</span><span class="n">spectrum_observations</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_validate_fitting_settings_1d</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Validate settings before proceeding to fit.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span><span class="s2">&quot;stack-datasets&quot;</span><span class="p">]:</span>
+            <span class="n">stacked</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">stack_reduce</span><span class="p">()</span>
+            <span class="n">stacked</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;stacked&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span> <span class="o">=</span> <span class="n">Datasets</span><span class="p">([</span><span class="n">stacked</span><span class="p">])</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">extraction</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extraction</span><span class="o">.</span><span class="n">spectrum_observations</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_validate_fitting_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Validate settings before proceeding to fit 1D.&quot;&quot;&quot;</span>
+        <span class="n">valid</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">datasets</span><span class="p">:</span>
             <span class="k">if</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span><span class="s2">&quot;background&quot;</span><span class="p">][</span><span class="s2">&quot;background_estimator&quot;</span><span class="p">]</span>
-                <span class="o">==</span> <span class="s2">&quot;reflected&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">extraction</span>
+                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;reduction&quot;</span><span class="p">][</span><span class="s2">&quot;background&quot;</span><span class="p">][</span><span class="s2">&quot;background_estimator&quot;</span><span class="p">]</span>
+                <span class="o">!=</span> <span class="s2">&quot;reflected&quot;</span>
             <span class="p">):</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
-                <span class="k">return</span> <span class="kc">True</span>
-            <span class="k">else</span><span class="p">:</span>
                 <span class="c1"># TODO raise error?</span>
                 <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Background estimation only for reflected regions method.&quot;</span><span class="p">)</span>
                 <span class="k">return</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No spectrum observations extracted.&quot;</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No datasets reduced.&quot;</span><span class="p">)</span>
+            <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No model fetched for datasets.&quot;</span><span class="p">)</span>
+            <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">valid</span><span class="p">:</span>
             <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Fit cannot be done.&quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">valid</span>
 
     <span class="k">def</span> <span class="nf">_validate_fp_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Validate settings before proceeding to flux points estimation.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_result</span><span class="p">:</span>
+        <span class="n">valid</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
-            <span class="k">return</span> <span class="kc">True</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No results available from fit.&quot;</span><span class="p">)</span>
+            <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="s2">&quot;fp_binning&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">]:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;No values declared for the energy bins.&quot;</span><span class="p">)</span>
+            <span class="n">valid</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">valid</span><span class="p">:</span>
             <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Flux points calculation cannot be done.&quot;</span><span class="p">)</span>
-            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="n">valid</span>
 
     <span class="k">def</span> <span class="nf">_validate_reduction_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Validate settings before proceeding to data reduction.&quot;&quot;&quot;</span>
@@ -1318,7 +1400,7 @@
             <span class="k">return</span> <span class="kc">False</span></div>
 
 
-<div class="viewcode-block" id="Config"><a class="viewcode-back" href="../../../api/gammapy.scripts.Config.html#gammapy.scripts.Config">[docs]</a><span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
+<div class="viewcode-block" id="AnalysisConfig"><a class="viewcode-back" href="../../../api/gammapy.scripts.AnalysisConfig.html#gammapy.scripts.AnalysisConfig">[docs]</a><span class="k">class</span> <span class="nc">AnalysisConfig</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Analysis configuration.</span>
 
 <span class="sd">    Parameters</span>
@@ -1327,25 +1409,23 @@
 <span class="sd">        Configuration parameters</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">template</span><span class="o">=</span><span class="s2">&quot;basic&quot;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;config.yaml&quot;</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_user_settings</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_template</span> <span class="o">=</span> <span class="n">template</span>
-        <span class="k">if</span> <span class="n">template</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_implemented_templates</span><span class="p">:</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Template </span><span class="si">{template}</span><span class="s2"> not implemented.&quot;</span><span class="p">)</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Fetching basic template settings.&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_template</span> <span class="o">=</span> <span class="s2">&quot;basic&quot;</span>
-        <span class="c1"># fill with default values</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">settings</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_default_settings</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">)</span>
         <span class="c1"># add user settings</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_settings</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span>
 
     <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Display settings in pretty YAML format.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">)</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n\n\t</span><span class="s2">&quot;</span>
 
-<div class="viewcode-block" id="Config.dump"><a class="viewcode-back" href="../../../api/gammapy.scripts.Config.html#gammapy.scripts.Config.dump">[docs]</a>    <span class="k">def</span> <span class="nf">dump</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;config.yaml&quot;</span><span class="p">):</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="se">\n\t</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">info</span> <span class="o">+=</span> <span class="n">data</span>
+        <span class="k">return</span> <span class="n">info</span><span class="o">.</span><span class="n">expandtabs</span><span class="p">(</span><span class="n">tabsize</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AnalysisConfig.to_yaml"><a class="viewcode-back" href="../../../api/gammapy.scripts.AnalysisConfig.html#gammapy.scripts.AnalysisConfig.to_yaml">[docs]</a>    <span class="k">def</span> <span class="nf">to_yaml</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Serialize config into a yaml formatted file.</span>
 
 <span class="sd">        Parameters</span>
@@ -1353,26 +1433,37 @@
 <span class="sd">        filename : str, Path</span>
 <span class="sd">            Configuration settings filename</span>
 <span class="sd">            Default config.yaml</span>
+<span class="sd">        overwrite : bool</span>
+<span class="sd">            Whether to overwrite an existing file.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filename</span>
 
-        <span class="n">settings_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-        <span class="n">doc_dic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_doc_sections</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">section</span> <span class="ow">in</span> <span class="n">doc_dic</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">section</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">:</span>
-                <span class="n">settings_str</span> <span class="o">+=</span> <span class="n">doc_dic</span><span class="p">[</span><span class="n">section</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
-                <span class="n">settings_str</span> <span class="o">+=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">({</span><span class="n">section</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="n">section</span><span class="p">]})</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
         <span class="n">filename</span> <span class="o">=</span> <span class="n">make_path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
         <span class="n">path_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">[</span><span class="s2">&quot;general&quot;</span><span class="p">][</span><span class="s2">&quot;outdir&quot;</span><span class="p">])</span> <span class="o">/</span> <span class="n">filename</span>
-        <span class="n">path_file</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">settings_str</span><span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">path_file</span>
 
-<div class="viewcode-block" id="Config.print_help"><a class="viewcode-back" href="../../../api/gammapy.scripts.Config.html#gammapy.scripts.Config.print_help">[docs]</a>    <span class="k">def</span> <span class="nf">print_help</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">path_file</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">overwrite</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;File </span><span class="si">{filename}</span><span class="s2"> already exists.&quot;</span><span class="p">)</span>
+
+        <span class="n">path_file</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="n">yaml</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s2">&quot;Configuration settings saved into </span><span class="si">{path_file}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AnalysisConfig.from_yaml"><a class="viewcode-back" href="../../../api/gammapy.scripts.AnalysisConfig.html#gammapy.scripts.AnalysisConfig.from_yaml">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_yaml</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Read config from filename&quot;&quot;&quot;</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">make_path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">read_yaml</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="AnalysisConfig.print_help"><a class="viewcode-back" href="../../../api/gammapy.scripts.AnalysisConfig.html#gammapy.scripts.AnalysisConfig.print_help">[docs]</a>    <span class="k">def</span> <span class="nf">print_help</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">section</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Print template configuration settings.&quot;&quot;&quot;</span>
         <span class="n">doc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_doc_sections</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">keyword</span> <span class="ow">in</span> <span class="n">doc</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">section</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span> <span class="ow">or</span> <span class="n">section</span> <span class="o">==</span> <span class="n">keyword</span><span class="p">:</span>
                 <span class="nb">print</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="n">keyword</span><span class="p">])</span></div>
 
-<div class="viewcode-block" id="Config.update_settings"><a class="viewcode-back" href="../../../api/gammapy.scripts.Config.html#gammapy.scripts.Config.update_settings">[docs]</a>    <span class="k">def</span> <span class="nf">update_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">configfile</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="AnalysisConfig.update_settings"><a class="viewcode-back" href="../../../api/gammapy.scripts.AnalysisConfig.html#gammapy.scripts.AnalysisConfig.update_settings">[docs]</a>    <span class="k">def</span> <span class="nf">update_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">configfile</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Update settings with config dictionary or values in configfile&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">configfile</span><span class="p">:</span>
             <span class="n">filename</span> <span class="o">=</span> <span class="n">make_path</span><span class="p">(</span><span class="n">configfile</span><span class="p">)</span>
@@ -1380,21 +1471,25 @@
         <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">config</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_user_settings</span> <span class="o">=</span> <span class="n">config</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_update_settings</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_user_settings</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_user_settings</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_settings</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="Config.validate"><a class="viewcode-back" href="../../../api/gammapy.scripts.Config.html#gammapy.scripts.Config.validate">[docs]</a>    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="AnalysisConfig.validate"><a class="viewcode-back" href="../../../api/gammapy.scripts.AnalysisConfig.html#gammapy.scripts.AnalysisConfig.validate">[docs]</a>    <span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Validate and/or fill initial config parameters against schema.&quot;&quot;&quot;</span>
-        <span class="n">validator</span> <span class="o">=</span> <span class="n">_gp_defaults</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_template</span><span class="p">]</span>
-        <span class="n">jsonschema</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">,</span> <span class="n">read_yaml</span><span class="p">(</span><span class="n">SCHEMA_FILE</span><span class="p">),</span> <span class="n">validator</span><span class="p">)</span></div>
+        <span class="n">validator</span> <span class="o">=</span> <span class="n">_gp_units_validator</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">jsonschema</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">,</span> <span class="n">read_yaml</span><span class="p">(</span><span class="n">SCHEMA_FILE</span><span class="p">),</span> <span class="n">validator</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">jsonschema</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">ValidationError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error when validating configuration parameters against schema.&quot;</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">ex</span><span class="o">.</span><span class="n">message</span><span class="p">)</span></div>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_get_doc_sections</span><span class="p">():</span>
         <span class="sd">&quot;&quot;&quot;Returns dict with commented docs from schema&quot;&quot;&quot;</span>
         <span class="n">doc</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">SCHEMA_FILE</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">line</span><span class="p">:</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">),</span> <span class="n">f</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">line</span><span class="p">:</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;# &quot;</span><span class="p">),</span> <span class="n">f</span><span class="p">):</span>
                 <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;# Block: &quot;</span><span class="p">):</span>
                     <span class="n">keyword</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;# Block: &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
@@ -1411,47 +1506,18 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_update_settings</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">target</span><span class="p">[</span><span class="n">key</span><span class="p">])</span></div>
 
 
-<span class="k">def</span> <span class="nf">extend_with_default</span><span class="p">(</span><span class="n">validator_class</span><span class="p">,</span> <span class="n">template</span><span class="p">):</span>
-    <span class="n">validate_properties</span> <span class="o">=</span> <span class="n">validator_class</span><span class="o">.</span><span class="n">VALIDATORS</span><span class="p">[</span><span class="s2">&quot;properties&quot;</span><span class="p">]</span>
-    <span class="n">reserved</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="s2">&quot;default&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;const&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;readOnly&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;items&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;uniqueItems&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;definitions&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;properties&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;patternProperties&quot;</span><span class="p">,</span>
-    <span class="p">]</span>
-    <span class="n">default_field</span> <span class="o">=</span> <span class="n">f</span><span class="s2">&quot;default_</span><span class="si">{template}</span><span class="s2">&quot;</span>
-
-    <span class="k">def</span> <span class="nf">set_defaults</span><span class="p">(</span><span class="n">validator</span><span class="p">,</span> <span class="n">properties</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">schema</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">prop</span><span class="p">,</span> <span class="n">sub_schema</span> <span class="ow">in</span> <span class="n">properties</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">prop</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">reserved</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">default_field</span> <span class="ow">in</span> <span class="n">sub_schema</span><span class="p">:</span>
-                    <span class="n">instance</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="n">sub_schema</span><span class="p">[</span><span class="n">default_field</span><span class="p">])</span>
-        <span class="k">yield from</span> <span class="n">validate_properties</span><span class="p">(</span><span class="n">validator</span><span class="p">,</span> <span class="n">properties</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">schema</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">jsonschema</span><span class="o">.</span><span class="n">validators</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">validator_class</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="n">set_defaults</span><span class="p">})</span>
+<span class="k">def</span> <span class="nf">is_quantity</span><span class="p">(</span><span class="n">instance</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
 
 
 <span class="k">def</span> <span class="nf">_astropy_quantity</span><span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">instance</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Check a number may also be an astropy quantity.&quot;&quot;&quot;</span>
-    <span class="n">quantity</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">quantity</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="n">value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">unit</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">:])</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="n">unit</span><span class="p">)</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">physical_type</span> <span class="o">!=</span> <span class="s2">&quot;dimensionless&quot;</span>
-        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> is not a valid astropy quantity.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">instance</span><span class="p">)))</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Not a valid astropy quantity.&quot;</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">number</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-            <span class="n">number</span> <span class="o">=</span> <span class="n">instance</span>
-        <span class="k">return</span> <span class="n">jsonschema</span><span class="o">.</span><span class="n">Draft7Validator</span><span class="o">.</span><span class="n">TYPE_CHECKER</span><span class="o">.</span><span class="n">is_type</span><span class="p">(</span><span class="n">number</span><span class="p">,</span> <span class="s2">&quot;number&quot;</span><span class="p">)</span>
+    <span class="n">is_number</span> <span class="o">=</span> <span class="n">jsonschema</span><span class="o">.</span><span class="n">Draft7Validator</span><span class="o">.</span><span class="n">TYPE_CHECKER</span><span class="o">.</span><span class="n">is_type</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="s2">&quot;number&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">is_number</span> <span class="ow">or</span> <span class="n">is_quantity</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span>
 
 
 <span class="n">_type_checker</span> <span class="o">=</span> <span class="n">jsonschema</span><span class="o">.</span><span class="n">Draft7Validator</span><span class="o">.</span><span class="n">TYPE_CHECKER</span><span class="o">.</span><span class="n">redefine</span><span class="p">(</span>
@@ -1460,13 +1526,6 @@
 <span class="n">_gp_units_validator</span> <span class="o">=</span> <span class="n">jsonschema</span><span class="o">.</span><span class="n">validators</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
     <span class="n">jsonschema</span><span class="o">.</span><span class="n">Draft7Validator</span><span class="p">,</span> <span class="n">type_checker</span><span class="o">=</span><span class="n">_type_checker</span>
 <span class="p">)</span>
-<span class="n">_gp_defaults</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;1d&quot;</span><span class="p">:</span> <span class="n">extend_with_default</span><span class="p">(</span><span class="n">_gp_units_validator</span><span class="p">,</span> <span class="n">template</span><span class="o">=</span><span class="s2">&quot;1d&quot;</span><span class="p">),</span>
-    <span class="s2">&quot;3d&quot;</span><span class="p">:</span> <span class="n">extend_with_default</span><span class="p">(</span><span class="n">_gp_units_validator</span><span class="p">,</span> <span class="n">template</span><span class="o">=</span><span class="s2">&quot;3d&quot;</span><span class="p">),</span>
-    <span class="s2">&quot;all&quot;</span><span class="p">:</span> <span class="n">extend_with_default</span><span class="p">(</span><span class="n">_gp_units_validator</span><span class="p">,</span> <span class="n">template</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">),</span>
-    <span class="s2">&quot;basic&quot;</span><span class="p">:</span> <span class="n">extend_with_default</span><span class="p">(</span><span class="n">_gp_units_validator</span><span class="p">,</span> <span class="n">template</span><span class="o">=</span><span class="s2">&quot;basic&quot;</span><span class="p">),</span>
-<span class="p">}</span>
-<span class="n">_implemented_templates</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;1d&quot;</span><span class="p">,</span> <span class="s2">&quot;3d&quot;</span><span class="p">,</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span> <span class="s2">&quot;basic&quot;</span><span class="p">]</span>
 </pre></div>
 
            </div>
@@ -1481,7 +1540,7 @@
     <p>
         &copy; Copyright 2019, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 20 Sep 2019.
+        Last updated on 27 Sep 2019.
       </span>
 
     </p>

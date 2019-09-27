@@ -54,9 +54,11 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 from gammapy.irf import load_cta_irfs
 from gammapy.maps import WcsGeom, MapAxis
-from gammapy.modeling.models import ExponentialCutoffPowerLaw
-from gammapy.modeling.models import SkyGaussian
-from gammapy.modeling.models import SkyModel
+from gammapy.modeling.models import (
+    ExpCutoffPowerLawSpectralModel,
+    GaussianSpatialModel,
+    SkyModel,
+)
 from gammapy.cube.simulate import simulate_dataset
 from gammapy.modeling import Fit
 from gammapy.modeling.sampling import (
@@ -91,9 +93,11 @@ irfs = load_cta_irfs(
 
 
 # Define sky model to simulate the data
-spatial_model = SkyGaussian(lon_0="0 deg", lat_0="0 deg", sigma="0.2 deg")
+spatial_model = GaussianSpatialModel(
+    lon_0="0 deg", lat_0="0 deg", sigma="0.2 deg", frame="galactic"
+)
 
-spectral_model = ExponentialCutoffPowerLaw(
+spectral_model = ExpCutoffPowerLawSpectralModel(
     index=2,
     amplitude="3e-12 cm-2 s-1 TeV-1",
     reference="1 TeV",

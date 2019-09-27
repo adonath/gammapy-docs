@@ -26,9 +26,9 @@
 # To perform the joint fit:
 # 
 # * [gammapy.spectrum.SpectrumDatasetOnOff](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDatasetOnOff.html)
-# * [gammapy.modeling.models.PowerLaw](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLaw.html)
-# * [gammapy.modeling.models.ExponentialCutoffPowerLaw](https://docs.gammapy.org/dev/api/gammapy.modeling.models.ExponentialCutoffPowerLaw.html)
-# * [gammapy.modeling.models.LogParabola](https://docs.gammapy.org/dev/api/gammapy.modeling.models.LogParabola.html)
+# * [gammapy.modeling.models.PowerLawSpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLawSpectralModel.html)
+# * [gammapy.modeling.models.ExpCutoffPowerLawSpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.ExpCutoffPowerLawSpectralModel.html)
+# * [gammapy.modeling.models.LogParabolaSpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.LogParabolaSpectralModel.html)
 # 
 # To compute flux points (a.k.a. "SED" = "spectral energy distribution")
 # 
@@ -72,7 +72,7 @@ from regions import CircleSkyRegion
 from gammapy.maps import Map
 from gammapy.modeling import Fit, Datasets
 from gammapy.data import ObservationStats, ObservationSummary, DataStore
-from gammapy.modeling.models import PowerLaw, create_crab_spectral_model
+from gammapy.modeling.models import PowerLawSpectralModel, create_crab_spectral_model
 from gammapy.spectrum import (
     SpectrumExtraction,
     FluxPointsEstimator,
@@ -255,7 +255,7 @@ extraction.spectrum_observations[0].peek()
 # In[ ]:
 
 
-model = PowerLaw(
+model = PowerLawSpectralModel(
     index=2, amplitude=2e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV
 )
 
@@ -413,7 +413,7 @@ plt.legend()
 # 
 # Now you have learned the basics of a spectral analysis with Gammapy. To practice you can continue with the following exercises:
 # 
-# - Fit a different spectral model to the data. You could try e.g. an `ExponentialCutoffPowerLaw` or `LogParabola` model.
+# - Fit a different spectral model to the data. You could try e.g. an `ExpCutoffPowerLawSpectralModel` or `LogParabolaSpectralModel` model.
 # - Compute flux points for the stacked dataset.
 # - Create a `FluxPointsDataset` with the flux points you have computed for the stacked dataset and fit the flux points again with obe of the spectral models. How does the result compare to the best fit model, that was directly fitted to the counts data?
 

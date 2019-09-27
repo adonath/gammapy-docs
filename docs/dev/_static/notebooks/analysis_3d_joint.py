@@ -8,7 +8,6 @@
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
-from matplotlib.patches import Circle
 import numpy as np
 
 
@@ -28,9 +27,12 @@ from gammapy.data import DataStore
 from gammapy.irf import EnergyDispersion, make_psf
 from gammapy.maps import WcsGeom, MapAxis, Map
 from gammapy.cube import MapMaker, PSFKernel, MapDataset
-from gammapy.modeling.models import SkyModel, BackgroundModel
-from gammapy.modeling.models import PowerLaw
-from gammapy.modeling.models import SkyPointSource
+from gammapy.modeling.models import (
+    SkyModel,
+    BackgroundModel,
+    PowerLawSpectralModel,
+    PointSpatialModel,
+)
 from gammapy.modeling import Fit
 
 
@@ -142,8 +144,10 @@ for obs_id in obs_ids:
 # In[ ]:
 
 
-spatial_model = SkyPointSource(lon_0="-0.05 deg", lat_0="-0.05 deg")
-spectral_model = PowerLaw(
+spatial_model = PointSpatialModel(
+    lon_0="-0.05 deg", lat_0="-0.05 deg", frame="galactic"
+)
+spectral_model = PowerLawSpectralModel(
     index=2.4, amplitude="2.7e-12 cm-2 s-1 TeV-1", reference="1 TeV"
 )
 model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
@@ -278,4 +282,10 @@ for dataset in datasets:
 residuals_stacked.sum_over_axes().smooth("0.1 deg").plot(
     vmin=-1, vmax=1, cmap="coolwarm", add_cbar=True, stretch="linear"
 );
+
+
+# In[ ]:
+
+
+
 

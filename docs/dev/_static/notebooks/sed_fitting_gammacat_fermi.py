@@ -21,9 +21,9 @@
 # 
 # And the following spectral model classes:
 # 
-# - [PowerLaw](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLaw.html)
-# - [ExponentialCutoffPowerLaw](https://docs.gammapy.org/dev/api/gammapy.modeling.models.ExponentialCutoffPowerLaw.html)
-# - [LogParabola](https://docs.gammapy.org/dev/api/gammapy.modeling.models.LogParabola.html)
+# - [PowerLawSpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLawSpectralModel.html)
+# - [ExpCutoffPowerLawSpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.ExpCutoffPowerLawSpectralModel.html)
+# - [LogParabolaSpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.LogParabolaSpectralModel.html)
 
 # ## Setup
 # 
@@ -42,9 +42,9 @@ import matplotlib.pyplot as plt
 
 from astropy import units as u
 from gammapy.modeling.models import (
-    PowerLaw,
-    ExponentialCutoffPowerLaw,
-    LogParabola,
+    PowerLawSpectralModel,
+    ExpCutoffPowerLawSpectralModel,
+    LogParabolaSpectralModel,
 )
 from gammapy.spectrum import FluxPointsDataset, FluxPoints
 from gammapy.catalog import (
@@ -113,12 +113,12 @@ flux_points = flux_points.drop_ul()
 
 # ## Power Law Fit
 # 
-# First we start with fitting a simple [power law](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLaw.html).
+# First we start with fitting a simple [power law](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLawSpectralModel.html).
 
 # In[ ]:
 
 
-pwl = PowerLaw(index=2, amplitude="1e-12 cm-2 s-1 TeV-1", reference="1 TeV")
+pwl = PowerLawSpectralModel(index=2, amplitude="1e-12 cm-2 s-1 TeV-1", reference="1 TeV")
 
 
 # After creating the model we run the fit by passing the `'flux_points'` and `'pwl'` objects:
@@ -162,12 +162,12 @@ ax.set_ylim(1e-13, 1e-11);
 
 # ## Exponential Cut-Off Powerlaw Fit
 # 
-# Next we fit an [exponential cut-off power](https://docs.gammapy.org/dev/api/gammapy.modeling.models.ExponentialCutoffPowerLaw.html) law to the data.
+# Next we fit an [exponential cut-off power](https://docs.gammapy.org/dev/api/gammapy.modeling.models.ExpCutoffPowerLawSpectralModel.html) law to the data.
 
 # In[ ]:
 
 
-ecpl = ExponentialCutoffPowerLaw(
+ecpl = ExpCutoffPowerLawSpectralModel(
     index=1.8,
     amplitude="2e-12 cm-2 s-1 TeV-1",
     reference="1 TeV",
@@ -203,12 +203,12 @@ ax.set_ylim(1e-13, 1e-11)
 
 # ## Log-Parabola Fit
 # 
-# Finally we try to fit a [log-parabola](https://docs.gammapy.org/dev/api/gammapy.modeling.models.LogParabola.html) model:
+# Finally we try to fit a [log-parabola](https://docs.gammapy.org/dev/api/gammapy.modeling.models.LogParabolaSpectralModel.html) model:
 
 # In[ ]:
 
 
-log_parabola = LogParabola(
+log_parabola = LogParabolaSpectralModel(
     alpha=2, amplitude="1e-12 cm-2 s-1 TeV-1", reference="1 TeV", beta=0.1
 )
 
@@ -241,8 +241,8 @@ ax.set_ylim(1e-13, 1e-11);
 
 # ## Exercises
 # 
-# - Fit a `PowerLaw2` and `ExponentialCutoffPowerLaw3FGL` to the same data.
-# - Fit a `ExponentialCutoffPowerLaw` model to Vela X ('HESS J0835-455') only and check if the best fit values correspond to the values given in the Gammacat catalog
+# - Fit a `PowerLaw2SpectralModel` and `ExpCutoffPowerLaw3FGLSpectralModel` to the same data.
+# - Fit a `ExpCutoffPowerLawSpectralModel` model to Vela X ('HESS J0835-455') only and check if the best fit values correspond to the values given in the Gammacat catalog
 
 # ## What next?
 # 
