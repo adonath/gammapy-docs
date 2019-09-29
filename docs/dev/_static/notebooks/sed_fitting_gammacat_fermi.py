@@ -118,7 +118,9 @@ flux_points = flux_points.drop_ul()
 # In[ ]:
 
 
-pwl = PowerLawSpectralModel(index=2, amplitude="1e-12 cm-2 s-1 TeV-1", reference="1 TeV")
+pwl = PowerLawSpectralModel(
+    index=2, amplitude="1e-12 cm-2 s-1 TeV-1", reference="1 TeV"
+)
 
 
 # After creating the model we run the fit by passing the `'flux_points'` and `'pwl'` objects:

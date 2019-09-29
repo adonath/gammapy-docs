@@ -32,8 +32,19 @@ from gammapy.detect import compute_lima_on_off_image
 from gammapy.data import DataStore
 from gammapy.irf import make_mean_psf
 from gammapy.maps import Map, MapAxis, WcsGeom
-from gammapy.cube import MapMaker, PSFKernel, MapDataset, MapMakerRing, RingBackgroundEstimator
-from gammapy.modeling.models import SkyModel, BackgroundModel, PowerLaw2SpectralModel, PointSpatialModel
+from gammapy.cube import (
+    MapMaker,
+    PSFKernel,
+    MapDataset,
+    MapMakerRing,
+    RingBackgroundEstimator,
+)
+from gammapy.modeling.models import (
+    SkyModel,
+    BackgroundModel,
+    PowerLaw2SpectralModel,
+    PointSpatialModel,
+)
 from gammapy.modeling import Fit
 
 
@@ -193,10 +204,7 @@ result.parameters.covariance_to_table()
 
 geom_image = geom.to_image()
 
-regions = CircleSkyRegion(
-    center=spatial_model.position,
-    radius=0.3 * u.deg
-)
+regions = CircleSkyRegion(center=spatial_model.position, radius=0.3 * u.deg)
 
 exclusion_mask = Map.from_geom(geom_image)
 exclusion_mask.data = geom_image.region_mask([regions], inside=False)

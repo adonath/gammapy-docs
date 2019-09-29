@@ -72,7 +72,10 @@ from regions import CircleSkyRegion
 from gammapy.maps import Map
 from gammapy.modeling import Fit, Datasets
 from gammapy.data import ObservationStats, ObservationSummary, DataStore
-from gammapy.modeling.models import PowerLawSpectralModel, create_crab_spectral_model
+from gammapy.modeling.models import (
+    PowerLawSpectralModel,
+    create_crab_spectral_model,
+)
 from gammapy.spectrum import (
     SpectrumExtraction,
     FluxPointsEstimator,

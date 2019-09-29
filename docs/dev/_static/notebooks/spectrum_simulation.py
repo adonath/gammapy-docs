@@ -10,7 +10,6 @@
 # We will use the following classes:
 # 
 # * [gammapy.spectrum.SpectrumDatasetOnOff](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDatasetOnOff.html)
-# * [gammapy.spectrum.SpectrumEvaluator](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumEvaluator.html)
 # * [gammapy.spectrum.SpectrumDataset](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDataset.html)
 # * [gammapy.irf.load_cta_irfs](https://docs.gammapy.org/dev/api/gammapy.irf.load_cta_irfs.html)
 # * [gammapy.modeling.models.PowerLawSpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLawSpectralModel.html)
@@ -33,7 +32,7 @@ import numpy as np
 import astropy.units as u
 from gammapy.spectrum import (
     SpectrumDatasetOnOff,
-    SpectrumEvaluator,
+    CountsSpectrum,
     SpectrumDataset,
 )
 from gammapy.modeling import Fit, Parameter
@@ -43,7 +42,7 @@ from gammapy.irf import load_cta_irfs
 
 # ## Simulation of a single spectrum
 # 
-# To do a simulation, we need to define the observational parameters like the livetime, the offset, the energy range to perform the simulation for and the choice of spectral model. This will then be convolved with the IRFs, and Poission fluctuated, to get the simulated counts for each observation.  
+# To do a simulation, we need to define the observational parameters like the livetime, the offset, the assumed integration radius, the energy range to perform the simulation for and the choice of spectral model. This will then be convolved with the IRFs, and Poission fluctuated, to get the simulated counts for each observation.  
 
 # In[ ]:
 
@@ -51,8 +50,11 @@ from gammapy.irf import load_cta_irfs
 # Define simulation parameters parameters
 livetime = 1 * u.h
 offset = 0.5 * u.deg
+integration_radius = 0.1 * u.deg
 # Energy from 0.1 to 100 TeV with 10 bins/decade
 energy = np.logspace(-1, 2, 31) * u.TeV
+
+solid_angle = 2 * np.pi * (1 - np.cos(integration_radius)) * u.sr
 
 
 # In[ ]:
@@ -134,19 +136,22 @@ dataset.counts.plot()
 
 # ## Include Background 
 # 
-# In this section we will include a background component. Furthermore, we will also simulate more than one observation and fit each one individually in order to get average fit results.
+# In this section we will include a background component extracted from the IRF. Furthermore, we will also simulate more than one observation and fit each one individually in order to get average fit results.
 
 # In[ ]:
 
 
 # We assume a PowerLawSpectralModel shape of the background as well
-bkg_model = PowerLawSpectralModel(
-    index=2.5, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV
+bkg_data = (
+    cta_irf["bkg"].evaluate_integrate(
+        fov_lon=0 * u.deg, fov_lat=offset, energy_reco=energy
+    )
+    * solid_angle
+    * livetime
 )
-
-evaluator = SpectrumEvaluator(model=bkg_model, aeff=aeff, livetime=livetime)
-
-npred_bkg = evaluator.compute_npred()
+bkg = CountsSpectrum(
+    energy[:-1], energy[1:], data=bkg_data.to_value(""), unit=""
+)
 
 
 # In[ ]:
@@ -165,7 +170,7 @@ dataset = SpectrumDatasetOnOff(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '# Now simulate 30 indepenent spectra using the same set of observation conditions.\nn_obs = 100\nseeds = np.arange(n_obs)\n\ndatasets = []\n\nfor idx in range(n_obs):\n    dataset.fake(random_state=idx, background_model=npred_bkg)\n    datasets.append(dataset.copy())')
+get_ipython().run_cell_magic('time', '', '# Now simulate 30 indepenent spectra using the same set of observation conditions.\nn_obs = 100\nseeds = np.arange(n_obs)\n\ndatasets = []\n\nfor idx in range(n_obs):\n    dataset.fake(random_state=idx, background_model=bkg)\n    datasets.append(dataset.copy())')
 
 
 # Before moving on to the fit let's have a look at the simulated observations.
