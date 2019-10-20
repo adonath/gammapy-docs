@@ -285,7 +285,9 @@ get_ipython().system('cat model-best-fit.yaml')
 # In[ ]:
 
 
-analysis.datasets["stacked"].plot_residuals(method="diff/sqrt(model)", vmin=-0.5, vmax=0.5);
+analysis.datasets["stacked"].plot_residuals(
+    method="diff/sqrt(model)", vmin=-0.5, vmax=0.5
+);
 
 
 # In addition we can aslo specify a region in the map to show the spectral residuals:
@@ -293,13 +295,17 @@ analysis.datasets["stacked"].plot_residuals(method="diff/sqrt(model)", vmin=-0.5
 # In[ ]:
 
 
-region = CircleSkyRegion(center=SkyCoord("83.63 deg", "22.14 deg"), radius=0.5 * u.deg)
+region = CircleSkyRegion(
+    center=SkyCoord("83.63 deg", "22.14 deg"), radius=0.5 * u.deg
+)
 
 
 # In[ ]:
 
 
-analysis.datasets["stacked"].plot_residuals(region=region, method="diff/sqrt(model)", vmin=-0.5, vmax=0.5);
+analysis.datasets["stacked"].plot_residuals(
+    region=region, method="diff/sqrt(model)", vmin=-0.5, vmax=0.5
+);
 
 
 # We can also directly access the `.residuals()` to get a map, that we can plot interactively:
@@ -308,7 +314,9 @@ analysis.datasets["stacked"].plot_residuals(region=region, method="diff/sqrt(mod
 
 
 residuals = analysis.datasets["stacked"].residuals(method="diff")
-residuals.smooth("0.08 deg").plot_interactive(cmap="coolwarm", vmin=-0.1, vmax=0.1, stretch="linear", add_cbar=True)
+residuals.smooth("0.08 deg").plot_interactive(
+    cmap="coolwarm", vmin=-0.1, vmax=0.1, stretch="linear", add_cbar=True
+)
 
 
 # ### Inspecting likelihood profiles
@@ -346,7 +354,12 @@ analysis.get_flux_points(source="crab")
 plt.figure(figsize=(8, 5))
 ax_sed, ax_residuals = analysis.flux_points.peek()
 crab_spectrum = create_crab_spectral_model("hess_pl")
-crab_spectrum.plot(ax=ax_sed, energy_range=[1, 10] * u.TeV, energy_power=2, flux_unit="erg-1 cm-2 s-1")
+crab_spectrum.plot(
+    ax=ax_sed,
+    energy_range=[1, 10] * u.TeV,
+    energy_power=2,
+    flux_unit="erg-1 cm-2 s-1",
+)
 
 
 # ## Exercises

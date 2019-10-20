@@ -318,7 +318,7 @@ path = (
     Path(os.environ["GAMMAPY_DATA"])
     / "hess-dl3-dr1/hess-dl3-dr3-with-background.fits.gz"
 )
-hdu_list.writeto(str(path), overwrite=True)
+hdu_list.writeto(path, overwrite=True)
 
 
 # In[ ]:

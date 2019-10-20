@@ -38,7 +38,7 @@ import matplotlib.pyplot as plt
 
 from gammapy.maps import Map
 from gammapy.detect import TSMapEstimator, find_peaks
-from gammapy.catalog import source_catalogs
+from gammapy.catalog import SOURCE_CATALOGS
 from gammapy.cube import PSFKernel
 
 
@@ -141,7 +141,7 @@ ax.scatter(
 # In[ ]:
 
 
-fermi_3fhl = source_catalogs["3fhl"]
+fermi_3fhl = SOURCE_CATALOGS["3fhl"]()
 
 
 # In[ ]:

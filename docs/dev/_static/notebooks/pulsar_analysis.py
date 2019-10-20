@@ -29,7 +29,6 @@ from astropy.coordinates import SkyCoord
 import astropy.units as u
 
 from gammapy.maps import Map, WcsGeom
-from gammapy.cube import fill_map_counts
 from gammapy.data import DataStore
 from gammapy.modeling.models import PowerLawSpectralModel
 from gammapy.modeling import Fit, Datasets
@@ -225,8 +224,8 @@ events_vela_off = events_vela.select_parameter("PHASE", off_phase_range)
 # In[ ]:
 
 
-fill_map_counts(on_map, events_vela_on)
-fill_map_counts(off_map, events_vela_off)
+on_map.fill_events(events_vela_on)
+off_map.fill_events(events_vela_off)
 
 # Defining alpha as the ratio of the ON and OFF phase zones
 alpha = (on_phase_range[1] - on_phase_range[0]) / (

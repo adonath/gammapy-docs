@@ -106,7 +106,7 @@ What checks and conversions should I do for inputs?
 ---------------------------------------------------
 
 In Gammapy we assume that
-`"we're all consenting adults" <https://mail.python.org/pipermail/tutor/2003-October/025932.html>`_,
+`"we're all consenting adults" <https://mail.python.org/pipermail/tutor/2003-October/025932.html>`__,
 which means that when you write a function you should write it like this:
 
 .. code-block:: python
@@ -194,33 +194,23 @@ has pixel coordinates ``(0, 0)`` (and not ``(1, 1)`` as shown e.g. in ds9).
 
 You should use ``origin=0`` when calling any of the pixel to world or world to pixel coordinate transformations in `astropy.wcs`.
 
-When to use C or Cython or Numba for speed
-------------------------------------------
+Performance
+-----------
 
-Most of Gammapy is written using Python and Numpy array expressions calling functions (e.g. from Scipy)
-that operate on Numpy arrays.
-This is often nice because it means that algorithms can be implemented with few lines of high-level code,
+Currently Gammapy is 99% Python and scientific Python code. Most memory used is in Numpy arrays,
+since most Gammapy and Astropy objects hold the data in Numpy arrays, and there's some fraction
+of memory in Python objects. We have 1% of Cython code, although it's not really needed in those
+cases, we could rewrite that using just Numpy.
 
-There is a very small fraction of code though (one or a few percent) where this results in code that is
-either cumbersome or too slow. E.g. to compute TS or upper limit images, one needs to do a root finding
-method with different number of iterations for each pixel ... that's impossible (or at least very
-cumbersome / hard to read) to implement with array expressions and Python loops over pixels are slow.
+In the future, we plan to benchmark and improve the performance both of our existing code
+(e.g. avoid temp copies of Numpy arrays, better algorithms), and also to introduce parallel
+execution that can take advantage of multi-core CPUs (and maybe even multiple machines).
+There's many options how to do that, e.g. using Numba, Cython, Dask, Ray, multiprocessing
+to name a few. Also, parallelism can be introduced for different tasks and at different levels,
+e.g. during data reduction, or at the dataset or model component or at the function level.
+This is planned for 2020, but really prototyping and pull requests on performance are welcome
+any time.
 
-In these cases we encourage the use of `Cython <http://cython.org/>`__ or `Numba <http://numba.pydata.org/>`__,
-or writing the core code in C and exposing it to Python via Cython.
-These are popular and simple ways to get C speed from Python.
-
-To use several CPU cores consider using the Python standard library
-`multiprocessing <https://docs.python.org/3/library/multiprocessing.html>`__ module.
-
-Note that especially the use of Numba should be considered an experiment.
-It is a very nice, but new technology and no-one uses it in production.
-Before the Gammapy 1.0 release we will re-evaluate the status of Numba and decide whether it's
-an optional dependency we use for speed, or whether we use the much more established Cython
-(Scipy, scikit-image, Astropy, ... all use Cython).
-
-At the time of writing (April 2015), the TS map computation code uses Cython and multiprocessing
-and Numba is not used yet.
 
 Assert convention
 -----------------
@@ -410,7 +400,7 @@ See ``gammapy/scripts/find_obs.py`` as an example.
 Command line tools using click
 ------------------------------
 
-Command line tools that use the `click <http://click.pocoo.org/>`_ module should disable
+Command line tools that use the `click <http://click.pocoo.org/>`__ module should disable
 the unicode literals warnings to clean up the output of the tool:
 
 .. code-block:: python
@@ -463,25 +453,6 @@ File and directory path handling
 --------------------------------
 
 In Gammapy use `pathlib.Path` objects to handle file and directory paths.
-
-.. code-block:: python
-
-    from pathlib import Path
-
-    dir = Path('folder/subfolder')
-    filename = dir / 'filename.fits'
-    dir.mkdir(exist_ok=True)
-    table.write(str(filename))
-
-Note how the ``/`` operator makes it easy to construct paths
-(as opposed to repeated calls to the string-handling function ``os.path.join``)
-and how methods on ``Path`` objects provide a nicer interface to most
-of the functionality from ``os.path`` (``mkdir`` in this example).
-
-One gotcha is that many functions (such as ``table.write`` in this example)
-expect ``str`` objects and refuse to work with ``Path`` objects, so you have
-to explicitly convert to ``str(path)``.
-
 
 Bundled gammapy.extern code
 ---------------------------
@@ -790,7 +761,7 @@ Since notebooks are evolving with Gammapy features and documentation, the differ
 versions of the notebooks are linked to the versioned Binder environments. In this
 sense, it is important to publish as stable docs those built with stable release
 versions of Gammapy so the links to Binder in the tutorials point to stable tagged
-Binder environments in the `gammapy-webpage` repository.
+Binder environments in the ``gammapy-webpage`` repository.
 
 Documentation guidelines
 ------------------------
@@ -801,7 +772,7 @@ We mostly follow the :ref:`Astropy documentation guidelines <astropy:documentati
 which are based on the `Numpy docstring standard`_,
 which is what most scientific Python packages use.
 
-.. _restructured text (RST) : http://sphinx-doc.org/rest.html
+.. _restructured text (RST): http://sphinx-doc.org/rest.html
 .. _Sphinx: http://sphinx-doc.org/
 .. _Numpy docstring standard: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt
 
@@ -878,11 +849,10 @@ Class attributes
 
 Class attributes (data members) and properties are currently a bit of a mess.
 Attributes are listed in an *Attributes* section because I've listed them in a class-level
-docstring attributes section.
+docstring attributes section as recommended
+`here <https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt#class-docstring>`__.
 Properties are listed in separate *Attributes summary* and *Attributes Documentation*
 sections, which is confusing to users ("what's the difference between attributes and properties?").
-
-.. __: https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt#class-docstring
 
 One solution is to always use properties, but that can get very verbose if we have to write
 so many getters and setters. We could start using descriptors.
@@ -890,7 +860,7 @@ so many getters and setters. We could start using descriptors.
 TODO: make a decision on this and describe the issue / solution here.
 
 Link to a notebook from the docs
--------------------------------------------------
+--------------------------------
 
 Jupyter notebooks stored in the ``tutorials`` folder and are copied to the ``notebooks`` folder
 during the process of Sphinx building documentation. They are converted to HTML files using
@@ -907,7 +877,9 @@ Sphinx directive to generate that link::
 
 More info on Sphinx roles is `here <http://www.sphinx-doc.org/en/stable/markup/inline.html>`__
 
-Alternatively you can also link to the notebooks providing its filename with .html file extension and the relative path to the ``notebooks`` folder. This folder is created at the root of the ``docs`` folder in the process of documentation building.
+Alternatively you can also link to the notebooks providing its filename with .html file extension
+and the relative path to the ``notebooks`` folder. This folder is created at the root of the ``docs``
+folder in the process of documentation building.
 
 Example: `First steps with Gammapy <../notebooks/first_steps.html>`__
 

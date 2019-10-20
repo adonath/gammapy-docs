@@ -41,7 +41,7 @@ from gammapy.data import ObservationFilter, DataStore
 from gammapy.modeling.models import PowerLawSpectralModel
 from gammapy.modeling.models import PointSpatialModel
 from gammapy.modeling.models import SkyModel, BackgroundModel
-from gammapy.cube import PSFKernel, MapMaker, MapDataset
+from gammapy.cube import PSFKernel, MapDatasetMaker, MapDataset
 from gammapy.maps import WcsGeom, MapAxis
 from gammapy.irf import make_mean_psf, make_mean_edisp
 from gammapy.time import LightCurveEstimator
@@ -90,7 +90,7 @@ energy_axis = MapAxis.from_bounds(
 )
 geom = WcsGeom.create(
     skydir=target_position,
-    binsz=0.04,
+    binsz=0.02,
     width=(2, 2),
     coordsys="CEL",
     proj="CAR",
@@ -103,12 +103,14 @@ etrue_axis = MapAxis.from_bounds(
 
 geom_true = WcsGeom.create(
     skydir=target_position,
-    binsz=0.04,
+    binsz=0.2,
     width=(2, 2),
     coordsys="CEL",
     proj="CAR",
     axes=[etrue_axis],
 )
+
+offset_max = 2 * u.deg
 
 
 # ### Define the 3D model 
@@ -142,47 +144,12 @@ sky_model.parameters["lat_0"].frozen = True
 # 
 # The following function is in charge of the MapDataset production. It will later be fully covered in the data reduction chain 
 
-# In[ ]:
-
-
-# psf_kernel and MapMaker for each segment
-def make_map_dataset(
-    observations, target_pos, geom, geom_true, offset_max=2 * u.deg
-):
-    maker = MapMaker(geom, offset_max, geom_true=geom_true)
-    maps = maker.run(observations)
-    table_psf = make_mean_psf(observations, target_pos)
-
-    # PSF kernel used for the model convolution
-    psf_kernel = PSFKernel.from_table_psf(
-        table_psf, geom_true, max_radius="0.3 deg"
-    )
-    edisp = make_mean_edisp(
-        observations,
-        target_pos,
-        e_true=geom_true.axes[0].edges,
-        e_reco=geom.axes[0].edges,
-    )
-    background_model = BackgroundModel(maps["background"])
-    background_model.parameters["norm"].frozen = False
-    background_model.parameters["tilt"].frozen = True
-
-    dataset = MapDataset(
-        counts=maps["counts"],
-        exposure=maps["exposure"],
-        background_model=background_model,
-        psf=psf_kernel,
-        edisp=edisp,
-    )
-    return dataset
-
-
 # Now we perform the actual data reduction in time bins
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '\ndatasets = []\n\nfor time_interval in time_intervals:\n    # get filtered observation lists in time interval\n    obs = crab_obs.select_time(time_interval)\n    # Proceed with further analysis only if there are observations\n    # in the selected time window\n    if len(obs) == 0:\n        log.warning(\n            "No observations found in time interval:"\n            "{t_min} - {t_max}".format(\n                t_min=time_interval[0], t_max=time_interval[1]\n            )\n        )\n        continue\n    dataset = make_map_dataset(obs, target_position, geom, geom_true)\n    dataset.counts.meta["t_start"] = time_interval[0]\n    dataset.counts.meta["t_stop"] = time_interval[1]\n    datasets.append(dataset)')
+get_ipython().run_cell_magic('time', '', '\ndatasets = []\n\nmaker = MapDatasetMaker(geom=geom, geom_true=geom_true, offset_max=offset_max)\n\nfor time_interval in time_intervals:\n    # get filtered observation lists in time interval\n    observations = crab_obs.select_time(time_interval)\n\n    # Proceed with further analysis only if there are observations\n    # in the selected time window\n    if len(observations) == 0:\n        log.warning(\n            "No observations found in time interval:"\n            "{t_min} - {t_max}".format(\n                t_min=time_interval[0], t_max=time_interval[1]\n            )\n        )\n        continue\n\n    stacked = MapDataset.create(geom=geom, geom_irf=geom_true)\n\n    for obs in observations:\n        dataset = maker.run(obs)\n        stacked.stack(dataset)\n\n    # TODO: remove once IRF maps are handled correctly in fit\n    stacked.edisp = stacked.edisp.get_energy_dispersion(\n        position=target_position, e_reco=energy_axis.edges\n    )\n\n    geom_psf = geom_true.to_binsz(binsz=0.02)\n    stacked.psf = stacked.psf.get_psf_kernel(\n        position=target_position, geom=geom_psf, max_radius="0.3 deg"\n    )\n\n    stacked.counts.meta["t_start"] = time_interval[0]\n    stacked.counts.meta["t_stop"] = time_interval[1]\n    datasets.append(stacked)')
 
 
 # ## Light Curve estimation: the 3D case

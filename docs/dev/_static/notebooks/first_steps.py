@@ -165,7 +165,7 @@ gc_3fhl_cutout = gc_3fhl_smoothed.cutout(center, 9 * u.deg)
 gc_3fhl_cutout.plot(stretch="sqrt");
 
 
-# For a more detailed introdcution to `ganmmapy.maps`, take a look a the [intro_maps.ipynb](intro_maps.ipynb) notebook.
+# For a more detailed introdcution to `ganmmapy.maps`, take a look a the [maps.ipynb](maps.ipynb) notebook.
 # 
 # ### Exercises
 # 
@@ -361,17 +361,18 @@ print(mkn_421_3fhl.data["Signif_Avg"])
 
 
 crab_3fhl = fermi_3fhl["Crab Nebula"]
-print(crab_3fhl.spectral_model)
+crab_3fhl_spec = crab_3fhl.spectral_model()
+print(crab_3fhl_spec)
 
 
-# The `crab_3fhl.spectral_model` is an instance of the [gammapy.modeling.models.PowerLaw2SpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLaw2SpectralModel.html#gammapy.modeling.models.PowerLaw2SpectralModel) model, with the parameter values and errors taken from the 3FHL catalog. 
+# The `crab_3fhl_spec` is an instance of the [gammapy.modeling.models.PowerLaw2SpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLaw2SpectralModel.html#gammapy.modeling.models.PowerLaw2SpectralModel) model, with the parameter values and errors taken from the 3FHL catalog. 
 # 
 # Let's plot the spectral model in the energy range between 10 GeV and 2000 GeV:
 
 # In[ ]:
 
 
-ax_crab_3fhl = crab_3fhl.spectral_model.plot(
+ax_crab_3fhl = crab_3fhl_spec.plot(
     energy_range=[10, 2000] * u.GeV, energy_power=0
 )
 
@@ -383,7 +384,7 @@ ax_crab_3fhl = crab_3fhl.spectral_model.plot(
 # In[ ]:
 
 
-crab_3fhl.spectral_model(100 * u.GeV).to("cm-2 s-1 GeV-1")
+crab_3fhl_spec(100 * u.GeV).to("cm-2 s-1 GeV-1")
 
 
 # Next we can compute the integral flux of the Crab between 10 GeV and 2000 GeV:
@@ -391,9 +392,7 @@ crab_3fhl.spectral_model(100 * u.GeV).to("cm-2 s-1 GeV-1")
 # In[ ]:
 
 
-crab_3fhl.spectral_model.integral(emin=10 * u.GeV, emax=2000 * u.GeV).to(
-    "cm-2 s-1"
-)
+crab_3fhl_spec.integral(emin=10 * u.GeV, emax=2000 * u.GeV).to("cm-2 s-1")
 
 
 # We can easily convince ourself, that it corresponds to the value given in the Fermi-LAT 3FHL catalog:
@@ -409,7 +408,7 @@ crab_3fhl.data["Flux"]
 # In[ ]:
 
 
-crab_3fhl.spectral_model.energy_flux(emin=10 * u.GeV, emax=2000 * u.GeV).to(
+crab_3fhl_spec.energy_flux(emin=10 * u.GeV, emax=2000 * u.GeV).to(
     "erg cm-2 s-1"
 )
 
@@ -437,9 +436,7 @@ crab_3fhl.flux_points.table
 # In[ ]:
 
 
-ax = crab_3fhl.spectral_model.plot(
-    energy_range=[10, 2000] * u.GeV, energy_power=2
-)
+ax = crab_3fhl_spec.plot(energy_range=[10, 2000] * u.GeV, energy_power=2)
 crab_3fhl.flux_points.to_sed_type("dnde").plot(ax=ax, energy_power=2);
 
 

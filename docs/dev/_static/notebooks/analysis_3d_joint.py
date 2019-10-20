@@ -26,7 +26,7 @@ from regions import CircleSkyRegion
 from gammapy.data import DataStore
 from gammapy.irf import EnergyDispersion, make_psf
 from gammapy.maps import WcsGeom, MapAxis, Map
-from gammapy.cube import MapMaker, PSFKernel, MapDataset
+from gammapy.cube import MapDatasetMaker, PSFKernel, MapDataset
 from gammapy.modeling.models import (
     SkyModel,
     BackgroundModel,
@@ -55,7 +55,7 @@ obs_ids = [110380, 111140, 111159]
 observations = data_store.get_observations(obs_ids)
 
 
-# ### Prepare input maps
+# ### Prepare datasets
 # 
 # Now we define a reference geometry for our analysis, We choose a WCS based gemoetry with a binsize of 0.02 deg and also define an energy axis: 
 
@@ -87,58 +87,24 @@ src_pos = SkyCoord(0, 0, unit="deg", frame="galactic")
 offset_max = 4 * u.deg
 
 
-# The maps are prepared by calling the `MapMaker.run()` method and passing the `observations`. The `.run()` method returns a Python `dict` containing a `counts`, `background` and `exposure` map. For the joint analysis, we compute the cube per observation and store the result in the `observations_maps` dictionary.
+# The datasets are prepared by using the `MapDatasetMaker.run()` method and passing the `observation`.
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'observations_data = {}\n\nfor obs in observations:\n    # For each observation, the map will be centered on the pointing position.\n    geom_cutout = geom.cutout(\n        position=obs.pointing_radec, width=2 * offset_max\n    )\n    maker = MapMaker(geom_cutout, offset_max=offset_max)\n    maps = maker.run([obs])\n    observations_data[obs.obs_id] = maps')
-
-
-# ### Prepare IRFs
-# PSF and Edisp are estimated for each observation at a specific source position defined by `src_pos`:
-#   
-
-# In[ ]:
-
-
-# define energy grid for edisp
-energy = energy_axis.edges
+path = Path("analysis_3d_joint")
+path.mkdir(exist_ok=True)
 
 
 # In[ ]:
 
 
-for obs in observations:
-    table_psf = make_psf(obs, src_pos)
-    psf = PSFKernel.from_table_psf(table_psf, geom, max_radius="0.5 deg")
-    observations_data[obs.obs_id]["psf"] = psf
-
-    # create Edisp
-    offset = src_pos.separation(obs.pointing_radec)
-    edisp = obs.edisp.to_energy_dispersion(
-        offset, e_true=energy, e_reco=energy
-    )
-    observations_data[obs.obs_id]["edisp"] = edisp
-
-
-# Save maps as well as IRFs to disk:
-
-# In[ ]:
-
-
-for obs_id in obs_ids:
-    path = Path("analysis_3d_joint") / "obs_{}".format(obs_id)
-    path.mkdir(parents=True, exist_ok=True)
-
-    for key in ["counts", "exposure", "background", "edisp", "psf"]:
-        filename = "{}.fits.gz".format(key)
-        observations_data[obs_id][key].write(path / filename, overwrite=True)
+get_ipython().run_cell_magic('time', '', 'maker = MapDatasetMaker(geom=geom, offset_max=offset_max)\nfor obs in observations:\n    dataset = maker.run(obs)\n\n    # TODO: remove once IRF maps are handled correctly in fit\n    dataset.edisp = dataset.edisp.get_energy_dispersion(\n        position=src_pos, e_reco=energy_axis.edges\n    )\n    dataset.psf = dataset.psf.get_psf_kernel(\n        position=src_pos, geom=geom, max_radius="0.3 deg"\n    )\n    dataset.write(\n        "analysis_3d_joint/dataset-obs-{}.fits".format(obs.obs_id),\n        overwrite=True,\n    )')
 
 
 # ## Likelihood fit
 # 
-# ### Reading maps and IRFs
+# ### Defining model and reading datasets
 # As first step we define a source model:
 
 # In[ ]:
@@ -161,35 +127,15 @@ model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
 datasets = []
 
 for obs_id in obs_ids:
-    path = Path("analysis_3d_joint") / "obs_{}".format(obs_id)
+    filename = Path("analysis_3d_joint") / "dataset-obs-{}.fits".format(obs_id)
 
-    # read counts map and IRFs
-    counts = Map.read(path / "counts.fits.gz")
-    exposure = Map.read(path / "exposure.fits.gz")
-
-    psf = PSFKernel.read(path / "psf.fits.gz")
-    edisp = EnergyDispersion.read(path / "edisp.fits.gz")
-
-    # create background model per observation / dataset
-    background = Map.read(path / "background.fits.gz")
-    background_model = BackgroundModel(background)
-    background_model.tilt.frozen = False
-    background_model.norm.value = 1.3
+    dataset = MapDataset.read(filename)
+    dataset.model = model
+    dataset.background_model.tilt.frozen = False
 
     # optionally define a safe energy threshold
     emin = None
-    mask = counts.geom.energy_mask(emin=emin)
-
-    dataset = MapDataset(
-        model=model,
-        counts=counts,
-        exposure=exposure,
-        psf=psf,
-        edisp=edisp,
-        background_model=background_model,
-        mask_fit=mask,
-    )
-
+    dataset.mask_safe = dataset.counts.geom.energy_mask(emin=emin)
     datasets.append(dataset)
 
 
@@ -262,7 +208,7 @@ datasets[1].plot_residuals(region=region, vmin=-0.5, vmax=0.5);
 datasets[2].plot_residuals(region=region, vmin=-0.5, vmax=0.5);
 
 
-# Finally, we can compute a stacked residual map:
+# Finally, we can compute a stacked dataset:
 
 # In[ ]:
 
@@ -282,10 +228,4 @@ for dataset in datasets:
 residuals_stacked.sum_over_axes().smooth("0.1 deg").plot(
     vmin=-1, vmax=1, cmap="coolwarm", add_cbar=True, stretch="linear"
 );
-
-
-# In[ ]:
-
-
-
 

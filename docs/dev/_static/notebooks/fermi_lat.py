@@ -431,7 +431,7 @@ flux.sum_over_axes().smooth("0.1 deg").plot(stretch="sqrt", add_cbar=True);
 
 # ## Fit
 # 
-# Finally, the big finale: let's do a 3D map fit for the source at the Galactic center, to measure it's position and spectrum. We keep the background normalisation free.
+# Finally, the big finale: let's do a 3D map fit for the source at the Galactic center, to measure it's position and spectrum. We keep the background normalization free.
 
 # In[ ]:
 
@@ -446,7 +446,11 @@ model = SkyModel(
 model_total = SkyModels([model, model_diffuse, model_iso])
 
 dataset = MapDataset(
-    model=model_total, counts=counts, exposure=exposure, psf=psf_kernel
+    model=model_total,
+    counts=counts,
+    exposure=exposure,
+    psf=psf_kernel,
+    edisp=edisp,
 )
 fit = Fit(dataset)
 result = fit.run()

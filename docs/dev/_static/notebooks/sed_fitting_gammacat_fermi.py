@@ -90,10 +90,10 @@ flux_points_gammacat.table
 
 
 flux_points_3fgl = source_fermi_3fgl.flux_points.to_sed_type(
-    sed_type="dnde", model=source_fermi_3fgl.spectral_model
+    sed_type="dnde", model=source_fermi_3fgl.spectral_model()
 )
 flux_points_3fhl = source_fermi_3fhl.flux_points.to_sed_type(
-    sed_type="dnde", model=source_fermi_3fhl.spectral_model
+    sed_type="dnde", model=source_fermi_3fhl.spectral_model()
 )
 
 

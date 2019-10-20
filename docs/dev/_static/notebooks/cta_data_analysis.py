@@ -48,7 +48,7 @@ from gammapy.spectrum import (
     ReflectedRegionsBackgroundEstimator,
 )
 from gammapy.maps import MapAxis, WcsNDMap, WcsGeom
-from gammapy.cube import MapMaker
+from gammapy.cube import MapDatasetMaker, MapDataset
 from gammapy.detect import TSMapEstimator, find_peaks
 
 
@@ -145,7 +145,7 @@ exclusion_mask.plot();
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, offset_max="2 deg")\nmaps = maker.run(observations)\nprint(maps.keys())')
+get_ipython().run_cell_magic('time', '', 'stacked = MapDataset.create(geom=geom)\nmaker = MapDatasetMaker(geom=geom, offset_max=2.5 * u.deg)\n\nfor obs in observations:\n    dataset = maker.run(obs)\n    stacked.stack(dataset)')
 
 
 # In[ ]:
@@ -153,11 +153,15 @@ get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, offset_max="2 d
 
 # The maps are cubes, with an energy axis.
 # Let's also make some images:
-images = maker.run_images()
+dataset_image = stacked.to_image()
 
-excess = images["counts"].copy()
-excess.data -= images["background"].data
-images["excess"] = excess
+images = {
+    "counts": dataset_image.counts.get_image_by_idx((0,)),
+    "exposure": dataset_image.exposure.get_image_by_idx((0,)),
+    "background": dataset_image.background_model.map.get_image_by_idx((0,)),
+}
+
+images["excess"] = images["counts"] - images["background"]
 
 
 # ### Show images

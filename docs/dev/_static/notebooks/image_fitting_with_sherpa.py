@@ -32,7 +32,7 @@ from astropy.coordinates import SkyCoord
 from gammapy.data import DataStore
 from gammapy.irf import make_mean_psf
 from gammapy.maps import WcsGeom, MapAxis, Map
-from gammapy.cube import MapMaker, PSFKernel
+from gammapy.cube import MapDatasetMaker, PSFKernel, MapDataset
 
 
 # ## 1. Generating the required Maps
@@ -69,7 +69,13 @@ geom = WcsGeom.create(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, offset_max=4.0 * u.deg)\nmaps = maker.run(observations)')
+stacked = MapDataset.create(geom)
+
+
+# In[ ]:
+
+
+get_ipython().run_cell_magic('time', '', 'maker = MapDatasetMaker(geom=geom, offset_max=4.0 * u.deg)\nfor obs in observations:\n    dataset = maker.run(obs)\n    stacked.stack(dataset)')
 
 
 # ### Making a PSF Map
@@ -87,12 +93,8 @@ table_psf = make_mean_psf(observations, src_pos)
 psf_kernel = PSFKernel.from_table_psf(table_psf, geom, max_radius="0.3 deg")
 
 # get the exposure at the source position
-exposure_at_pos = maps["exposure"].get_by_coord(
-    {
-        "lon": src_pos.l.value,
-        "lat": src_pos.b.value,
-        "energy": energy_axis.center,
-    }
+exposure_at_pos = stacked.exposure.get_by_coord(
+    {"skycoord": src_pos, "energy": energy_axis.center}
 )
 
 # now compute the 2D PSF
@@ -102,13 +104,19 @@ psf2D = psf_kernel.make_image(exposures=exposure_at_pos)
 # ### Make 2D images from 3D ones
 # 
 # Since sherpa image fitting works only with 2-dim images,
-# we convert the generated maps to 2D images using `run_images()` and save them as fits files. The exposure is weighed with the spectrum before averaging (assumed to be a power law by default).
+# we convert the generated maps to 2D images using `to_image()` and save them as fits files. The exposure is weighed with the spectrum before averaging (assumed to be a power law by default).
 # 
 
 # In[ ]:
 
 
-maps = maker.run_images()
+dataset_2d = stacked.to_image(keepdims=True)
+
+maps = {
+    "counts": dataset_2d.counts.get_image_by_idx([0]),
+    "exposure": dataset_2d.exposure.get_image_by_idx([0]),
+    "background": dataset_2d.background_model.map.get_image_by_idx([0]),
+}
 
 
 # In[ ]:

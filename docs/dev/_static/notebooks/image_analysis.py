@@ -33,7 +33,7 @@ from gammapy.data import DataStore
 from gammapy.irf import make_mean_psf
 from gammapy.maps import Map, MapAxis, WcsGeom
 from gammapy.cube import (
-    MapMaker,
+    MapDatasetMaker,
     PSFKernel,
     MapDataset,
     MapMakerRing,
@@ -97,7 +97,26 @@ geom = WcsGeom.create(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, offset_max=4.0 * u.deg)\nspectrum = PowerLaw2SpectralModel(index=2)\nmaps2D = maker.run_images(observations, spectrum=spectrum, keepdims=True)')
+stacked = MapDataset.create(geom)
+
+
+# In[ ]:
+
+
+get_ipython().run_cell_magic('time', '', 'maker = MapDatasetMaker(geom=geom, offset_max=4.0 * u.deg)\n\nfor obs in observations:\n    dataset = maker.run(obs)\n    stacked.stack(dataset)')
+
+
+# In[ ]:
+
+
+spectrum = PowerLaw2SpectralModel(index=2)
+dataset_2d = stacked.to_image(spectrum=spectrum)
+
+maps2D = {
+    "counts": dataset_2d.counts,
+    "exposure": dataset_2d.exposure,
+    "background": dataset_2d.background_model.map,
+}
 
 
 # For a typical 2D analysis, using an energy dispersion usually does not make sense. A PSF map can be made as in the regular 3D case, taking care to weight it properly with the spectrum.
@@ -133,7 +152,7 @@ mask = geom2d.region_mask([region])
 
 # ## Modeling the source
 # 
-# This is the important thing to note in this analysis. Since modelling and fitting in `gammapy.maps` needs to have a combination of spectral models, we have to use a dummy Powerlaw as for the spectral model and fix its index to 2. Since we are interested only in the integral flux, we will use the `PowerLaw2SpectralModel` model which directly fits an integral flux.
+# This is the important thing to note in this analysis. Since modeling and fitting in `gammapy.maps` needs to have a combination of spectral models, we have to use a dummy Powerlaw as for the spectral model and fix its index to 2. Since we are interested only in the integral flux, we will use the `PowerLaw2SpectralModel` model which directly fits an integral flux.
 
 # In[ ]:
 

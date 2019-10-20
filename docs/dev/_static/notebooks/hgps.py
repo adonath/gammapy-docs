@@ -166,15 +166,12 @@ for path in hgps_data_path.iterdir():
 # ### FITS file content
 # 
 # Let's start by just opening up `hgps_catalog_v1.fits.gz` and looking at the content.
-# 
-# Note that ``astropy.io.fits.open`` doesn't work with `Path` objects yet,
-# so you have to call `str(path)` and pass a string.
 
 # In[ ]:
 
 
 path = hgps_data_path / "hgps_catalog_v1.fits.gz"
-hdu_list = fits.open(str(path))
+hdu_list = fits.open(path)
 
 
 # In[ ]:
@@ -198,7 +195,7 @@ hdu_list.info()
 table = Table.read(hdu_list["HGPS_SOURCES"])
 
 # Alternatively, reading from file directly would work like this:
-# table = Table.read(str(path), hdu='HGPS_SOURCES')
+# table = Table.read(path, hdu='HGPS_SOURCES')
 # Usually you have to look first what HDUs are in a FITS file
 # like we did above; `Table` is just for one table
 
@@ -290,9 +287,7 @@ txt = "\n".join(lines)
 
 # To save it to a DS9 region text file
 path = hgps_data_path / "hgps_my_format.reg"
-
-with open(str(path), "w") as f:
-    f.write(txt)
+path.write_text(txt)
 
 # Print content of the file to check
 print(path.read_text())
@@ -400,7 +395,7 @@ print(path.read_text())
 
 
 path = hgps_data_path / "hgps_map_significance_0.1deg_v1.fits.gz"
-hdu_list = fits.open(str(path))
+hdu_list = fits.open(path)
 hdu_list.info()
 
 

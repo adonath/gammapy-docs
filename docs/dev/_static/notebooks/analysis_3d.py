@@ -22,14 +22,12 @@ import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord
 from gammapy.data import DataStore
-from gammapy.irf import EnergyDispersion, make_mean_psf, make_mean_edisp
-from gammapy.maps import WcsGeom, MapAxis, Map, WcsNDMap
-from gammapy.cube import MapMaker, PSFKernel, MapDataset
+from gammapy.maps import WcsGeom, MapAxis
+from gammapy.cube import MapDatasetMaker, MapDataset
 from gammapy.modeling.models import (
     SkyModel,
+    SkyModels,
     SkyDiffuseCube,
-    BackgroundModel,
-    PowerLawSpectralModel,
     ExpCutoffPowerLawSpectralModel,
     PointSpatialModel,
 )
@@ -87,24 +85,16 @@ geom = WcsGeom.create(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'maker = MapMaker(geom, offset_max=4.0 * u.deg)\nmaps = maker.run(observations)')
+get_ipython().run_cell_magic('time', '', 'stacked = MapDataset.create(geom=geom)\n\nmaker = MapDatasetMaker(geom=geom, offset_max=4.0 * u.deg)\n\nfor obs in observations:\n    dataset = maker.run(obs)\n    stacked.stack(dataset)')
 
 
-# The maps are prepared by calling the `.run()` method and passing the `observations`. The `.run()` method returns a Python `dict` containing a `counts`, `background` and `exposure` map:
-
-# In[ ]:
-
-
-print(maps)
-
-
-# This is what the summed counts image looks like:
+# This is what the stacked counts image looks like:
 
 # In[ ]:
 
 
-counts = maps["counts"].sum_over_axes()
-counts.smooth(width=0.1 * u.deg).plot(stretch="sqrt", add_cbar=True, vmax=6);
+counts = stacked.counts.sum_over_axes()
+counts.smooth(width="0.05 deg").plot(stretch="sqrt", add_cbar=True, vmax=6);
 
 
 # This is the background image:
@@ -112,10 +102,8 @@ counts.smooth(width=0.1 * u.deg).plot(stretch="sqrt", add_cbar=True, vmax=6);
 # In[ ]:
 
 
-background = maps["background"].sum_over_axes()
-background.smooth(width=0.1 * u.deg).plot(
-    stretch="sqrt", add_cbar=True, vmax=6
-);
+background = stacked.background_model.map.sum_over_axes()
+background.plot(stretch="sqrt", add_cbar=True, vmax=6);
 
 
 # And this one the exposure image:
@@ -123,8 +111,8 @@ background.smooth(width=0.1 * u.deg).plot(
 # In[ ]:
 
 
-exposure = maps["exposure"].sum_over_axes()
-exposure.smooth(width=0.1 * u.deg).plot(stretch="sqrt", add_cbar=True);
+exposure = stacked.exposure.sum_over_axes()
+exposure.plot(stretch="sqrt", add_cbar=True);
 
 
 # We can also compute an excess image just with  a few lines of code:
@@ -136,104 +124,24 @@ excess = counts - background
 excess.smooth(5).plot(stretch="sqrt", add_cbar=True);
 
 
-# For a more realistic excess plot we can also take into account the diffuse galactic emission. For this tutorial we will load a Fermi diffuse model map that represents a small cutout for the Galactic center region:
-
 # In[ ]:
 
 
-diffuse_gal = Map.read("$GAMMAPY_DATA/fermi-3fhl-gc/gll_iem_v06_gc.fits.gz")
-
-
-# In[ ]:
-
-
-print("Diffuse image: ", diffuse_gal.geom)
-print("counts: ", maps["counts"].geom)
-
-
-# We see that the geometry of the images is completely different, so we need to apply our geometric configuration to the diffuse emission file:
-
-# In[ ]:
-
-
-coord = maps["counts"].geom.get_coord()
-
-data = diffuse_gal.interp_by_coord(
-    {"skycoord": coord.skycoord, "energy": coord["energy"]}, interp=3
-)
-diffuse_galactic = WcsNDMap(maps["counts"].geom, data)
-print("Before: \n", diffuse_gal.geom)
-print("Now (same as maps): \n", diffuse_galactic.geom)
-
-
-# In[ ]:
-
-
-# diffuse_galactic.slice_by_idx({"energy": 0}).plot(add_cbar=True); # this can be used to check image at different energy bins
-diffuse = diffuse_galactic.sum_over_axes()
-diffuse.smooth(5).plot(stretch="sqrt", add_cbar=True)
-print(diffuse)
-
-
-# We now multiply the exposure for this diffuse emission to subtract the result from the counts along with the background.
-
-# In[ ]:
-
-
-combination = diffuse * exposure
-combination.unit = ""
-combination.smooth(5).plot(stretch="sqrt", add_cbar=True);
-
-
-# We can plot then the excess image subtracting now the effect of the diffuse galactic emission.
-
-# In[ ]:
-
-
-excess2 = counts - background - combination
-
-fig, axs = plt.subplots(1, 2, figsize=(15, 5))
-
-axs[0].set_title("With diffuse emission subtraction")
-axs[1].set_title("Without diffuse emission subtraction")
-excess2.smooth(5).plot(
-    cmap="coolwarm", vmin=-1, vmax=1, add_cbar=True, ax=axs[0]
-)
-excess.smooth(5).plot(
-    cmap="coolwarm", vmin=-1, vmax=1, add_cbar=True, ax=axs[1]
-);
-
-
-# ### Prepare IRFs
-# 
-# To estimate the mean PSF across all observations at a given source position `src_pos`, we use `make_mean_psf()`:
-
-# In[ ]:
-
-
-# mean PSF
-src_pos = SkyCoord(0, 0, unit="deg", frame="galactic")
-table_psf = make_mean_psf(observations, src_pos)
-
-# PSF kernel used for the model convolution
-psf_kernel = PSFKernel.from_table_psf(table_psf, geom, max_radius="0.3 deg")
-
-
-# To estimate the mean energy dispersion across all observations at a given source position `src_pos`, we use `make_mean_edisp()`:
-
-# In[ ]:
-
-
-# define energy grid
-energy = energy_axis.edges
-
-# mean edisp
-edisp = make_mean_edisp(
-    observations, position=src_pos, e_true=energy, e_reco=energy
+position = SkyCoord("0 deg", "0 deg", frame="galactic")
+stacked.edisp = stacked.edisp.get_energy_dispersion(
+    position=position, e_reco=energy_axis.edges
 )
 
 
-# ### Save maps and IRFs to disk
+# In[ ]:
+
+
+stacked.psf = stacked.psf.get_psf_kernel(
+    position=position, geom=geom, max_radius="0.3 deg"
+)
+
+
+# ### Save dataset to disk
 # 
 # It is common to run the preparation step independent of the likelihood fit, because often the preparation of maps, PSF and energy dispersion is slow if you have a lot of data. We first create a folder:
 
@@ -249,34 +157,20 @@ path.mkdir(exist_ok=True)
 # In[ ]:
 
 
-# write maps
-maps["counts"].write(str(path / "counts.fits"), overwrite=True)
-maps["background"].write(str(path / "background.fits"), overwrite=True)
-maps["exposure"].write(str(path / "exposure.fits"), overwrite=True)
-
-# write IRFs
-psf_kernel.write(str(path / "psf.fits"), overwrite=True)
-edisp.write(str(path / "edisp.fits"), overwrite=True)
+filename = path / "stacked-dataset.fits.gz"
+stacked.write(filename, overwrite=True)
 
 
 # ## Likelihood fit
 # 
-# ### Reading maps and IRFs
+# ### Reading the dataset
 # As first step we read in the maps and IRFs that we have saved to disk again:
 
 # In[ ]:
 
 
 # read maps
-maps = {
-    "counts": Map.read(str(path / "counts.fits")),
-    "background": Map.read(str(path / "background.fits")),
-    "exposure": Map.read(str(path / "exposure.fits")),
-}
-
-# read IRFs
-psf_kernel = PSFKernel.read(str(path / "psf.fits"))
-edisp = EnergyDispersion.read(str(path / "edisp.fits"))
+stacked = MapDataset.read(filename)
 
 
 # ### Fit mask
@@ -286,7 +180,7 @@ edisp = EnergyDispersion.read(str(path / "edisp.fits"))
 # In[ ]:
 
 
-coords = maps["counts"].geom.get_coord()
+coords = stacked.counts.geom.get_coord()
 mask = coords["energy"] > 0.3 * u.TeV
 
 
@@ -300,36 +194,21 @@ mask = coords["energy"] > 0.3 * u.TeV
 spatial_model = PointSpatialModel(
     lon_0="0.01 deg", lat_0="0.01 deg", frame="galactic"
 )
-spectral_model = PowerLawSpectralModel(
-    index=2.2, amplitude="3e-12 cm-2 s-1 TeV-1", reference="1 TeV"
+spectral_model = ExpCutoffPowerLawSpectralModel(
+    index=2,
+    amplitude=3e-12 * u.Unit("cm-2 s-1 TeV-1"),
+    reference=1.0 * u.TeV,
+    lambda_=0.1 / u.TeV,
 )
-model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
 
-
-# Often, it is useful to fit the normalisation (and also the tilt) of the background. To do so, we have to define the background as a model. In this example, we will keep the tilt fixed and the norm free.
-
-# In[ ]:
-
-
-background_model = BackgroundModel(maps["background"], norm=1.1, tilt=0.0)
-background_model.parameters["norm"].frozen = False
-background_model.parameters["tilt"].frozen = True
-
-
-# Now we set up the `MapDataset` object by passing the prepared maps, IRFs as well as the model:
-
-# In[ ]:
-
-
-dataset = MapDataset(
-    model=model,
-    counts=maps["counts"],
-    exposure=maps["exposure"],
-    background_model=background_model,
-    mask_fit=mask,
-    psf=psf_kernel,
-    edisp=edisp,
+model = SkyModel(
+    spatial_model=spatial_model,
+    spectral_model=spectral_model,
+    name="gc-source",
 )
+stacked.model = model
+
+stacked.background_model.norm.value = 1.3
 
 
 # No we run the model fit:
@@ -337,7 +216,7 @@ dataset = MapDataset(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'fit = Fit(dataset)\nresult = fit.run(optimize_opts={"print_level": 1})')
+get_ipython().run_cell_magic('time', '', 'fit = Fit(stacked)\nresult = fit.run(optimize_opts={"print_level": 1})')
 
 
 # In[ ]:
@@ -348,28 +227,12 @@ result.parameters.to_table()
 
 # ### Check model fit
 # 
-# We check the model fit by computing a residual image. For this we first get the number of predicted counts:
+# We check the model fit by computing and plotting a residual image:
 
 # In[ ]:
 
 
-npred = dataset.npred()
-
-
-# And compute a residual image:
-
-# In[ ]:
-
-
-residual = maps["counts"] - npred
-
-
-# In[ ]:
-
-
-residual.sum_over_axes().smooth(width=0.05 * u.deg).plot(
-    cmap="coolwarm", vmin=-1, vmax=1, add_cbar=True
-);
+stacked.plot_residuals(method="diff/sqrt(model)", vmin=-1, vmax=1)
 
 
 # We can also plot the best fit spectrum. For that need to extract the covariance of the spectral parameters.
@@ -381,7 +244,7 @@ spec = model.spectral_model
 
 # set covariance on the spectral model
 covariance = result.parameters.covariance
-spec.parameters.covariance = covariance[2:5, 2:5]
+spec.parameters.covariance = covariance[2:6, 2:6]
 
 energy_range = [0.3, 10] * u.TeV
 spec.plot(energy_range=energy_range, energy_power=2)
@@ -392,7 +255,7 @@ spec.plot_error(energy_range=energy_range, energy_power=2)
 
 # ### Add Galactic diffuse emission to model
 
-# We use both models at the same time, our diffuse model (the same from the Fermi file used before) and our model for the central source. This time, in order to make it more realistic, we will consider an exponential cut off power law spectral model for the source. We will fit again the normalisation and tilt of the background.
+# We use both models at the same time, our diffuse model (the same from the Fermi file used before) and our model for the central source. This time, in order to make it more realistic, we will consider an exponential cut off power law spectral model for the source. We will fit again the normalization and tilt of the background.
 
 # In[ ]:
 
@@ -405,34 +268,13 @@ diffuse_model = SkyDiffuseCube.read(
 # In[ ]:
 
 
-spatial_model = PointSpatialModel(
-    lon_0="-0.05 deg", lat_0="-0.05 deg", frame="galactic"
-)
-spectral_model = ExpCutoffPowerLawSpectralModel(
-    index=2,
-    amplitude=3e-12 * u.Unit("cm-2 s-1 TeV-1"),
-    reference=1.0 * u.TeV,
-    lambda_=0.1 / u.TeV,
-)
-
-model_ecpl = SkyModel(
-    spatial_model=spatial_model,
-    spectral_model=spectral_model,
-    name="gc-source",
-)
+dataset_combined = stacked.copy()
 
 
 # In[ ]:
 
 
-dataset_combined = MapDataset(
-    model=model_ecpl + diffuse_model,
-    counts=maps["counts"],
-    exposure=maps["exposure"],
-    background_model=background_model,
-    psf=psf_kernel,
-    edisp=edisp,
-)
+dataset_combined.model = SkyModels([model, diffuse_model])
 
 
 # In[ ]:
@@ -447,39 +289,18 @@ get_ipython().run_cell_magic('time', '', 'fit_combined = Fit(dataset_combined)\n
 
 
 # Checking normalization value (the closer to 1 the better)
-print(model_ecpl, "\n")
-print(background_model, "\n")
-print(diffuse_model, "\n")
+print(dataset_combined)
 
 
-# You can see that the normalisation of the background has vastly improved
+# You can see that the normalization of the background has vastly improved
 
-# We can now plot the residual image considering this improved model.
+# Just as a comparison, we can the previous residual map (top) and the new one (bottom) with the same scale:
 
 # In[ ]:
 
 
-residual2 = maps["counts"] - dataset_combined.npred()
-
-
-# Just as a comparison, we can plot our previous residual map (left) and the new one (right) with the same scale:
-
-# In[ ]:
-
-
-plt.figure(figsize=(15, 5))
-ax_1 = plt.subplot(121, projection=residual.geom.wcs)
-ax_2 = plt.subplot(122, projection=residual.geom.wcs)
-
-ax_1.set_title("Without diffuse emission subtraction")
-ax_2.set_title("With diffuse emission subtraction")
-
-residual.sum_over_axes().smooth(width=0.05 * u.deg).plot(
-    cmap="coolwarm", vmin=-1, vmax=1, add_cbar=True, ax=ax_1
-)
-residual2.sum_over_axes().smooth(width=0.05 * u.deg).plot(
-    cmap="coolwarm", vmin=-1, vmax=1, add_cbar=True, ax=ax_2
-);
+stacked.plot_residuals(vmin=-1, vmax=1)
+dataset_combined.plot_residuals(vmin=-1, vmax=1);
 
 
 # ## Computing Flux Points
@@ -508,9 +329,7 @@ get_ipython().run_cell_magic('time', '', 'flux_points = fpe.run()')
 
 flux_points.table["is_ul"] = flux_points.table["ts"] < 4
 ax = flux_points.plot(energy_power=2)
-model_ecpl.spectral_model.plot(
-    ax=ax, energy_range=energy_range, energy_power=2
-);
+model.spectral_model.plot(ax=ax, energy_range=energy_range, energy_power=2);
 
 
 # ## Summary
@@ -524,3 +343,9 @@ model_ecpl.spectral_model.plot(
 # ## Exercises
 # 
 # * Analyse the second source in the field of view: G0.9+0.1 and add it to the combined model.
+
+# In[ ]:
+
+
+
+
