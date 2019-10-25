@@ -2,6 +2,7 @@
 # coding: utf-8
 
 # # Joint 3D Analysis
+# 
 # In this tutorial we show how to run a joint 3D map-based analysis using three example observations of the Galactic center region with CTA. We start with the required imports:
 
 # In[ ]:
@@ -24,12 +25,10 @@ from regions import CircleSkyRegion
 
 
 from gammapy.data import DataStore
-from gammapy.irf import EnergyDispersion, make_psf
 from gammapy.maps import WcsGeom, MapAxis, Map
-from gammapy.cube import MapDatasetMaker, PSFKernel, MapDataset
+from gammapy.cube import MapDatasetMaker, MapDataset
 from gammapy.modeling.models import (
     SkyModel,
-    BackgroundModel,
     PowerLawSpectralModel,
     PointSpatialModel,
 )
@@ -38,7 +37,7 @@ from gammapy.modeling import Fit
 
 # ## Prepare modeling input data
 # 
-# We first use the `DataStore` object to access the CTA observations and retrieve a list of observations by passing the observations IDs to the `.get_observations()` method:
+# We first use the `~gammapy.data.DataStore` object to access the CTA observations and retrieve a list of observations by passing the observations IDs to the `~gammapy.data.DataStore.get_observations()` method:
 
 # In[ ]:
 
@@ -87,7 +86,7 @@ src_pos = SkyCoord(0, 0, unit="deg", frame="galactic")
 offset_max = 4 * u.deg
 
 
-# The datasets are prepared by using the `MapDatasetMaker.run()` method and passing the `observation`.
+# The datasets are prepared by using the `~gammapy.cube.MapDatasetMaker.run()` method and passing the `observation`.
 
 # In[ ]:
 
@@ -99,7 +98,7 @@ path.mkdir(exist_ok=True)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'maker = MapDatasetMaker(geom=geom, offset_max=offset_max)\nfor obs in observations:\n    dataset = maker.run(obs)\n\n    # TODO: remove once IRF maps are handled correctly in fit\n    dataset.edisp = dataset.edisp.get_energy_dispersion(\n        position=src_pos, e_reco=energy_axis.edges\n    )\n    dataset.psf = dataset.psf.get_psf_kernel(\n        position=src_pos, geom=geom, max_radius="0.3 deg"\n    )\n    dataset.write(\n        "analysis_3d_joint/dataset-obs-{}.fits".format(obs.obs_id),\n        overwrite=True,\n    )')
+get_ipython().run_cell_magic('time', '', 'maker = MapDatasetMaker(geom=geom, offset_max=offset_max)\nfor obs in observations:\n    dataset = maker.run(obs)\n\n    # TODO: remove once IRF maps are handled correctly in fit\n    dataset.edisp = dataset.edisp.get_energy_dispersion(\n        position=src_pos, e_reco=energy_axis.edges\n    )\n    dataset.psf = dataset.psf.get_psf_kernel(\n        position=src_pos, geom=geom, max_radius="0.3 deg"\n    )\n    dataset.write(\n        f"analysis_3d_joint/dataset-obs-{obs.obs_id}.fits", overwrite=True\n    )')
 
 
 # ## Likelihood fit
@@ -127,9 +126,7 @@ model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
 datasets = []
 
 for obs_id in obs_ids:
-    filename = Path("analysis_3d_joint") / "dataset-obs-{}.fits".format(obs_id)
-
-    dataset = MapDataset.read(filename)
+    dataset = MapDataset.read(f"analysis_3d_joint/dataset-obs-{obs_id}.fits")
     dataset.model = model
     dataset.background_model.tilt.frozen = False
 
@@ -165,7 +162,7 @@ print(result)
 fit.datasets.parameters.to_table()
 
 
-# The information which parameter belongs to which dataset is not listed explicitely in the table (yet), but the order of parameters is conserved. You can always access the underlying object tree as well to get specific parameter values:
+# The information which parameter belongs to which dataset is not listed explicitly in the table (yet), but the order of parameters is conserved. You can always access the underlying object tree as well to get specific parameter values:
 
 # In[ ]:
 
@@ -176,7 +173,7 @@ for dataset in datasets:
 
 # ## Plotting residuals
 
-# Each `MapDataset` object is equipped with a method called `plot.residuals()`, which displays the spatial and spectral residuals (computed as *counts-model*) for the dataset. Optionally, these can be normalized as *(counts-model)/model* or *(counts-model)/sqrt(model)*, by passing the parameter `norm='model` or `norm=sqrt_model`.
+# Each `~gammapy.cube.MapDataset` object is equipped with a method called `~gammapy.cube.MapDataset.plot_residuals()`, which displays the spatial and spectral residuals (computed as *counts-model*) for the dataset. Optionally, these can be normalized as *(counts-model)/model* or *(counts-model)/sqrt(model)*, by passing the parameter `norm='model` or `norm=sqrt_model`.
 # 
 # First of all, let's define a region for the spectral extraction:
 

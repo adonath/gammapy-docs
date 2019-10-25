@@ -10,20 +10,20 @@
 # 
 # The central class we're going to use for this example analysis is:  
 # 
-# - [gammapy.spectrum.FluxPointsDataset](https://docs.gammapy.org/dev/spectrum/index.html#reference-api)
+# - `~gammapy.spectrum.FluxPointsDataset`
 # 
 # In addition we will work with the following data classes:
 # 
-# - [gammapy.spectrum.FluxPoints](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html)
-# - [gammapy.catalog.SourceCatalogGammaCat](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogGammaCat.html)
-# - [gammapy.catalog.SourceCatalog3FHL](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalog3FHL.html)
-# - [gammapy.catalog.SourceCatalog3FGL](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalog3FGL.html)
+# - `~gammapy.spectrum.FluxPoints`
+# - `~gammapy.catalog.SourceCatalogGammaCat`
+# - `~gammapy.catalog.SourceCatalog3FHL`
+# - `~gammapy.catalog.SourceCatalog3FGL`
 # 
 # And the following spectral model classes:
 # 
-# - [PowerLawSpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLawSpectralModel.html)
-# - [ExpCutoffPowerLawSpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.ExpCutoffPowerLawSpectralModel.html)
-# - [LogParabolaSpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.LogParabolaSpectralModel.html)
+# - `~gammapy.modeling.models.PowerLawSpectralModel`
+# - `~gammapy.modeling.models.ExpCutoffPowerLawSpectralModel`
+# - `~gammapy.modeling.models.LogParabolaSpectralModel`
 
 # ## Setup
 # 
@@ -33,8 +33,6 @@
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
-import numpy as np
-import matplotlib.pyplot as plt
 
 
 # In[ ]:
@@ -97,7 +95,7 @@ flux_points_3fhl = source_fermi_3fhl.flux_points.to_sed_type(
 )
 
 
-# Finally we stack the flux points into a single `FluxPoints` object and drop the upper limit values, because currently we can't handle them in the fit:
+# Finally we stack the flux points into a single `~gammapy.spectrum.FluxPoints` object and drop the upper limit values, because currently we can't handle them in the fit:
 
 # In[ ]:
 
@@ -113,7 +111,7 @@ flux_points = flux_points.drop_ul()
 
 # ## Power Law Fit
 # 
-# First we start with fitting a simple [power law](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLawSpectralModel.html).
+# First we start with fitting a simple `~gammapy.modeling.models.PowerLawSpectralModel`.
 
 # In[ ]:
 
@@ -164,7 +162,7 @@ ax.set_ylim(1e-13, 1e-11);
 
 # ## Exponential Cut-Off Powerlaw Fit
 # 
-# Next we fit an [exponential cut-off power](https://docs.gammapy.org/dev/api/gammapy.modeling.models.ExpCutoffPowerLawSpectralModel.html) law to the data.
+# Next we fit an `~gammapy.modeling.models.ExpCutoffPowerLawSpectralModel` law to the data.
 
 # In[ ]:
 
@@ -205,7 +203,7 @@ ax.set_ylim(1e-13, 1e-11)
 
 # ## Log-Parabola Fit
 # 
-# Finally we try to fit a [log-parabola](https://docs.gammapy.org/dev/api/gammapy.modeling.models.LogParabolaSpectralModel.html) model:
+# Finally we try to fit a `~gammapy.modeling.models.LogParabolaSpectralModel` model:
 
 # In[ ]:
 
@@ -243,8 +241,8 @@ ax.set_ylim(1e-13, 1e-11);
 
 # ## Exercises
 # 
-# - Fit a `PowerLaw2SpectralModel` and `ExpCutoffPowerLaw3FGLSpectralModel` to the same data.
-# - Fit a `ExpCutoffPowerLawSpectralModel` model to Vela X ('HESS J0835-455') only and check if the best fit values correspond to the values given in the Gammacat catalog
+# - Fit a `~gammapy.modeling.models.PowerLaw2SpectralModel` and `~gammapy.modeling.models.ExpCutoffPowerLaw3FGLSpectralModel` to the same data.
+# - Fit a `~gammapy.modeling.models.ExpCutoffPowerLawSpectralModel` model to Vela X ('HESS J0835-455') only and check if the best fit values correspond to the values given in the Gammacat catalog
 
 # ## What next?
 # 
@@ -252,7 +250,7 @@ ax.set_ylim(1e-13, 1e-11);
 # 
 # * If you would like to learn how to perform a full Poisson maximum likelihood spectral fit, please check out the [spectrum analysis](spectrum_analysis.ipynb) tutorial.
 # * To learn more about other parts of Gammapy (e.g. Fermi-LAT and TeV data analysis), check out the other tutorial notebooks.
-# * To see what's available in Gammapy, browse the [Gammapy docs](https://docs.gammapy.org/) or use the full-text search.
+# * To see what's available in Gammapy, browse the Gammapy docs or use the full-text search.
 # * If you have any questions, ask on the mailing list .
 
 # In[ ]:

@@ -60,7 +60,6 @@ from gammapy.modeling.models import (
     SkyModel,
 )
 from gammapy.cube.simulate import simulate_dataset
-from gammapy.modeling import Fit
 from gammapy.modeling.sampling import (
     run_mcmc,
     par_to_model,

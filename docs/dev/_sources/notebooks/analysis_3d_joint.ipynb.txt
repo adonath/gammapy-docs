@@ -23,6 +23,7 @@
    "metadata": {},
    "source": [
     "# Joint 3D Analysis\n",
+    "\n",
     "In this tutorial we show how to run a joint 3D map-based analysis using three example observations of the Galactic center region with CTA. We start with the required imports:"
    ]
   },
@@ -55,12 +56,10 @@
    "outputs": [],
    "source": [
     "from gammapy.data import DataStore\n",
-    "from gammapy.irf import EnergyDispersion, make_psf\n",
     "from gammapy.maps import WcsGeom, MapAxis, Map\n",
-    "from gammapy.cube import MapDatasetMaker, PSFKernel, MapDataset\n",
+    "from gammapy.cube import MapDatasetMaker, MapDataset\n",
     "from gammapy.modeling.models import (\n",
     "    SkyModel,\n",
-    "    BackgroundModel,\n",
     "    PowerLawSpectralModel,\n",
     "    PointSpatialModel,\n",
     ")\n",
@@ -73,7 +72,7 @@
    "source": [
     "## Prepare modeling input data\n",
     "\n",
-    "We first use the `DataStore` object to access the CTA observations and retrieve a list of observations by passing the observations IDs to the `.get_observations()` method:"
+    "We first use the `~gammapy.data.DataStore` object to access the CTA observations and retrieve a list of observations by passing the observations IDs to the `~gammapy.data.DataStore.get_observations()` method:"
    ]
   },
   {
@@ -149,7 +148,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "The datasets are prepared by using the `MapDatasetMaker.run()` method and passing the `observation`."
+    "The datasets are prepared by using the `~gammapy.cube.MapDatasetMaker.run()` method and passing the `observation`."
    ]
   },
   {
@@ -172,7 +171,7 @@
      "output_type": "stream",
      "text": [
       "WARNING: Tried to get polar motions for times after IERS data is valid. Defaulting to polar motion from the 50-yr mean for those. This may affect precision at the 10s of arcsec level [astropy.coordinates.builtin_frames.utils]\n",
-      "/Users/adonath/github/adonath/gammapy/gammapy/utils/interpolation.py:159: Warning: Interpolated values reached float32 precision limit\n",
+      "/Users/deil/work/code/gammapy-docs/build/dev/gammapy/gammapy/utils/interpolation.py:159: Warning: Interpolated values reached float32 precision limit\n",
       "  \"Interpolated values reached float32 precision limit\", Warning\n"
      ]
     },
@@ -180,8 +179,8 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "CPU times: user 8.72 s, sys: 1.62 s, total: 10.3 s\n",
-      "Wall time: 11.5 s\n"
+      "CPU times: user 9.33 s, sys: 1.63 s, total: 11 s\n",
+      "Wall time: 11 s\n"
      ]
     }
    ],
@@ -199,8 +198,7 @@
     "        position=src_pos, geom=geom, max_radius=\"0.3 deg\"\n",
     "    )\n",
     "    dataset.write(\n",
-    "        \"analysis_3d_joint/dataset-obs-{}.fits\".format(obs.obs_id),\n",
-    "        overwrite=True,\n",
+    "        f\"analysis_3d_joint/dataset-obs-{obs.obs_id}.fits\", overwrite=True\n",
     "    )"
    ]
   },
@@ -245,9 +243,7 @@
     "datasets = []\n",
     "\n",
     "for obs_id in obs_ids:\n",
-    "    filename = Path(\"analysis_3d_joint\") / \"dataset-obs-{}.fits\".format(obs_id)\n",
-    "\n",
-    "    dataset = MapDataset.read(filename)\n",
+    "    dataset = MapDataset.read(f\"analysis_3d_joint/dataset-obs-{obs_id}.fits\")\n",
     "    dataset.model = model\n",
     "    dataset.background_model.tilt.frozen = False\n",
     "\n",
@@ -275,8 +271,8 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "CPU times: user 26.7 s, sys: 3.09 s, total: 29.8 s\n",
-      "Wall time: 31.8 s\n"
+      "CPU times: user 29.1 s, sys: 2.95 s, total: 32.1 s\n",
+      "Wall time: 32.1 s\n"
      ]
     }
    ],
@@ -326,7 +322,7 @@
      "data": {
       "text/html": [
        "<i>Table length=14</i>\n",
-       "<table id=\"table4779220384\" class=\"table-striped table-bordered table-condensed\">\n",
+       "<table id=\"table4738161408\" class=\"table-striped table-bordered table-condensed\">\n",
        "<thead><tr><th>name</th><th>value</th><th>error</th><th>unit</th><th>min</th><th>max</th><th>frozen</th></tr></thead>\n",
        "<thead><tr><th>str9</th><th>float64</th><th>float64</th><th>str14</th><th>float64</th><th>float64</th><th>bool</th></tr></thead>\n",
        "<tr><td>lon_0</td><td>-5.235e-02</td><td>nan</td><td>deg</td><td>nan</td><td>nan</td><td>False</td></tr>\n",
@@ -379,7 +375,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "The information which parameter belongs to which dataset is not listed explicitely in the table (yet), but the order of parameters is conserved. You can always access the underlying object tree as well to get specific parameter values:"
+    "The information which parameter belongs to which dataset is not listed explicitly in the table (yet), but the order of parameters is conserved. You can always access the underlying object tree as well to get specific parameter values:"
    ]
   },
   {
@@ -391,9 +387,9 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "1.310615645530953\n",
-      "1.3094879541173339\n",
-      "1.3242691140263831\n"
+      "1.31061561932963\n",
+      "1.309488124830256\n",
+      "1.3242691589690336\n"
      ]
     }
    ],
@@ -413,7 +409,7 @@
    "cell_type": "markdown",
    "metadata": {},
    "source": [
-    "Each `MapDataset` object is equipped with a method called `plot.residuals()`, which displays the spatial and spectral residuals (computed as *counts-model*) for the dataset. Optionally, these can be normalized as *(counts-model)/model* or *(counts-model)/sqrt(model)*, by passing the parameter `norm='model` or `norm=sqrt_model`.\n",
+    "Each `~gammapy.cube.MapDataset` object is equipped with a method called `~gammapy.cube.MapDataset.plot_residuals()`, which displays the spatial and spectral residuals (computed as *counts-model*) for the dataset. Optionally, these can be normalized as *(counts-model)/model* or *(counts-model)/sqrt(model)*, by passing the parameter `norm='model` or `norm=sqrt_model`.\n",
     "\n",
     "First of all, let's define a region for the spectral extraction:"
    ]

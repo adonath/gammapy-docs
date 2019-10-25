@@ -5,7 +5,7 @@
 # 
 # In September 2018 the [H.E.S.S.](https://www.mpi-hd.mpg.de/hfm/HESS) collaboration released a small subset of archival data in FITS format. This tutorial explains how to analyse this data with Gammapy. We will analyse four observation runs of the Crab nebula, which are part of the [H.E.S.S. first public test data release](https://www.mpi-hd.mpg.de/hfm/HESS/pages/dl3-dr1/). The data was release without corresponding background models. In [background_model.ipynb](background_model.ipynb) we show how to make a simple background model, which is also used in this tutorial. The background model is not perfect; it assumes radial symmetry and is in general derived from only a few observations, but still good enough for a reliable analysis > 1TeV.
 # 
-# **Note:** The high level `Analysis` class is a new feature added in Gammapy v0.14. In the curret state it supports the standard analysis cases of a joint or stacked 3D and 1D analysis. It provides only limited access to analaysis parameters via the config file. It is expected that the format of the YAML config will be extended and change in future Gammapy versions.
+# **Note:** The high level `Analysis` class is a new feature added in Gammapy v0.14. In the current state it supports the standard analysis cases of a joint or stacked 3D and 1D analysis. It provides only limited access to analaysis parameters via the config file. It is expected that the format of the YAML config will be extended and change in future Gammapy versions.
 # 
 # We will first show how to configure and run a stacked 3D analysis and then address the classical spectral analysis using reflected regions later. The structure of the tutorial follows a typical analysis:
 # 
@@ -24,14 +24,11 @@
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
-import numpy as np
 
 
 # In[ ]:
 
 
-import yaml
-from pathlib import Path
 from regions import CircleSkyRegion
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -78,8 +75,8 @@ datasets:
             nbin: 5
             interp: log
             node_type: edges
-            unit: TeV
-
+            unit: TeV         
+    
 fit:
     fit_range:
         max: 30 TeV
@@ -95,7 +92,7 @@ flux-points:
 """
 
 
-# We first create an `AnalysiConfig` object from it:
+# We first create an `~gammapy.scripts.AnalysisConfig` object from it:
 
 # In[ ]:
 
@@ -105,7 +102,7 @@ config = AnalysisConfig(config_str)
 
 # ##  Observation selection
 # 
-# Now we create the high level `Analysis` object from the config object:
+# Now we create the high level `~gammapy.scripts.Analysis` object from the config object:
 
 # In[ ]:
 
@@ -113,7 +110,7 @@ config = AnalysisConfig(config_str)
 analysis = Analysis(config)
 
 
-# And directly select and load the observatiosn from disk using `.get_observations()`:
+# And directly select and load the observations from disk using `~gammapy.scripts.Analysis.get_observations()`:
 
 # In[ ]:
 
@@ -121,7 +118,7 @@ analysis = Analysis(config)
 analysis.get_observations()
 
 
-# The observations are now availabe on the `Analysis` object. The selection corresponds to the following ids:
+# The observations are now available on the `Analysis` object. The selection corresponds to the following ids:
 
 # In[ ]:
 
@@ -321,7 +318,8 @@ residuals.smooth("0.08 deg").plot_interactive(
 
 # ### Inspecting likelihood profiles
 # 
-# To check the quality of the fit it is also useful to plot likelihood profiles for specific parameters. For this we use `analysis.fit.likelihood_profile()`
+# To check the quality of the fit it is also useful to plot likelihood profiles for specific parameters.
+# For this we use `~gammapy.modeling.Fit.likelihood_profile()`
 
 # In[ ]:
 

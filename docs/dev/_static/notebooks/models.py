@@ -3,7 +3,7 @@
 
 # # Modeling and Models
 # 
-# This notebook is an introduction to `gammapy.modeling` and `gammapy.modeling.models`.
+# This notebook is an introduction to `~gammapy.modeling` and `~gammapy.modeling.models`.
 # 
 # TODO: finish writing this. 
 # For now this is mostly copy & paste from other existing examples to this notebook. 
@@ -180,7 +180,7 @@ for seed, ls in zip(["CMB", "FIR"], ["-", "--"]):
     model = gm.NaimaSpectralModel(
         radiative_model, seed=seed, distance=1.5 * u.kpc
     )
-    model.plot(label="IC ({})".format(seed), ls=ls, color="gray", **opts)
+    model.plot(label=f"IC ({seed})", ls=ls, color="gray", **opts)
 
 plt.legend(loc="best")
 

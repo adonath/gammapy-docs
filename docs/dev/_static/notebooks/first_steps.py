@@ -5,7 +5,7 @@
 # 
 # ## Introduction
 # 
-# This is a getting started tutorial for [Gammapy](https://docs.gammapy.org/).
+# This is a getting started tutorial for Gammapy.
 # 
 # In this tutorial we will use the [Second Fermi-LAT Catalog of High-Energy Sources (3FHL) catalog](http://fermi.gsfc.nasa.gov/ssc/data/access/lat/3FHL/), corresponding event list and images to learn how to work with some of the central Gammapy data structures.
 # 
@@ -13,24 +13,24 @@
 # 
 # * **Sky maps**
 #   * We will learn how to handle image based data with gammapy using a Fermi-LAT 3FHL example image. We will work with the following classes:
-#     - [gammapy.maps.WcsNDMap](https://docs.gammapy.org/dev/api/gammapy.maps.WcsNDMap.html)
+#     - `~gammapy.maps.WcsNDMap`
 #     - [astropy.coordinates.SkyCoord](http://astropy.readthedocs.io/en/latest/coordinates/index.html)
 #     - [numpy.ndarray](https://docs.scipy.org/doc/numpy/reference/generated/numpy.ndarray.html)
 # 
 # * **Event lists**
 #   * We will learn how to handle event lists with Gammapy. Important for this are the following classes: 
-#     - [gammapy.data.EventList](https://docs.gammapy.org/dev/api/gammapy.data.EventList.html)
-#     - [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html#astropy.table.Table)
+#     - `~gammapy.data.EventList`
+#     - [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html)
 # 
 # * **Source catalogs**
 #   * We will show how to load source catalogs with Gammapy and explore the data using the following classes:
-#     - [gammapy.catalog.SourceCatalog](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalog.html), specifically [gammapy.catalog.SourceCatalog3FHL](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalog3FHL.html)
-#     - [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html#astropy.table.Table)
+#     - `~gammapy.catalog.SourceCatalog`, specifically `~gammapy.catalog.SourceCatalog3FHL`
+#     - [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html)
 # 
 # * **Spectral models and flux points**
 #   * We will pick an example source and show how to plot its spectral model and flux points. For this we will use the following classes:
-#     - [gammapy.spectrum.SpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.SpectralModel.html), specifically the [PowerLaw2SpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLaw2SpectralModel.html) model.
-#     - [gammapy.spectrum.FluxPoints](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html)
+#     - `~gammapy.modeling.models.SpectralModel`, specifically the `~gammapy.modeling.models.PowerLaw2SpectralModel`
+#     - `~gammapy.spectrum.FluxPoints`
 #     - [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html)
 # 
 
@@ -53,7 +53,7 @@ else:
     print("Great your setup is correct!")
 
 
-# In case you encounter an error, you can un-comment and execute the following cell to continue. But we recommend to set up your enviroment correctly as decribed [here](https://docs.gammapy.org/dev/getting-started.html#download-tutorials) after you are done with this notebook.
+# In case you encounter an error, you can un-comment and execute the following cell to continue. But we recommend to set up your environment correctly as described [here](../getting-started.rst#download-tutorials) after you are done with this notebook.
 
 # In[ ]:
 
@@ -73,14 +73,13 @@ import matplotlib.pyplot as plt
 # In[ ]:
 
 
-import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord
 
 
 # ## Maps
 # 
-# The [gammapy.maps](https://docs.gammapy.org/dev/maps) package contains classes to work with sky images and cubes.
+# The `~gammapy.maps` package contains classes to work with sky images and cubes.
 # 
 # In this section, we will use a simple 2D sky image and will learn how to:
 # 
@@ -98,7 +97,7 @@ from gammapy.maps import Map
 gc_3fhl = Map.read("$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-counts.fits.gz")
 
 
-# The image is a ``WCSNDMap`` object:
+# The image is a `~gammapy.maps.WCSNDMap` object:
 
 # In[ ]:
 
@@ -108,7 +107,7 @@ gc_3fhl
 
 # The shape of the image is 400 x 200 pixel and it is defined using a cartesian projection in galactic coordinates.
 # 
-# The ``geom`` attribute is a ``WcsGeom`` object:
+# The ``geom`` attribute is a `~gammapy.maps.WcsGeom` object:
 
 # In[ ]:
 
@@ -129,10 +128,10 @@ gc_3fhl.data
 # In[ ]:
 
 
-print("Total number of counts in the image: {:.0f}".format(gc_3fhl.data.sum()))
+print(f"Total number of counts in the image: {gc_3fhl.data.sum():.0f}")
 
 
-# To show the image on the screen we can use the ``plot`` method. It basically calls [plt.imshow](http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.imshow), passing the `gc_3fhl.data` attribute but in addition handles axis with world coordinates using [wcsaxes](https://wcsaxes.readthedocs.io/en/latest/) and defines some defaults for nicer plots (e.g. the colormap 'afmhot'):
+# To show the image on the screen we can use the ``plot`` method. It basically calls [plt.imshow](http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.imshow), passing the `gc_3fhl.data` attribute but in addition handles axis with world coordinates using [astropy.visualization.wcsaxes](https://docs.astropy.org/en/stable/visualization/wcsaxes/) and defines some defaults for nicer plots (e.g. the colormap 'afmhot'):
 
 # In[ ]:
 
@@ -140,7 +139,7 @@ print("Total number of counts in the image: {:.0f}".format(gc_3fhl.data.sum()))
 gc_3fhl.plot(stretch="sqrt");
 
 
-# To make the structures in the image more visible we will smooth the data using a Gausian kernel with a radius of 0.5 deg. Again `smooth()` is a wrapper around existing functionality from the scientific Python libraries. In this case it is Scipy's [gaussian_filter](https://docs.scipy.org/doc/scipy-0.16.1/reference/generated/scipy.ndimage.filters.gaussian_filter.html) method. For convenience the kernel shape can be specified with as string and the smoothing radius with a quantity. It returns again a map object, that we can plot directly the same way we did above:
+# To make the structures in the image more visible we will smooth the data using a Gaussian kernel.
 
 # In[ ]:
 
@@ -154,7 +153,7 @@ gc_3fhl_smoothed = gc_3fhl.smooth(kernel="gauss", width=0.2 * u.deg)
 gc_3fhl_smoothed.plot(stretch="sqrt");
 
 
-# The smoothed plot already looks much nicer, but still the image is rather large. As we are mostly interested in the inner part of the image, we will cut out a quadratic region of the size 9 deg x 9 deg around Vela. Therefore we use ``Map.cutout`` to make a cutout map:
+# The smoothed plot already looks much nicer, but still the image is rather large. As we are mostly interested in the inner part of the image, we will cut out a quadratic region of the size 9 deg x 9 deg around Vela. Therefore we use `~gammapy.maps.Map.cutout` to make a cutout map:
 
 # In[ ]:
 
@@ -165,11 +164,11 @@ gc_3fhl_cutout = gc_3fhl_smoothed.cutout(center, 9 * u.deg)
 gc_3fhl_cutout.plot(stretch="sqrt");
 
 
-# For a more detailed introdcution to `ganmmapy.maps`, take a look a the [maps.ipynb](maps.ipynb) notebook.
+# For a more detailed introduction to `~gammapy.maps`, take a look a the [maps.ipynb](maps.ipynb) notebook.
 # 
 # ### Exercises
 # 
-# * Add a marker and circle at the position of `Sag A*` (you can find examples in the WCSAxes [documentation](https://wcsaxes.readthedocs.io/en/latest/overlays.html)).
+# * Add a marker and circle at the position of `Sag A*` (you can find examples in [astropy.visualization.wcsaxes](https://docs.astropy.org/en/stable/visualization/wcsaxes/)).
 
 # In[ ]:
 
@@ -179,7 +178,7 @@ gc_3fhl_cutout.plot(stretch="sqrt");
 
 # ## Event lists
 # 
-# Almost any high-level gamma-ray data analysis starts with the raw measured counts data, which is stored in event lists. In Gammapy event lists are represented by the [gammapy.data.EventList](https://docs.gammapy.org/dev/api/gammapy.data.EventList.html) class. 
+# Almost any high-level gamma-ray data analysis starts with the raw measured counts data, which is stored in event lists. In Gammapy event lists are represented by the `~gammapy.data.EventList` class. 
 # 
 # In this section we will learn how to:
 # 
@@ -187,7 +186,7 @@ gc_3fhl_cutout.plot(stretch="sqrt");
 # * Access and work with the `EventList` attributes such as `.table` and `.energy` 
 # * Filter events lists using convenience methods
 # 
-# Let's start with the import from the [gammapy.data](https://docs.gammapy.org/dev/data/index.html) submodule:
+# Let's start with the import from the `~gammapy.data` submodule:
 
 # In[ ]:
 
@@ -195,7 +194,7 @@ gc_3fhl_cutout.plot(stretch="sqrt");
 from gammapy.data import EventList
 
 
-# Very similar to the sky map class an event list can be created, by passing a filename to the `.read()` method:
+# Very similar to the sky map class an event list can be created, by passing a filename to the `~gammapy.data.EventList.read()` method:
 
 # In[ ]:
 
@@ -205,7 +204,7 @@ events_3fhl = EventList.read(
 )
 
 
-# This time the actual data is stored as an [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html#astropy.table.Table) object. It can be accessed with `.table` attribute: 
+# This time the actual data is stored as an [astropy.table.Table](http://docs.astropy.org/en/stable/api/astropy.table.Table.html) object. It can be accessed with `.table` attribute: 
 
 # In[ ]:
 
@@ -218,7 +217,7 @@ events_3fhl.table
 # In[ ]:
 
 
-print("Total number of events: {}".format(len(events_3fhl.table)))
+len(events_3fhl.table)
 
 
 # And we can access any other attribute of the `Table` object as well:
@@ -229,7 +228,7 @@ print("Total number of events: {}".format(len(events_3fhl.table)))
 events_3fhl.table.colnames
 
 
-# For convenience we can access the most important event parameters as properties on the `EventList` objects. The attributes will return corresponding Astropy objects to represent the data, such as [astropy.units.Quantity](http://docs.astropy.org/en/stable/api/astropy.units.Quantity.html#astropy.units.Quantity), [astropy.coordinates.SkyCoord](http://docs.astropy.org/en/stable/api/astropy.coordinates.SkyCoord.html) or [astropy.time.Time](http://docs.astropy.org/en/stable/api/astropy.time.Time.html#astropy.time.Time) objects:
+# For convenience we can access the most important event parameters as properties on the `EventList` objects. The attributes will return corresponding Astropy objects to represent the data, such as [astropy.units.Quantity](http://docs.astropy.org/en/stable/api/astropy.units.Quantity.html), [astropy.coordinates.SkyCoord](http://docs.astropy.org/en/stable/api/astropy.coordinates.SkyCoord.html) or [astropy.time.Time](http://docs.astropy.org/en/stable/api/astropy.time.Time.html#astropy.time.Time) objects:
 
 # In[ ]:
 
@@ -284,11 +283,11 @@ events_gc_3fhl.energy[-1].to("GeV")
 # 
 # In this section we will learn how to:
 # 
-# * Load builtins catalogs from [gammapy.catalog](https://docs.gammapy.org/dev/catalog/index.html)
+# * Load builtins catalogs from `~gammapy.catalog`
 # * Sort and index the underlying Astropy tables
 # * Access data from individual sources
 # 
-# Let's start with importing the 3FHL catalog object from the [gammapy.catalog](https://docs.gammapy.org/dev/catalog/index.html) submodule:
+# Let's start with importing the 3FHL catalog object from the `~gammapy.catalog` submodule:
 
 # In[ ]:
 
@@ -337,7 +336,7 @@ print(mkn_421_3fhl.data["Signif_Avg"])
 # ### Exercises
 # 
 # * Try to load the Fermi-LAT 2FHL catalog and check the total number of sources it contains.
-# * Select all the sources from the 2FHL catalog which are contained in the Galactic Center region. The methods [`WcsGeom.contains()`](https://docs.gammapy.org/dev/api/gammapy.maps.WcsGeom.html#gammapy.maps.WcsGeom.contains) and [`SourceCatalog.positions`](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalog.html#gammapy.catalog.SourceCatalog.positions) might be helpful for this. Add markers for all these sources and try to add labels with the source names. The function [ax.text()](http://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.text.html#matplotlib.axes.Axes.text) might be also helpful.
+# * Select all the sources from the 2FHL catalog which are contained in the Galactic Center region. The methods `~gammapy.maps.WcsGeom.contains()` and `~gammapy.catalog.SourceCatalog.positions` might be helpful for this. Add markers for all these sources and try to add labels with the source names. The function [ax.text()](http://matplotlib.org/api/_as_gen/matplotlib.axes.Axes.text.html#matplotlib.axes.Axes.text) might be also helpful.
 # * Try to find the source class of the object at position ra=68.6803, dec=9.3331
 #  
 
@@ -365,7 +364,7 @@ crab_3fhl_spec = crab_3fhl.spectral_model()
 print(crab_3fhl_spec)
 
 
-# The `crab_3fhl_spec` is an instance of the [gammapy.modeling.models.PowerLaw2SpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLaw2SpectralModel.html#gammapy.modeling.models.PowerLaw2SpectralModel) model, with the parameter values and errors taken from the 3FHL catalog. 
+# The `crab_3fhl_spec` is an instance of the `~gammapy.modeling.models.PowerLaw2SpectralModel` model, with the parameter values and errors taken from the 3FHL catalog. 
 # 
 # Let's plot the spectral model in the energy range between 10 GeV and 2000 GeV:
 
@@ -457,5 +456,5 @@ crab_3fhl.flux_points.to_sed_type("dnde").plot(ax=ax, energy_power=2);
 # 
 # * To learn more about those classes, go to the API docs (links are in the introduction at the top).
 # * To learn more about other parts of Gammapy (e.g. Fermi-LAT and TeV data analysis), check out the other tutorial notebooks.
-# * To see what's available in Gammapy, browse the [Gammapy docs](https://docs.gammapy.org/) or use the full-text search.
+# * To see what's available in Gammapy, browse the Gammapy docs or use the full-text search.
 # * If you have any questions, ask on the mailing list.

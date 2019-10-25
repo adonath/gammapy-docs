@@ -7,7 +7,7 @@
 
 # This notebook shows how to do a pulsar analysis with Gammapy. It's based on a Vela simulation file from the CTA DC1, which already contains a column of phases. We will produce a phasogram, a phase-resolved map and a phase-resolved spectrum of the Vela pulsar using the class PhaseBackgroundEstimator. 
 # 
-# The phasing in itself is not done here, and it requires specific packages like Tempo2 or PINT (https://nanograv-pint.readthedocs.io/en/latest/readme.html).
+# The phasing in itself is not done here, and it requires specific packages like Tempo2 or [PINT](https://nanograv-pint.readthedocs.io).
 
 # ## Opening the data
 
@@ -119,7 +119,7 @@ plt.bar(
 plt.xlim(0, 1)
 plt.xlabel("Phase")
 plt.ylabel("Counts")
-plt.title("Phaseogram with angular cut of {}".format(on_radius));
+plt.title(f"Phasogram with angular cut of {on_radius}");
 
 
 # Now let's add some fancy additions to our phasogram: a patch on the ON- and OFF-phase regions and one for the background level.
@@ -134,7 +134,7 @@ on_phase_range = (0.5, 0.6)
 mask_off = (off_phase_range[0] < phases) & (phases < off_phase_range[1])
 
 count_bkg = mask_off.sum()
-print("Number of Off events: {}".format(count_bkg))
+print(f"Number of Off events: {count_bkg}")
 
 
 # In[ ]:
@@ -195,7 +195,7 @@ plt.text(0.895, 5, "OFF", color="black", fontsize=17, ha="center")
 plt.xlabel("Phase")
 plt.ylabel("Counts")
 plt.xlim(0, 1)
-plt.title("Phasogram with angular cut of {}".format(on_radius));
+plt.title(f"Phasogram with angular cut of {on_radius}");
 
 
 # ## Phase-resolved map

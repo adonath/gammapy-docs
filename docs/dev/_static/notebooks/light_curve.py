@@ -5,14 +5,9 @@
 # 
 # ## Introduction
 # 
-# This tutorial presents a new light curve estimator that works with dataset objects. We will demonstrate how to compute a light curve from 3D data cubes as well as 1D spectral data using the `MapDataset`, `SpectrumDatasetOnOff` and `LightCurveEstimator` classes. 
+# This tutorial presents a new light curve estimator that works with dataset objects. We will demonstrate how to compute a `~gammapy.time.LightCurve` from 3D data cubes as well as 1D spectral data using the `~gammapy.cube.MapDataset`, `~gammapy.spectrum.SpectrumDatasetOnOff` and `~gammapy.time.LightCurveEstimator` classes. 
 # 
 # We will use the four Crab nebula observations from the [H.E.S.S. first public test data release](https://www.mpi-hd.mpg.de/hfm/HESS/pages/dl3-dr1/) and compute per-observation fluxes. The Crab nebula is not known to be variable at TeV energies, so we expect constant brightness within statistical and systematic errors.
-# 
-# The main classes we will use are:
-# 
-# * [gammapy.time.LightCurve](https://docs.gammapy.org/dev/api/gammapy.time.LightCurve.html)
-# * [gammapy.time.LightCurveEstimator](https://docs.gammapy.org/dev/api/gammapy.time.LightCurveEstimator.html)
 # 
 # ## Setup
 # 
@@ -26,7 +21,6 @@ import matplotlib.pyplot as plt
 
 import astropy.units as u
 from astropy.coordinates import SkyCoord
-from astropy.time import Time
 import logging
 
 log = logging.getLogger(__name__)
@@ -37,13 +31,12 @@ log = logging.getLogger(__name__)
 # In[ ]:
 
 
-from gammapy.data import ObservationFilter, DataStore
+from gammapy.data import DataStore
 from gammapy.modeling.models import PowerLawSpectralModel
 from gammapy.modeling.models import PointSpatialModel
-from gammapy.modeling.models import SkyModel, BackgroundModel
-from gammapy.cube import PSFKernel, MapDatasetMaker, MapDataset
+from gammapy.modeling.models import SkyModel
+from gammapy.cube import MapDatasetMaker, MapDataset
 from gammapy.maps import WcsGeom, MapAxis
-from gammapy.irf import make_mean_psf, make_mean_edisp
 from gammapy.time import LightCurveEstimator
 
 
@@ -97,17 +90,8 @@ geom = WcsGeom.create(
     axes=[energy_axis],
 )
 
-etrue_axis = MapAxis.from_bounds(
+energy_axis_true = MapAxis.from_bounds(
     0.1, 20, 20, unit="TeV", name="energy", interp="log"
-)
-
-geom_true = WcsGeom.create(
-    skydir=target_position,
-    binsz=0.2,
-    width=(2, 2),
-    coordsys="CEL",
-    proj="CAR",
-    axes=[etrue_axis],
 )
 
 offset_max = 2 * u.deg
@@ -149,7 +133,7 @@ sky_model.parameters["lat_0"].frozen = True
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '\ndatasets = []\n\nmaker = MapDatasetMaker(geom=geom, geom_true=geom_true, offset_max=offset_max)\n\nfor time_interval in time_intervals:\n    # get filtered observation lists in time interval\n    observations = crab_obs.select_time(time_interval)\n\n    # Proceed with further analysis only if there are observations\n    # in the selected time window\n    if len(observations) == 0:\n        log.warning(\n            "No observations found in time interval:"\n            "{t_min} - {t_max}".format(\n                t_min=time_interval[0], t_max=time_interval[1]\n            )\n        )\n        continue\n\n    stacked = MapDataset.create(geom=geom, geom_irf=geom_true)\n\n    for obs in observations:\n        dataset = maker.run(obs)\n        stacked.stack(dataset)\n\n    # TODO: remove once IRF maps are handled correctly in fit\n    stacked.edisp = stacked.edisp.get_energy_dispersion(\n        position=target_position, e_reco=energy_axis.edges\n    )\n\n    geom_psf = geom_true.to_binsz(binsz=0.02)\n    stacked.psf = stacked.psf.get_psf_kernel(\n        position=target_position, geom=geom_psf, max_radius="0.3 deg"\n    )\n\n    stacked.counts.meta["t_start"] = time_interval[0]\n    stacked.counts.meta["t_stop"] = time_interval[1]\n    datasets.append(stacked)')
+get_ipython().run_cell_magic('time', '', '\ndatasets = []\n\nmaker = MapDatasetMaker(geom=geom, energy_axis_true=energy_axis_true, offset_max=offset_max)\n\nfor time_interval in time_intervals:\n    # get filtered observation lists in time interval\n    observations = crab_obs.select_time(time_interval)\n\n    # Proceed with further analysis only if there are observations\n    # in the selected time window\n    if len(observations) == 0:\n        log.warning(f"No observations in time interval: {time_interval}")\n        continue\n\n    stacked = MapDataset.create(geom=geom, energy_axis_true=energy_axis_true)\n\n    for obs in observations:\n        dataset = maker.run(obs)\n        stacked.stack(dataset)\n\n    # TODO: remove once IRF maps are handled correctly in fit\n    stacked.edisp = stacked.edisp.get_energy_dispersion(\n        position=target_position, e_reco=energy_axis.edges\n    )\n\n    stacked.psf = stacked.psf.get_psf_kernel(\n        position=target_position, geom=stacked.exposure.geom, max_radius="0.3 deg"\n    )\n\n    stacked.counts.meta["t_start"] = time_interval[0]\n    stacked.counts.meta["t_stop"] = time_interval[1]\n    datasets.append(stacked)')
 
 
 # ## Light Curve estimation: the 3D case
@@ -257,7 +241,7 @@ extraction = SpectrumExtraction(
     bkg_estimate=bkg_estimator.result,
     containment_correction=True,
     e_reco=energy_axis.edges,
-    e_true=etrue_axis.edges,
+    e_true=energy_axis_true.edges,
 )
 extraction.run()
 datasets_1d = extraction.spectrum_observations

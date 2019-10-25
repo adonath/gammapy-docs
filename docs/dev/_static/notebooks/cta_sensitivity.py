@@ -11,7 +11,7 @@
 # 
 # We will be using the following Gammapy class:
 # 
-# * [gammapy.spectrum.SensitivityEstimator](https://docs.gammapy.org/dev/api/gammapy.spectrum.SensitivityEstimator.html)
+# * `~gammapy.spectrum.SensitivityEstimator`
 
 # ## Setup
 # As usual, we'll start with some setup ...
@@ -53,10 +53,9 @@ energy_true = np.logspace(-2, 2, 100) * u.TeV
 # In[ ]:
 
 
-filename = (
+irfs = load_cta_irfs(
     "$GAMMAPY_DATA/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
 )
-irfs = load_cta_irfs(filename)
 arf = irfs["aeff"].to_effective_area_table(offset, energy=energy_true)
 rmf = irfs["edisp"].to_energy_dispersion(
     offset, e_true=energy_true, e_reco=energy_reco
@@ -157,8 +156,8 @@ plt.plot(
 )
 
 plt.loglog()
-plt.xlabel("Energy ({})".format(t["energy"].unit))
-plt.ylabel("Sensitivity ({})".format(t["e2dnde"].unit))
+plt.xlabel(f"Energy ({t['energy'].unit})")
+plt.ylabel(f"Sensitivity ({t['e2dnde'].unit})")
 plt.legend();
 
 
@@ -175,11 +174,11 @@ ax1.plot(
 )
 
 ax1.loglog()
-ax1.set_xlabel("Energy ({})".format(t["energy"].unit))
+ax1.set_xlabel(f"Energy ({t['energy'].unit})")
 ax1.set_ylabel("Expected number of bkg counts")
 
 ax2 = ax1.twinx()
-ax2.set_ylabel("ON region radius ({})".format(on_radii.unit), color="red")
+ax2.set_ylabel(f"ON region radius ({on_radii.unit})", color="red")
 ax2.semilogy(t["energy"], on_radii, color="red", label="PSF68")
 ax2.tick_params(axis="y", labelcolor="red")
 ax2.set_ylim(0.01, 0.5)

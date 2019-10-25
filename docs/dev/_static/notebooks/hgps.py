@@ -30,23 +30,18 @@
 # 
 # ## Packages
 # 
-# We will be using the following Python packages
-# 
-# * [astropy](http://docs.astropy.org/)
-# * [gammapy](https://docs.gammapy.org/)
-# * [matplotlib](https://matplotlib.org/) for plotting
-# 
+# We will be using Astropy, Gammapy and matploblit.
 # Under the hood all of those packages use Numpy arrays to store and work with data.
 # 
 # More specifically, we will use the following functions and classes:
 # 
-# * From [astropy](http://docs.astropy.org/), we will use [astropy.io.fits](http://docs.astropy.org/en/stable/io/fits/index.html) to read the FITS data, [astropy.table.Table](http://docs.astropy.org/en/stable/table/index.html) to work with the tables, but also [astropy.coordinates.SkyCoord](http://docs.astropy.org/en/stable/coordinates/index.html) and [astropy.wcs.WCS](http://docs.astropy.org/en/stable/wcs/index.html) to work with sky and pixel coordinates and [astropy.units.Quantity](http://docs.astropy.org/en/stable/units/index.html) to work with quantities.
+# * From Astropy, we will use [astropy.io.fits](http://docs.astropy.org/en/stable/io/fits/index.html) to read the FITS data, [astropy.table.Table](http://docs.astropy.org/en/stable/table/index.html) to work with the tables, but also [astropy.coordinates.SkyCoord](http://docs.astropy.org/en/stable/coordinates/index.html) and [astropy.wcs.WCS](http://docs.astropy.org/en/stable/wcs/index.html) to work with sky and pixel coordinates and [astropy.units.Quantity](http://docs.astropy.org/en/stable/units/index.html) to work with quantities.
 # 
-# * From [gammapy](https://docs.gammapy.org/), we will use [gammapy.maps.WcsNDMap](https://docs.gammapy.org/dev/api/gammapy.maps.WcsNDMap.html) to work with the HGPS sky maps, and [gammapy.catalog.SourceCatalogHGPS](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogHGPS.html) and [gammapy.catalog.SourceCatalogObjectHGPS](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogObjectHGPS.html) to work with the HGPS catalog data, especially the HGPS spectral data using [gammapy.modeling.models.SpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.SpectralModel.html) and [gammapy.spectrum.FluxPoints](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html) objects.
+# * From Gammapy, we will use `~gammapy.maps.WcsNDMap` to work with the HGPS sky maps, and `~gammapy.catalog.SourceCatalogHGPS` and `~gammapy.catalog.SourceCatalogObjectHGPS` to work with the HGPS catalog data, especially the HGPS spectral data using `~gammapy.modeling.models.SpectralModel` and `~gammapy.spectrum.FluxPoints` objects.
 # 
-# * [matplotlib](https://matplotlib.org/) for all plotting. For sky image plotting, we will use matplotlib via [astropy.visualization](http://docs.astropy.org/en/stable/visualization/index.html) and [gammapy.maps.WcsNDMap.plot](https://docs.gammapy.org/dev/api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.plot).
+# * [matplotlib](https://matplotlib.org/) for all plotting. For sky image plotting, we will use matplotlib via [astropy.visualization](http://docs.astropy.org/en/stable/visualization/index.html) and `~gammapy.maps.WcsNDMap.plot`.
 # 
-# If you're not familiar with Python, Numpy, Astropy, Gammapy or matplotlib yet, use the tutorial introductions as explained [here](https://docs.gammapy.org/dev/tutorials.html), as well as the links to the documentation that we just mentioned.
+# If you're not familiar with Python, Numpy, Astropy, Gammapy or matplotlib yet, use the tutorial introductions as explained [here](../tutorials.rst), as well as the links to the documentation that we just mentioned.
 
 # ## Setup
 # 
@@ -147,16 +142,16 @@ def hgps_data_download():
         url = base_url + filename
         path = hgps_data_path / filename
         if path.exists():
-            print("Already downloaded: {}".format(path))
+            print(f"Already downloaded: {path}")
         else:
-            print("Downloading {} to {}".format(url, path))
+            print(f"Downloading {url} to {path}")
             urlretrieve(url, str(path))
 
 
 hgps_data_path.mkdir(parents=True, exist_ok=True)
 hgps_data_download()
 
-print("\n\nFiles at {} :\n".format(hgps_data_path.absolute()))
+print(f"\n\nFiles at {hgps_data_path.absolute()} :\n")
 for path in hgps_data_path.iterdir():
     print(path)
 
@@ -534,7 +529,7 @@ pos
 # But still, there are some common tasks that aren't trivial to do and require reading the
 # FITS table description in detail and writing quite a bit of Python code.
 # 
-# So that you don't have to, we have done this for HGPS in [gammapy.catalog.SourceCatalogHGPS](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogHGPS.html) and also for a few other catalogs that are commonly used in gamma-ray astronomy in [gammapy.catalog](https://docs.gammapy.org/dev/catalog/index.html).
+# So that you don't have to, we have done this for HGPS in `~gammapy.catalog.SourceCatalogHGPS` and also for a few other catalogs that are commonly used in gamma-ray astronomy in `~gammapy.catalog`.
 # 
 # ### Read
 # 
@@ -550,7 +545,7 @@ cat = SourceCatalogHGPS(path)
 # ### Tables
 # 
 # Now all tables from the FITS file were loaded
-# and stored on the ``cat`` object. See the [SourceCatalogHGPS](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogHGPS.html) docs, or just try accessing one:
+# and stored on the ``cat`` object. See the `~gammapy.catalog.SourceCatalogHGPS` docs, or just try accessing one:
 
 # In[ ]:
 
@@ -567,7 +562,7 @@ cat.table_components.meta["EXTNAME"]
 # ### Source
 # 
 # You can access a given source by row index (starting at zero) or by source name.
-# This creates [SourceCatalogObjectHGPS](https://docs.gammapy.org/dev/api/gammapy.catalog.SourceCatalogObjectHGPS.html) objects that have a copy of all the data for a given source. See the class docs for a full overview.
+# This creates `~gammapy.catalog.SourceCatalogObjectHGPS` objects that have a copy of all the data for a given source. See the class docs for a full overview.
 
 # In[ ]:
 
@@ -658,7 +653,7 @@ plt.title("Vela X HGPS spectrum");
 
 # ## Maps with Gammapy
 # 
-# Let's use the [gammapy.maps.Map.read](https://docs.gammapy.org/dev/api/gammapy.maps.Map.html#gammapy.maps.Map.read) method to load up the HGPS significance survey map.
+# Let's use the `~gammapy.maps.Map.read` method to load up the HGPS significance survey map.
 
 # In[ ]:
 
@@ -801,7 +796,7 @@ axes = plotter.plot(
 )
 
 
-# Internally the class uses matplotlib class [`GridSpec`](https://matplotlib.org/api/gridspec_api.html#matplotlib.gridspec.GridSpec) to set up a grid of subplot axes, which are returned by the `MapPanelPlotter.plot()` function. These can be used further, e.g. to plot markers on, using the standard [`WcsAxes`](http://docs.astropy.org/en/stable/visualization/wcsaxes/) api.
+# Internally the class uses matplotlib class [GridSpec](https://matplotlib.org/api/gridspec_api.html#matplotlib.gridspec.GridSpec) to set up a grid of subplot axes, which are returned by the `~gammapy.maps.MapPanelPlotter.plot()` method. These can be used further, e.g. to plot markers on, use [astropy.visualization.wcsaxes](https://docs.astropy.org/en/stable/visualization/wcsaxes/).
 
 # ## Conclusions
 # 

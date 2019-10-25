@@ -5,9 +5,9 @@
 # 
 # Gammapy does not have any special handling for 2D images, but treats them as a subset of maps. Thus, classical 2D image analysis can be done in 2 independent ways: 
 # 
-# 1. Using the sherpa pacakge, see: [image_fitting_with_sherpa.ipynb](image_fitting_with_sherpa.ipynb),
+# 1. Using the sherpa package, see: [image_fitting_with_sherpa.ipynb](image_fitting_with_sherpa.ipynb),
 # 
-# 2. Within gammapy, by assuming 2D analysis to be a sub-set of the generalised `maps`. Thus, analysis should proceeexactly as demonstrated in [analysis_3d.ipynb](analysis_3d.ipynb), taking care of a few things that we mention in this tutorial
+# 2. Within gammapy, by assuming 2D analysis to be a sub-set of the generalised `maps`. Thus, analysis should proceed exactly as demonstrated in [analysis_3d.ipynb](analysis_3d.ipynb), taking care of a few things that we mention in this tutorial
 # 
 # We consider 2D `images` to be a special case of 3D `maps`, ie, maps with only one energy bin. This is a major difference while analysing in `sherpa`, where the `maps` must not contain any energy axis. In this tutorial, we do a classical image analysis using three example observations of the Galactic center region with CTA - i.e., study the source flux and morphology.
 # 
@@ -152,7 +152,7 @@ mask = geom2d.region_mask([region])
 
 # ## Modeling the source
 # 
-# This is the important thing to note in this analysis. Since modeling and fitting in `gammapy.maps` needs to have a combination of spectral models, we have to use a dummy Powerlaw as for the spectral model and fix its index to 2. Since we are interested only in the integral flux, we will use the `PowerLaw2SpectralModel` model which directly fits an integral flux.
+# This is the important thing to note in this analysis. Since modeling and fitting in `~gammapy.maps` needs to have a combination of spectral models, we have to use a dummy Powerlaw as for the spectral model and fix its index to 2. Since we are interested only in the integral flux, we will use the `PowerLaw2SpectralModel` model which directly fits an integral flux.
 
 # In[ ]:
 
@@ -216,7 +216,7 @@ result.parameters.covariance_to_table()
 
 # ## Classical Ring Background Analysis
 # 
-# No we repeat the same analyis but useing a classical ring background estimation. This is currently support with a separate `MapMakerRing`. However We start by defining an exclusion mask:
+# No we repeat the same analysis but using a classical ring background estimation. This is currently support with a separate `~gammapy.cube.MapMakerRing`. However We start by defining an exclusion mask:
 
 # In[ ]:
 
@@ -230,7 +230,7 @@ exclusion_mask.data = geom_image.region_mask([regions], inside=False)
 exclusion_mask.plot();
 
 
-# Next we define the parameters of the ring background and create the `RingBackgroundEstimator`:
+# Next we define the parameters of the ring background and create the `~gammapy.cube.RingBackgroundEstimator`:
 
 # In[ ]:
 
@@ -334,14 +334,14 @@ plt.ylim(1e-5, 1)
 xmin, xmax = np.min(significance_all), np.max(significance_all)
 plt.xlim(xmin, xmax)
 
-print("Fit results: mu = {:.2f}, std = {:.2f}".format(mu, std))
+print(f"Fit results: mu = {mu:.2f}, std = {std:.2f}")
 
 
 # ## Exercises
-# 1. Update the exclusion mask in the ring background example by thresholding the significance map and re-run the background estimator 
-# 1. Plot residual maps as done in the `analysis_3d` notebook
-# 1. Iteratively add and fit sources as explained in `image_fitting_with_sherpa` notebook
 # 
+# 1. Update the exclusion mask in the ring background example by thresholding the significance map and re-run the background estimator 
+# 1. Plot residual maps as done in the [analysis_3d](analysis_3d.ipynb) notebook
+# 1. Iteratively add and fit sources as explained in [image_fitting_with_sherpa](image_fitting_with_sherpa.ipynb) notebook
 
 # In[ ]:
 

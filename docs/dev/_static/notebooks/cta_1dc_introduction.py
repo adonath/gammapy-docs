@@ -22,7 +22,7 @@
 # 
 # * access event data
 # * access instrument response functions (IRFs)
-# * use index files and the ``gammapy.data.DataStore`` to access all data
+# * use index files and the `~gammapy.data.DataStore` to access all data
 # * use the observation index file to select the observations you're interested in
 # * read model XML files from Python (not integrated in Gammapy yet)
 # 
@@ -66,7 +66,7 @@ print("gammapy:", gammapy.__version__)
 # Information how to download more or all of the DC-1 data (in total 20 GB) is here:
 # https://forge.in2p3.fr/projects/data-challenge-1-dc-1/wiki#Data-access
 # 
-# Working with that data with Gammapy is identical to what we show here, except that the recommended way to do it is to point `DataStore.read` at `$CTADATA/index/gps` or whatever dataset or files you'd like to access there.
+# Working with that data with Gammapy is identical to what we show here, except that the recommended way to do it is to point `~gammapy.data.DataStore.read` at `$CTADATA/index/gps` or whatever dataset or files you'd like to access there.
 
 # In[ ]:
 
@@ -95,7 +95,7 @@ get_ipython().system('ls $GAMMAPY_DATA/cta-1dc')
 get_ipython().system('ls -1 $GAMMAPY_DATA/cta-1dc/data/baseline/gps')
 
 
-# Let's open up the first event list using the Gammapy `EventList` class, which contains the ``EVENTS`` table data via the ``table`` attribute as an Astropy `Table` object.
+# Let's open up the first event list using the Gammapy `~gammapy.data.EventList` class, which contains the ``EVENTS`` table data via the ``table`` attribute as an Astropy `Table` object.
 
 # In[ ]:
 
@@ -308,7 +308,7 @@ events.peek()
 # 
 # As a final example of how to work with event lists, here's now to apply arbitrary event selections and how to stack events tables from several observations into a single event list. 
 # 
-# We will just use `astropy.table.Table` directly, not go via the `gammapy.data.EventList` class. Note that you can always make an `EventList` object from a `Table` object via `event_list = EventList(table)`. One point to keep in mind is that `Table.read` doesn't resolve environment variables in filenames, so we'll use the Python standard library `os` package to construct the filenames.
+# We will just use `astropy.table.Table` directly, not go via the `~gammapy.data.EventList` class. Note that you can always make an `EventList` object from a `Table` object via `event_list = EventList(table)`. One point to keep in mind is that `Table.read` doesn't resolve environment variables in filenames, so we'll use the Python standard library `os` package to construct the filenames.
 
 # In[ ]:
 
@@ -351,7 +351,7 @@ print("Number of events after selection:", len(table2))
 
 # When processing a lot or all of the 1DC events, you would write a for loop, and apply the event selection before putting the table in the list of tables, or you might run out of memory. An example is [here](https://github.com/gammasky/cta-dc/blob/master/data/cta_1dc_make_allsky_images.py).
 # 
-# That's all for ``EVENTS``. You now know what every column in the event table contains, and how to work with event list tables using ``gammapy.data.EventList`` and ``astropy.table.Table``. 
+# That's all for ``EVENTS``. You now know what every column in the event table contains, and how to work with event list tables using `~gammapy.data.EventList` and ``astropy.table.Table``. 
 # 
 # Just in case that there is some observation parameter in the FITS EVENTS header that you're interested in, you can find the full description of the keys you can access via the ``events.table.meta`` dictionary [here](http://gamma-astro-data-formats.readthedocs.io/en/latest/events/events.html).
 
@@ -542,7 +542,7 @@ bkg.data.evaluate(energy="3 TeV", fov_lon="1 deg", fov_lat="0 deg")
 # 
 # ![gammapy.data.DataStore - your butler for CTA data](images/gammapy_datastore_butler.png)
 # 
-# Well, the butler exists. He's called `gammapy.data.DataStore` and he keeps track of the data using index files.
+# Well, the butler exists. He's called `~gammapy.data.DataStore` and he keeps track of the data using index files.
 # 
 # ### Index files
 # 
@@ -561,7 +561,7 @@ get_ipython().system('(cd $GAMMAPY_DATA/cta-1dc && tree index)')
 
 # ### Gammapy DataStore
 # 
-# If you want to access data and IRFs from the CTA 1DC GPS dataset, just create a `DataStore` by pointing at a folder where the index files are located.
+# If you want to access data and IRFs from the CTA 1DC GPS dataset, just create a `~gammapy.data.DataStore` by pointing at a folder where the index files are located.
 
 # In[ ]:
 
@@ -769,7 +769,7 @@ obs.bkg
 # * In addition we would like to support a second more human-friendly model format that looks something like [this](https://github.com/gammapy/gamma-cat/blob/b651de8d1d793e924764ffb13c8ec189bce9ea7d/input/data/2006/2006A%2526A...457..899A/tev-000025.yaml#L11)
 # * For now, you could use Gammalib to read the XML files, or you could read them directly with Python. The Python standard library contains [ElementTree](https://docs.python.org/3/library/xml.etree.elementtree.html) and there's [xmltodict](https://github.com/martinblech/xmltodict) which simply hands you back the XML file contents as a Python dictionary (containing a very nested hierarchical structure of Python dict and list objects and strings and numbers.
 # 
-# As an example, here's how you can read an XML sky model and access the spectral parameters of one source (the last, "Arp200" visible above in the XML printout) and create a [gammapy.modeling.models.PowerLawSpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLawSpectralModel.html) object.
+# As an example, here's how you can read an XML sky model and access the spectral parameters of one source (the last, "Arp200" visible above in the XML printout) and create a `~gammapy.modeling.models.PowerLawSpectralModel` object.
 
 # In[ ]:
 

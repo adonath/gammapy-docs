@@ -66,7 +66,7 @@ log.setLevel(logging.ERROR)
 
 # ## Select observations
 # 
-# Like explained in [cta_1dc_introduction.ipynb](cta_1dc_introduction.ipynb), a Gammapy analysis usually starts by creating a `DataStore` and selecting observations.
+# Like explained in [cta_1dc_introduction.ipynb](cta_1dc_introduction.ipynb), a Gammapy analysis usually starts by creating a `~gammapy.data.DataStore` and selecting observations.
 # 
 # This is shown in detail in the other notebook, here we just pick three observations near the galactic center.
 
@@ -188,7 +188,7 @@ images["excess"].smooth(3).plot(vmax=2);
 
 # ## Source Detection
 # 
-# Use the class [gammapy.detect.TSMapEstimator](https://docs.gammapy.org/dev/api/gammapy.detect.TSMapEstimator.html) and [gammapy.detect.find_peaks](https://docs.gammapy.org/dev/api/gammapy.detect.find_peaks.html) to detect sources on the images:
+# Use the class `~gammapy.detect.TSMapEstimator` and `~gammapy.detect.find_peaks` to detect sources on the images:
 
 # In[ ]:
 

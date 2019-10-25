@@ -39,7 +39,7 @@ from gammapy.modeling import Fit
 # 
 # ### Prepare input maps
 # 
-# We first use the `DataStore` object to access the CTA observations and retrieve a list of observations by passing the observations IDs to the `.get_observations()` method:
+# We first use the `~gammapy.data.DataStore` object to access the CTA observations and retrieve a list of observations by passing the observations IDs to the `~gammapy.data.DataStore.get_observations()` method:
 
 # In[ ]:
 
@@ -80,7 +80,7 @@ geom = WcsGeom.create(
 )
 
 
-# The `MapMaker` object is initialized with this reference geometry and a field of view cut of 4 deg:
+# The `~gammapy.cube.MapDatasetMaker` object is initialized with this reference geometry and a field of view cut of 4 deg:
 
 # In[ ]:
 
@@ -152,7 +152,7 @@ path = Path("analysis_3d")
 path.mkdir(exist_ok=True)
 
 
-# And then write the maps and IRFs to disk by calling the dedicated `.write()` methods:
+# And then write the maps and IRFs to disk by calling the dedicated `~gammapy.cube.MapDataset.write()` method:
 
 # In[ ]:
 
@@ -169,7 +169,6 @@ stacked.write(filename, overwrite=True)
 # In[ ]:
 
 
-# read maps
 stacked = MapDataset.read(filename)
 
 

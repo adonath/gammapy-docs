@@ -6,23 +6,22 @@
 # ![Gammapy Maps Illustration](images/gammapy_maps.png)
 # 
 # ## Introduction
-# The [gammapy.maps](https://docs.gammapy.org/dev/maps/index.html) submodule contains classes for representing **sky images** with an **arbitrary number of non-spatial dimensions** such as energy, time, event class or any possible user-defined dimension (illustrated in the image above). The main `Map` data structure features a **uniform API** for [WCS](https://fits.gsfc.nasa.gov/fits_wcs.html) as well as [HEALPix](https://en.wikipedia.org/wiki/HEALPix) based images. The API also generalizes simple image based operations such as smoothing, interpolation and reprojection to the arbitrary extra dimensions and makes working with (2 + N)-dimensional hypercubes **as easy as working with a simple 2D image**. Further information is also provided on the [gammpy.maps](https://docs.gammapy.org/dev/maps/index.html) docs page.
 # 
+# The `~gammapy.maps` submodule contains classes for representing sky images with an arbitrary number of non-spatial dimensions such as energy, time, event class or any possible user-defined dimension (illustrated in the image above). The main `Map` data structure features a uniform API for [WCS](https://fits.gsfc.nasa.gov/fits_wcs.html) as well as [HEALPix](https://en.wikipedia.org/wiki/HEALPix) based images. The API also generalizes simple image based operations such as smoothing, interpolation and reprojection to the arbitrary extra dimensions and makes working with (2 + N)-dimensional hypercubes as easy as working with a simple 2D image. Further information is also provided on the `~gammapy.maps` docs page.
 # 
-# In the following introduction we will **learn all the basics** of working with WCS based maps. HEALPix based maps will be covered in a future tutorial. We will cover the following topics in order:
+# In the following introduction we will learn all the basics of working with WCS based maps. HEALPix based maps will be covered in a future tutorial. We will cover the following topics in order:
 # 
-# 1. [Creating WCS Maps](#1.-Creating-WCS-Maps)
-# 1. [Accessing and Modifying Data](#2.-Accessing-and-Modifying-Data)
-# 1. [Reading and Writing](#3.-Reading-and-Writing)
-# 1. [Visualizing and Plotting](#4.-Visualizing-and-Plotting)
-# 1. [Reprojecting, Interpolating and Miscellaneous](#5.-Reprojecting,-Interpolating-and-Miscellaneous)
+# 1. [Creating WCS Maps](#Creating-WCS-Maps)
+# 1. [Accessing and Modifying Data](#Accessing-and-Modifying-Data)
+# 1. [Reading and Writing](#Reading-and-Writing)
+# 1. [Visualizing and Plotting](#Visualizing-and-Plotting)
+# 1. [Reprojecting, Interpolating and Miscellaneous](#Reprojecting,-Interpolating-and-Miscellaneous)
 # 
+# Make sure you have worked through the [First Steps with Gammapy](first_steps.ipynb), because a solid knowledge about working with `SkyCoord` and `Quantity` objects as well as [Numpy](http://www.numpy.org/) is required for this tutorial.
 # 
-# Make sure you have worked through the [First Steps with Gammapy](first_steps.ipynb), because a solid knowledge about working with `SkyCoords` and `Quantity` objects as well as [Numpy](http://www.numpy.org/) is required for this tutorial.
-# 
-# **Note:** This notebook is rather lengthy, but getting to know the `Map` data structure in detail is **essential for working with Gammapy** and will allow you to fulfill **complex analysis tasks with very few and simple code** in future!
+# This notebook is rather lengthy, but getting to know the `Map` data structure in detail is essential for working with Gammapy and will allow you to fulfill complex analysis tasks with very few and simple code in future!
 
-# ##  0. Setup
+# ## Setup
 
 # In[ ]:
 
@@ -43,11 +42,11 @@ from astropy.coordinates import SkyCoord
 from gammapy.maps import Map, MapAxis, WcsGeom
 
 
-# ## 1. Creating WCS Maps
+# ## Creating WCS Maps
 # 
-# ### 1.1 Using Factory Methods
+# ### Using Factory Methods
 # 
-# Maps are most easily created using the `Map.create()` factory method:
+# Maps are most easily created using the `~gammapy.maps.Map.create()` factory method:
 
 # In[ ]:
 
@@ -89,7 +88,7 @@ print(m_gc.geom)
 
 # In addition we have defined a TAN projection, a pixel size of `0.02` deg and a width of the map of `10 deg x 5 deg`. The `width` argument also takes scalar value instead of a tuple, which is interpreted as both the width and height of the map, so that a quadratic map is created.
 
-# ### 1.2 Creating from a Map Geometry
+# ### Creating from a Map Geometry
 # 
 # As we have seen in the first examples, the `Map` object couples the data (stored as a `numpy.ndarray`) with a `Geom` object. The `Geom` object can be seen as a generalization of an `astropy.wcs.WCS` object, providing the information on how the data maps to physical coordinate systems. In some cases e.g. when creating many maps with the same WCS geometry it can be advantegeous to first create the map geometry independent of the map object itsself: 
 
@@ -138,7 +137,7 @@ wcs_geom.center_skydir
 wcs_geom.solid_angle()
 
 
-# ### 1.3 Adding Non-Spatial Axes
+# ### Adding Non-Spatial Axes
 # 
 # In many analysis scenarios we would like to add extra dimension to the maps to study e.g. energy or time dependency of the data. Those non-spatial dimensions are handled with the `MapAxis` object. Let us first define an energy axis, with 4 bins:
 
@@ -206,9 +205,9 @@ energy_axis.unit
 energy_axis.center
 
 
-# ##  2. Accessing and Modifying Data
+# ##  Accessing and Modifying Data
 # 
-# ### 2.1 Accessing Map Data Values
+# ### Accessing Map Data Values
 # 
 # All map objects have a set of accessor methods, which can be used to access or update the contents of the map irrespective of its underlying representation. Those accessor methods accept as their first argument a coordinate `tuple` containing scalars, `list`, or `numpy.ndarray` with one tuple element for each dimension. Some methods additionally accept a `dict` or `MapCoord` argument, of which both allow to assign coordinates by axis name.
 # 
@@ -267,7 +266,7 @@ lats = np.linspace(-4, 4, 8).reshape(-1, 1)
 m_gc.get_by_coord({"lon": lons, "lat": lats})
 
 
-# ### 2.2 Modifying Map Data Values
+# ### Modifying Map Data Values
 # 
 # To modify and set map data values the `Map` object features as well a `.set_by_idx()` method: 
 # 
@@ -303,7 +302,7 @@ skycoords = SkyCoord([1.2, 3.4], [-0.5, 1.1], frame="galactic", unit="deg")
 m_cube.set_by_coord({"skycoord": skycoords, "energy": 2 * u.TeV}, vals=42)
 
 
-# ### 2.3 Indexing and Slicing Sub-Maps
+# ### Indexing and Slicing Sub-Maps
 # 
 # When you have worked with Numpy arrays in the past you are probably familiar with the concept of indexing and slicing
 # into data arrays. To support slicing of non-spatial axes of `Map` objects, the `Map` object has a `.slice_by_idx()` method, which allows to extract sub-maps from a larger map.
@@ -348,7 +347,7 @@ image = m_4d.get_image_by_coord({"energy": 4 * u.TeV, "time": 5 * u.h})
 print(image.geom)
 
 
-# ##  3. Reading and Writing
+# ## Reading and Writing
 # 
 # Gammapy `Map` objects are serialized using the Flexible Image Transport Format (FITS). Depending on the pixelisation scheme (HEALPix or WCS) and presence of non-spatial dimensions the actual convention to write the FITS file is different.
 # By default Gammpy uses a generic convention named `gadf`, which will support WCS and HEALPix formats as well as an arbitrary number of non-spatial axes. The convention is documented in detail on the [Gamma Astro Data Formats](https://gamma-astro-data-formats.readthedocs.io/en/latest/skymaps/index.html) page.
@@ -363,7 +362,7 @@ print(image.geom)
 # 
 # The conventions listed above only support an additional energy axis. 
 # 
-# ### 3.1 Reading Maps
+# ### Reading Maps
 # 
 # Reading FITS files is mainly exposed via the `Map.read()` method.Let us take a look at a first example: 
 
@@ -406,7 +405,7 @@ hdulist["PRIMARY"].header["BUNIT"] = "cm2 s"
 Map.from_hdulist(hdulist=hdulist)
 
 
-# ### 3.2 Writing Maps
+# ### Writing Maps
 # 
 # Writing FITS files is mainoy exposure via the `Map.write()` method. Here is a first example:
 
@@ -458,9 +457,9 @@ hdulist["PRIMARY"].header
 Table.read(hdulist["PRIMARY_BANDS"])
 
 
-# ##  4. Visualizing and Plotting
+# ## Visualizing and Plotting
 # 
-# ### 4.1 Plotting 
+# ### Plotting 
 # 
 # For debugging and inspecting the map data it is useful to plot ot visualize the images planes contained in the map. 
 
@@ -499,9 +498,9 @@ with plt.rc_context(rc=rc_params):
     smoothed.plot(stretch="sqrt", add_cbar=True, vmax=4);
 
 
-# ### 4.2 Interactive Plotting 
+# ### Interactive Plotting 
 # 
-# For maps with non-spatial dimensions the `Map` object features an interactive plotting method, that works in jupyter notebooks only (**Note:** it requires the package `ipywidgets` to be installed). We first read a small example cutout from the Fermi Galactic diffuse model and display the data cube by calling `.plot_interactive()`:
+# For maps with non-spatial dimensions the `Map` object features an interactive plotting method, that works in jupyter notebooks only (Note: it requires the package `ipywidgets` to be installed). We first read a small example cutout from the Fermi Galactic diffuse model and display the data cube by calling `.plot_interactive()`:
 
 # In[ ]:
 
@@ -519,9 +518,9 @@ m_iem_gc.plot_interactive(add_cbar=True, stretch="sqrt", rc_params=rc_params)
 
 # Now you can use the interactive slider to select an energy range and the corresponding image is diplayed on the screen. You can also use the radio buttons to select your preferred image stretching. We have passed additional keywords using the `rc_params` argument to improve the figure and font size. Those keywords are directly passed to the [plt.rc_context()](https://matplotlib.org/api/_as_gen/matplotlib.pyplot.rc_context.html) context manager.
 
-# ##  5. Reprojecting, Interpolating and Miscellaneous
+# ##  Reprojecting, Interpolating and Miscellaneous
 # 
-# ### 5.1 Reprojecting to Different Map Geometries
+# ### Reprojecting to Different Map Geometries
 # 
 # The example map `m_iem_gc` is given in Galactic coordinates:
 
@@ -552,7 +551,7 @@ m_iem_cel = m_iem.reproject(wcs_geom_cel)
 m_iem_cel.plot(add_cbar=True, vmin=0, vmax=2.5e-9);
 
 
-# ### 5.2 Interpolating Map Values
+# ### Interpolating Map Values
 # 
 # While for the reprojection example above we used `.get_image_by_coord()` to extract the closest image to `~10 GeV`, we can use the more general method `.interp_by_coord()` to interpolate in the energy axis as well. For this we first define again the target map geometry:
 
@@ -570,7 +569,7 @@ m_iem_10GeV.data = m_iem_gc.interp_by_coord(
 m_iem_10GeV.plot(add_cbar=True, vmin=0, vmax=2.5e-9);
 
 
-# ### 5.3 Making Cutouts
+# ### Making Cutouts
 # 
 # The `WCSNDMap` objects features a `.cutout()` method, which allows you to cut out a smaller part of a larger map. This can be useful, e.g. when working with allsky diffuse maps. Here is an example: 
 

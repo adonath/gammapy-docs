@@ -15,8 +15,8 @@
 # 
 # We will mainly be using the following classes:
 #         
-# * [gammapy.data.DataStore](https://docs.gammapy.org/dev/api/gammapy.data.DataStore.html) to load the runs to use to build the bkg model.
-# * [gammapy.irf.Background2D](https://docs.gammapy.org/dev/api/gammapy.irf.Background2D.html) to represent and write the background model.
+# * `~gammapy.data.DataStore` to load the runs to use to build the bkg model.
+# * `~gammapy.irf.Background2D` to represent and write the background model.
 
 # ## Setup
 # 
@@ -73,7 +73,7 @@ print("Number of observations:", len(observations))
 # 
 # The processing can be done either one observation at a time, or first for counts and then for exposure. Either way is fine. Here we do one observation at a time, starting with empty histograms and then accumulating counts and exposure. Since this is a multi-step algorithm, we put the code to do this computation in a `BackgroundModelEstimator` class.
 # 
-# This functionality was already in Gammapy previously, and will be added back again soon, after `gammapy.irf` has been restructured and improved.
+# This functionality was already in Gammapy previously, and will be added back again soon, after `~gammapy.irf` has been restructured and improved.
 
 # In[ ]:
 
@@ -307,7 +307,7 @@ hdu_list.append(hdu)
 
 for idx, model in enumerate(models):
     hdu = model.to_fits()
-    hdu.name = "BKG{}".format(idx)
+    hdu.name = f"BKG{idx}"
     hdu_list.append(hdu)
 
 print([_.name for _ in hdu_list])

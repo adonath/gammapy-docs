@@ -315,7 +315,7 @@ table
 
 # ### Exercises
 # 
-# 1. Keep adding sources till there are no more significat ones in the field. How many Gaussians do you need?
+# 1. Keep adding sources till there are no more significant ones in the field. How many Gaussians do you need?
 # 2. Use other morphologies for the sources (eg: disk, shell) rather than only Gaussian.
 # 3. Compare the TS between different models
 

@@ -3,16 +3,18 @@
 
 # # Spectrum simulation for CTA
 # 
-# A quick example how to use the functions and classes in gammapy.spectrum in order to simulate and fit spectra. 
+# A quick example how to use the functions and classes in `~gammapy.spectrum` in order to simulate and fit spectra. 
 # 
-# We will simulate observations for the [Cherenkov Telescope Array (CTA)](https://www.cta-observatory.org) first using a power law model without any background. Than we will add a power law shaped background component. The next part of the tutorial shows how to use user defined models for simulations and fitting.
+# We will simulate observations for CTA first using a power law model without any background.
+# Then we will add a power law shaped background component.
+# The next part of the tutorial shows how to use user defined models for simulations and fitting.
 # 
 # We will use the following classes:
 # 
-# * [gammapy.spectrum.SpectrumDatasetOnOff](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDatasetOnOff.html)
-# * [gammapy.spectrum.SpectrumDataset](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDataset.html)
-# * [gammapy.irf.load_cta_irfs](https://docs.gammapy.org/dev/api/gammapy.irf.load_cta_irfs.html)
-# * [gammapy.modeling.models.PowerLawSpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLawSpectralModel.html)
+# * `~gammapy.spectrum.SpectrumDatasetOnOff`
+# * `~gammapy.spectrum.SpectrumDataset`
+# * `~gammapy.irf.load_cta_irfs`
+# * `~gammapy.modeling.models.PowerLawSpectralModel`
 
 # ## Setup
 # 
@@ -70,7 +72,10 @@ print(model_ref)
 
 
 # ### Get and set the model parameters after initialising
-# The model parameters are stored in the `Parameters` object on the spectal model. Each model parameter is a `Parameter` instance. It has a `value` and a `unit` attribute, as well as a `quantity` property for convenience.
+# 
+# The model parameters are stored in the `~gammapy.modeling.Parameters` object on the spectral model.
+# Each model parameter is a `~gammapy.modeling.Parameter` instance.
+# It has a `value` and a `unit` attribute, as well as a `quantity` property for convenience.
 
 # In[ ]:
 
@@ -170,7 +175,7 @@ dataset = SpectrumDatasetOnOff(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '# Now simulate 30 indepenent spectra using the same set of observation conditions.\nn_obs = 100\nseeds = np.arange(n_obs)\n\ndatasets = []\n\nfor idx in range(n_obs):\n    dataset.fake(random_state=idx, background_model=bkg)\n    datasets.append(dataset.copy())')
+get_ipython().run_cell_magic('time', '', '# Now simulate several spectra using the same set of observation conditions.\nn_obs = 100\nseeds = np.arange(n_obs)\n\ndatasets = []\n\nfor idx in range(n_obs):\n    dataset.fake(random_state=idx, background_model=bkg)\n    datasets.append(dataset.copy())')
 
 
 # Before moving on to the fit let's have a look at the simulated observations.
@@ -207,12 +212,12 @@ get_ipython().run_cell_magic('time', '', 'results = []\nfor dataset in datasets:
 index = np.array([_["index"] for _ in results])
 plt.hist(index, bins=10, alpha=0.5)
 plt.axvline(x=model_ref.parameters["index"].value, color="red")
-print("spectral index: {:.2f} +/- {:.2f}".format(index.mean(), index.std()))
+print(f"index: {index.mean()} += {index.std()}")
 
 
 # ## Adding a user defined model
 # 
-# Many spectral models in gammapy are subclasses of `SpectralModel`. The list of available models is shown below.
+# Many spectral models in gammapy are subclasses of `~gammapy.modeling.models.SpectralModel`. The list of available models is shown below.
 
 # In[ ]:
 

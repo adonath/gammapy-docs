@@ -5,7 +5,7 @@
 # 
 # ## Introduction 
 # 
-# Gammapy has some convenience methods for dark matter analyses in [gammapy.astro.darkmatter](https://docs.gammapy.org/dev/astro/darkmatter/index.html). These include J-Factor computation and calculation the expected gamma flux for a number of annihilation channels. They are presented in this notebook. 
+# Gammapy has some convenience methods for dark matter analyses in `~gammapy.astro.darkmatter`. These include J-Factor computation and calculation the expected gamma flux for a number of annihilation channels. They are presented in this notebook. 
 # 
 # The basic concepts of indirect dark matter searches, however, are not explained. So this is aimed at people who already know what the want to do. A good introduction to indirect dark matter searches is given for example in https://arxiv.org/pdf/1012.4515.pdf (Chapter 1 and 5)
 
@@ -61,11 +61,8 @@ plt.loglog()
 plt.axvline(8.5, linestyle="dashed", color="black", label="local density")
 plt.legend()
 
-print(
-    "The assumed local density is {} at a distance to the GC of {}".format(
-        profiles.DMProfile.LOCAL_DENSITY, profiles.DMProfile.DISTANCE_GC
-    )
-)
+print("LOCAL_DENSITY:", profiles.DMProfile.LOCAL_DENSITY)
+print("DISTANCE_GC:", profiles.DMProfile.DISTANCE_GC)
 
 
 # ## J Factors
@@ -101,7 +98,7 @@ jfact = jfactory.compute_jfactor()
 
 jfact_map = WcsNDMap(geom=geom, data=jfact.value, unit=jfact.unit)
 fig, ax, im = jfact_map.plot(cmap="viridis", norm=LogNorm(), add_cbar=True)
-plt.title("J-Factor [{}]".format(jfact_map.unit))
+plt.title(f"J-Factor [{jfact_map.unit}]")
 
 # 1 deg circle usually used in H.E.S.S. analyses
 sky_reg = CircleSkyRegion(center=position, radius=1 * u.deg)
@@ -117,7 +114,7 @@ plt.legend()
 total_jfact = pix_reg.to_mask().multiply(jfact).sum()
 print(
     "J-factor in 1 deg circle around GC assuming a "
-    "{} is {:.3g}".format(profile.__class__.__name__, total_jfact)
+    f"{profile.__class__.__name__} is {total_jfact:.3g}"
 )
 
 
@@ -140,7 +137,7 @@ mDMs = [0.01, 0.1, 1, 10] * u.TeV
 
 for mDM, ax in zip(mDMs, axes):
     fluxes.mDM = mDM
-    ax.set_title(r"m$_{{\mathrm{{DM}}}}$ = {}".format(mDM))
+    ax.set_title(rf"m$_{{\mathrm{{DM}}}}$ = {mDM}")
     ax.set_yscale("log")
     ax.set_ylabel("dN/dE")
 
@@ -179,9 +176,7 @@ flux_map = WcsNDMap(geom=geom, data=int_flux.value, unit="cm-2 s-1")
 
 fig, ax, im = flux_map.plot(cmap="viridis", norm=LogNorm(), add_cbar=True)
 plt.title(
-    "Flux [{}]\n m$_{{DM}}$={}, channel={}".format(
-        int_flux.unit, fluxes.mDM.to("TeV"), fluxes.channel
-    )
+    f"Flux [{int_flux.unit}]\n m$_{{DM}}$={fluxes.mDM.to('TeV')}, channel={fluxes.channel}"
 );
 
 

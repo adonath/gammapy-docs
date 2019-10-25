@@ -16,9 +16,8 @@
 
 
 get_ipython().run_line_magic('matplotlib', 'inline')
-import matplotlib.pyplot as plt
 
-import glob  # to list files
+import glob
 from os.path import expandvars
 from sherpa.astro.datastack import DataStack
 import sherpa.astro.datastack as sh

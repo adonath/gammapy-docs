@@ -1,39 +1,38 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# 
 # # Spectral analysis with Gammapy
 
 # ## Introduction
 # 
-# This notebook explains in detail how to use the classes in [gammapy.spectrum](https://docs.gammapy.org/dev/spectrum/index.html) and related ones.
+# This notebook explains in detail how to use the classes in `~gammapy.spectrum` and related ones.
 # 
-# Based on a datasets of 4 Crab observations with H.E.S.S. (simulated events for now) we will perform a full region based spectral analysis, i.e. extracting source and background counts from certain 
+# Based on a datasets of 4 Crab observations with H.E.S.S. we will perform a full region based spectral analysis, i.e. extracting source and background counts from certain 
 # regions, and fitting them using the forward-folding approach. We will use the following classes
 # 
 # Data handling:
 # 
-# * [gammapy.data.DataStore](https://docs.gammapy.org/dev/api/gammapy.data.DataStore.html)
-# * [gammapy.data.DataStoreObservation](https://docs.gammapy.org/dev/api/gammapy.data.DataStoreObservation.html)
-# * [gammapy.data.ObservationStats](https://docs.gammapy.org/dev/api/gammapy.data.ObservationStats.html)
-# * [gammapy.data.ObservationSummary](https://docs.gammapy.org/dev/api/gammapy.data.ObservationSummary.html)
+# * `~gammapy.data.DataStore`
+# * `~gammapy.data.DataStoreObservation`
+# * `~gammapy.data.ObservationStats`
+# * `~gammapy.data.ObservationSummary`
 # 
 # To extract the 1-dim spectral information:
 # 
-# * [gammapy.spectrum.SpectrumExtraction](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumExtraction.html)
-# * [gammapy.spectrum.ReflectedRegionsBackgroundEstimator](https://docs.gammapy.org/dev/api/gammapy.spectrum.ReflectedRegionsBackgroundEstimator.html)
+# * `~gammapy.spectrum.SpectrumExtraction`
+# * `~gammapy.spectrum.ReflectedRegionsBackgroundEstimator`
 # 
 # To perform the joint fit:
 # 
-# * [gammapy.spectrum.SpectrumDatasetOnOff](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumDatasetOnOff.html)
-# * [gammapy.modeling.models.PowerLawSpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.PowerLawSpectralModel.html)
-# * [gammapy.modeling.models.ExpCutoffPowerLawSpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.ExpCutoffPowerLawSpectralModel.html)
-# * [gammapy.modeling.models.LogParabolaSpectralModel](https://docs.gammapy.org/dev/api/gammapy.modeling.models.LogParabolaSpectralModel.html)
+# * `~gammapy.spectrum.SpectrumDatasetOnOff`
+# * `~gammapy.modeling.models.PowerLawSpectralModel`
+# * `~gammapy.modeling.models.ExpCutoffPowerLawSpectralModel`
+# * `~gammapy.modeling.models.LogParabolaSpectralModel`
 # 
 # To compute flux points (a.k.a. "SED" = "spectral energy distribution")
 # 
-# * [gammapy.spectrum.FluxPoints](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPoints.html)
-# * [gammapy.spectrum.FluxPointsEstimator](https://docs.gammapy.org/dev/api/gammapy.spectrum.FluxPointsEstimator.html)
+# * `~gammapy.spectrum.FluxPoints`
+# * `~gammapy.spectrum.FluxPointsEstimator`
 # 
 # Feedback welcome!
 
@@ -137,7 +136,7 @@ exclusion_mask.plot();
 
 # ## Estimate background
 # 
-# Next we will manually perform a background estimate by placing [reflected regions](https://docs.gammapy.org/dev/spectrum/reflected.html) around the pointing position and looking at the source statistics. This will result in a  [gammapy.spectrum.BackgroundEstimate](https://docs.gammapy.org/dev/api/gammapy.spectrum.BackgroundEstimate.html) that serves as input for other classes in gammapy.
+# Next we will manually perform a background estimate by placing [reflected regions](../spectrum/reflected.rst) around the pointing position and looking at the source statistics. This will result in a  `~gammapy.spectrum.BackgroundEstimate` that serves as input for other classes in gammapy.
 
 # In[ ]:
 
@@ -160,7 +159,7 @@ background_estimator.plot(add_legend=True);
 
 # ## Source statistic
 # 
-# Next we're going to look at the overall source statistics in our signal region. For more info about what debug plots you can create check out the [ObservationSummary](https://docs.gammapy.org/dev/api/gammapy.data.ObservationSummary.html) class.
+# Next we're going to look at the overall source statistics in our signal region. For more info about what debug plots you can create check out the `~gammapy.data.ObservationSummary` class.
 
 # In[ ]:
 
@@ -182,7 +181,7 @@ obs_summary.plot_significance_vs_livetime(ax=ax2);
 
 # ## Extract spectrum
 # 
-# Now, we're going to extract a spectrum using the [SpectrumExtraction](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumExtraction.html) class. We provide the reconstructed energy binning we want to use. It is expected to be a Quantity with unit energy, i.e. an array with an energy unit. We also provide the true energy binning to use.
+# Now, we're going to extract a spectrum using the `~gammapy.spectrum.SpectrumExtraction` class. We provide the reconstructed energy binning we want to use. It is expected to be a Quantity with unit energy, i.e. an array with an energy unit. We also provide the true energy binning to use.
 
 # In[ ]:
 
@@ -191,7 +190,7 @@ e_reco = np.logspace(-1, np.log10(40), 40) * u.TeV
 e_true = np.logspace(np.log10(0.05), 2, 200) * u.TeV
 
 
-# Instantiate a [SpectrumExtraction](https://docs.gammapy.org/dev/api/gammapy.spectrum.SpectrumExtraction.html) object that will do the extraction. The containment_correction parameter is there to allow for PSF leakage correction if one is working with full enclosure IRFs. We also compute a threshold energy and store the result in OGIP compliant files (pha, rmf, arf). This last step might be omitted though.
+# Instantiate a `~gammapy.spectrum.SpectrumExtraction` object that will do the extraction. The containment_correction parameter is there to allow for PSF leakage correction if one is working with full enclosure IRFs. We also compute a threshold energy and store the result in OGIP compliant files (pha, rmf, arf). This last step might be omitted though.
 
 # In[ ]:
 
@@ -211,7 +210,7 @@ extraction = SpectrumExtraction(
 get_ipython().run_cell_magic('time', '', 'extraction.run()')
 
 
-# Now we can (optionally) compute the energy thresholds for the analysis, acoording to different methods. Here we choose the energy where the effective area drops below 10% of the maximum:
+# Now we can (optionally) compute the energy thresholds for the analysis, according to different methods. Here we choose the energy where the effective area drops below 10% of the maximum:
 
 # In[ ]:
 
@@ -247,7 +246,7 @@ extraction.spectrum_observations[0].peek()
 
 # datasets = []
 # for obs_id in obs_ids:
-#     filename = ANALYSIS_DIR + "/ogip_data/pha_obs{}.fits".format(obs_id)
+#     filename = ANALYSIS_DIR + f"/ogip_data/pha_obs{obs_id}.fits"
 #     datasets.append(SpectrumDatasetOnOff.from_ogip_files(filename))
 
 
@@ -300,7 +299,7 @@ e_min, e_max = 0.7, 30
 e_edges = np.logspace(np.log10(e_min), np.log10(e_max), 11) * u.TeV
 
 
-# Now we create an instance of the `FluxPointsEstimator`, by passing the dataset and the energy binning:
+# Now we create an instance of the `~gammapy.spectrum.FluxPointsEstimator`, by passing the dataset and the energy binning:
 
 # In[ ]:
 
@@ -357,7 +356,7 @@ flux_points_dataset.peek();
 dataset_stacked = Datasets(datasets_joint).stack_reduce()
 
 
-# Again we set the model on the dataset we would like to fit (in this case it's only a singel one) and pass it to the `Fit` object:
+# Again we set the model on the dataset we would like to fit (in this case it's only a single one) and pass it to the `~gammapy.modeling.Fit` object:
 
 # In[ ]:
 
@@ -389,7 +388,7 @@ model_best_joint.parameters.to_table()
 model_best_stacked.parameters.to_table()
 
 
-# Finally, we compare the results of our stacked analysis to a previously published Crab Nebula Spectrum for reference. This is available in `gammapy.spectrum`.
+# Finally, we compare the results of our stacked analysis to a previously published Crab Nebula Spectrum for reference. This is available in `~gammapy.spectrum`.
 
 # In[ ]:
 
@@ -416,9 +415,10 @@ plt.legend()
 # 
 # Now you have learned the basics of a spectral analysis with Gammapy. To practice you can continue with the following exercises:
 # 
-# - Fit a different spectral model to the data. You could try e.g. an `ExpCutoffPowerLawSpectralModel` or `LogParabolaSpectralModel` model.
+# - Fit a different spectral model to the data.
+#   You could try `~gammapy.modeling.models.ExpCutoffPowerLawSpectralModel` or `~gammapy.modeling.models.LogParabolaSpectralModel`.
 # - Compute flux points for the stacked dataset.
-# - Create a `FluxPointsDataset` with the flux points you have computed for the stacked dataset and fit the flux points again with obe of the spectral models. How does the result compare to the best fit model, that was directly fitted to the counts data?
+# - Create a `~gammapy.spectrum.FluxPointsDataset` with the flux points you have computed for the stacked dataset and fit the flux points again with obe of the spectral models. How does the result compare to the best fit model, that was directly fitted to the counts data?
 
 # In[ ]:
 

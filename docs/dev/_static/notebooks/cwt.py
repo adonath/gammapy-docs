@@ -5,8 +5,7 @@
 
 # This notebook tutorial shows how to work with `CWT` algorithm for detecting gamma-ray sources.
 # 
-# You can find the [docs here](https://docs.gammapy.org/dev/api/gammapy.detect.CWT.html)
-# and [source code on GitHub here](https://github.com/gammapy/gammapy/blob/master/gammapy/detect/cwt.py) for better understanding how the algorithm is constructed. 
+# See `~gammapy.detect.CWT`.
 
 # ## Setup
 # 
@@ -29,7 +28,7 @@ from gammapy.detect import CWTKernels, CWT, CWTData
 
 # ## CWT Algorithm
 
-# First of all we import the data which should be analysied.
+# First of all we import the data which should be analysed.
 
 # In[ ]:
 
@@ -55,7 +54,7 @@ ax = fig.add_subplot(122, projection=maps["background"].geom.wcs)
 maps["background"].plot(vmax=8, ax=ax);
 
 
-# Let's explore how CWT works. At first define parameters of the algorithm.  An imperative parameter is kernels (`detect.CWTKernels` object). So we should create it.
+# Let's explore how CWT works. At first define parameters of the algorithm.  An imperative parameter is kernels (`~gammapy.detect.CWTKernels` object). So we should create it.
 
 # In[ ]:
 
@@ -148,9 +147,8 @@ plt.subplots_adjust(hspace=0.4)
 
 
 history = cwt.history
-print(
-    "Number of iterations: {0}".format(len(history) - 1)
-)  # -1 because CWT save start images too
+# -1 because CWT save start images too
+print(f"Iterations: {len(history) - 1}")
 
 
 # Let's have a look, what's happening with images after the first iteration.
@@ -196,15 +194,13 @@ data_iter.cube_info(name="support", per_scale=True)
 data_iter.cube_info(name="support", per_scale=False)
 
 
-# Also you can see the difference betwen the iterations in that way:
+# Also you can see the difference between the iterations in that way:
 
 # In[ ]:
 
 
-history = cwt.history  # get list of 'CWTData' objects
-difference = (
-    history[1] - history[0]
-)  # get new `CWTData` obj, let's work with them
+history = cwt.history
+difference = history[1] - history[0]
 
 
 # In[ ]:
