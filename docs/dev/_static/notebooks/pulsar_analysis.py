@@ -33,8 +33,9 @@ from gammapy.data import DataStore
 from gammapy.modeling.models import PowerLawSpectralModel
 from gammapy.modeling import Fit, Datasets
 from gammapy.spectrum import (
-    PhaseBackgroundEstimator,
-    SpectrumExtraction,
+    PhaseBackgroundMaker,
+    SpectrumDatasetMaker,
+    SafeMaskMaker,
     FluxPointsEstimator,
     FluxPointsDataset,
 )
@@ -242,54 +243,39 @@ excess_map.smooth(kernel="gauss", width=0.2 * u.deg).plot(add_cbar=True);
 
 # ## Phase-resolved spectrum
 
-# We can also do a phase-resolved spectrum. In order to do that, there is the class PhaseBackgroundEstimator. In a phase-resolved analysis, the background is estimated in the same sky region but in the OFF-phase zone.
-# 
-# We start by estimating the background with the class PhaseBackgroundEstimator. It takes the observations, the ON-region, and an ON- and OFF-phase zones (the same we defined for the phasogram and the phase-resolved map). It results in a PhaseBackgroundEstimator that serves as an input for other spectral analysis classes in Gammapy.
+# We can also do a phase-resolved spectrum. In order to do that, there is the class PhaseBackgroundMaker. In a phase-resolved analysis, the background is estimated in the same sky region but in the OFF-phase zone.
 
 # In[ ]:
 
 
-# The PhaseBackgroundEstimator uses the OFF-phase in the ON-region to estimate the background
-bkg_estimator = PhaseBackgroundEstimator(
-    observations=obs_list_vela,
-    on_region=on_region,
-    on_phase=on_phase_range,
-    off_phase=off_phase_range,
+e_true = np.logspace(-2.5, 1, 100) * u.TeV
+e_reco = np.logspace(-2, 1, 30) * u.TeV
+
+dataset_maker = SpectrumDatasetMaker(
+    e_reco=e_reco, e_true=e_true, region=on_region
 )
-bkg_estimator.run()
-bkg_estimate = bkg_estimator.result
+phase_bkg_maker = PhaseBackgroundMaker(
+    on_phase=on_phase_range, off_phase=off_phase_range
+)
+safe_mask_maker = SafeMaskMaker(
+    methods=["aeff-default", "edisp-bias"], bias_percent=20
+)
+
+datasets = []
+
+for obs in obs_list_vela:
+    dataset = dataset_maker.run(obs)
+    dataset_on_off = phase_bkg_maker.run(dataset, obs)
+    dataset_on_off = safe_mask_maker.run(dataset_on_off, obs)
+    datasets.append(dataset_on_off)
 
 
-# The rest of the analysis is the same as for a standard spectral analysis with Gammapy. All the specificity of a phase-resolved analysis is contained in the PhaseBackgroundEstimator, where the background is estimated in the ON-region OFF-phase rather than in an OFF-region.
-# 
-# We can now extract a spectrum with the SpectrumExtraction class. It takes the reconstructed and the true energy binning. Both are expected to be a Quantity with unit energy, i.e. an array with an energy unit. EnergyBounds is a dedicated class to do it.
+# Now let's a look at the datasets we just created:
 
 # In[ ]:
 
 
-etrue = np.logspace(-2.5, 1, 100) * u.TeV
-ereco = np.logspace(-2, 1, 30) * u.TeV
-
-extraction = SpectrumExtraction(
-    observations=obs_list_vela,
-    bkg_estimate=bkg_estimate,
-    containment_correction=True,
-    e_true=etrue,
-    e_reco=ereco,
-)
-
-extraction.run()
-extraction.compute_energy_threshold(
-    method_lo="energy_bias", bias_percent_lo=20
-)
-
-
-# Now let's a look at the files we just created with spectrum_observation.
-
-# In[ ]:
-
-
-extraction.spectrum_observations[0].peek()
+datasets[0].peek()
 
 
 # Now we'll fit a model to the spectrum with the `Fit` class. First we load a power law model with an initial value for the index and the amplitude and then wo do a likelihood fit. The fit results are printed below.
@@ -303,11 +289,11 @@ model = PowerLawSpectralModel(
 
 emin_fit, emax_fit = (0.04 * u.TeV, 0.4 * u.TeV)
 
-for obs in extraction.spectrum_observations:
-    obs.model = model
-    obs.mask_fit = obs.counts.energy_mask(emin=emin_fit, emax=emax_fit)
+for dataset in datasets:
+    dataset.model = model
+    dataset.mask_fit = dataset.counts.energy_mask(emin=emin_fit, emax=emax_fit)
 
-joint_fit = Fit(extraction.spectrum_observations)
+joint_fit = Fit(datasets)
 joint_result = joint_fit.run()
 
 model.parameters.covariance = joint_result.parameters.covariance
@@ -322,7 +308,7 @@ print(joint_result)
 
 e_edges = np.logspace(np.log10(0.04), np.log10(0.4), 7) * u.TeV
 
-dataset = Datasets(extraction.spectrum_observations).stack_reduce()
+dataset = Datasets(datasets).stack_reduce()
 
 dataset.model = model
 
@@ -363,3 +349,9 @@ ax_spectrum.legend(loc="best")
 
 
 # This tutorial suffers a bit from the lack of statistics: there were 9 Vela observations in the CTA DC1 while there is only one here. When done on the 9 observations, the spectral analysis is much better agreement between the input model and the gammapy fit.
+
+# In[ ]:
+
+
+
+

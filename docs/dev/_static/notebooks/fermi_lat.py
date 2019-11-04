@@ -47,13 +47,13 @@ from gammapy.data import EventList
 from gammapy.irf import EnergyDependentTablePSF, EnergyDispersion
 from gammapy.maps import Map, MapAxis, WcsNDMap, WcsGeom
 from gammapy.modeling.models import (
-    TemplateSpectralModel,
     PowerLawSpectralModel,
     PointSpatialModel,
     ConstantSpatialModel,
     SkyModel,
     SkyDiffuseCube,
     SkyModels,
+    create_fermi_isotropic_diffuse_model,
 )
 from gammapy.cube import MapDataset, PSFKernel, MapEvaluator
 from gammapy.modeling import Fit
@@ -284,9 +284,10 @@ plt.ylabel("Flux (cm-2 s-1 MeV-1 sr-1)")
 # In[ ]:
 
 
-diffuse_iso = TemplateSpectralModel.read_fermi_isotropic_model(
-    filename="$GAMMAPY_DATA/fermi_3fhl/iso_P8R2_SOURCE_V6_v06.txt",
-    interp_kwargs={"fill_value": None},
+filename = "$GAMMAPY_DATA/fermi_3fhl/iso_P8R2_SOURCE_V6_v06.txt"
+
+diffuse_iso = create_fermi_isotropic_diffuse_model(
+    filename=filename, interp_kwargs={"fill_value": None}
 )
 
 
@@ -296,7 +297,7 @@ diffuse_iso = TemplateSpectralModel.read_fermi_isotropic_model(
 
 
 erange = [50, 2000] * u.GeV
-diffuse_iso.plot(erange, flux_unit="1 / (cm2 MeV s sr)");
+diffuse_iso.spectral_model.plot(erange, flux_unit="1 / (cm2 MeV s)");
 
 
 # ## PSF
@@ -389,9 +390,7 @@ print("Background counts from Galactic diffuse: ", background_gal.data.sum())
 # In[ ]:
 
 
-model_iso = SkyModel(ConstantSpatialModel(), diffuse_iso, name="diffuse-iso")
-
-eval_iso = MapEvaluator(model=model_iso, exposure=exposure, edisp=edisp)
+eval_iso = MapEvaluator(model=diffuse_iso, exposure=exposure, edisp=edisp)
 
 background_iso = eval_iso.compute_npred()
 
@@ -437,13 +436,13 @@ flux.sum_over_axes().smooth("0.1 deg").plot(stretch="sqrt", add_cbar=True);
 
 
 model = SkyModel(
-    PointSpatialModel("0 deg", "0 deg", frame="galactic"),
+    PointSpatialModel(lon_0="0 deg", lat_0="0 deg", frame="galactic"),
     PowerLawSpectralModel(
         index=2.5, amplitude="1e-11 cm-2 s-1 TeV-1", reference="100 GeV"
     ),
 )
 
-model_total = SkyModels([model, model_diffuse, model_iso])
+model_total = SkyModels([model, model_diffuse, diffuse_iso])
 
 dataset = MapDataset(
     model=model_total,

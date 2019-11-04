@@ -18,6 +18,7 @@
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
+import numpy as np
 
 import astropy.units as u
 from astropy.coordinates import SkyCoord
@@ -47,9 +48,7 @@ from gammapy.time import LightCurveEstimator
 # In[ ]:
 
 
-data_store = DataStore.from_file(
-    "$GAMMAPY_DATA/hess-dl3-dr1/hess-dl3-dr3-with-background.fits.gz"
-)
+data_store = DataStore.from_dir("$GAMMAPY_DATA/hess-dl3-dr1/")
 mask = data_store.obs_table["TARGET_NAME"] == "Crab"
 obs_ids = data_store.obs_table["OBS_ID"][mask].data
 crab_obs = data_store.get_observations(obs_ids)
@@ -133,7 +132,7 @@ sky_model.parameters["lat_0"].frozen = True
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '\ndatasets = []\n\nmaker = MapDatasetMaker(geom=geom, energy_axis_true=energy_axis_true, offset_max=offset_max)\n\nfor time_interval in time_intervals:\n    # get filtered observation lists in time interval\n    observations = crab_obs.select_time(time_interval)\n\n    # Proceed with further analysis only if there are observations\n    # in the selected time window\n    if len(observations) == 0:\n        log.warning(f"No observations in time interval: {time_interval}")\n        continue\n\n    stacked = MapDataset.create(geom=geom, energy_axis_true=energy_axis_true)\n\n    for obs in observations:\n        dataset = maker.run(obs)\n        stacked.stack(dataset)\n\n    # TODO: remove once IRF maps are handled correctly in fit\n    stacked.edisp = stacked.edisp.get_energy_dispersion(\n        position=target_position, e_reco=energy_axis.edges\n    )\n\n    stacked.psf = stacked.psf.get_psf_kernel(\n        position=target_position, geom=stacked.exposure.geom, max_radius="0.3 deg"\n    )\n\n    stacked.counts.meta["t_start"] = time_interval[0]\n    stacked.counts.meta["t_stop"] = time_interval[1]\n    datasets.append(stacked)')
+get_ipython().run_cell_magic('time', '', '\ndatasets = []\n\nmaker = MapDatasetMaker(\n    geom=geom, energy_axis_true=energy_axis_true, offset_max=offset_max\n)\n\nfor time_interval in time_intervals:\n    # get filtered observation lists in time interval\n    observations = crab_obs.select_time(time_interval)\n\n    # Proceed with further analysis only if there are observations\n    # in the selected time window\n    if len(observations) == 0:\n        log.warning(f"No observations in time interval: {time_interval}")\n        continue\n\n    stacked = MapDataset.create(geom=geom, energy_axis_true=energy_axis_true)\n\n    for obs in observations:\n        dataset = maker.run(obs)\n        stacked.stack(dataset)\n\n    # TODO: remove once IRF maps are handled correctly in fit\n    stacked.edisp = stacked.edisp.get_energy_dispersion(\n        position=target_position, e_reco=energy_axis.edges\n    )\n\n    stacked.psf = stacked.psf.get_psf_kernel(\n        position=target_position,\n        geom=stacked.exposure.geom,\n        max_radius="0.3 deg",\n    )\n\n    stacked.counts.meta["t_start"] = time_interval[0]\n    stacked.counts.meta["t_stop"] = time_interval[1]\n    datasets.append(stacked)')
 
 
 # ## Light Curve estimation: the 3D case
@@ -194,8 +193,9 @@ lc.plot(marker="o")
 from regions import CircleSkyRegion
 from astropy.coordinates import Angle
 from gammapy.spectrum import (
-    SpectrumExtraction,
-    ReflectedRegionsBackgroundEstimator,
+    SpectrumDatasetMaker,
+    ReflectedRegionsBackgroundMaker,
+    SafeMaskMaker,
 )
 
 
@@ -207,50 +207,44 @@ from gammapy.spectrum import (
 
 
 # Target definition
+e_reco = np.logspace(-1, np.log10(40), 40) * u.TeV
+e_true = np.logspace(np.log10(0.05), 2, 100) * u.TeV
+
 on_region_radius = Angle("0.11 deg")
 on_region = CircleSkyRegion(center=target_position, radius=on_region_radius)
 
 
-# ### Extracting the background
-# 
-# We perform here an ON - OFF measurement with reflected regions. We perform first the background extraction. 
-
 # In[ ]:
 
 
-bkg_estimator = ReflectedRegionsBackgroundEstimator(
-    on_region=on_region, observations=crab_obs
+dataset_maker = SpectrumDatasetMaker(
+    region=on_region, e_reco=e_reco, e_true=e_true, containment_correction=True
 )
-bkg_estimator.run()
+bkg_maker = ReflectedRegionsBackgroundMaker()
+safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
 
 
 # ### Creation of the datasets
-# 
-# We now apply spectral extraction to create the datasets. 
-# 
-# NB: we are using here time intervals defined by the observations start and stop times. The standard observation based spectral extraction is therefore defined in the right time bins. 
-# 
-# A proper time resolved spectral extraction will be included in a coming gammapy release.
 
 # In[ ]:
 
 
-# Note that we are not performing the extraction in time bins
-extraction = SpectrumExtraction(
-    observations=crab_obs,
-    bkg_estimate=bkg_estimator.result,
-    containment_correction=True,
-    e_reco=energy_axis.edges,
-    e_true=energy_axis_true.edges,
-)
-extraction.run()
-datasets_1d = extraction.spectrum_observations
+datasets_1d = []
 
-# we need to set the times manually for now
-for dataset, time_interval in zip(datasets_1d, time_intervals):
+for time_interval in time_intervals:
+    observation = crab_obs.select_time(time_interval)[0]
+
+    dataset = dataset_maker.run(
+        observation, selection=["counts", "aeff", "edisp"]
+    )
+
     dataset.counts.meta = dict()
     dataset.counts.meta["t_start"] = time_interval[0]
     dataset.counts.meta["t_stop"] = time_interval[1]
+
+    dataset_on_off = bkg_maker.run(dataset, observation)
+    dataset_on_off = safe_mask_masker.run(dataset_on_off, observation)
+    datasets_1d.append(dataset_on_off)
 
 
 # ## Light Curve estimation for 1D spectra
@@ -291,10 +285,4 @@ get_ipython().run_cell_magic('time', '', 'lc_1d = lc_maker_1d.run(e_ref=1 * u.Te
 ax = lc_1d.plot(marker="o", label="1D")
 lc.plot(ax=ax, marker="o", label="3D")
 plt.legend()
-
-
-# In[ ]:
-
-
-
 

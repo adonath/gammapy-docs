@@ -42,7 +42,12 @@ m_geom = WcsGeom.create(
 )
 phi = Angle("30 deg")
 model = gm.GaussianSpatialModel(
-    "2 deg", "2 deg", "1 deg", 0.7, phi, frame="galactic"
+    lon_0="2 deg",
+    lat_0="2 deg",
+    sigma="1 deg",
+    e=0.7,
+    phi=phi,
+    frame="galactic",
 )
 
 coords = m_geom.get_coord()
@@ -66,7 +71,12 @@ ax.contour(skymap.data, cmap="coolwarm", levels=10, alpha=0.6)
 
 
 model = gm.DiskSpatialModel(
-    "2 deg", "2 deg", "1 deg", 0.8, "30 deg", frame="galactic"
+    lon_0="2 deg",
+    lat_0="2 deg",
+    r_0="1 deg",
+    e=0.8,
+    phi="30 deg",
+    frame="galactic",
 )
 
 m_geom = WcsGeom.create(

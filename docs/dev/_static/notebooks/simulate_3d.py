@@ -238,12 +238,24 @@ print(sky_model)
 print(model)
 
 
-# To get the errors on the model, we can check the covariance table:
+# To get the errors on the model, we can check the parameter table, or the covariance matrix
 
 # In[ ]:
 
 
-result.parameters.covariance_to_table()
+result.parameters.to_table()
+
+
+# In[ ]:
+
+
+result.parameters.covariance[:3, :3]
+
+
+# In[ ]:
+
+
+result.parameters.correlation[:3, :3]
 
 
 # In[ ]:

@@ -147,7 +147,7 @@ psf_kernel = PSFKernel.from_table_psf(
 
 
 region = CircleSkyRegion(center=src_pos, radius=0.6 * u.deg)
-mask = geom2d.region_mask([region])
+mask = Map.from_geom(geom2d, data=geom2d.region_mask([region]))
 
 
 # ## Modeling the source
@@ -210,8 +210,13 @@ print(model)
 # In[ ]:
 
 
-# To get the errors on the model, we can check the covariance table:
-result.parameters.covariance_to_table()
+result.parameters.to_table()
+
+
+# In[ ]:
+
+
+result.parameters.correlation[:4, :4]
 
 
 # ## Classical Ring Background Analysis

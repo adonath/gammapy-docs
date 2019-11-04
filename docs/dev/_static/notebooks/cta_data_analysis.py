@@ -42,10 +42,12 @@ from gammapy.modeling import Fit, Datasets
 from gammapy.data import DataStore
 from gammapy.modeling.models import PowerLawSpectralModel
 from gammapy.spectrum import (
-    SpectrumExtraction,
+    SpectrumDatasetMaker,
+    SafeMaskMaker,
     FluxPointsEstimator,
     FluxPointsDataset,
-    ReflectedRegionsBackgroundEstimator,
+    ReflectedRegionsBackgroundMaker,
+    plot_spectrum_datasets_off_regions,
 )
 from gammapy.maps import MapAxis, WcsNDMap, WcsGeom
 from gammapy.cube import MapDatasetMaker, MapDataset
@@ -243,21 +245,41 @@ plt.gca().scatter(
 # 
 # We'll run a spectral analysis using the classical reflected regions background estimation method,
 # and using the on-off (often called WSTAT) likelihood function.
-# 
-# ### Extraction
-# 
-# The first step is to "extract" the spectrum, i.e. 1-dimensional counts and exposure and background vectors, as well as an energy dispersion matrix from the data and IRFs.
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'bkg_estimator = ReflectedRegionsBackgroundEstimator(\n    observations=observations,\n    on_region=on_region,\n    exclusion_mask=exclusion_mask,\n)\nbkg_estimator.run()\nbkg_estimate = bkg_estimator.result\nbkg_estimator.plot();')
+e_reco = np.logspace(-1, np.log10(40), 40) * u.TeV
+e_true = np.logspace(np.log10(0.05), 2, 200) * u.TeV
 
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'extract = SpectrumExtraction(\n    observations=observations, bkg_estimate=bkg_estimate\n)\nextract.run()\nextract.compute_energy_threshold()')
+dataset_maker = SpectrumDatasetMaker(
+    region=on_region,
+    e_reco=e_reco,
+    e_true=e_true,
+    containment_correction=False,
+)
+bkg_maker = ReflectedRegionsBackgroundMaker(exclusion_mask=exclusion_mask)
+safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
+
+
+# In[ ]:
+
+
+get_ipython().run_cell_magic('time', '', 'datasets = []\n\nfor observation in observations:\n    dataset = dataset_maker.run(\n        observation, selection=["counts", "aeff", "edisp"]\n    )\n    dataset_on_off = bkg_maker.run(dataset, observation)\n    dataset_on_off = safe_mask_masker.run(dataset_on_off, observation)\n    datasets.append(dataset_on_off)')
+
+
+# In[ ]:
+
+
+plt.figure(figsize=(8, 8))
+_, ax, _ = images["counts"].smooth("0.03 deg").plot(vmax=8)
+
+on_region.to_pixel(ax.wcs).plot(ax=ax, edgecolor="white")
+plot_spectrum_datasets_off_regions(datasets, ax=ax)
 
 
 # ### Model fit
@@ -267,7 +289,7 @@ get_ipython().run_cell_magic('time', '', 'extract = SpectrumExtraction(\n    obs
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'model = PowerLawSpectralModel(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\n\nfor dataset in extract.spectrum_observations:\n    dataset.model = model\n\nfit = Fit(extract.spectrum_observations)\nresult = fit.run()\nprint(result)')
+get_ipython().run_cell_magic('time', '', 'model = PowerLawSpectralModel(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\n\nfor dataset in datasets:\n    dataset.model = model\n\nfit = Fit(datasets)\nresult = fit.run()\nprint(result)')
 
 
 # ### Spectral points
@@ -278,9 +300,9 @@ get_ipython().run_cell_magic('time', '', 'model = PowerLawSpectralModel(\n    in
 
 
 # Flux points are computed on stacked observation
-stacked_obs = Datasets(extract.spectrum_observations).stack_reduce()
+stacked_dataset = Datasets(datasets).stack_reduce()
 
-print(stacked_obs)
+print(stacked_dataset)
 
 
 # In[ ]:
@@ -288,9 +310,9 @@ print(stacked_obs)
 
 e_edges = np.logspace(0, 1.5, 5) * u.TeV
 
-stacked_obs.model = model
+stacked_dataset.model = model
 
-fpe = FluxPointsEstimator(datasets=[dataset], e_edges=e_edges)
+fpe = FluxPointsEstimator(datasets=[stacked_dataset], e_edges=e_edges)
 flux_points = fpe.run()
 flux_points.table_formatted
 

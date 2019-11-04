@@ -14,13 +14,12 @@
 # 
 # * `~gammapy.data.DataStore`
 # * `~gammapy.data.DataStoreObservation`
-# * `~gammapy.data.ObservationStats`
-# * `~gammapy.data.ObservationSummary`
 # 
 # To extract the 1-dim spectral information:
 # 
-# * `~gammapy.spectrum.SpectrumExtraction`
-# * `~gammapy.spectrum.ReflectedRegionsBackgroundEstimator`
+# * `~gammapy.spectrum.SpectrumDatasetMaker`
+# * `~gammapy.spectrum.SafeMaskMaker`
+# * `~gammapy.spectrum.ReflectedRegionsBackgroundMaker`
 # 
 # To perform the joint fit:
 # 
@@ -65,21 +64,25 @@ print("regions", regions.__version__)
 # In[ ]:
 
 
+from pathlib import Path
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 from regions import CircleSkyRegion
 from gammapy.maps import Map
 from gammapy.modeling import Fit, Datasets
-from gammapy.data import ObservationStats, ObservationSummary, DataStore
+from gammapy.data import DataStore
 from gammapy.modeling.models import (
     PowerLawSpectralModel,
     create_crab_spectral_model,
 )
 from gammapy.spectrum import (
-    SpectrumExtraction,
+    SpectrumDatasetMaker,
+    SpectrumDatasetOnOff,
+    SafeMaskMaker,
     FluxPointsEstimator,
     FluxPointsDataset,
-    ReflectedRegionsBackgroundEstimator,
+    ReflectedRegionsBackgroundMaker,
+    plot_spectrum_datasets_off_regions,
 )
 
 
@@ -126,7 +129,7 @@ exclusion_region = CircleSkyRegion(
 
 skydir = target_position.galactic
 exclusion_mask = Map.create(
-    npix=(150, 150), binsz=0.05, skydir=skydir, proj="TAN", coordsys="GAL"
+    npix=(150, 150), binsz=0.05, skydir=skydir, proj="TAN", coordsys="CEL"
 )
 
 mask = exclusion_mask.geom.region_mask([exclusion_region], inside=False)
@@ -134,54 +137,9 @@ exclusion_mask.data = mask
 exclusion_mask.plot();
 
 
-# ## Estimate background
+# ## Run data reduction chain
 # 
-# Next we will manually perform a background estimate by placing [reflected regions](../spectrum/reflected.rst) around the pointing position and looking at the source statistics. This will result in a  `~gammapy.spectrum.BackgroundEstimate` that serves as input for other classes in gammapy.
-
-# In[ ]:
-
-
-background_estimator = ReflectedRegionsBackgroundEstimator(
-    observations=observations,
-    on_region=on_region,
-    exclusion_mask=exclusion_mask,
-)
-
-background_estimator.run()
-
-
-# In[ ]:
-
-
-plt.figure(figsize=(8, 8))
-background_estimator.plot(add_legend=True);
-
-
-# ## Source statistic
-# 
-# Next we're going to look at the overall source statistics in our signal region. For more info about what debug plots you can create check out the `~gammapy.data.ObservationSummary` class.
-
-# In[ ]:
-
-
-stats = []
-for obs, bkg in zip(observations, background_estimator.result):
-    stats.append(ObservationStats.from_observation(obs, bkg))
-
-print(stats[1])
-
-obs_summary = ObservationSummary(stats)
-fig = plt.figure(figsize=(10, 6))
-ax1 = fig.add_subplot(121)
-
-obs_summary.plot_excess_vs_livetime(ax=ax1)
-ax2 = fig.add_subplot(122)
-obs_summary.plot_significance_vs_livetime(ax=ax2);
-
-
-# ## Extract spectrum
-# 
-# Now, we're going to extract a spectrum using the `~gammapy.spectrum.SpectrumExtraction` class. We provide the reconstructed energy binning we want to use. It is expected to be a Quantity with unit energy, i.e. an array with an energy unit. We also provide the true energy binning to use.
+# We begin with the configuration of the maker classes:
 
 # In[ ]:
 
@@ -190,44 +148,85 @@ e_reco = np.logspace(-1, np.log10(40), 40) * u.TeV
 e_true = np.logspace(np.log10(0.05), 2, 200) * u.TeV
 
 
-# Instantiate a `~gammapy.spectrum.SpectrumExtraction` object that will do the extraction. The containment_correction parameter is there to allow for PSF leakage correction if one is working with full enclosure IRFs. We also compute a threshold energy and store the result in OGIP compliant files (pha, rmf, arf). This last step might be omitted though.
-
 # In[ ]:
 
 
-extraction = SpectrumExtraction(
-    observations=observations,
-    bkg_estimate=background_estimator.result,
-    containment_correction=False,
+dataset_maker = SpectrumDatasetMaker(
+    region=on_region,
     e_reco=e_reco,
     e_true=e_true,
+    containment_correction=False,
 )
+bkg_maker = ReflectedRegionsBackgroundMaker(exclusion_mask=exclusion_mask)
+safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
 
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'extraction.run()')
+get_ipython().run_cell_magic('time', '', 'datasets = []\n\nfor observation in observations:\n    dataset = dataset_maker.run(\n        observation, selection=["counts", "aeff", "edisp"]\n    )\n    dataset_on_off = bkg_maker.run(dataset, observation)\n    dataset_on_off = safe_mask_masker.run(dataset_on_off, observation)\n    datasets.append(dataset_on_off)')
 
 
-# Now we can (optionally) compute the energy thresholds for the analysis, according to different methods. Here we choose the energy where the effective area drops below 10% of the maximum:
-
-# In[ ]:
-
-
-# Add a condition on correct energy range in case it is not set by default
-extraction.compute_energy_threshold(method_lo="area_max", area_percent_lo=10.0)
-
-
-# Let's take a look at the datasets, we just extracted:
+# ## Plot off regions
 
 # In[ ]:
 
 
-# Requires IPython widgets
-# extraction.spectrum_observations.peek()
+plt.figure(figsize=(8, 8))
+_, ax, _ = exclusion_mask.plot()
+on_region.to_pixel(ax.wcs).plot(ax=ax, edgecolor="k")
+plot_spectrum_datasets_off_regions(ax=ax, datasets=datasets)
 
-extraction.spectrum_observations[0].peek()
+
+# ## Source statistic
+# 
+# Next we're going to look at the overall source statistics in our signal region.
+
+# In[ ]:
+
+
+datasets_all = Datasets(datasets)
+
+
+# In[ ]:
+
+
+info_table = datasets_all.info_table(cumulative=True)
+
+
+# In[ ]:
+
+
+info_table
+
+
+# In[ ]:
+
+
+plt.plot(
+    info_table["livetime"].to("h"), info_table["excess"], marker="o", ls="none"
+)
+plt.xlabel("Livetime [h]")
+plt.ylabel("Excess");
+
+
+# In[ ]:
+
+
+plt.plot(
+    info_table["livetime"].to("h"),
+    info_table["significance"],
+    marker="o",
+    ls="none",
+)
+plt.xlabel("Livetime [h]")
+plt.ylabel("Significance");
+
+
+# In[ ]:
+
+
+datasets[0].peek()
 
 
 # Finally you can write the extrated datasets to disk using the OGIP format (PHA, ARF, RMF, BKG, see [here](https://gamma-astro-data-formats.readthedocs.io/en/latest/spectra/ogip/index.html) for details):
@@ -235,8 +234,15 @@ extraction.spectrum_observations[0].peek()
 # In[ ]:
 
 
-# ANALYSIS_DIR = "crab_analysis"
-# extraction.write(outdir=ANALYSIS_DIR, overwrite=True)
+path = Path("spectrum_analysis")
+path.mkdir(exist_ok=True)
+
+
+# In[ ]:
+
+
+for dataset in datasets:
+    dataset.to_ogip_files(outdir=path, overwrite=True)
 
 
 # If you want to read back the datasets from disk you can use:
@@ -244,10 +250,10 @@ extraction.spectrum_observations[0].peek()
 # In[ ]:
 
 
-# datasets = []
-# for obs_id in obs_ids:
-#     filename = ANALYSIS_DIR + f"/ogip_data/pha_obs{obs_id}.fits"
-#     datasets.append(SpectrumDatasetOnOff.from_ogip_files(filename))
+datasets = []
+for obs_id in obs_ids:
+    filename = path / f"pha_obs{obs_id}.fits"
+    datasets.append(SpectrumDatasetOnOff.from_ogip_files(filename))
 
 
 # ## Fit spectrum
@@ -261,12 +267,10 @@ model = PowerLawSpectralModel(
     index=2, amplitude=2e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV
 )
 
-datasets_joint = extraction.spectrum_observations
-
-for dataset in datasets_joint:
+for dataset in datasets:
     dataset.model = model
 
-fit_joint = Fit(datasets_joint)
+fit_joint = Fit(datasets)
 result_joint = fit_joint.run()
 
 # we make a copy here to compare it later
@@ -284,7 +288,7 @@ print(result_joint)
 
 
 plt.figure(figsize=(8, 6))
-ax_spectrum, ax_residual = datasets_joint[0].plot_fit()
+ax_spectrum, ax_residual = datasets[0].plot_fit()
 ax_spectrum.set_ylim(0, 25)
 
 
@@ -304,7 +308,7 @@ e_edges = np.logspace(np.log10(e_min), np.log10(e_max), 11) * u.TeV
 # In[ ]:
 
 
-fpe = FluxPointsEstimator(datasets=datasets_joint, e_edges=e_edges)
+fpe = FluxPointsEstimator(datasets=datasets, e_edges=e_edges)
 flux_points = fpe.run()
 
 
@@ -353,7 +357,7 @@ flux_points_dataset.peek();
 # In[ ]:
 
 
-dataset_stacked = Datasets(datasets_joint).stack_reduce()
+dataset_stacked = Datasets(datasets).stack_reduce()
 
 
 # Again we set the model on the dataset we would like to fit (in this case it's only a single one) and pass it to the `~gammapy.modeling.Fit` object:
@@ -407,7 +411,9 @@ model_best_stacked.plot_error(**plot_kwargs)
 model_best_joint.plot(**plot_kwargs, label="Joint analysis result", ls="--")
 model_best_joint.plot_error(**plot_kwargs)
 
-create_crab_spectral_model().plot(**plot_kwargs, label="Crab reference")
+create_crab_spectral_model("hess_pl").plot(
+    **plot_kwargs, label="Crab reference"
+)
 plt.legend()
 
 
@@ -419,9 +425,3 @@ plt.legend()
 #   You could try `~gammapy.modeling.models.ExpCutoffPowerLawSpectralModel` or `~gammapy.modeling.models.LogParabolaSpectralModel`.
 # - Compute flux points for the stacked dataset.
 # - Create a `~gammapy.spectrum.FluxPointsDataset` with the flux points you have computed for the stacked dataset and fit the flux points again with obe of the spectral models. How does the result compare to the best fit model, that was directly fitted to the counts data?
-
-# In[ ]:
-
-
-
-

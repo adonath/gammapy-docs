@@ -80,7 +80,7 @@ print(model_ref)
 # In[ ]:
 
 
-print(model_ref.parameters)
+model_ref.parameters
 
 
 # In[ ]:
@@ -94,11 +94,9 @@ print(model_ref.parameters["index"])
 # In[ ]:
 
 
-# Load IRFs
-filename = (
+cta_irf = load_cta_irfs(
     "$GAMMAPY_DATA/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
 )
-cta_irf = load_cta_irfs(filename)
 
 
 # A quick look into the effective area and energy dispersion:
@@ -235,16 +233,11 @@ SpectralModel.__subclasses__()
 
 
 class UserModel(SpectralModel):
-    def __init__(self, index, amplitude, reference, mean, width):
-        super().__init__(
-            [
-                Parameter("index", index, min=0),
-                Parameter("amplitude", amplitude, min=0),
-                Parameter("reference", reference, frozen=True),
-                Parameter("mean", mean, min=0),
-                Parameter("width", width, min=0, frozen=True),
-            ]
-        )
+    index = Parameter("index", 2, min=0)
+    amplitude = Parameter("amplitude", "1e-12 cm-2 s-1 TeV-1", min=0)
+    reference = Parameter("reference", "1 TeV", frozen=True)
+    mean = Parameter("mean", "1 TeV", min=0)
+    width = Parameter("width", "0.1 TeV", min=0, frozen=True)
 
     @staticmethod
     def evaluate(energy, index, amplitude, reference, mean, width):
