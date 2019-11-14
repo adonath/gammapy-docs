@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt
 from regions import CircleSkyRegion
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from gammapy.scripts import Analysis, AnalysisConfig
+from gammapy.analysis import Analysis, AnalysisConfig
 from gammapy.modeling.models import create_crab_spectral_model
 
 
@@ -92,7 +92,7 @@ flux-points:
 """
 
 
-# We first create an `~gammapy.scripts.AnalysisConfig` object from it:
+# We first create an `~gammapy.analysis.AnalysisConfig` object from it:
 
 # In[ ]:
 
@@ -102,7 +102,7 @@ config = AnalysisConfig(config_str)
 
 # ##  Observation selection
 # 
-# Now we create the high level `~gammapy.scripts.Analysis` object from the config object:
+# Now we create the high level `~gammapy.analysis.Analysis` object from the config object:
 
 # In[ ]:
 
@@ -110,7 +110,7 @@ config = AnalysisConfig(config_str)
 analysis = Analysis(config)
 
 
-# And directly select and load the observations from disk using `~gammapy.scripts.Analysis.get_observations()`:
+# And directly select and load the observations from disk using `~gammapy.analysis.Analysis.get_observations()`:
 
 # In[ ]:
 
@@ -157,7 +157,7 @@ get_ipython().run_cell_magic('time', '', 'analysis.get_datasets()')
 # In[ ]:
 
 
-analysis.datasets.names
+print(analysis.datasets)
 
 
 # We can print the dataset as well:

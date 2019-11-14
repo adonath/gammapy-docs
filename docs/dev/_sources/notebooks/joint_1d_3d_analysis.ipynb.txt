@@ -1,0 +1,494 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "\n",
+    "<div class=\"alert alert-info\">\n",
+    "\n",
+    "**This is a fixed-text formatted version of a Jupyter notebook**\n",
+    "\n",
+    "- Try online [![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/gammapy/gammapy-webpage/master?urlpath=lab/tree/joint_1d_3d_analysis.ipynb)\n",
+    "- You can contribute with your own notebooks in this\n",
+    "[GitHub repository](https://github.com/gammapy/gammapy/tree/master/tutorials).\n",
+    "- **Source files:**\n",
+    "[joint_1d_3d_analysis.ipynb](../_static/notebooks/joint_1d_3d_analysis.ipynb) |\n",
+    "[joint_1d_3d_analysis.py](../_static/notebooks/joint_1d_3d_analysis.py)\n",
+    "</div>\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Joint Crab analysis with 1D and 3D datasets"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "This tutorial illustrates how to run a joint analysis with different datasets.\n",
+    "We look at the gamma-ray emission from the Crab nebula between 10 GeV and 100 TeV.\n",
+    "The spectral parameters are optimized by combining a 3D analysis of Fermi-LAT data, a ON/OFF spectral analysis of HESS data, and flux points from HAWC.  \n",
+    "\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import os\n",
+    "import numpy as np\n",
+    "from astropy import units as u\n",
+    "import matplotlib.pyplot as plt\n",
+    "from gammapy.modeling import Fit, Datasets\n",
+    "from gammapy.spectrum import (\n",
+    "    FluxPoints,\n",
+    "    FluxPointsEstimator,\n",
+    "    FluxPointsDataset,\n",
+    "    SpectrumDatasetOnOff,\n",
+    ")\n",
+    "from pathlib import Path"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Data and models files\n",
+    "\n",
+    "We are going to use pre-made datasets. Links toward other tutorials detailing on how to prepare datasets are given at the end.\n",
+    "The datasets serialization produce YAML files listing the datasets and models. In the following cells we show an example containning only the Fermi-LAT dataset and the Crab model.\n",
+    "\n",
+    "Fermi-LAT-3FHL_datasets.yaml:"
+   ]
+  },
+  {
+   "cell_type": "raw",
+   "metadata": {},
+   "source": [
+    "datasets:\n",
+    "- name: Fermi-LAT\n",
+    "  type: MapDataset\n",
+    "  likelihood: cash\n",
+    "  models:\n",
+    "- Crab Nebula\n",
+    "  background: background\n",
+    "  filename: $GAMMAPY_DATA/fermi-3fhl-crab/Fermi-LAT-3FHL_data_Fermi-LAT.fits"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Fermi-LAT-3FHL_models.yaml:"
+   ]
+  },
+  {
+   "cell_type": "raw",
+   "metadata": {},
+   "source": [
+    "components:\n",
+    "- name: Crab Nebula\n",
+    "  type: SkyModel\n",
+    "  spatial:\n",
+    "    type: PointSpatialModel\n",
+    "    frame: icrs\n",
+    "    parameters:\n",
+    "    - name: lon_0\n",
+    "      value: 83.63310241699219\n",
+    "      unit: deg\n",
+    "      min: .nan\n",
+    "      max: .nan\n",
+    "      frozen: true\n",
+    "    - name: lat_0\n",
+    "      value: 22.019899368286133\n",
+    "      unit: deg\n",
+    "      min: -90.0\n",
+    "      max: 90.0\n",
+    "      frozen: true\n",
+    "  spectral:\n",
+    "    type: LogParabolaSpectralModel\n",
+    "    parameters:\n",
+    "    - name: amplitude\n",
+    "      value: 0.3415498620816483\n",
+    "      unit: cm-2 s-1 TeV-1\n",
+    "      min: .nan\n",
+    "      max: .nan\n",
+    "      frozen: false\n",
+    "    - name: reference\n",
+    "      value: 5.054833602905273e-05\n",
+    "      unit: TeV\n",
+    "      min: .nan\n",
+    "      max: .nan\n",
+    "      frozen: true\n",
+    "    - name: alpha\n",
+    "      value: 2.510798031388936\n",
+    "      unit: ''\n",
+    "      min: .nan\n",
+    "      max: .nan\n",
+    "      frozen: false\n",
+    "    - name: beta\n",
+    "      value: -0.022476498188855533\n",
+    "      unit: ''\n",
+    "      min: .nan\n",
+    "      max: .nan\n",
+    "      frozen: false\n",
+    "- name: background\n",
+    "  type: BackgroundModel\n",
+    "  parameters:\n",
+    "  - name: norm\n",
+    "    value: 0.9544383244743555\n",
+    "    unit: ''\n",
+    "    min: 0.0\n",
+    "    max: .nan\n",
+    "    frozen: false\n",
+    "  - name: tilt\n",
+    "    value: 0.0\n",
+    "    unit: ''\n",
+    "    min: .nan\n",
+    "    max: .nan\n",
+    "    frozen: true\n",
+    "  - name: reference\n",
+    "    value: 1.0\n",
+    "    unit: TeV\n",
+    "    min: .nan\n",
+    "    max: .nan\n",
+    "    frozen: true\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Reading  different datasets\n",
+    "\n",
+    "\n",
+    "### Fermi-LAT 3FHL: map dataset for 3D analysis\n",
+    "For now we let's use the datasets serialization only to read the 3D `MapDataset` associated to Fermi-LAT 3FHL data and models."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "path = \"$GAMMAPY_DATA/fermi-3fhl-crab/Fermi-LAT-3FHL\"\n",
+    "filedata = Path(path + \"_datasets.yaml\")\n",
+    "filemodel = Path(path + \"_models.yaml\")\n",
+    "datasets = Datasets.from_yaml(filedata=filedata, filemodel=filemodel)\n",
+    "dataset_fermi = datasets[0]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We get the Crab spectral model in order to share it with the other datasets"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "LogParabolaSpectralModel\n",
+      "\n",
+      "   name     value    error      unit      min max frozen\n",
+      "--------- ---------- ----- -------------- --- --- ------\n",
+      "amplitude  3.415e-01   nan cm-2 s-1 TeV-1 nan nan  False\n",
+      "reference  5.055e-05   nan            TeV nan nan   True\n",
+      "    alpha  2.511e+00   nan                nan nan  False\n",
+      "     beta -2.248e-02   nan                nan nan  False\n"
+     ]
+    }
+   ],
+   "source": [
+    "crab_spec = [\n",
+    "    model.spectral_model\n",
+    "    for model in dataset_fermi.model\n",
+    "    if model.name == \"Crab Nebula\"\n",
+    "][0]\n",
+    "\n",
+    "print(crab_spec)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### HESS-DL3: 1D ON/OFF dataset for spectral fitting\n",
+    "\n",
+    "The ON/OFF datasets can be read from PHA files following the [OGIP standards](https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/node5.html).\n",
+    "We read the PHA files from each observation, and compute a stacked dataset for simplicity.\n",
+    "Then the Crab spectral model previously defined is added to the dataset."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "obs_ids = [23523, 23526]\n",
+    "datasets = []\n",
+    "for obs_id in obs_ids:\n",
+    "    dataset = SpectrumDatasetOnOff.from_ogip_files(\n",
+    "        f\"$GAMMAPY_DATA/joint-crab/spectra/hess/pha_obs{obs_id}.fits\"\n",
+    "    )\n",
+    "    datasets.append(dataset)\n",
+    "dataset_hess = Datasets(datasets).stack_reduce()\n",
+    "dataset_hess.name = \"HESS\"\n",
+    "dataset_hess.model = crab_spec"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### HAWC: 1D dataset for flux point fitting\n",
+    "\n",
+    "The HAWC flux point are taken from https://arxiv.org/pdf/1905.12518.pdf. Then these flux points are read from a pre-made FITS file and passed to a `FluxPointsDataset` together with the source spectral model.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# read flux points from https://arxiv.org/pdf/1905.12518.pdf\n",
+    "filename = \"$GAMMAPY_DATA/hawc_crab/HAWC19_flux_points.fits\"\n",
+    "flux_points_hawc = FluxPoints.read(filename)\n",
+    "dataset_hawc = FluxPointsDataset(crab_spec, flux_points_hawc, name=\"HAWC\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Datasets serialization\n",
+    "\n",
+    "The `datasets` object contains each dataset previously defined. \n",
+    "It can be saved on disk as datasets.yaml, models.yaml, and several data files specific to each dataset. Then the `datasets` can be rebuild later from these files."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "datasets = Datasets([dataset_fermi, dataset_hess, dataset_hawc])\n",
+    "path = Path(\"crab-3datasets\")\n",
+    "# datasets.to_yaml(path=path, prefix=\"crab_10GeV_100TeV\", overwrite=True)\n",
+    "path.mkdir(exist_ok=True)\n",
+    "filedata = path / \"crab_10GeV_100TeV_datasets.yaml\"\n",
+    "filemodel = path / \"crab_10GeV_100TeV_models.yaml\"\n",
+    "# datasets.from_yaml(filedata=filedata, filemodel=filemodel)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Joint analysis\n",
+    "\n",
+    "We run the fit on the `Datasets` object that include a dataset for each instrument\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "OptimizeResult\n",
+      "\n",
+      "\tbackend    : minuit\n",
+      "\tmethod     : minuit\n",
+      "\tsuccess    : True\n",
+      "\tmessage    : Optimization terminated successfully.\n",
+      "\tnfev       : 783\n",
+      "\ttotal stat : -14820.65\n",
+      "\n",
+      "   name     value     error        unit         min        max    frozen\n",
+      "--------- --------- --------- -------------- ---------- --------- ------\n",
+      "    lon_0 8.363e+01 0.000e+00            deg        nan       nan   True\n",
+      "    lat_0 2.202e+01 0.000e+00            deg -9.000e+01 9.000e+01   True\n",
+      "amplitude 3.721e-03 6.119e-04 cm-2 s-1 TeV-1        nan       nan  False\n",
+      "reference 5.055e-05 0.000e+00            TeV        nan       nan   True\n",
+      "    alpha 1.246e+00 3.784e-02                       nan       nan  False\n",
+      "     beta 6.247e-02 2.092e-03                       nan       nan  False\n",
+      "     norm 9.825e-01 2.822e-01                 0.000e+00       nan  False\n",
+      "     tilt 0.000e+00 0.000e+00                       nan       nan   True\n",
+      "reference 1.000e+00 0.000e+00            TeV        nan       nan   True\n",
+      "CPU times: user 10.7 s, sys: 114 ms, total: 10.8 s\n",
+      "Wall time: 10.9 s\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%time\n",
+    "fit_joint = Fit(datasets)\n",
+    "results_joint = fit_joint.run()\n",
+    "print(results_joint)\n",
+    "print(results_joint.parameters.to_table())"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Let's display only the parameters of the Crab spectral model"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "LogParabolaSpectralModel\n",
+      "\n",
+      "   name     value     error        unit      min max frozen\n",
+      "--------- --------- --------- -------------- --- --- ------\n",
+      "amplitude 3.721e-03 6.119e-04 cm-2 s-1 TeV-1 nan nan  False\n",
+      "reference 5.055e-05 0.000e+00            TeV nan nan   True\n",
+      "    alpha 1.246e+00 3.784e-02                nan nan  False\n",
+      "     beta 6.247e-02 2.092e-03                nan nan  False\n"
+     ]
+    }
+   ],
+   "source": [
+    "crab_spec.parameters.covariance = results_joint.parameters.get_subcovariance(\n",
+    "    crab_spec.parameters\n",
+    ")\n",
+    "print(crab_spec)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We can compute flux points for Fermi-LAT and HESS datasets in order plot them together with the HAWC flux point."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# compute Fermi-LAT and HESS flux points\n",
+    "e_min, e_max = 0.01, 2.0\n",
+    "El_fermi = np.logspace(np.log10(e_min), np.log10(e_max), 6) * u.TeV\n",
+    "flux_points_fermi = FluxPointsEstimator(\n",
+    "    datasets=[dataset_fermi], e_edges=El_fermi, source=\"Crab Nebula\"\n",
+    ").run()\n",
+    "\n",
+    "e_min, e_max = 1.0, 15.0\n",
+    "El_hess = np.logspace(np.log10(e_min), np.log10(e_max), 6) * u.TeV\n",
+    "flux_points_hess = FluxPointsEstimator(\n",
+    "    datasets=[dataset_hess], e_edges=El_hess\n",
+    ").run()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Now, Let's plot the Crab spectrum fitted and the flux points of each instrument.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "image/png": "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\n",
+      "text/plain": [
+       "<Figure size 576x432 with 1 Axes>"
+      ]
+     },
+     "metadata": {
+      "needs_background": "light"
+     },
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "# display spectrum and flux points\n",
+    "energy_range = [0.01, 120] * u.TeV\n",
+    "plt.figure(figsize=(8, 6))\n",
+    "ax = crab_spec.plot(energy_range=energy_range, energy_power=2, label=\"Model\")\n",
+    "crab_spec.plot_error(ax=ax, energy_range=energy_range, energy_power=2)\n",
+    "flux_points_fermi.plot(ax=ax, energy_power=2, label=\"Fermi-LAT\")\n",
+    "flux_points_hess.plot(ax=ax, energy_power=2, label=\"HESS\")\n",
+    "flux_points_hawc.plot(ax=ax, energy_power=2, label=\"HAWC\")\n",
+    "plt.legend();"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## To go further\n",
+    "\n",
+    "More details on how to prepare datasets with the high and low level interfaces are available in these tutorials: \n",
+    "- https://docs.gammapy.org/0.14/notebooks/fermi_lat.html\n",
+    "- https://docs.gammapy.org/dev/notebooks/hess.html\n",
+    "- https://docs.gammapy.org/dev/notebooks/spectrum_analysis.html\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.7.0"
+  },
+  "nbsphinx": {
+   "orphan": true
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}

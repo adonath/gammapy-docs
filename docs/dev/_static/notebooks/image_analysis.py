@@ -36,8 +36,9 @@ from gammapy.cube import (
     MapDatasetMaker,
     PSFKernel,
     MapDataset,
-    MapMakerRing,
-    RingBackgroundEstimator,
+    MapDatasetMaker,
+    MapDatasetOnOff,
+    RingBackgroundMaker,
 )
 from gammapy.modeling.models import (
     SkyModel,
@@ -196,7 +197,7 @@ dataset = MapDataset(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'fit = Fit(dataset)\nresult = fit.run()')
+get_ipython().run_cell_magic('time', '', 'fit = Fit([dataset])\nresult = fit.run()')
 
 
 # To see the actual best-fit parameters, do a print on the result
@@ -221,32 +222,32 @@ result.parameters.correlation[:4, :4]
 
 # ## Classical Ring Background Analysis
 # 
-# No we repeat the same analysis but using a classical ring background estimation. This is currently support with a separate `~gammapy.cube.MapMakerRing`. However We start by defining an exclusion mask:
+# No we repeat the same analysis but using a classical ring background estimation. We define an exclusion mask and then use the `~gammapy.cube.RingBackgroundMaker`.
 
 # In[ ]:
 
 
-geom_image = geom.to_image()
+geom_image = geom.to_image().to_cube([energy_axis.squash()])
 
 regions = CircleSkyRegion(center=spatial_model.position, radius=0.3 * u.deg)
 
 exclusion_mask = Map.from_geom(geom_image)
 exclusion_mask.data = geom_image.region_mask([regions], inside=False)
-exclusion_mask.plot();
-
-
-# Next we define the parameters of the ring background and create the `~gammapy.cube.RingBackgroundEstimator`:
-
-# In[ ]:
-
-
-ring_bkg = RingBackgroundEstimator(r_in="0.3 deg", width="0.3 deg")
+exclusion_mask.sum_over_axes().plot();
 
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'im = MapMakerRing(\n    geom=geom,\n    offset_max=3.0 * u.deg,\n    exclusion_mask=exclusion_mask,\n    background_estimator=ring_bkg,\n)\n\nfor obs in observations:\n    im._get_obs_maker(obs)\n\nimages = im.run_images(observations)')
+ring_maker = RingBackgroundMaker(
+    r_in="0.3 deg", width="0.3 deg", exclusion_mask=exclusion_mask
+)
+
+
+# In[ ]:
+
+
+get_ipython().run_cell_magic('time', '', 'stacked_on_off = MapDatasetOnOff.create(geom=geom_image)\n\nfor obs in observations:\n    dataset = maker.run(obs)\n    dataset_image = dataset.to_image()\n    dataset_on_off = ring_maker.run(dataset_image)\n    stacked_on_off.stack(dataset_on_off)')
 
 
 # Based on the estimate of the ring background we compute a Li&Ma significance image: 
@@ -261,10 +262,10 @@ tophat = Tophat2DKernel(theta)
 tophat.normalize("peak")
 
 lima_maps = compute_lima_on_off_image(
-    images["on"],
-    images["off"],
-    images["exposure_on"],
-    images["exposure_off"],
+    stacked_on_off.counts,
+    stacked_on_off.counts_off,
+    stacked_on_off.acceptance,
+    stacked_on_off.acceptance_off,
     tophat,
 )
 
@@ -286,10 +287,10 @@ ax1 = plt.subplot(221, projection=significance_map.geom.wcs)
 ax2 = plt.subplot(222, projection=excess_map.geom.wcs)
 
 ax1.set_title("Significance map")
-significance_map.plot(ax=ax1, add_cbar=True)
+significance_map.get_image_by_idx((0,)).plot(ax=ax1, add_cbar=True)
 
 ax2.set_title("Excess map")
-excess_map.plot(ax=ax2, add_cbar=True);
+significance_map.get_image_by_idx((0,)).plot(ax=ax2, add_cbar=True)
 
 
 # Finally we take a look at the signficance distribution outside the exclusion region:

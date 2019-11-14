@@ -127,7 +127,7 @@ pwl = PowerLawSpectralModel(
 
 
 dataset_pwl = FluxPointsDataset(pwl, flux_points, likelihood="chi2assym")
-fitter = Fit(dataset_pwl)
+fitter = Fit([dataset_pwl])
 result_pwl = fitter.run()
 
 
@@ -181,7 +181,7 @@ ecpl = ExpCutoffPowerLawSpectralModel(
 
 
 dataset_ecpl = FluxPointsDataset(ecpl, flux_points, likelihood="chi2assym")
-fitter = Fit(dataset_ecpl)
+fitter = Fit([dataset_ecpl])
 result_ecpl = fitter.run()
 print(ecpl)
 
@@ -219,7 +219,7 @@ log_parabola = LogParabolaSpectralModel(
 dataset_log_parabola = FluxPointsDataset(
     log_parabola, flux_points, likelihood="chi2assym"
 )
-fitter = Fit(dataset_log_parabola)
+fitter = Fit([dataset_log_parabola])
 result_log_parabola = fitter.run()
 print(log_parabola)
 

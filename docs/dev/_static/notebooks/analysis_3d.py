@@ -47,9 +47,7 @@ from gammapy.modeling import Fit
 # Define which data to use and print some information
 data_store = DataStore.from_dir("$GAMMAPY_DATA/cta-1dc/index/gps/")
 data_store.info()
-print(
-    "Observation time (hours): ", data_store.obs_table["ONTIME"].sum() / 3600
-)
+print("ONTIME (hours): ", data_store.obs_table["ONTIME"].sum() / 3600)
 print("Observation table: ", data_store.obs_table.colnames)
 print("HDU table: ", data_store.hdu_table.colnames)
 
@@ -215,7 +213,7 @@ stacked.background_model.norm.value = 1.3
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'fit = Fit(stacked)\nresult = fit.run(optimize_opts={"print_level": 1})')
+get_ipython().run_cell_magic('time', '', 'fit = Fit([stacked])\nresult = fit.run(optimize_opts={"print_level": 1})')
 
 
 # In[ ]:
@@ -279,7 +277,7 @@ dataset_combined.model = SkyModels([model, diffuse_model])
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'fit_combined = Fit(dataset_combined)\nresult_combined = fit_combined.run()')
+get_ipython().run_cell_magic('time', '', 'fit_combined = Fit([dataset_combined])\nresult_combined = fit_combined.run()')
 
 
 # As we can see we have now two components in our model, and we can access them separately.

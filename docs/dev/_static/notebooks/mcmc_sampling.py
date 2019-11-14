@@ -252,7 +252,7 @@ for nwalk in range(0, 6):
 
         # set model parameters
         par_to_model(dataset, pars)
-        spectral_model = dataset.model.skymodels[0].spectral_model
+        spectral_model = dataset.model[0].spectral_model
 
         spectral_model.plot(
             energy_range=(emin, emax),

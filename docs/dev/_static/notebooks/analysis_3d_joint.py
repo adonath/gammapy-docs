@@ -132,7 +132,8 @@ for obs_id in obs_ids:
 
     # optionally define a safe energy threshold
     emin = None
-    dataset.mask_safe = dataset.counts.geom.energy_mask(emin=emin)
+    data = dataset.counts.geom.energy_mask(emin=emin)
+    dataset.mask_safe = Map.from_geom(geom=dataset.counts.geom, data=data)
     datasets.append(dataset)
 
 
@@ -214,15 +215,13 @@ residuals_stacked = Map.from_geom(geom)
 
 for dataset in datasets:
     residuals = dataset.residuals()
-    coords = residuals.geom.get_coord()
-
-    residuals_stacked.fill_by_coord(coords, residuals.data)
+    residuals_stacked.stack(residuals)
 
 
 # In[ ]:
 
 
-residuals_stacked.sum_over_axes().smooth("0.1 deg").plot(
+residuals_stacked.sum_over_axes().smooth("0.08 deg").plot(
     vmin=-1, vmax=1, cmap="coolwarm", add_cbar=True, stretch="linear"
 );
 

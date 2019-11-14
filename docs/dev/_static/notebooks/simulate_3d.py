@@ -219,7 +219,7 @@ dataset = MapDataset(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'fit = Fit(dataset)\nresult = fit.run(optimize_opts={"print_level": 1})')
+get_ipython().run_cell_magic('time', '', 'fit = Fit([dataset])\nresult = fit.run(optimize_opts={"print_level": 1})')
 
 
 # True model:

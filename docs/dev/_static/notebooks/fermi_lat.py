@@ -451,8 +451,12 @@ dataset = MapDataset(
     psf=psf_kernel,
     edisp=edisp,
 )
-fit = Fit(dataset)
-result = fit.run()
+
+
+# In[ ]:
+
+
+get_ipython().run_cell_magic('time', '', 'fit = Fit([dataset])\nresult = fit.run()')
 
 
 # In[ ]:
