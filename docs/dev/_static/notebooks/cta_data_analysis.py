@@ -11,7 +11,6 @@
 # 
 # The dataset we will use is three observation runs on the Galactic center. This is a tiny (and thus quick to process and play with and learn) subset of the simulated CTA dataset that was produced for the first data challenge in August 2017.
 # 
-# **This notebook can be considered part 2 of the introduction to CTA 1DC analysis. Part one is here: [cta_1dc_introduction.ipynb](cta_1dc_introduction.ipynb)**
 
 # ## Setup
 # 
@@ -43,14 +42,13 @@ from gammapy.data import DataStore
 from gammapy.modeling.models import PowerLawSpectralModel
 from gammapy.spectrum import (
     SpectrumDatasetMaker,
-    SafeMaskMaker,
     FluxPointsEstimator,
     FluxPointsDataset,
     ReflectedRegionsBackgroundMaker,
     plot_spectrum_datasets_off_regions,
 )
 from gammapy.maps import MapAxis, WcsNDMap, WcsGeom
-from gammapy.cube import MapDatasetMaker, MapDataset
+from gammapy.cube import MapDatasetMaker, MapDataset, SafeMaskMaker
 from gammapy.detect import TSMapEstimator, find_peaks
 
 
@@ -68,7 +66,7 @@ log.setLevel(logging.ERROR)
 
 # ## Select observations
 # 
-# Like explained in [cta_1dc_introduction.ipynb](cta_1dc_introduction.ipynb), a Gammapy analysis usually starts by creating a `~gammapy.data.DataStore` and selecting observations.
+# A Gammapy analysis usually starts by creating a `~gammapy.data.DataStore` and selecting observations.
 # 
 # This is shown in detail in the other notebook, here we just pick three observations near the galactic center.
 
@@ -147,7 +145,7 @@ exclusion_mask.plot();
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'stacked = MapDataset.create(geom=geom)\nmaker = MapDatasetMaker(geom=geom, offset_max=2.5 * u.deg)\n\nfor obs in observations:\n    dataset = maker.run(obs)\n    stacked.stack(dataset)')
+get_ipython().run_cell_magic('time', '', 'stacked = MapDataset.create(geom=geom)\nmaker = MapDatasetMaker(geom=geom, offset_max=2.5 * u.deg)\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=2.5 * u.deg)\n\nfor obs in observations:\n    dataset = maker.run(obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n    stacked.stack(dataset)')
 
 
 # In[ ]:
@@ -356,5 +354,4 @@ flux_points_dataset.peek();
 # ## What next?
 # 
 # * This notebook showed an example of a first CTA analysis with Gammapy, using simulated 1DC data.
-# * This was part 2 for CTA 1DC turorial, the first part was here: [cta_1dc_introduction.ipynb](cta_1dc_introduction.ipynb)
 # * Let us know if you have any question or issues!

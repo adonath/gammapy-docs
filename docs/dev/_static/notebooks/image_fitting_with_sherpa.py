@@ -32,7 +32,7 @@ from astropy.coordinates import SkyCoord
 from gammapy.data import DataStore
 from gammapy.irf import make_mean_psf
 from gammapy.maps import WcsGeom, MapAxis, Map
-from gammapy.cube import MapDatasetMaker, PSFKernel, MapDataset
+from gammapy.cube import MapDatasetMaker, PSFKernel, MapDataset, SafeMaskMaker
 
 
 # ## 1. Generating the required Maps
@@ -75,7 +75,7 @@ stacked = MapDataset.create(geom)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'maker = MapDatasetMaker(geom=geom, offset_max=4.0 * u.deg)\nfor obs in observations:\n    dataset = maker.run(obs)\n    stacked.stack(dataset)')
+get_ipython().run_cell_magic('time', '', 'maker = MapDatasetMaker(geom=geom, offset_max=4.0 * u.deg)\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=4.0 * u.deg)\n\nfor obs in observations:\n    dataset = maker.run(obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n    stacked.stack(dataset)')
 
 
 # ### Making a PSF Map

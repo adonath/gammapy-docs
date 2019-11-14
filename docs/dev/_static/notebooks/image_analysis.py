@@ -34,6 +34,7 @@ from gammapy.irf import make_mean_psf
 from gammapy.maps import Map, MapAxis, WcsGeom
 from gammapy.cube import (
     MapDatasetMaker,
+    SafeMaskMaker,
     PSFKernel,
     MapDataset,
     MapDatasetMaker,
@@ -104,7 +105,7 @@ stacked = MapDataset.create(geom)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'maker = MapDatasetMaker(geom=geom, offset_max=4.0 * u.deg)\n\nfor obs in observations:\n    dataset = maker.run(obs)\n    stacked.stack(dataset)')
+get_ipython().run_cell_magic('time', '', 'maker = MapDatasetMaker(geom=geom, offset_max=4.0 * u.deg)\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=4.0 * u.deg)\n\nfor obs in observations:\n    dataset = maker.run(obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n    stacked.stack(dataset)')
 
 
 # In[ ]:
@@ -247,7 +248,7 @@ ring_maker = RingBackgroundMaker(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'stacked_on_off = MapDatasetOnOff.create(geom=geom_image)\n\nfor obs in observations:\n    dataset = maker.run(obs)\n    dataset_image = dataset.to_image()\n    dataset_on_off = ring_maker.run(dataset_image)\n    stacked_on_off.stack(dataset_on_off)')
+get_ipython().run_cell_magic('time', '', 'stacked_on_off = MapDatasetOnOff.create(geom=geom_image)\n\nfor obs in observations:\n    dataset = maker.run(obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n    dataset_image = dataset.to_image()\n    dataset_on_off = ring_maker.run(dataset_image)\n    stacked_on_off.stack(dataset_on_off)')
 
 
 # Based on the estimate of the ring background we compute a Li&Ma significance image: 

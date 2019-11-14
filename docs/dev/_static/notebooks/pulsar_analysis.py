@@ -28,6 +28,7 @@ from gammapy.utils.regions import SphericalCircleSkyRegion
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 
+from gammapy.cube import SafeMaskMaker
 from gammapy.maps import Map, WcsGeom
 from gammapy.data import DataStore
 from gammapy.modeling.models import PowerLawSpectralModel
@@ -35,7 +36,6 @@ from gammapy.modeling import Fit, Datasets
 from gammapy.spectrum import (
     PhaseBackgroundMaker,
     SpectrumDatasetMaker,
-    SafeMaskMaker,
     FluxPointsEstimator,
     FluxPointsDataset,
 )

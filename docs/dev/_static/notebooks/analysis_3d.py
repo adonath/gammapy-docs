@@ -23,7 +23,7 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 from gammapy.data import DataStore
 from gammapy.maps import WcsGeom, MapAxis
-from gammapy.cube import MapDatasetMaker, MapDataset
+from gammapy.cube import MapDatasetMaker, MapDataset, SafeMaskMaker
 from gammapy.modeling.models import (
     SkyModel,
     SkyModels,
@@ -83,7 +83,7 @@ geom = WcsGeom.create(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'stacked = MapDataset.create(geom=geom)\n\nmaker = MapDatasetMaker(geom=geom, offset_max=4.0 * u.deg)\n\nfor obs in observations:\n    dataset = maker.run(obs)\n    stacked.stack(dataset)')
+get_ipython().run_cell_magic('time', '', 'stacked = MapDataset.create(geom=geom)\n\nmaker = MapDatasetMaker(geom=geom, offset_max=4.0 * u.deg)\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=4.0 * u.deg)\n\nfor obs in observations:\n    dataset = maker.run(obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n    stacked.stack(dataset)')
 
 
 # This is what the stacked counts image looks like:

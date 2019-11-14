@@ -18,7 +18,7 @@
 # To extract the 1-dim spectral information:
 # 
 # * `~gammapy.spectrum.SpectrumDatasetMaker`
-# * `~gammapy.spectrum.SafeMaskMaker`
+# * `~gammapy.cube.SafeMaskMaker`
 # * `~gammapy.spectrum.ReflectedRegionsBackgroundMaker`
 # 
 # To perform the joint fit:
@@ -75,10 +75,10 @@ from gammapy.modeling.models import (
     PowerLawSpectralModel,
     create_crab_spectral_model,
 )
+from gammapy.cube import SafeMaskMaker
 from gammapy.spectrum import (
     SpectrumDatasetMaker,
     SpectrumDatasetOnOff,
-    SafeMaskMaker,
     FluxPointsEstimator,
     FluxPointsDataset,
     ReflectedRegionsBackgroundMaker,

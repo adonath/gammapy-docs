@@ -1,6 +1,21 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# # CTA with Gammapy
+# 
+# **TODO: rewrite this notebook!**
+# 
+# This is a very old notebook, most of the content below is outdated and should be deleted.
+# 
+# What should remain is a 5-10 min introduction for CTA users that have never used Gammapy,
+# similar to `hess.ipynb` for H.E.S.S. or `fermi_lat.ipynb` for Fermi-LAT.
+# 
+# - Explain that prod 3 IRFs are available as FITS and what they contain
+# - Explain about first data challenge
+# - Mention Gammapy capabilities to simulate something for CTA or to do first analyses with CTA.
+# - Give some simple exercises
+# - Link to other tutorials and documentation that might be of interest
+# 
 # ![CTA first data challenge logo](images/cta-1dc.png)
 # 
 # # CTA first data challenge (1DC) with Gammapy

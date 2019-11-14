@@ -36,7 +36,7 @@ from gammapy.data import DataStore
 from gammapy.modeling.models import PowerLawSpectralModel
 from gammapy.modeling.models import PointSpatialModel
 from gammapy.modeling.models import SkyModel
-from gammapy.cube import MapDatasetMaker, MapDataset
+from gammapy.cube import MapDatasetMaker, MapDataset, SafeMaskMaker
 from gammapy.maps import WcsGeom, MapAxis
 from gammapy.time import LightCurveEstimator
 
@@ -132,7 +132,7 @@ sky_model.parameters["lat_0"].frozen = True
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '\ndatasets = []\n\nmaker = MapDatasetMaker(\n    geom=geom, energy_axis_true=energy_axis_true, offset_max=offset_max\n)\n\nfor time_interval in time_intervals:\n    # get filtered observation lists in time interval\n    observations = crab_obs.select_time(time_interval)\n\n    # Proceed with further analysis only if there are observations\n    # in the selected time window\n    if len(observations) == 0:\n        log.warning(f"No observations in time interval: {time_interval}")\n        continue\n\n    stacked = MapDataset.create(geom=geom, energy_axis_true=energy_axis_true)\n\n    for obs in observations:\n        dataset = maker.run(obs)\n        stacked.stack(dataset)\n\n    # TODO: remove once IRF maps are handled correctly in fit\n    stacked.edisp = stacked.edisp.get_energy_dispersion(\n        position=target_position, e_reco=energy_axis.edges\n    )\n\n    stacked.psf = stacked.psf.get_psf_kernel(\n        position=target_position,\n        geom=stacked.exposure.geom,\n        max_radius="0.3 deg",\n    )\n\n    stacked.counts.meta["t_start"] = time_interval[0]\n    stacked.counts.meta["t_stop"] = time_interval[1]\n    datasets.append(stacked)')
+get_ipython().run_cell_magic('time', '', '\ndatasets = []\n\nmaker = MapDatasetMaker(\n    geom=geom, energy_axis_true=energy_axis_true, offset_max=offset_max\n)\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=offset_max)\n\nfor time_interval in time_intervals:\n    # get filtered observation lists in time interval\n    observations = crab_obs.select_time(time_interval)\n\n    # Proceed with further analysis only if there are observations\n    # in the selected time window\n    if len(observations) == 0:\n        log.warning(f"No observations in time interval: {time_interval}")\n        continue\n\n    stacked = MapDataset.create(geom=geom, energy_axis_true=energy_axis_true)\n\n    for obs in observations:\n        dataset = maker.run(obs)\n        dataset = maker_safe_mask.run(dataset, obs)\n        stacked.stack(dataset)\n\n    # TODO: remove once IRF maps are handled correctly in fit\n    stacked.edisp = stacked.edisp.get_energy_dispersion(\n        position=target_position, e_reco=energy_axis.edges\n    )\n\n    stacked.psf = stacked.psf.get_psf_kernel(\n        position=target_position,\n        geom=stacked.exposure.geom,\n        max_radius="0.3 deg",\n    )\n\n    stacked.counts.meta["t_start"] = time_interval[0]\n    stacked.counts.meta["t_stop"] = time_interval[1]\n    datasets.append(stacked)')
 
 
 # ## Light Curve estimation: the 3D case
@@ -195,7 +195,6 @@ from astropy.coordinates import Angle
 from gammapy.spectrum import (
     SpectrumDatasetMaker,
     ReflectedRegionsBackgroundMaker,
-    SafeMaskMaker,
 )
 
 

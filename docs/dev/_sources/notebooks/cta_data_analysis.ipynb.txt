@@ -30,9 +30,7 @@
     "\n",
     "**This notebook shows an example how to make a sky image and spectrum for simulated CTA data with Gammapy.**\n",
     "\n",
-    "The dataset we will use is three observation runs on the Galactic center. This is a tiny (and thus quick to process and play with and learn) subset of the simulated CTA dataset that was produced for the first data challenge in August 2017.\n",
-    "\n",
-    "**This notebook can be considered part 2 of the introduction to CTA 1DC analysis. Part one is here: [cta_1dc_introduction.ipynb](cta_1dc_introduction.ipynb)**"
+    "The dataset we will use is three observation runs on the Galactic center. This is a tiny (and thus quick to process and play with and learn) subset of the simulated CTA dataset that was produced for the first data challenge in August 2017.\n"
    ]
   },
   {
@@ -66,7 +64,7 @@
       "\r\n",
       "Gammapy package:\r\n",
       "\r\n",
-      "\tversion                : 0.15.dev604+ga9e1311b6 \r\n",
+      "\tversion                : 0.15.dev631+ga8b8808f2 \r\n",
       "\tpath                   : /Users/deil/work/code/gammapy-docs/build/dev/gammapy/gammapy \r\n",
       "\r\n",
       "\r\n",
@@ -111,14 +109,13 @@
     "from gammapy.modeling.models import PowerLawSpectralModel\n",
     "from gammapy.spectrum import (\n",
     "    SpectrumDatasetMaker,\n",
-    "    SafeMaskMaker,\n",
     "    FluxPointsEstimator,\n",
     "    FluxPointsDataset,\n",
     "    ReflectedRegionsBackgroundMaker,\n",
     "    plot_spectrum_datasets_off_regions,\n",
     ")\n",
     "from gammapy.maps import MapAxis, WcsNDMap, WcsGeom\n",
-    "from gammapy.cube import MapDatasetMaker, MapDataset\n",
+    "from gammapy.cube import MapDatasetMaker, MapDataset, SafeMaskMaker\n",
     "from gammapy.detect import TSMapEstimator, find_peaks"
    ]
   },
@@ -143,7 +140,7 @@
    "source": [
     "## Select observations\n",
     "\n",
-    "Like explained in [cta_1dc_introduction.ipynb](cta_1dc_introduction.ipynb), a Gammapy analysis usually starts by creating a `~gammapy.data.DataStore` and selecting observations.\n",
+    "A Gammapy analysis usually starts by creating a `~gammapy.data.DataStore` and selecting observations.\n",
     "\n",
     "This is shown in detail in the other notebook, here we just pick three observations near the galactic center."
    ]
@@ -193,7 +190,7 @@
      "data": {
       "text/html": [
        "<i>ObservationTable length=3</i>\n",
-       "<table id=\"table4810281592\" class=\"table-striped table-bordered table-condensed\">\n",
+       "<table id=\"table4724707736\" class=\"table-striped table-bordered table-condensed\">\n",
        "<thead><tr><th>OBS_ID</th><th>GLON_PNT</th><th>GLAT_PNT</th><th>LIVETIME</th></tr></thead>\n",
        "<thead><tr><th></th><th>deg</th><th>deg</th><th>s</th></tr></thead>\n",
        "<thead><tr><th>int64</th><th>float64</th><th>float64</th><th>float64</th></tr></thead>\n",
@@ -329,8 +326,8 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "CPU times: user 9.22 s, sys: 951 ms, total: 10.2 s\n",
-      "Wall time: 15.8 s\n"
+      "CPU times: user 5.71 s, sys: 671 ms, total: 6.38 s\n",
+      "Wall time: 6.63 s\n"
      ]
     }
    ],
@@ -338,9 +335,11 @@
     "%%time\n",
     "stacked = MapDataset.create(geom=geom)\n",
     "maker = MapDatasetMaker(geom=geom, offset_max=2.5 * u.deg)\n",
+    "maker_safe_mask = SafeMaskMaker(methods=[\"offset-max\"], offset_max=2.5 * u.deg)\n",
     "\n",
     "for obs in observations:\n",
     "    dataset = maker.run(obs)\n",
+    "    dataset = maker_safe_mask.run(dataset, obs)\n",
     "    stacked.stack(dataset)"
    ]
   },
@@ -480,8 +479,8 @@
      "output_type": "stream",
      "text": [
       "dict_keys(['ts', 'sqrt_ts', 'flux', 'flux_err', 'flux_ul', 'niter'])\n",
-      "CPU times: user 13.8 s, sys: 328 ms, total: 14.1 s\n",
-      "Wall time: 14.3 s\n"
+      "CPU times: user 20.2 s, sys: 586 ms, total: 20.8 s\n",
+      "Wall time: 24.1 s\n"
      ]
     }
    ],
@@ -501,7 +500,7 @@
      "data": {
       "text/html": [
        "<i>Table length=2</i>\n",
-       "<table id=\"table4833985424\" class=\"table-striped table-bordered table-condensed\">\n",
+       "<table id=\"table4726885232\" class=\"table-striped table-bordered table-condensed\">\n",
        "<thead><tr><th>value</th><th>x</th><th>y</th><th>ra</th><th>dec</th></tr></thead>\n",
        "<thead><tr><th></th><th></th><th></th><th>deg</th><th>deg</th></tr></thead>\n",
        "<thead><tr><th>float32</th><th>int64</th><th>int64</th><th>float64</th><th>float64</th></tr></thead>\n",
@@ -656,8 +655,8 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "CPU times: user 5.95 s, sys: 186 ms, total: 6.13 s\n",
-      "Wall time: 6.14 s\n"
+      "CPU times: user 7.9 s, sys: 373 ms, total: 8.28 s\n",
+      "Wall time: 9.95 s\n"
      ]
     }
    ],
@@ -727,8 +726,8 @@
       "\tnfev       : 108\n",
       "\ttotal stat : 75.78\n",
       "\n",
-      "CPU times: user 380 ms, sys: 3.16 ms, total: 383 ms\n",
-      "Wall time: 383 ms\n"
+      "CPU times: user 553 ms, sys: 11.7 ms, total: 564 ms\n",
+      "Wall time: 597 ms\n"
      ]
     }
    ],
@@ -808,7 +807,7 @@
      "data": {
       "text/html": [
        "<i>Table length=4</i>\n",
-       "<table id=\"table5004321008\" class=\"table-striped table-bordered table-condensed\">\n",
+       "<table id=\"table4736319952\" class=\"table-striped table-bordered table-condensed\">\n",
        "<thead><tr><th>e_ref</th><th>e_min</th><th>e_max</th><th>ref_dnde</th><th>ref_flux</th><th>ref_eflux</th><th>ref_e2dnde</th><th>norm</th><th>loglike</th><th>norm_err</th><th>counts [1]</th><th>norm_errp</th><th>norm_errn</th><th>norm_ul</th><th>sqrt_ts</th><th>ts</th><th>norm_scan [11]</th><th>dloglike_scan [11]</th><th>dnde</th><th>dnde_ul</th><th>dnde_err</th><th>dnde_errp</th><th>dnde_errn</th></tr></thead>\n",
        "<thead><tr><th>TeV</th><th>TeV</th><th>TeV</th><th>1 / (cm2 s TeV)</th><th>1 / (cm2 s)</th><th>TeV / (cm2 s)</th><th>TeV / (cm2 s)</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th>1 / (cm2 s TeV)</th><th>1 / (cm2 s TeV)</th><th>1 / (cm2 s TeV)</th><th>1 / (cm2 s TeV)</th><th>1 / (cm2 s TeV)</th></tr></thead>\n",
        "<thead><tr><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>int64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th></tr></thead>\n",
@@ -920,7 +919,6 @@
     "## What next?\n",
     "\n",
     "* This notebook showed an example of a first CTA analysis with Gammapy, using simulated 1DC data.\n",
-    "* This was part 2 for CTA 1DC turorial, the first part was here: [cta_1dc_introduction.ipynb](cta_1dc_introduction.ipynb)\n",
     "* Let us know if you have any question or issues!"
    ]
   }
