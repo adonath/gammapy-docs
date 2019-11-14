@@ -1,25 +1,21 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Modeling and Models
+# # Model Gallery
 # 
-# This notebook is an introduction to `~gammapy.modeling` and `~gammapy.modeling.models`.
+# **TODO: Write me!**
 # 
-# TODO: finish writing this. 
-# For now this is mostly copy & paste from other existing examples to this notebook. 
+# This is an overview of the Gammapy built-in models in `~gammapy.modeling.models`.
 # 
-# Topics covered:
+# Note that there is a separate tutorial `modeling.ipynb` that explains about `~gammapy.modeling`,
+# the Gammapy modeling and fitting framework. You have to read that to learn how to work with models.
+# 
+# Topics covered here:
 # 
 # - How to create spatial, spectral and temporal models.
 # - How to create 3D sky models and other compound models.
 # - How to serialize/read and deserialize/write models.
 # - How to use the model registries to list all available models or serialise models.
-# 
-# TBD whether here or elsewhere:
-# 
-# - Introduction how Model, Models, Dataset, Fit and Analysis works
-# - How model evaluation works
-# - Covariance matrix and parameter errors
 
 # In[ ]:
 
