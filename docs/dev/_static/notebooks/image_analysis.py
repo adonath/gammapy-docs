@@ -5,7 +5,7 @@
 # 
 # Gammapy does not have any special handling for 2D images, but treats them as a subset of maps. Thus, classical 2D image analysis can be done in 2 independent ways: 
 # 
-# 1. Using the sherpa package, see: [image_fitting_with_sherpa.ipynb](image_fitting_with_sherpa.ipynb),
+# 1. Using the sherpa package
 # 
 # 2. Within gammapy, by assuming 2D analysis to be a sub-set of the generalised `maps`. Thus, analysis should proceed exactly as demonstrated in [analysis_3d.ipynb](analysis_3d.ipynb), taking care of a few things that we mention in this tutorial
 # 
@@ -348,7 +348,7 @@ print(f"Fit results: mu = {mu:.2f}, std = {std:.2f}")
 # 
 # 1. Update the exclusion mask in the ring background example by thresholding the significance map and re-run the background estimator 
 # 1. Plot residual maps as done in the [analysis_3d](analysis_3d.ipynb) notebook
-# 1. Iteratively add and fit sources as explained in [image_fitting_with_sherpa](image_fitting_with_sherpa.ipynb) notebook
+# 1. Iteratively add and fit sources
 
 # In[ ]:
 
