@@ -330,7 +330,7 @@ flux_points.table["is_ul"] = flux_points.table["ts"] < 4
 ax = flux_points.plot(
     energy_power=2, flux_unit="erg-1 cm-2 s-1", color="darkorange"
 )
-flux_points.to_sed_type("e2dnde").plot_likelihood(ax=ax)
+flux_points.to_sed_type("e2dnde").plot_ts_profiles(ax=ax)
 
 
 # The final plot with the best fit model, flux points and residuals can be quickly made like this: 
@@ -425,3 +425,9 @@ plt.legend()
 #   You could try `~gammapy.modeling.models.ExpCutoffPowerLawSpectralModel` or `~gammapy.modeling.models.LogParabolaSpectralModel`.
 # - Compute flux points for the stacked dataset.
 # - Create a `~gammapy.spectrum.FluxPointsDataset` with the flux points you have computed for the stacked dataset and fit the flux points again with obe of the spectral models. How does the result compare to the best fit model, that was directly fitted to the counts data?
+
+# In[ ]:
+
+
+
+

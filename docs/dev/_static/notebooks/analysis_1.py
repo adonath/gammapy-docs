@@ -318,15 +318,15 @@ residuals.smooth("0.08 deg").plot_interactive(
 )
 
 
-# ### Inspecting likelihood profiles
+# ### Inspecting fit statistic profiles
 # 
-# To check the quality of the fit it is also useful to plot likelihood profiles for specific parameters.
-# For this we use `~gammapy.modeling.Fit.likelihood_profile()`
+# To check the quality of the fit it is also useful to plot fit statistic profiles for specific parameters.
+# For this we use `~gammapy.modeling.Fit.stat_profile()`.
 
 # In[ ]:
 
 
-profile = analysis.fit.likelihood_profile(parameter="lon_0")
+profile = analysis.fit.stat_profile(parameter="lon_0")
 
 
 # For a good fit and error estimate the profile should be parabolic, if we plot it:
@@ -335,7 +335,7 @@ profile = analysis.fit.likelihood_profile(parameter="lon_0")
 
 
 total_stat = analysis.fit_result.total_stat
-plt.plot(profile["values"], profile["likelihood"] - total_stat)
+plt.plot(profile["values"], profile["stat"] - total_stat)
 plt.xlabel("Lon (deg)")
 plt.ylabel("Delta TS")
 

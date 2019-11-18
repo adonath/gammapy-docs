@@ -202,16 +202,13 @@ dataset.parameters["amplitude"].value = 3.2e-12
 dataset.parameters["lambda_"].value = 0.05
 
 print(dataset.model)
-print("log(L) =", dataset.likelihood())
+print("stat =", dataset.stat_sum())
 
 
 # In[ ]:
 
 
-# Now let's define a function to init parameters and run the MCMC with emcee
-# Depending on your number of walkers, Nrun and dimensionality, this can take a while (> minutes)
-sampler = run_mcmc(dataset, nwalkers=6, nrun=150)  # to speedup the notebook
-# sampler=run_mcmc(dataset,nwalkers=12,nrun=1000) # more accurate contours
+get_ipython().run_cell_magic('time', '', "# Now let's define a function to init parameters and run the MCMC with emcee\n# Depending on your number of walkers, Nrun and dimensionality, this can take a while (> minutes)\nsampler = run_mcmc(dataset, nwalkers=6, nrun=150)  # to speedup the notebook\n# sampler=run_mcmc(dataset,nwalkers=12,nrun=1000) # more accurate contours")
 
 
 # ## Plot the results
