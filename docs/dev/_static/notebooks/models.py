@@ -194,11 +194,8 @@ plt.legend(loc="best")
 # In[ ]:
 
 
-gaussian = gm.GaussianSpectralModel(mean="10 TeV")
+gaussian = gm.GaussianSpectralModel(mean="1 TeV")
 gaussian.plot(energy_range)
-
-lgaussian = gm.LogGaussianSpectralModel(mean="10 TeV")
-lgaussian.plot(energy_range)
 
 
 # In[ ]:

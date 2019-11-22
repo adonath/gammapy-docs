@@ -43,7 +43,7 @@ from astropy.table import Table, vstack
 
 
 from pathlib import Path
-from gammapy.utils.nddata import sqrt_space
+from gammapy.maps import MapAxis
 from gammapy.data import DataStore
 from gammapy.irf import Background2D
 
@@ -131,7 +131,7 @@ class BackgroundModelEstimator:
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'ebounds = np.logspace(-1, 2, 20) * u.TeV\noffset = sqrt_space(start=0, stop=3, num=10) * u.deg\nestimator = BackgroundModelEstimator(ebounds, offset)\nestimator.run(observations)')
+get_ipython().run_cell_magic('time', '', 'ebounds = np.logspace(-1, 2, 20) * u.TeV\noffset = MapAxis.from_bounds(0, 3, nbin=9, interp="sqrt", unit="deg").edges\nestimator = BackgroundModelEstimator(ebounds, offset)\nestimator.run(observations)')
 
 
 # Let's have a quick look at what we did ...
@@ -196,7 +196,7 @@ zenith_bins = [
 
 def make_model(observations):
     ebounds = np.logspace(-1, 2, 20) * u.TeV
-    offset = sqrt_space(start=0, stop=3, num=10) * u.deg
+    offset = MapAxis.from_bounds(0, 3, nbin=9, interp="sqrt", unit="deg").edges
     estimator = BackgroundModelEstimator(ebounds, offset)
     estimator.run(observations)
     return estimator.background_rate

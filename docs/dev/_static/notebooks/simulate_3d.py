@@ -22,16 +22,15 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 
 import numpy as np
 import astropy.units as u
-from astropy.coordinates import Angle
+from astropy.coordinates import Angle, SkyCoord
 from gammapy.irf import load_cta_irfs
 from gammapy.maps import WcsGeom, MapAxis, WcsNDMap
 from gammapy.modeling.models import PowerLawSpectralModel
 from gammapy.modeling.models import GaussianSpatialModel
 from gammapy.modeling.models import SkyModel, BackgroundModel
-from gammapy.cube import MapDataset, PSFKernel
-from gammapy.cube import make_map_exposure_true_energy, make_map_background_irf
+from gammapy.cube import MapDataset, MapDatasetMaker
 from gammapy.modeling import Fit
-from gammapy.data import FixedPointingInfo
+from gammapy.data import Observation
 
 
 # In[ ]:
@@ -40,11 +39,14 @@ from gammapy.data import FixedPointingInfo
 get_ipython().system('gammapy info --no-envvar --no-dependencies --no-system')
 
 
-# ## Simulate
+# ## Simulation
+
+# We will simulate using the CTA-1DC IRFs shipped with gammapy. Note that for dedictaed CTA simulations, you can simply use [`Observation.from_caldb()`]() without having to externally load the IRFs
 
 # In[ ]:
 
 
+# Loading IRFs
 irfs = load_cta_irfs(
     "$GAMMAPY_DATA/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
 )
@@ -53,149 +55,130 @@ irfs = load_cta_irfs(
 # In[ ]:
 
 
-# Define sky model to simulate the data
+# Define the observation parameters (typically the observation duration and the pointing position):
+livetime = 2.0 * u.hr
+pointing = SkyCoord(0, 0, unit="deg", frame="galactic")
+
+
+# In[ ]:
+
+
+# Define map geometry for binned simulation
+energy_reco = MapAxis.from_edges(
+    np.logspace(-1.0, 1.0, 10), unit="TeV", name="energy", interp="log"
+)
+geom = WcsGeom.create(
+    skydir=(0, 0), binsz=0.02, width=(5, 4), coordsys="GAL", axes=[energy_reco]
+)
+# It is usually useful to have a separate binning for the true energy axis
+energy_true = MapAxis.from_edges(
+    np.logspace(-1.5, 1.5, 30), unit="TeV", name="energy", interp="log"
+)
+
+
+# In[ ]:
+
+
+# Define sky model to used simulate the data.
+# Here we use a Gaussian spatial model and a Power Law spectral model.
 spatial_model = GaussianSpatialModel(
     lon_0="0.2 deg", lat_0="0.1 deg", sigma="0.3 deg", frame="galactic"
 )
 spectral_model = PowerLawSpectralModel(
     index=3, amplitude="1e-11 cm-2 s-1 TeV-1", reference="1 TeV"
 )
-sky_model = SkyModel(
+model_simu = SkyModel(
     spatial_model=spatial_model, spectral_model=spectral_model
 )
-print(sky_model)
+print(model_simu)
 
+
+# Now, comes the main part of dataset simulation. We create an in-memory observation and an empty dataset. We then predict the number of counts for the given model, and Poission fluctuate it using `fake()` to make a simulated counts maps.
 
 # In[ ]:
 
 
-# Define map geometry
-axis = MapAxis.from_edges(
-    np.logspace(-1.0, 1.0, 10), unit="TeV", name="energy", interp="log"
+# Create an in-memory observation
+obs = Observation.create(pointing=pointing, livetime=livetime, irfs=irfs)
+print(obs)
+# Make the MapDataset
+empty = MapDataset.create(geom)
+maker = MapDatasetMaker(offset_max=2.0 * u.deg)
+dataset = maker.run(
+    empty, obs, selection=["exposure", "background", "psf", "edisp"]
 )
-geom = WcsGeom.create(
-    skydir=(0, 0), binsz=0.02, width=(5, 4), coordsys="GAL", axes=[axis]
+print(dataset)
+
+
+# In[ ]:
+
+
+# Ugly lines to change PSF and EDISP maps - will be removed soon
+dataset.edisp = dataset.edisp.get_energy_dispersion(
+    position=SkyCoord(0, 0, unit="deg", frame="galactic"),
+    e_reco=energy_reco.edges,
 )
-
-
-# In[ ]:
-
-
-# Define some observation parameters
-# We read in the pointing info from one of the 1dc event list files as an example
-pointing = FixedPointingInfo.read(
-    "$GAMMAPY_DATA/cta-1dc/data/baseline/gps/gps_baseline_110380.fits"
-)
-
-livetime = 1 * u.hour
-offset_max = 2 * u.deg
-offset = Angle("2 deg")
-
-
-# In[ ]:
-
-
-exposure = make_map_exposure_true_energy(
-    pointing=pointing.radec, livetime=livetime, aeff=irfs["aeff"], geom=geom
-)
-exposure.slice_by_idx({"energy": 3}).plot(add_cbar=True);
-
-
-# In[ ]:
-
-
-background = make_map_background_irf(
-    pointing=pointing, ontime=livetime, bkg=irfs["bkg"], geom=geom
-)
-background.slice_by_idx({"energy": 3}).plot(add_cbar=True);
-
-
-# In[ ]:
-
-
-psf = irfs["psf"].to_energy_dependent_table_psf(theta=offset)
-psf_kernel = PSFKernel.from_table_psf(psf, geom, max_radius=0.3 * u.deg)
-psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch="log");
-
-
-# In[ ]:
-
-
-energy = axis.edges
-edisp = irfs["edisp"].to_energy_dispersion(
-    offset, e_reco=energy, e_true=energy
-)
-edisp.plot_matrix();
-
-
-# Now we have to compute `npred`  maps, i.e. "predicted counts per pixel" given the model and the observation infos: exposure, background, PSF and EDISP. For this we use the `~gammapy.cube.MapDataset` object:
-
-# In[ ]:
-
-
-background_model = BackgroundModel(background)
-dataset = MapDataset(
-    model=sky_model,
-    exposure=exposure,
-    background_model=background_model,
-    psf=psf_kernel,
-    edisp=edisp,
+dataset.psf = dataset.psf.get_psf_kernel(
+    position=SkyCoord(0, 0, unit="deg", frame="galactic"),
+    geom=geom,
+    max_radius="0.3 deg",
 )
 
 
 # In[ ]:
 
 
-npred = dataset.npred()
+# Add the model on the dataset and Poission fluctuate
+dataset.model = model_simu
+dataset.fake()
+# Do a print on the dataset - there is now a counts maps
+print(dataset)
 
 
-# In[ ]:
-
-
-npred.sum_over_axes().plot(add_cbar=True);
-
-
-# In[ ]:
-
-
-# This one line is the core of how to simulate data when
-# using binned simulation / analysis: you Poisson fluctuate
-# npred to obtain simulated observed counts.
-# Compute counts as a Poisson fluctuation
-rng = np.random.RandomState(seed=42)
-counts = rng.poisson(npred.data)
-counts_map = WcsNDMap(geom, counts)
-
+# Now use this dataset as you would in all standard analysis. You can plot the maps, or proceed with your custom analysis. 
+# In the next section, we show the standard 3D fitting as in [analysis_3d](analysis_3d.ipynb).
 
 # In[ ]:
 
 
-counts_map.sum_over_axes().plot();
+# To plot, eg, counts:
+dataset.counts.smooth(0.1 * u.deg).plot_interactive(add_cbar=True)
 
 
 # ## Fit
 # 
-# Now let's analyse the simulated data.
-# Here we just fit it again with the same model we had before, but you could do any analysis you like here, e.g. fit a different model, or do a region-based analysis, ...
+# In this section, we do a usual 3D fit with the same model used to simulated the data and see the stability of the simulations. Often, it is useful to simulate many such datasets and look at the distribution of the reconstructed parameters.
+
+# In[ ]:
+
+
+# Make a copy of the dataset
+dataset1 = dataset.copy()
+
 
 # In[ ]:
 
 
 # Define sky model to fit the data
-spatial_model = GaussianSpatialModel(
+spatial_model1 = GaussianSpatialModel(
     lon_0="0.1 deg", lat_0="0.1 deg", sigma="0.5 deg", frame="galactic"
 )
-spectral_model = PowerLawSpectralModel(
+spectral_model1 = PowerLawSpectralModel(
     index=2, amplitude="1e-11 cm-2 s-1 TeV-1", reference="1 TeV"
 )
-model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
-print(model)
+model_fit = SkyModel(
+    spatial_model=spatial_model1, spectral_model=spectral_model1
+)
+
+dataset1.model = model_fit
+print(model_fit)
 
 
 # In[ ]:
 
 
 # We do not want to fit the background in this case, so we will freeze the parameters
+background_model = dataset1.background_model
 background_model.parameters["norm"].value = 1.0
 background_model.parameters["norm"].frozen = True
 background_model.parameters["tilt"].frozen = True
@@ -206,67 +189,21 @@ print(background_model)
 # In[ ]:
 
 
-dataset = MapDataset(
-    model=model,
-    exposure=exposure,
-    counts=counts_map,
-    background_model=background_model,
-    psf=psf_kernel,
-    edisp=edisp,
-)
+get_ipython().run_cell_magic('time', '', 'fit = Fit([dataset1])\nresult = fit.run(optimize_opts={"print_level": 1})')
 
+
+# Compare the injected and fitted models: 
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'fit = Fit([dataset])\nresult = fit.run(optimize_opts={"print_level": 1})')
+print("True model: \n", model_simu, "\n\n Fitted model: \n", model_fit)
 
 
-# True model:
-
-# In[ ]:
-
-
-print(sky_model)
-
-
-# Best-fit model:
-
-# In[ ]:
-
-
-print(model)
-
-
-# To get the errors on the model, we can check the parameter table, or the covariance matrix
+# Check the parameter table to see the best fit values along with the errors obtained from the covariance matrix
 
 # In[ ]:
 
 
 result.parameters.to_table()
-
-
-# In[ ]:
-
-
-result.parameters.covariance[:3, :3]
-
-
-# In[ ]:
-
-
-result.parameters.correlation[:3, :3]
-
-
-# In[ ]:
-
-
-# Or, to see the value of and error on an individual parameter, say index:
-print(result.parameters["index"].value, result.parameters.error("index"))
-
-
-# In[ ]:
-
-
-# TODO: show e.g. how to make a residual image
 

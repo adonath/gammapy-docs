@@ -3,6 +3,8 @@
 
 # # Spectrum simulation for CTA
 # 
+# **TODO: remove adding a use defined model. Move it to how-tos.**
+# 
 # A quick example how to use the functions and classes in `~gammapy.spectrum` in order to simulate and fit spectra. 
 # 
 # We will simulate observations for CTA first using a power law model without any background.
@@ -32,148 +34,131 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 import astropy.units as u
+from astropy.coordinates import SkyCoord, Angle
+from regions import CircleSkyRegion
 from gammapy.spectrum import (
     SpectrumDatasetOnOff,
     CountsSpectrum,
     SpectrumDataset,
+    SpectrumDatasetMaker,
 )
 from gammapy.modeling import Fit, Parameter
 from gammapy.modeling.models import PowerLawSpectralModel, SpectralModel
 from gammapy.irf import load_cta_irfs
+from gammapy.data import Observation
+from gammapy.maps import MapAxis
 
 
 # ## Simulation of a single spectrum
 # 
-# To do a simulation, we need to define the observational parameters like the livetime, the offset, the assumed integration radius, the energy range to perform the simulation for and the choice of spectral model. This will then be convolved with the IRFs, and Poission fluctuated, to get the simulated counts for each observation.  
+# To do a simulation, we need to define the observational parameters like the livetime, the offset, the assumed integration radius, the energy range to perform the simulation for and the choice of spectral model. We then use an in-memory observation which is convolved with the IRFs to get the predicted number of counts. This is Poission fluctuated using the `fake()` to get the simulated counts for each observation.  
 
 # In[ ]:
 
 
 # Define simulation parameters parameters
 livetime = 1 * u.h
+pointing = SkyCoord(0, 0, unit="deg", frame="galactic")
 offset = 0.5 * u.deg
-integration_radius = 0.1 * u.deg
-# Energy from 0.1 to 100 TeV with 10 bins/decade
-energy = np.logspace(-1, 2, 31) * u.TeV
+# Reconstructed and true energy axis
+energy_axis = MapAxis.from_edges(
+    np.logspace(-0.5, 1.0, 10), unit="TeV", name="energy", interp="log"
+)
+energy_axis_true = MapAxis.from_edges(
+    np.logspace(-1.2, 2.0, 31), unit="TeV", name="energy", interp="log"
+)
 
-solid_angle = 2 * np.pi * (1 - np.cos(integration_radius)) * u.sr
+on_region_radius = Angle("0.11 deg")
+on_region = CircleSkyRegion(center=pointing, radius=on_region_radius)
 
 
 # In[ ]:
 
 
 # Define spectral model - a simple Power Law in this case
-model_ref = PowerLawSpectralModel(
+model_simu = PowerLawSpectralModel(
     index=3.0,
     amplitude=2.5e-12 * u.Unit("cm-2 s-1 TeV-1"),
     reference=1 * u.TeV,
 )
-print(model_ref)
-
-
-# ### Get and set the model parameters after initialising
-# 
-# The model parameters are stored in the `~gammapy.modeling.Parameters` object on the spectral model.
-# Each model parameter is a `~gammapy.modeling.Parameter` instance.
-# It has a `value` and a `unit` attribute, as well as a `quantity` property for convenience.
-
-# In[ ]:
-
-
-model_ref.parameters
+print(model_simu)
 
 
 # In[ ]:
 
 
-print(model_ref.parameters["index"])
-model_ref.parameters["index"].value = 2.1
-print(model_ref.parameters["index"])
-
-
-# In[ ]:
-
-
-cta_irf = load_cta_irfs(
+# Load the IRFs
+# In this simulation, we use the CTA-1DC irfs shipped with gammapy.
+irfs = load_cta_irfs(
     "$GAMMAPY_DATA/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
 )
 
 
-# A quick look into the effective area and energy dispersion:
-
 # In[ ]:
 
 
-aeff = cta_irf["aeff"].to_effective_area_table(offset=offset, energy=energy)
-aeff.plot()
-plt.loglog()
-print(cta_irf["aeff"].data)
+obs = Observation.create(pointing=pointing, livetime=livetime, irfs=irfs)
+print(obs)
 
 
 # In[ ]:
 
 
-edisp = cta_irf["edisp"].to_energy_dispersion(
-    offset=offset, e_true=energy, e_reco=energy
+# Make the SpectrumDataset
+maker = SpectrumDatasetMaker(
+    region=on_region, e_reco=energy_axis.edges, e_true=energy_axis_true.edges
 )
-edisp.plot_matrix()
-print(edisp.data)
+dataset = maker.run(obs, selection=["aeff", "edisp"])
 
 
 # In[ ]:
 
 
-dataset = SpectrumDataset(
-    aeff=aeff, edisp=edisp, model=model_ref, livetime=livetime, name="obs-0"
-)
-
+# Set the model on the dataset, and fake
+dataset.model = model_simu
 dataset.fake(random_state=42)
-
-
-# In[ ]:
-
-
-# Take a quick look at the simulated counts
-dataset.counts.plot()
+print(dataset)
 
 
 # ## Include Background 
 # 
-# In this section we will include a background component extracted from the IRF. Furthermore, we will also simulate more than one observation and fit each one individually in order to get average fit results.
+# In this section we will include a background component extracted from the IRF. This simply includes re-running the makers with `background` keyword in the selection. Furthermore, we will also simulate more than one observation and fit each one individually in order to get average fit results.
 
 # In[ ]:
 
 
-# We assume a PowerLawSpectralModel shape of the background as well
-bkg_data = (
-    cta_irf["bkg"].evaluate_integrate(
-        fov_lon=0 * u.deg, fov_lat=offset, energy_reco=energy
-    )
-    * solid_angle
-    * livetime
-)
-bkg = CountsSpectrum(
-    energy[:-1], energy[1:], data=bkg_data.to_value(""), unit=""
-)
+dataset = maker.run(obs, selection=["aeff", "edisp", "background"])
+dataset.model = model_simu
+print(dataset)
 
+
+# You can see that backgound counts are now simulated
+
+# ### OnOff analysis
+# 
+# To do `OnOff` spectral analysis, which is the usual science case, the standard would be to use `SpectrumDatasetOnOff`, which uses the acceptance to fake off-counts 
 
 # In[ ]:
 
 
-dataset = SpectrumDatasetOnOff(
-    aeff=aeff,
-    edisp=edisp,
-    model=model_ref,
+dataset_onoff = SpectrumDatasetOnOff(
+    aeff=dataset.aeff,
+    edisp=dataset.edisp,
+    model=model_simu,
     livetime=livetime,
     acceptance=1,
     acceptance_off=5,
 )
+dataset_onoff.fake(background_model=dataset.background)
+print(dataset_onoff)
 
+
+# You can see that off counts are now simulated as well. We now simulate several spectra using the same set of observation conditions.
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '# Now simulate several spectra using the same set of observation conditions.\nn_obs = 100\nseeds = np.arange(n_obs)\n\ndatasets = []\n\nfor idx in range(n_obs):\n    dataset.fake(random_state=idx, background_model=bkg)\n    datasets.append(dataset.copy())')
+get_ipython().run_cell_magic('time', '', '\nn_obs = 100\ndatasets = []\n\nfor idx in range(n_obs):\n    dataset_onoff.fake(random_state=idx, background_model=dataset.background)\n    dataset_onoff.name = f"obs_{idx}"\n    datasets.append(dataset_onoff.copy())')
 
 
 # Before moving on to the fit let's have a look at the simulated observations.
@@ -199,7 +184,7 @@ axes[2].set_xlabel("excess");
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'results = []\nfor dataset in datasets:\n    dataset.model = model_ref.copy()\n    fit = Fit([dataset])\n    result = fit.optimize()\n    results.append(\n        {\n            "index": result.parameters["index"].value,\n            "amplitude": result.parameters["amplitude"].value,\n        }\n    )')
+get_ipython().run_cell_magic('time', '', 'results = []\nfor dataset in datasets:\n    dataset.model = model_simu.copy()\n    fit = Fit([dataset])\n    result = fit.optimize()\n    results.append(\n        {\n            "index": result.parameters["index"].value,\n            "amplitude": result.parameters["amplitude"].value,\n        }\n    )')
 
 
 # We take a look at the distribution of the fitted indices. This matches very well with the spectrum that we initially injected, index=2.1
@@ -209,7 +194,7 @@ get_ipython().run_cell_magic('time', '', 'results = []\nfor dataset in datasets:
 
 index = np.array([_["index"] for _ in results])
 plt.hist(index, bins=10, alpha=0.5)
-plt.axvline(x=model_ref.parameters["index"].value, color="red")
+plt.axvline(x=model_simu.parameters["index"].value, color="red")
 print(f"index: {index.mean()} += {index.std()}")
 
 
@@ -247,7 +232,7 @@ class UserModel(SpectralModel):
             amplitude=amplitude,
             reference=reference,
         )
-        gauss = amplitude * np.exp(-(energy - mean) ** 2 / (2 * width ** 2))
+        gauss = amplitude * np.exp(-((energy - mean) ** 2) / (2 * width ** 2))
         return pwl + gauss
 
 
@@ -282,3 +267,9 @@ model.plot(energy_range=energy_range);
 # In this tutorial we simulated and analysed the spectrum of source using CTA prod 2 IRFs.
 # 
 # If you'd like to go further, please see the other tutorial notebooks.
+
+# In[ ]:
+
+
+
+

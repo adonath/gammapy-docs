@@ -3,7 +3,7 @@
 
 # # Modeling and fitting
 # 
-# **TODO: write me!**
+# **TODO: write me! Does this contain a model gallery or do we move this to rst pages?**
 # 
 # This is a hands-on tutorial to `~gammapy.modeling`, showing examples how
 # the model, dataset and fit classes work together, and how to define your

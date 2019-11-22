@@ -2,6 +2,10 @@
 # coding: utf-8
 
 # # Joint Crab analysis with 1D and 3D datasets
+# 
+# **TODO: move references on how to create the datasets at the beginning. Change title and scope to discuss joint modeling and fitting of the Crab nebula.
+# Discuss at the beginning the 2 types of datasets to be used. Explain better
+# what the Fermi model is.**
 
 # This tutorial illustrates how to run a joint analysis with different datasets.
 # We look at the gamma-ray emission from the Crab nebula between 10 GeV and 100 TeV.

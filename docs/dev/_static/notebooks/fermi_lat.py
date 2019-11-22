@@ -3,6 +3,8 @@
 
 # # Fermi-LAT data with Gammapy
 # 
+# **TODO: clean-up and reduce. Insist on using Fermipy for data reduction and show how gammapy can be used to model the reduced data.**
+# 
 # ## Introduction
 # 
 # This tutorial will show you how to work with Fermi-LAT data with Gammapy. As an example, we will look at the Galactic center region using the high-energy dataset that was used for the 3FHL catalog, in the energy range 10 GeV to 2 TeV.

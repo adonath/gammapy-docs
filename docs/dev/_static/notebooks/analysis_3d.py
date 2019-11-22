@@ -3,6 +3,8 @@
 
 # # 3D analysis
 # 
+# **TODO: Reduce by using HLI.**
+# 
 # This tutorial shows how to run a stacked 3D map-based analysis using three example observations of the Galactic center region with CTA.
 
 # ## Setup

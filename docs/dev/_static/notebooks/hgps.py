@@ -3,6 +3,7 @@
 
 # # HGPS
 # 
+# **TODO: Signficantly reduce. Remove parts discussing HGPS with with astropy. Limit overlap with catalog.ipynb**
 # 
 # ## Introduction
 # 
@@ -616,15 +617,6 @@ source.flux_points.table
 # Gammapy spectral model object:
 spectral_model = source.spectral_model()
 print(spectral_model)
-
-
-# In[ ]:
-
-
-# One common task is to compute integral fluxes
-# The error is computed using the covariance matrix
-# (off-diagonal info not given in HGPS, i.e. this is an approximation)
-spectral_model.integral_error(emin=1 * u.TeV, emax=10 * u.TeV)
 
 
 # In[ ]:

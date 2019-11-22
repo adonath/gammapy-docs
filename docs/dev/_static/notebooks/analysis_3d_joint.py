@@ -3,6 +3,8 @@
 
 # # Joint 3D Analysis
 # 
+# **TODO: reduce significantly to focus on the joint 3D fitting: use HLI, refer to analysis_3d for geometry/model details.**
+# 
 # In this tutorial we show how to run a joint 3D map-based analysis using three example observations of the Galactic center region with CTA. We start with the required imports:
 
 # In[ ]:

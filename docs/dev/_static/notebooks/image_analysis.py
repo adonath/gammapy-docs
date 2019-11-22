@@ -3,6 +3,8 @@
 
 # # Fitting 2D images with Gammapy
 # 
+# **TODO: the content is misleading. This should be either 2D fitting or background normalization techniques. One should separate both with two distinct notebooks.**
+# 
 # Gammapy does not have any special handling for 2D images, but treats them as a subset of maps. Thus, classical 2D image analysis can be done in 2 independent ways: 
 # 
 # 1. Using the sherpa package

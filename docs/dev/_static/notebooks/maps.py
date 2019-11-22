@@ -15,7 +15,7 @@
 # 1. [Accessing and Modifying Data](#Accessing-and-Modifying-Data)
 # 1. [Reading and Writing](#Reading-and-Writing)
 # 1. [Visualizing and Plotting](#Visualizing-and-Plotting)
-# 1. [Reprojecting, Interpolating and Miscellaneous](#Reprojecting,-Interpolating-and-Miscellaneous)
+# 1. [Interpolating and Miscellaneous](#Reprojecting,-Interpolating-and-Miscellaneous)
 # 
 # Make sure you have worked through the [Gammapy overview](overview.ipynb), because a solid knowledge about working with `SkyCoord` and `Quantity` objects as well as [Numpy](http://www.numpy.org/) is required for this tutorial.
 # 
@@ -518,19 +518,11 @@ m_iem_gc.plot_interactive(add_cbar=True, stretch="sqrt", rc_params=rc_params)
 
 # Now you can use the interactive slider to select an energy range and the corresponding image is diplayed on the screen. You can also use the radio buttons to select your preferred image stretching. We have passed additional keywords using the `rc_params` argument to improve the figure and font size. Those keywords are directly passed to the [plt.rc_context()](https://matplotlib.org/api/_as_gen/matplotlib.pyplot.rc_context.html) context manager.
 
-# ##  Reprojecting, Interpolating and Miscellaneous
+# ##  Interpolating and Miscellaneous
 # 
-# ### Reprojecting to Different Map Geometries
+# ### Interpolating Map Values
 # 
-# The example map `m_iem_gc` is given in Galactic coordinates:
-
-# In[ ]:
-
-
-print(m_iem_gc.geom)
-
-
-# As an example we will now extract the image at `~10 GeV` and reproject it to ICRS coordinates. For this we first define the target map WCS geometry. As `.reproject()` only applies to the spatial axes, we do not have to specify any additional non-spatial axes:
+# While for the reprojection example above we used `.get_image_by_coord()` to extract the closest image to `~10 GeV`, we can use the more general method `.interp_by_coord()` to interpolate in the energy axis as well. For this we first define again the target map geometry:
 
 # In[ ]:
 
@@ -540,20 +532,6 @@ wcs_geom_cel = WcsGeom.create(
     skydir=skydir, binsz=0.1, coordsys="CEL", width=(8, 4)
 )
 
-
-# Then we extract the image at `~10 GeV`, reproject to the target geometry and plot the result:
-
-# In[ ]:
-
-
-m_iem = m_iem_gc.get_image_by_coord({"energy": 10 * u.GeV})
-m_iem_cel = m_iem.reproject(wcs_geom_cel)
-m_iem_cel.plot(add_cbar=True, vmin=0, vmax=2.5e-9);
-
-
-# ### Interpolating Map Values
-# 
-# While for the reprojection example above we used `.get_image_by_coord()` to extract the closest image to `~10 GeV`, we can use the more general method `.interp_by_coord()` to interpolate in the energy axis as well. For this we first define again the target map geometry:
 
 # In[ ]:
 

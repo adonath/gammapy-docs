@@ -7,6 +7,8 @@
 # 
 # This tutorial presents a new light curve estimator that works with dataset objects. We will demonstrate how to compute a `~gammapy.time.LightCurve` from 3D data cubes as well as 1D spectral data using the `~gammapy.cube.MapDataset`, `~gammapy.spectrum.SpectrumDatasetOnOff` and `~gammapy.time.LightCurveEstimator` classes. 
 # 
+# We will compute two LCs: one per observation and one by night for which you have to provide the time intervals
+#     
 # We will use the four Crab nebula observations from the [H.E.S.S. first public test data release](https://www.mpi-hd.mpg.de/hfm/HESS/pages/dl3-dr1/) and compute per-observation fluxes. The Crab nebula is not known to be variable at TeV energies, so we expect constant brightness within statistical and systematic errors.
 # 
 # ## Setup
@@ -24,6 +26,8 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 import logging
 
+from astropy.time import Time
+
 log = logging.getLogger(__name__)
 
 
@@ -39,130 +43,133 @@ from gammapy.modeling.models import SkyModel
 from gammapy.cube import MapDatasetMaker, MapDataset, SafeMaskMaker
 from gammapy.maps import WcsGeom, MapAxis
 from gammapy.time import LightCurveEstimator
+from gammapy.analysis import Analysis, AnalysisConfig 
 
 
-# ## Select the data
+# ## Analysis configuration 
+# For the 1D and 3D extraction, we will use the same CrabNebula configuration than in the notebook analysis_1.ipynb using the high level interface of Gammapy.
 # 
-# We look for relevant observations in the datastore.
+# From the high level interface, the datareduction for those observations is performed as followed
+
+# ### 3D data reduction + Fit
+# 
+
+# #### Data reduction
 
 # In[ ]:
 
 
-data_store = DataStore.from_dir("$GAMMAPY_DATA/hess-dl3-dr1/")
-mask = data_store.obs_table["TARGET_NAME"] == "Crab"
-obs_ids = data_store.obs_table["OBS_ID"][mask].data
-crab_obs = data_store.get_observations(obs_ids)
+conf_3d=AnalysisConfig.from_template("3d") 
+# We want to extract the data by observation and therefore to not stack them
+conf_3d.settings['datasets']['stack-datasets']=False
+#Fixing more physical binning
+conf_3d.settings['datasets']['geom']['axes'][0]['lo_bnd']=0.7
+conf_3d.settings['datasets']['geom']['axes'][0]['nbin']=10
+conf_3d.settings['datasets']['energy-axis-true']['lo_bnd']=0.1
+conf_3d.settings['datasets']['energy-axis-true']['hi_bnd']=20
+conf_3d.settings['datasets']['energy-axis-true']['nbin']=20
+conf_3d.settings['datasets']['geom']['width']=[2,2]
+conf_3d.settings['datasets']['geom']['binsz']=0.02
+
+ana_3d=Analysis(conf_3d)
+ana_3d.get_observations()
+ana_3d.get_datasets()
 
 
-# ## Define time intervals
-# We create a list of time intervals. Here we use one time bin per observation.
+# ##### 3D Fit
+
+# Define the model to be fitted
 
 # In[ ]:
 
 
-time_intervals = [(obs.tstart, obs.tstop) for obs in crab_obs]
-
-
-# ## 3D data reduction 
-# 
-# ### Define the analysis geometry
-# 
-# Here we define the geometry used in the analysis. We use the same WCS map structure but we use two different binnings for reco and true energy axes. This allows for a broader coverage of the response.
-
-# In[ ]:
-
-
-# Target definition
 target_position = SkyCoord(ra=83.63308, dec=22.01450, unit="deg")
-
-# Define geoms
-emin, emax = [0.7, 10] * u.TeV
-energy_axis = MapAxis.from_bounds(
-    emin.value, emax.value, 10, unit="TeV", name="energy", interp="log"
-)
-geom = WcsGeom.create(
-    skydir=target_position,
-    binsz=0.02,
-    width=(2, 2),
-    coordsys="CEL",
-    proj="CAR",
-    axes=[energy_axis],
-)
-
-energy_axis_true = MapAxis.from_bounds(
-    0.1, 20, 20, unit="TeV", name="energy", interp="log"
-)
-
-offset_max = 2 * u.deg
-
-
-# ### Define the 3D model 
-# 
-# The light curve is based on a 3D fit of a map dataset in time bins. We therefore need to define the source model to be applied. Here a point source with power law spectrum. We freeze its parameters assuming they were previously extracted
-
-# In[ ]:
-
-
-# Define the source model - Use a pointsource + integrated power law model to directly get flux
-
 spatial_model = PointSpatialModel(
-    lon_0=target_position.ra, lat_0=target_position.dec, frame="icrs"
+   lon_0=target_position.ra, lat_0=target_position.dec, frame="icrs"
 )
-
 spectral_model = PowerLawSpectralModel(
-    index=2.6,
-    amplitude=2.0e-11 * u.Unit("1 / (cm2 s TeV)"),
-    reference=1 * u.TeV,
+   index=2.6,
+   amplitude=2.0e-11 * u.Unit("1 / (cm2 s TeV)"),
+   reference=1 * u.TeV,
 )
 spectral_model.parameters["index"].frozen = False
-
 sky_model = SkyModel(
-    spatial_model=spatial_model, spectral_model=spectral_model, name=""
+   spatial_model=spatial_model, spectral_model=spectral_model, name="crab"
 )
 sky_model.parameters["lon_0"].frozen = True
 sky_model.parameters["lat_0"].frozen = True
 
 
-# ### Make the map datasets
+# We assign them the model to be fitted to each dataset
+
+# In[ ]:
+
+
+model = {}
+model["components"] = [sky_model.to_dict()]
+ana_3d.set_model(model=model)
+
+
+# Do the fit
+
+# In[ ]:
+
+
+ana_3d.run_fit()
+
+
+# ### 1D data reduction
+
+# #### Data reduction
+
+# In[ ]:
+
+
+conf_1d=AnalysisConfig.from_template("1d") 
+# We want to extract the data by observation and therefore to not stack them
+conf_1d.settings['datasets']['stack-datasets']=False
+conf_1d.settings['datasets']['containment_correction']=True
+conf_1d.settings['datasets']['geom']['axes'][0]['lo_bnd']=0.7
+conf_1d.settings['datasets']['geom']['axes'][0]['hi_bnd']=40
+conf_1d.settings['datasets']['geom']['axes'][0]['nbin']=40
+
+ana_1d=Analysis(conf_1d)     
+ana_1d.get_observations() 
+ana_1d.get_datasets() 
+
+
+# #### 1D Fit
+
+# We assign the spectral model to be fitted to each dataset
+
+# In[ ]:
+
+
+model = {}
+model["components"] = [sky_model.to_dict()]
+ana_1d.set_model(model=model)
+
+
+# Do the fit
+
+# In[ ]:
+
+
+ana_1d.run_fit()
+
+
+# ## Light Curve estimation: by observation
+# We can now create the light curve estimator by passing it the list of datasets. We can optionally ask for parameters reoptimization during fit, e.g. to fit background normalization in each time bin.
 # 
-# The following function is in charge of the MapDataset production. It will later be fully covered in the data reduction chain 
+# By default, the LightCurveEstimator is performed by dataset, here one dataset=one observation
 
-# Now we perform the actual data reduction in time bins
-
-# In[ ]:
-
-
-get_ipython().run_cell_magic('time', '', '\ndatasets = []\n\nmaker = MapDatasetMaker(offset_max=offset_max)\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=offset_max)\n\nfor time_interval in time_intervals:\n    # get filtered observation lists in time interval\n    observations = crab_obs.select_time(time_interval)\n\n    # Proceed with further analysis only if there are observations\n    # in the selected time window\n    if len(observations) == 0:\n        log.warning(f"No observations in time interval: {time_interval}")\n        continue\n\n    stacked = MapDataset.create(geom=geom, energy_axis_true=energy_axis_true)\n\n    for obs in observations:\n        dataset = maker.run(stacked, obs)\n        dataset = maker_safe_mask.run(dataset, obs)\n        stacked.stack(dataset)\n\n    # TODO: remove once IRF maps are handled correctly in fit\n    stacked.edisp = stacked.edisp.get_energy_dispersion(\n        position=target_position, e_reco=energy_axis.edges\n    )\n\n    stacked.psf = stacked.psf.get_psf_kernel(\n        position=target_position,\n        geom=stacked.exposure.geom,\n        max_radius="0.3 deg",\n    )\n\n    stacked.counts.meta["t_start"] = time_interval[0]\n    stacked.counts.meta["t_stop"] = time_interval[1]\n    datasets.append(stacked)')
-
-
-# ## Light Curve estimation: the 3D case
-# 
-# Now that we have created the datasets we assign them the model to be fitted:
+# ### 3d
 
 # In[ ]:
 
 
-for dataset in datasets:
-    # Copy the source model
-    model = sky_model.copy(name="crab")
-    dataset.model = model
-
-
-# We can now create the light curve estimator by passing it the list of datasets. 
-# We can optionally ask for parameters reoptimization during fit, e.g. to fit background normalization in each time bin.
-
-# In[ ]:
-
-
-lc_maker = LightCurveEstimator(datasets, source="crab", reoptimize=True)
-
-
-# We now run the estimator once we pass it the energy interval on which to compute the integral flux of the source.
-
-# In[ ]:
-
-
-get_ipython().run_cell_magic('time', '', 'lc = lc_maker.run(e_ref=1 * u.TeV, e_min=1.0 * u.TeV, e_max=10.0 * u.TeV)')
+lc_maker_3d = LightCurveEstimator(ana_3d.datasets, source="crab", reoptimize=True)
+lc_3d = lc_maker_3d.run(e_ref=1 * u.TeV, e_min=1.0 * u.TeV, e_max=10.0 * u.TeV)
 
 
 # The LightCurve object contains a table which we can explore.
@@ -170,108 +177,28 @@ get_ipython().run_cell_magic('time', '', 'lc = lc_maker.run(e_ref=1 * u.TeV, e_m
 # In[ ]:
 
 
-lc.table["time_min", "time_max", "flux", "flux_err"]
+lc_3d.table["time_min", "time_max", "flux", "flux_err"]
 
 
-# We finally plot the light curve
+# ### 1d
 
-# In[ ]:
-
-
-lc.plot(marker="o")
-
-
-# ## Performing the same analysis with 1D spectra
-# 
-# ### First the relevant imports
-# 
-# We import the missing classes for spectral data reduction
+# If you want to add a fit range for each of you time intervals when computing the LC.
 
 # In[ ]:
 
 
-from regions import CircleSkyRegion
-from astropy.coordinates import Angle
-from gammapy.spectrum import (
-    SpectrumDatasetMaker,
-    ReflectedRegionsBackgroundMaker,
-)
-
-
-# ### Defining the geometry
-# 
-# We need to define the ON extraction region. We will keep the same reco and true energy axes as in 3D.
-
-# In[ ]:
-
-
-# Target definition
-e_reco = np.logspace(-1, np.log10(40), 40) * u.TeV
-e_true = np.logspace(np.log10(0.05), 2, 100) * u.TeV
-
-on_region_radius = Angle("0.11 deg")
-on_region = CircleSkyRegion(center=target_position, radius=on_region_radius)
+e_min_fit = 0.8 * u.TeV
+e_max_fit = 10 * u.TeV
+for dataset in ana_1d.datasets:
+    mask_fit = dataset.counts.energy_mask(emin=e_min_fit, emax=e_max_fit)
+    dataset.mask_fit = mask_fit
 
 
 # In[ ]:
 
 
-dataset_maker = SpectrumDatasetMaker(
-    region=on_region, e_reco=e_reco, e_true=e_true, containment_correction=True
-)
-bkg_maker = ReflectedRegionsBackgroundMaker()
-safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
-
-
-# ### Creation of the datasets
-
-# In[ ]:
-
-
-datasets_1d = []
-
-for time_interval in time_intervals:
-    observation = crab_obs.select_time(time_interval)[0]
-
-    dataset = dataset_maker.run(
-        observation, selection=["counts", "aeff", "edisp"]
-    )
-
-    dataset.counts.meta = dict()
-    dataset.counts.meta["t_start"] = time_interval[0]
-    dataset.counts.meta["t_stop"] = time_interval[1]
-
-    dataset_on_off = bkg_maker.run(dataset, observation)
-    dataset_on_off = safe_mask_masker.run(dataset_on_off, observation)
-    datasets_1d.append(dataset_on_off)
-
-
-# ## Light Curve estimation for 1D spectra
-# 
-# Now that we've reduced the 1D data we assign again the model to the datasets 
-
-# In[ ]:
-
-
-for dataset in datasets_1d:
-    # Copy the source model
-    model = spectral_model.copy()
-    model.name = "crab"
-    dataset.model = model
-
-
-# We can now call the LightCurveEstimator in a perfectly identical manner.
-
-# In[ ]:
-
-
-lc_maker_1d = LightCurveEstimator(datasets_1d, source="crab", reoptimize=False)
-
-
-# In[ ]:
-
-
-get_ipython().run_cell_magic('time', '', 'lc_1d = lc_maker_1d.run(e_ref=1 * u.TeV, e_min=1.0 * u.TeV, e_max=10.0 * u.TeV)')
+lc_maker_1d = LightCurveEstimator(ana_1d.datasets, source="crab", reoptimize=False)
+lc_1d = lc_maker_1d.run(e_ref=1 * u.TeV, e_min=1.0 * u.TeV, e_max=10.0 * u.TeV)
 
 
 # ### Compare results
@@ -282,6 +209,62 @@ get_ipython().run_cell_magic('time', '', 'lc_1d = lc_maker_1d.run(e_ref=1 * u.Te
 
 
 ax = lc_1d.plot(marker="o", label="1D")
-lc.plot(ax=ax, marker="o", label="3D")
+lc_3d.plot(ax=ax, marker="o", label="3D")
 plt.legend()
+
+
+# ## LC estimation by night
+# We define the time intervals to compute the LC by night, here three nights.
+
+# In[ ]:
+
+
+time_intervals = [Time([53343.5,53344.5], format='mjd', scale='utc'),
+                Time([53345.5,53346.5], format='mjd', scale='utc'),
+                Time([53347.5,53348.5], format='mjd', scale='utc')
+                 ]
+
+
+# Compute 1D LC
+
+# In[ ]:
+
+
+lc_maker_1d_bynight = LightCurveEstimator(ana_1d.datasets, time_intervals=time_intervals,source="crab", reoptimize=False)
+lc_1d_bynight = lc_maker_1d_bynight.run(e_ref=1 * u.TeV, e_min=1.0 * u.TeV, e_max=10.0 * u.TeV)
+
+
+# Compute 3D LC
+
+# In[ ]:
+
+
+lc_maker_3d_bynight = LightCurveEstimator(ana_3d.datasets, time_intervals=time_intervals, source="crab", reoptimize=True)
+lc_3d_bynight = lc_maker_3d_bynight.run(e_ref=1 * u.TeV, e_min=1.0 * u.TeV, e_max=10.0 * u.TeV)
+
+
+# Compare LC by night
+
+# ax = lc_1d_bynight.plot(marker="o", label="1D")
+# lc_3d_bynight.plot(ax=ax, marker="o", label="3D")
+# plt.legend()
+
+# In[ ]:
+
+
+ax = lc_1d_bynight.plot(marker="o", label="1D")
+lc_3d_bynight.plot(ax=ax, marker="o", label="3D")
+plt.legend()
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 
