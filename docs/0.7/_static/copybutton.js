@@ -70,7 +70,7 @@ $(document).ready(function() {
           var match =  allText.match(/url=\.\.\/(.*)"/i);
           var version = match[1];
           var url = window.location.href
-          var note = '<div class="admonition note"><p class="first admonition-title">Note</p>'
+          var note = '<div class="admonition note"><p class="first admonition-title" style="background-color:red">Note</p>'
           note += '<p class="last">You are not reading the most up to date version of Gammapy '
           note += 'documentation.<br/>Access the <a href="https://docs.gammapy.org/'
           note += version
