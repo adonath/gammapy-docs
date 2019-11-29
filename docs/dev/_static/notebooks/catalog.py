@@ -100,7 +100,7 @@ catalog_4fgl = SOURCE_CATALOGS["4fgl"]()
 catalog_hgps = SOURCE_CATALOGS["hgps"]()
 
 
-# # Select a source
+# ## Select a source
 # 
 # To create a source object, index into the catalog using `[]`, passing a catalog table row index (zero-based, first row is `[0]`), or a source name. If passing a name, catalog table columns with source names and association names ("ASSOC1" in the example below) are searched top to bottom. There is no name resolution web query.
 

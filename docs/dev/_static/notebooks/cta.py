@@ -20,8 +20,6 @@
 # 
 # The current FITS format `CTA-Performance-prod3b-v2-FITS.tar` is fully supported by Gammapy, as shown below.
 # 
-# If you have any questions concerning Gammapy for CTA, or suggestions how to improve, please do get in touch: https://gammapy.org/contact.html
-# 
 # ## Tutorial overview
 # 
 # This notebook shows how to access CTA data and instrument response functions (IRFs) using Gammapy, and gives some examples how to quick look the content of CTA files, especially to see the shape of CTA IRFs.
@@ -169,8 +167,8 @@ events.peek()
 # - CTA 1DC was based on an early version of the CTA FITS responses produced in 2017, improvements have been made since.
 # - The point spread function was approximated by a Gaussian shape
 # - The background is from hadronic and electron air shower events that pass CTA selection cuts. It was given as a function of field of view coordinates, although it is radially symmetric.
-# - The energy dispersion in CTA 1DC is noisy at low energy and high field of view offset, leading to unreliable spectral points for some analyses.
-# - TODO: mention issues at offset = 0 deg here, or elsewhere?
+# - The energy dispersion in CTA 1DC is noisy at low energy, leading to unreliable spectral points for some analyses.
+# - The CTA 1DC response files have the first node at field of view offset 0.5 deg, so to get the on-axis response at offset 0 deg, Gammapy has to extrapolate. Furthermore, because diffuse gamma-rays in the FOV were used to derive the IRFs, and the solid angle at small FOV offset circles is small, the IRFs at the center of the FOV are somewhat noisy. This leads to unstable analysis and simulation issues when using the DC1 IRFs for some analyses.
 
 # In[ ]:
 
@@ -212,7 +210,6 @@ aeff.data.evaluate(energy="10 TeV", offset="0 deg").to("km2")
 
 
 # ### Energy dispersion
-# 
 # 
 
 # In[ ]:
@@ -262,7 +259,7 @@ irfs["bkg"].to_2d().plot()
 irfs["bkg"].data.evaluate(energy="3 TeV", fov_lon="1 deg", fov_lat="0 deg")
 
 
-# ### Sky Model XML files
+# ## Source models
 # 
 # The 1DC sky model is distributed as a set of XML files, which in turn link to a ton of other FITS and text files. Gammapy doesn't support this XML model file format. We are currently developing a YAML based format that improves upon the XML format, to be easier to write and read, add relevant information (units for physical quantities), and omit useless information (e.g. parameter scales in addition to values).
 # 
@@ -306,7 +303,7 @@ irfs["bkg"].data.evaluate(energy="3 TeV", fov_lon="1 deg", fov_lat="0 deg")
 # print(spec)
 
 
-# # CTA performance files
+# ## CTA performance files
 # 
 # CTA 1DC is useful to learn how to analyse CTA data. But to do simulations and studies for CTA now, you should get the most recent CTA IRFs in FITS format from https://www.cta-observatory.org/science/cta-performance/
 # 
@@ -362,3 +359,9 @@ irfs["bkg"].data.evaluate(energy="3 TeV", fov_lon="1 deg", fov_lat="0 deg")
 # 
 # * Learn how to analyse data with [analysis_1.ipynb](analysis_1.ipynb) and [analysis_2.ipynb](analysis_2.ipynb) or any other Gammapy analysis tutorial.
 # * Learn how to evaluate CTA observability and sensitivity with [simulate_3d.ipynb](simulate_3d.ipynb), [spectrum_simulation.ipynb](spectrum_simulation.ipynb) or [cta_sensitivity.ipynb](cta_sensitivity.ipynb)
+
+# In[ ]:
+
+
+
+
