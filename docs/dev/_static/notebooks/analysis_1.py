@@ -49,48 +49,32 @@ from gammapy.modeling.models import create_crab_spectral_model
 
 config_str = """
 general:
-    logging:
-        level: INFO
+    log:
+        level: info
     outdir: .
-
 observations:
     datastore: $GAMMAPY_DATA/hess-dl3-dr1/
-    filters:
-        - filter_type: par_value
-          value_param: Crab
-          variable: TARGET_NAME
-
+    obs_cone: {frame: icrs, lon: 83.633 deg, lat: 22.014 deg, radius: 5 deg}
 datasets:
-    dataset-type: MapDataset
-    stack-datasets: true
-    offset-max: 2.5 deg
+    type: 3d
+    stack: true
     geom:
-        skydir: [83.633, 22.014]
-        width: [5, 5]
-        binsz: 0.02
-        coordsys: CEL
-        proj: TAN
+        wcs:
+            skydir: {frame: icrs, lon: 83.633 deg, lat: 22.014 deg}
+            binsize: 0.04 deg
+            fov: {width: 5 deg, height: 5 deg}
+            binsize_irf: 0.2 deg
+            margin_irf: 0.5 deg
+        selection:
+            offset_max: 2.5 deg
         axes:
-          - name: energy
-            hi_bnd: 10
-            lo_bnd: 1
-            nbin: 5
-            interp: log
-            node_type: edges
-            unit: TeV         
-    
+            energy: {min: 1 TeV, max: 10 TeV, nbins: 4}
+            energy_true: {min: 1 TeV, max: 10 TeV, nbins: 5}            
 fit:
-    fit_range:
-        max: 30 TeV
-        min: 1 TeV
+    fit_range: {min: 1 TeV, max: 30 TeV}
 
-flux-points:
-    fp_binning:
-        lo_bnd: 1
-        hi_bnd: 10
-        interp: log
-        nbin: 3
-        unit: TeV
+flux_points:
+    energy: {min: 1 TeV, max: 10 TeV, nbins: 3}
 """
 
 
@@ -99,7 +83,7 @@ flux-points:
 # In[ ]:
 
 
-config = AnalysisConfig(config_str)
+config = AnalysisConfig.from_yaml(config_str)
 
 
 # ##  Observation selection

@@ -437,12 +437,14 @@ flux.sum_over_axes().smooth("0.1 deg").plot(stretch="sqrt", add_cbar=True);
 # In[ ]:
 
 
-model = SkyModel(
-    PointSpatialModel(lon_0="0 deg", lat_0="0 deg", frame="galactic"),
-    PowerLawSpectralModel(
-        index=2.5, amplitude="1e-11 cm-2 s-1 TeV-1", reference="100 GeV"
-    ),
+spatial_model = PointSpatialModel(
+    lon_0="0 deg", lat_0="0 deg", frame="galactic"
 )
+spectral_model = PowerLawSpectralModel(
+    index=2.5, amplitude="1e-11 cm-2 s-1 TeV-1", reference="100 GeV"
+)
+
+model = SkyModel(spectral_model=spectral_model, spatial_model=spatial_model)
 
 model_total = SkyModels([model, model_diffuse, diffuse_iso])
 

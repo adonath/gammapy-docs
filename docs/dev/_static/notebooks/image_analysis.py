@@ -107,7 +107,7 @@ stacked = MapDataset.create(geom)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'maker = MapDatasetMaker(offset_max=4.0 * u.deg)\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=4.0 * u.deg)\n\nfor obs in observations:\n    dataset = maker.run(stacked, obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n    stacked.stack(dataset)')
+get_ipython().run_cell_magic('time', '', 'maker = MapDatasetMaker(selection=["counts", "exposure", "background"])\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=4.0 * u.deg)\n\ndatasets = []\n\nfor obs in observations:\n    cutout = stacked.cutout(obs.pointing_radec, width="8 deg")\n    dataset = maker.run(cutout, obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n    datasets.append(dataset)\n    stacked.stack(dataset)')
 
 
 # In[ ]:
@@ -250,7 +250,7 @@ ring_maker = RingBackgroundMaker(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'stacked_on_off = MapDatasetOnOff.create(geom=geom_image)\n\nfor obs in observations:\n    dataset = maker.run(stacked_on_off, obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n    dataset_image = dataset.to_image()\n    dataset_on_off = ring_maker.run(dataset_image)\n    stacked_on_off.stack(dataset_on_off)')
+get_ipython().run_cell_magic('time', '', 'stacked_on_off = MapDatasetOnOff.create(geom=geom_image)\n\nfor dataset in datasets:\n    dataset_image = dataset.to_image()\n    dataset_on_off = ring_maker.run(dataset_image)\n    stacked_on_off.stack(dataset_on_off)')
 
 
 # Based on the estimate of the ring background we compute a Li&Ma significance image: 
@@ -260,7 +260,7 @@ get_ipython().run_cell_magic('time', '', 'stacked_on_off = MapDatasetOnOff.creat
 
 scale = geom.pixel_scales[0].to("deg")
 # Using a convolution radius of 0.05 degrees
-theta = 0.1 * u.deg / scale
+theta = 0.15 * u.deg / scale
 tophat = Tophat2DKernel(theta)
 tophat.normalize("peak")
 
@@ -293,7 +293,7 @@ ax1.set_title("Significance map")
 significance_map.get_image_by_idx((0,)).plot(ax=ax1, add_cbar=True)
 
 ax2.set_title("Excess map")
-significance_map.get_image_by_idx((0,)).plot(ax=ax2, add_cbar=True)
+excess_map.get_image_by_idx((0,)).plot(ax=ax2, add_cbar=True)
 
 
 # Finally we take a look at the signficance distribution outside the exclusion region:
@@ -351,9 +351,3 @@ print(f"Fit results: mu = {mu:.2f}, std = {std:.2f}")
 # 1. Update the exclusion mask in the ring background example by thresholding the significance map and re-run the background estimator 
 # 1. Plot residual maps as done in the [analysis_3d](analysis_3d.ipynb) notebook
 # 1. Iteratively add and fit sources
-
-# In[ ]:
-
-
-
-

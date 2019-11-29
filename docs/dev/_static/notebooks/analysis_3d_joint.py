@@ -106,7 +106,7 @@ reference = MapDataset.create(geom=geom)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'maker = MapDatasetMaker(offset_max=offset_max)\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=4.0 * u.deg)\n\nfor obs in observations:\n    dataset = maker.run(reference, obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n\n    # TODO: remove once IRF maps are handled correctly in fit\n    dataset.edisp = dataset.edisp.get_energy_dispersion(\n        position=src_pos, e_reco=energy_axis.edges\n    )\n    dataset.psf = dataset.psf.get_psf_kernel(\n        position=src_pos, geom=geom, max_radius="0.3 deg"\n    )\n    dataset.write(\n        f"analysis_3d_joint/dataset-obs-{obs.obs_id}.fits", overwrite=True\n    )')
+get_ipython().run_cell_magic('time', '', 'maker = MapDatasetMaker()\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=4.0 * u.deg)\n\nfor obs in observations:\n    cutout = reference.cutout(obs.pointing_radec, width=2 * offset_max)\n    dataset = maker.run(cutout, obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n\n    # TODO: remove once IRF maps are handled correctly in fit\n    dataset.edisp = dataset.edisp.get_energy_dispersion(\n        position=src_pos, e_reco=energy_axis.edges\n    )\n    dataset.psf = dataset.psf.get_psf_kernel(\n        position=src_pos, geom=geom, max_radius="0.3 deg"\n    )\n    dataset.write(\n        f"analysis_3d_joint/dataset-obs-{obs.obs_id}.fits", overwrite=True\n    )')
 
 
 # ## Likelihood fit

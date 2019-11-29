@@ -43,6 +43,7 @@ from gammapy.modeling.models import (
     PowerLawSpectralModel,
     ExpCutoffPowerLawSpectralModel,
     LogParabolaSpectralModel,
+    SkyModel,
 )
 from gammapy.spectrum import FluxPointsDataset, FluxPoints
 from gammapy.catalog import (
@@ -62,7 +63,9 @@ from gammapy.modeling import Fit
 
 fermi_3fgl = SourceCatalog3FGL()
 fermi_3fhl = SourceCatalog3FHL()
-gammacat = SourceCatalogGammaCat("$GAMMAPY_DATA/gamma-cat/gammacat.fits.gz")
+gammacat = SourceCatalogGammaCat(
+    "$GAMMAPY_DATA/catalogs/gammacat/gammacat.fits.gz"
+)
 
 
 # In[ ]:
@@ -119,14 +122,15 @@ flux_points = flux_points.drop_ul()
 pwl = PowerLawSpectralModel(
     index=2, amplitude="1e-12 cm-2 s-1 TeV-1", reference="1 TeV"
 )
+model = SkyModel(spectral_model=pwl)
 
 
-# After creating the model we run the fit by passing the `'flux_points'` and `'pwl'` objects:
+# After creating the model we run the fit by passing the `'flux_points'` and `'model'` objects:
 
 # In[ ]:
 
 
-dataset_pwl = FluxPointsDataset(pwl, flux_points, likelihood="chi2assym")
+dataset_pwl = FluxPointsDataset(model, flux_points, likelihood="chi2assym")
 fitter = Fit([dataset_pwl])
 result_pwl = fitter.run()
 
@@ -173,14 +177,15 @@ ecpl = ExpCutoffPowerLawSpectralModel(
     reference="1 TeV",
     lambda_="0.1 TeV-1",
 )
+model = SkyModel(spectral_model=ecpl)
 
 
-# We run the fitter again by passing the flux points and the `ecpl` model instance:
+# We run the fitter again by passing the flux points and the model instance:
 
 # In[ ]:
 
 
-dataset_ecpl = FluxPointsDataset(ecpl, flux_points, likelihood="chi2assym")
+dataset_ecpl = FluxPointsDataset(model, flux_points, likelihood="chi2assym")
 fitter = Fit([dataset_ecpl])
 result_ecpl = fitter.run()
 print(ecpl)
@@ -211,13 +216,14 @@ ax.set_ylim(1e-13, 1e-11)
 log_parabola = LogParabolaSpectralModel(
     alpha=2, amplitude="1e-12 cm-2 s-1 TeV-1", reference="1 TeV", beta=0.1
 )
+model = SkyModel(spectral_model=log_parabola)
 
 
 # In[ ]:
 
 
 dataset_log_parabola = FluxPointsDataset(
-    log_parabola, flux_points, likelihood="chi2assym"
+    model, flux_points, likelihood="chi2assym"
 )
 fitter = Fit([dataset_log_parabola])
 result_log_parabola = fitter.run()

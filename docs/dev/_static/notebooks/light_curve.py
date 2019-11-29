@@ -40,10 +40,9 @@ from gammapy.data import DataStore
 from gammapy.modeling.models import PowerLawSpectralModel
 from gammapy.modeling.models import PointSpatialModel
 from gammapy.modeling.models import SkyModel
-from gammapy.cube import MapDatasetMaker, MapDataset, SafeMaskMaker
 from gammapy.maps import WcsGeom, MapAxis
 from gammapy.time import LightCurveEstimator
-from gammapy.analysis import Analysis, AnalysisConfig 
+from gammapy.analysis import Analysis, AnalysisConfig
 
 
 # ## Analysis configuration 
@@ -59,19 +58,20 @@ from gammapy.analysis import Analysis, AnalysisConfig
 # In[ ]:
 
 
-conf_3d=AnalysisConfig.from_template("3d") 
+conf_3d = AnalysisConfig.from_template("3d")
 # We want to extract the data by observation and therefore to not stack them
-conf_3d.settings['datasets']['stack-datasets']=False
-#Fixing more physical binning
-conf_3d.settings['datasets']['geom']['axes'][0]['lo_bnd']=0.7
-conf_3d.settings['datasets']['geom']['axes'][0]['nbin']=10
-conf_3d.settings['datasets']['energy-axis-true']['lo_bnd']=0.1
-conf_3d.settings['datasets']['energy-axis-true']['hi_bnd']=20
-conf_3d.settings['datasets']['energy-axis-true']['nbin']=20
-conf_3d.settings['datasets']['geom']['width']=[2,2]
-conf_3d.settings['datasets']['geom']['binsz']=0.02
+conf_3d.datasets.stack = False
+# Fixing more physical binning
+conf_3d.datasets.geom.axes.energy.min = "0.7 TeV"
+conf_3d.datasets.geom.axes.energy.max = "10 TeV"
+conf_3d.datasets.geom.axes.energy.nbins = 10
+conf_3d.datasets.geom.axes.energy_true.min = "0.1 TeV"
+conf_3d.datasets.geom.axes.energy_true.max = "20 TeV"
+conf_3d.datasets.geom.axes.energy.nbins = 20
+conf_3d.datasets.geom.wcs.fov = {"width": "2 deg", "height": "2 deg"}
+conf_3d.datasets.geom.wcs.binsize = "0.02 deg"
 
-ana_3d=Analysis(conf_3d)
+ana_3d = Analysis(conf_3d)
 ana_3d.get_observations()
 ana_3d.get_datasets()
 
@@ -85,16 +85,16 @@ ana_3d.get_datasets()
 
 target_position = SkyCoord(ra=83.63308, dec=22.01450, unit="deg")
 spatial_model = PointSpatialModel(
-   lon_0=target_position.ra, lat_0=target_position.dec, frame="icrs"
+    lon_0=target_position.ra, lat_0=target_position.dec, frame="icrs"
 )
 spectral_model = PowerLawSpectralModel(
-   index=2.6,
-   amplitude=2.0e-11 * u.Unit("1 / (cm2 s TeV)"),
-   reference=1 * u.TeV,
+    index=2.6,
+    amplitude=2.0e-11 * u.Unit("1 / (cm2 s TeV)"),
+    reference=1 * u.TeV,
 )
 spectral_model.parameters["index"].frozen = False
 sky_model = SkyModel(
-   spatial_model=spatial_model, spectral_model=spectral_model, name="crab"
+    spatial_model=spatial_model, spectral_model=spectral_model, name="crab"
 )
 sky_model.parameters["lon_0"].frozen = True
 sky_model.parameters["lat_0"].frozen = True
@@ -125,17 +125,17 @@ ana_3d.run_fit()
 # In[ ]:
 
 
-conf_1d=AnalysisConfig.from_template("1d") 
+conf_1d = AnalysisConfig.from_template("1d")
 # We want to extract the data by observation and therefore to not stack them
-conf_1d.settings['datasets']['stack-datasets']=False
-conf_1d.settings['datasets']['containment_correction']=True
-conf_1d.settings['datasets']['geom']['axes'][0]['lo_bnd']=0.7
-conf_1d.settings['datasets']['geom']['axes'][0]['hi_bnd']=40
-conf_1d.settings['datasets']['geom']['axes'][0]['nbin']=40
+conf_1d.datasets.stack = False
+conf_1d.datasets.containment_correction = True
+conf_1d.datasets.geom.axes.energy.min = "0.7 TeV"
+conf_1d.datasets.geom.axes.energy.min = "40 TeV"
+conf_1d.datasets.geom.axes.energy.nbins = 40
 
-ana_1d=Analysis(conf_1d)     
-ana_1d.get_observations() 
-ana_1d.get_datasets() 
+ana_1d = Analysis(conf_1d)
+ana_1d.get_observations()
+ana_1d.get_datasets()
 
 
 # #### 1D Fit
@@ -168,7 +168,9 @@ ana_1d.run_fit()
 # In[ ]:
 
 
-lc_maker_3d = LightCurveEstimator(ana_3d.datasets, source="crab", reoptimize=True)
+lc_maker_3d = LightCurveEstimator(
+    ana_3d.datasets, source="crab", reoptimize=True
+)
 lc_3d = lc_maker_3d.run(e_ref=1 * u.TeV, e_min=1.0 * u.TeV, e_max=10.0 * u.TeV)
 
 
@@ -197,7 +199,9 @@ for dataset in ana_1d.datasets:
 # In[ ]:
 
 
-lc_maker_1d = LightCurveEstimator(ana_1d.datasets, source="crab", reoptimize=False)
+lc_maker_1d = LightCurveEstimator(
+    ana_1d.datasets, source="crab", reoptimize=False
+)
 lc_1d = lc_maker_1d.run(e_ref=1 * u.TeV, e_min=1.0 * u.TeV, e_max=10.0 * u.TeV)
 
 
@@ -219,10 +223,11 @@ plt.legend()
 # In[ ]:
 
 
-time_intervals = [Time([53343.5,53344.5], format='mjd', scale='utc'),
-                Time([53345.5,53346.5], format='mjd', scale='utc'),
-                Time([53347.5,53348.5], format='mjd', scale='utc')
-                 ]
+time_intervals = [
+    Time([53343.5, 53344.5], format="mjd", scale="utc"),
+    Time([53345.5, 53346.5], format="mjd", scale="utc"),
+    Time([53347.5, 53348.5], format="mjd", scale="utc"),
+]
 
 
 # Compute 1D LC
@@ -230,8 +235,15 @@ time_intervals = [Time([53343.5,53344.5], format='mjd', scale='utc'),
 # In[ ]:
 
 
-lc_maker_1d_bynight = LightCurveEstimator(ana_1d.datasets, time_intervals=time_intervals,source="crab", reoptimize=False)
-lc_1d_bynight = lc_maker_1d_bynight.run(e_ref=1 * u.TeV, e_min=1.0 * u.TeV, e_max=10.0 * u.TeV)
+lc_maker_1d_bynight = LightCurveEstimator(
+    ana_1d.datasets,
+    time_intervals=time_intervals,
+    source="crab",
+    reoptimize=False,
+)
+lc_1d_bynight = lc_maker_1d_bynight.run(
+    e_ref=1 * u.TeV, e_min=1.0 * u.TeV, e_max=10.0 * u.TeV
+)
 
 
 # Compute 3D LC
@@ -239,8 +251,15 @@ lc_1d_bynight = lc_maker_1d_bynight.run(e_ref=1 * u.TeV, e_min=1.0 * u.TeV, e_ma
 # In[ ]:
 
 
-lc_maker_3d_bynight = LightCurveEstimator(ana_3d.datasets, time_intervals=time_intervals, source="crab", reoptimize=True)
-lc_3d_bynight = lc_maker_3d_bynight.run(e_ref=1 * u.TeV, e_min=1.0 * u.TeV, e_max=10.0 * u.TeV)
+lc_maker_3d_bynight = LightCurveEstimator(
+    ana_3d.datasets,
+    time_intervals=time_intervals,
+    source="crab",
+    reoptimize=True,
+)
+lc_3d_bynight = lc_maker_3d_bynight.run(
+    e_ref=1 * u.TeV, e_min=1.0 * u.TeV, e_max=10.0 * u.TeV
+)
 
 
 # Compare LC by night

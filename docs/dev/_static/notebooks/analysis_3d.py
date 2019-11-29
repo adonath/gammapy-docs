@@ -85,7 +85,7 @@ geom = WcsGeom.create(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'stacked = MapDataset.create(geom=geom)\n\nmaker = MapDatasetMaker(offset_max=4.0 * u.deg)\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=4.0 * u.deg)\n\nfor obs in observations:\n    dataset = maker.run(stacked, obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n    stacked.stack(dataset)')
+get_ipython().run_cell_magic('time', '', 'stacked = MapDataset.create(geom=geom)\n\nmaker = MapDatasetMaker()\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=4.0 * u.deg)\n\nfor obs in observations:\n    cutout = stacked.cutout(obs.pointing_radec, width="8 deg")\n    dataset = maker.run(stacked, obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n    stacked.stack(dataset)')
 
 
 # This is what the stacked counts image looks like:
@@ -244,7 +244,7 @@ spec = model.spectral_model
 
 # set covariance on the spectral model
 covariance = result.parameters.covariance
-spec.parameters.covariance = covariance[2:6, 2:6]
+spec.parameters.covariance = covariance[2:7, 2:7]
 
 energy_range = [0.3, 10] * u.TeV
 spec.plot(energy_range=energy_range, energy_power=2)

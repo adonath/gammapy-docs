@@ -43,7 +43,11 @@ from gammapy.spectrum import (
     SpectrumDatasetMaker,
 )
 from gammapy.modeling import Fit, Parameter
-from gammapy.modeling.models import PowerLawSpectralModel, SpectralModel
+from gammapy.modeling.models import (
+    PowerLawSpectralModel,
+    SpectralModel,
+    SkyModel,
+)
 from gammapy.irf import load_cta_irfs
 from gammapy.data import Observation
 from gammapy.maps import MapAxis
@@ -82,6 +86,8 @@ model_simu = PowerLawSpectralModel(
     reference=1 * u.TeV,
 )
 print(model_simu)
+# we set the sky model used in the dataset
+model = SkyModel(spectral_model=model_simu)
 
 
 # In[ ]:
@@ -115,7 +121,7 @@ dataset = maker.run(obs, selection=["aeff", "edisp"])
 
 
 # Set the model on the dataset, and fake
-dataset.model = model_simu
+dataset.model = model
 dataset.fake(random_state=42)
 print(dataset)
 
@@ -128,7 +134,7 @@ print(dataset)
 
 
 dataset = maker.run(obs, selection=["aeff", "edisp", "background"])
-dataset.model = model_simu
+dataset.model = model
 print(dataset)
 
 
@@ -144,7 +150,7 @@ print(dataset)
 dataset_onoff = SpectrumDatasetOnOff(
     aeff=dataset.aeff,
     edisp=dataset.edisp,
-    model=model_simu,
+    model=model,
     livetime=livetime,
     acceptance=1,
     acceptance_off=5,
@@ -184,7 +190,7 @@ axes[2].set_xlabel("excess");
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'results = []\nfor dataset in datasets:\n    dataset.model = model_simu.copy()\n    fit = Fit([dataset])\n    result = fit.optimize()\n    results.append(\n        {\n            "index": result.parameters["index"].value,\n            "amplitude": result.parameters["amplitude"].value,\n        }\n    )')
+get_ipython().run_cell_magic('time', '', 'results = []\nfor dataset in datasets:\n    dataset.model = model.copy()\n    fit = Fit([dataset])\n    result = fit.optimize()\n    results.append(\n        {\n            "index": result.parameters["index"].value,\n            "amplitude": result.parameters["amplitude"].value,\n        }\n    )')
 
 
 # We take a look at the distribution of the fitted indices. This matches very well with the spectrum that we initially injected, index=2.1

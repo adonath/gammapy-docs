@@ -31,7 +31,7 @@ import astropy.units as u
 from gammapy.cube import SafeMaskMaker
 from gammapy.maps import Map, WcsGeom
 from gammapy.data import DataStore
-from gammapy.modeling.models import PowerLawSpectralModel
+from gammapy.modeling.models import PowerLawSpectralModel, SkyModel
 from gammapy.modeling import Fit, Datasets
 from gammapy.spectrum import (
     PhaseBackgroundMaker,
@@ -283,10 +283,10 @@ datasets[0].peek()
 # In[ ]:
 
 
-model = PowerLawSpectralModel(
+spectral_model = PowerLawSpectralModel(
     index=4, amplitude="1.3e-9 cm-2 s-1 TeV-1", reference="0.02 TeV"
 )
-
+model = SkyModel(spectral_model=spectral_model)
 emin_fit, emax_fit = (0.04 * u.TeV, 0.4 * u.TeV)
 
 for dataset in datasets:
@@ -296,7 +296,7 @@ for dataset in datasets:
 joint_fit = Fit(datasets)
 joint_result = joint_fit.run()
 
-model.parameters.covariance = joint_result.parameters.covariance
+model.spectral_model.parameters.covariance = joint_result.parameters.covariance
 print(joint_result)
 
 

@@ -68,7 +68,7 @@ energy_reco = MapAxis.from_edges(
     np.logspace(-1.0, 1.0, 10), unit="TeV", name="energy", interp="log"
 )
 geom = WcsGeom.create(
-    skydir=(0, 0), binsz=0.02, width=(5, 4), coordsys="GAL", axes=[energy_reco]
+    skydir=(0, 0), binsz=0.02, width=(6, 6), coordsys="GAL", axes=[energy_reco]
 )
 # It is usually useful to have a separate binning for the true energy axis
 energy_true = MapAxis.from_edges(
@@ -103,10 +103,8 @@ obs = Observation.create(pointing=pointing, livetime=livetime, irfs=irfs)
 print(obs)
 # Make the MapDataset
 empty = MapDataset.create(geom)
-maker = MapDatasetMaker(offset_max=2.0 * u.deg)
-dataset = maker.run(
-    empty, obs, selection=["exposure", "background", "psf", "edisp"]
-)
+maker = MapDatasetMaker(selection=["exposure", "background", "psf", "edisp"])
+dataset = maker.run(empty, obs)
 print(dataset)
 
 
@@ -121,7 +119,7 @@ dataset.edisp = dataset.edisp.get_energy_dispersion(
 dataset.psf = dataset.psf.get_psf_kernel(
     position=SkyCoord(0, 0, unit="deg", frame="galactic"),
     geom=geom,
-    max_radius="0.3 deg",
+    max_radius="0.6 deg",
 )
 
 
@@ -142,7 +140,9 @@ print(dataset)
 
 
 # To plot, eg, counts:
-dataset.counts.smooth(0.1 * u.deg).plot_interactive(add_cbar=True)
+dataset.counts.smooth(0.05 * u.deg).plot_interactive(
+    add_cbar=True, stretch="linear"
+)
 
 
 # ## Fit
@@ -190,6 +190,12 @@ print(background_model)
 
 
 get_ipython().run_cell_magic('time', '', 'fit = Fit([dataset1])\nresult = fit.run(optimize_opts={"print_level": 1})')
+
+
+# In[ ]:
+
+
+dataset1.plot_residuals(method="diff/sqrt(model)", vmin=-0.5, vmax=0.5)
 
 
 # Compare the injected and fitted models: 

@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ![CTA first data challenge logo](images/cta-1dc.png)
-# 
 # # CTA data analysis with Gammapy
 # 
 # ## Introduction
@@ -39,7 +37,7 @@ from astropy.convolution import Gaussian2DKernel
 from regions import CircleSkyRegion
 from gammapy.modeling import Fit, Datasets
 from gammapy.data import DataStore
-from gammapy.modeling.models import PowerLawSpectralModel
+from gammapy.modeling.models import PowerLawSpectralModel, SkyModel
 from gammapy.spectrum import (
     SpectrumDatasetMaker,
     FluxPointsEstimator,
@@ -145,7 +143,7 @@ exclusion_mask.plot();
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'stacked = MapDataset.create(geom=geom)\nmaker = MapDatasetMaker(offset_max=2.5 * u.deg)\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=2.5 * u.deg)\n\nfor obs in observations:\n    dataset = maker.run(\n        stacked, obs, selection=["counts", "background", "exposure"]\n    )\n    dataset = maker_safe_mask.run(dataset, obs)\n    stacked.stack(dataset)')
+get_ipython().run_cell_magic('time', '', 'stacked = MapDataset.create(geom=geom)\nmaker = MapDatasetMaker(selection=["counts", "background", "exposure"])\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=2.5 * u.deg)\n\nfor obs in observations:\n    cutout = stacked.cutout(obs.pointing_radec, width="5 deg")\n    dataset = maker.run(stacked, obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n    stacked.stack(dataset)')
 
 
 # In[ ]:
@@ -287,7 +285,7 @@ plot_spectrum_datasets_off_regions(datasets, ax=ax)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'model = PowerLawSpectralModel(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\n\nfor dataset in datasets:\n    dataset.model = model\n\nfit = Fit(datasets)\nresult = fit.run()\nprint(result)')
+get_ipython().run_cell_magic('time', '', 'spectral_model = PowerLawSpectralModel(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\nmodel = SkyModel(spectral_model=spectral_model)\nfor dataset in datasets:\n    dataset.model = model\n\nfit = Fit(datasets)\nresult = fit.run()\nprint(result)')
 
 
 # ### Spectral points
@@ -323,7 +321,7 @@ flux_points.table_formatted
 # In[ ]:
 
 
-model.parameters.covariance = result.parameters.covariance
+model.spectral_model.parameters.covariance = result.parameters.covariance
 flux_points_dataset = FluxPointsDataset(data=flux_points, model=model)
 
 

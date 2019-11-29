@@ -74,6 +74,7 @@ from gammapy.data import DataStore
 from gammapy.modeling.models import (
     PowerLawSpectralModel,
     create_crab_spectral_model,
+    SkyModel,
 )
 from gammapy.cube import SafeMaskMaker
 from gammapy.spectrum import (
@@ -263,9 +264,10 @@ for obs_id in obs_ids:
 # In[ ]:
 
 
-model = PowerLawSpectralModel(
+spectral_model = PowerLawSpectralModel(
     index=2, amplitude=2e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV
 )
+model = SkyModel(spectral_model=spectral_model)
 
 for dataset in datasets:
     dataset.model = model
@@ -275,7 +277,9 @@ result_joint = fit_joint.run()
 
 # we make a copy here to compare it later
 model_best_joint = model.copy()
-model_best_joint.parameters.covariance = result_joint.parameters.covariance
+model_best_joint.spectral_model.parameters.covariance = (
+    result_joint.parameters.covariance
+)
 
 
 # In[ ]:
@@ -371,7 +375,9 @@ result_stacked = stacked_fit.run()
 
 # make a copy to compare later
 model_best_stacked = model.copy()
-model_best_stacked.parameters.covariance = result_stacked.parameters.covariance
+model_best_stacked.spectral_model.parameters.covariance = (
+    result_stacked.parameters.covariance
+)
 
 
 # In[ ]:
@@ -404,12 +410,16 @@ plot_kwargs = {
 }
 
 # plot stacked model
-model_best_stacked.plot(**plot_kwargs, label="Stacked analysis result")
-model_best_stacked.plot_error(**plot_kwargs)
+model_best_stacked.spectral_model.plot(
+    **plot_kwargs, label="Stacked analysis result"
+)
+model_best_stacked.spectral_model.plot_error(**plot_kwargs)
 
 # plot joint model
-model_best_joint.plot(**plot_kwargs, label="Joint analysis result", ls="--")
-model_best_joint.plot_error(**plot_kwargs)
+model_best_joint.spectral_model.plot(
+    **plot_kwargs, label="Joint analysis result", ls="--"
+)
+model_best_joint.spectral_model.plot_error(**plot_kwargs)
 
 create_crab_spectral_model("hess_pl").plot(
     **plot_kwargs, label="Crab reference"

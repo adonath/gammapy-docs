@@ -37,82 +37,90 @@ from pathlib import Path
 # The datasets serialization produce YAML files listing the datasets and models. In the following cells we show an example containning only the Fermi-LAT dataset and the Crab model.
 # 
 # Fermi-LAT-3FHL_datasets.yaml:
-datasets:
-- name: Fermi-LAT
-  type: MapDataset
-  likelihood: cash
-  models:
-- Crab Nebula
-  background: background
-  filename: $GAMMAPY_DATA/fermi-3fhl-crab/Fermi-LAT-3FHL_data_Fermi-LAT.fits
+# 
+# ```yaml
+# datasets:
+# - name: Fermi-LAT
+#   type: MapDataset
+#   likelihood: cash
+#   models:
+# - Crab Nebula
+#   background: background
+#   filename: $GAMMAPY_DATA/fermi-3fhl-crab/Fermi-LAT-3FHL_data_Fermi-LAT.fits
+# ```
+# 
 # Fermi-LAT-3FHL_models.yaml:
-components:
-- name: Crab Nebula
-  type: SkyModel
-  spatial:
-    type: PointSpatialModel
-    frame: icrs
-    parameters:
-    - name: lon_0
-      value: 83.63310241699219
-      unit: deg
-      min: .nan
-      max: .nan
-      frozen: true
-    - name: lat_0
-      value: 22.019899368286133
-      unit: deg
-      min: -90.0
-      max: 90.0
-      frozen: true
-  spectral:
-    type: LogParabolaSpectralModel
-    parameters:
-    - name: amplitude
-      value: 0.3415498620816483
-      unit: cm-2 s-1 TeV-1
-      min: .nan
-      max: .nan
-      frozen: false
-    - name: reference
-      value: 5.054833602905273e-05
-      unit: TeV
-      min: .nan
-      max: .nan
-      frozen: true
-    - name: alpha
-      value: 2.510798031388936
-      unit: ''
-      min: .nan
-      max: .nan
-      frozen: false
-    - name: beta
-      value: -0.022476498188855533
-      unit: ''
-      min: .nan
-      max: .nan
-      frozen: false
-- name: background
-  type: BackgroundModel
-  parameters:
-  - name: norm
-    value: 0.9544383244743555
-    unit: ''
-    min: 0.0
-    max: .nan
-    frozen: false
-  - name: tilt
-    value: 0.0
-    unit: ''
-    min: .nan
-    max: .nan
-    frozen: true
-  - name: reference
-    value: 1.0
-    unit: TeV
-    min: .nan
-    max: .nan
-    frozen: true
+# 
+# ```yaml
+# components:
+# - name: Crab Nebula
+#   type: SkyModel
+#   spatial:
+#     type: PointSpatialModel
+#     frame: icrs
+#     parameters:
+#     - name: lon_0
+#       value: 83.63310241699219
+#       unit: deg
+#       min: .nan
+#       max: .nan
+#       frozen: true
+#     - name: lat_0
+#       value: 22.019899368286133
+#       unit: deg
+#       min: -90.0
+#       max: 90.0
+#       frozen: true
+#   spectral:
+#     type: LogParabolaSpectralModel
+#     parameters:
+#     - name: amplitude
+#       value: 0.3415498620816483
+#       unit: cm-2 s-1 TeV-1
+#       min: .nan
+#       max: .nan
+#       frozen: false
+#     - name: reference
+#       value: 5.054833602905273e-05
+#       unit: TeV
+#       min: .nan
+#       max: .nan
+#       frozen: true
+#     - name: alpha
+#       value: 2.510798031388936
+#       unit: ''
+#       min: .nan
+#       max: .nan
+#       frozen: false
+#     - name: beta
+#       value: -0.022476498188855533
+#       unit: ''
+#       min: .nan
+#       max: .nan
+#       frozen: false
+# - name: background
+#   type: BackgroundModel
+#   parameters:
+#   - name: norm
+#     value: 0.9544383244743555
+#     unit: ''
+#     min: 0.0
+#     max: .nan
+#     frozen: false
+#   - name: tilt
+#     value: 0.0
+#     unit: ''
+#     min: .nan
+#     max: .nan
+#     frozen: true
+#   - name: reference
+#     value: 1.0
+#     unit: TeV
+#     min: .nan
+#     max: .nan
+#     frozen: true
+# 
+# ```
 
 # ## Reading  different datasets
 # 
@@ -130,17 +138,15 @@ datasets = Datasets.from_yaml(filedata=filedata, filemodel=filemodel)
 dataset_fermi = datasets[0]
 
 
-# We get the Crab spectral model in order to share it with the other datasets
+# We get the Crab model in order to share it with the other datasets
 
 # In[ ]:
 
 
-crab_spec = [
-    model.spectral_model
-    for model in dataset_fermi.model
-    if model.name == "Crab Nebula"
+crab_model = [
+    model for model in dataset_fermi.model if model.name == "Crab Nebula"
 ][0]
-
+crab_spec = crab_model.spectral_model
 print(crab_spec)
 
 
@@ -162,7 +168,7 @@ for obs_id in obs_ids:
     datasets.append(dataset)
 dataset_hess = Datasets(datasets).stack_reduce()
 dataset_hess.name = "HESS"
-dataset_hess.model = crab_spec
+dataset_hess.model = crab_model
 
 
 # ### HAWC: 1D dataset for flux point fitting
@@ -176,7 +182,7 @@ dataset_hess.model = crab_spec
 # read flux points from https://arxiv.org/pdf/1905.12518.pdf
 filename = "$GAMMAPY_DATA/hawc_crab/HAWC19_flux_points.fits"
 flux_points_hawc = FluxPoints.read(filename)
-dataset_hawc = FluxPointsDataset(crab_spec, flux_points_hawc, name="HAWC")
+dataset_hawc = FluxPointsDataset(crab_model, flux_points_hawc, name="HAWC")
 
 
 # ## Datasets serialization
@@ -189,11 +195,12 @@ dataset_hawc = FluxPointsDataset(crab_spec, flux_points_hawc, name="HAWC")
 
 datasets = Datasets([dataset_fermi, dataset_hess, dataset_hawc])
 path = Path("crab-3datasets")
-# datasets.to_yaml(path=path, prefix="crab_10GeV_100TeV", overwrite=True)
 path.mkdir(exist_ok=True)
+
+datasets.to_yaml(path=path, prefix="crab_10GeV_100TeV", overwrite=True)
 filedata = path / "crab_10GeV_100TeV_datasets.yaml"
 filemodel = path / "crab_10GeV_100TeV_models.yaml"
-# datasets.from_yaml(filedata=filedata, filemodel=filemodel)
+datasets = Datasets.from_yaml(filedata=filedata, filemodel=filemodel)
 
 
 # ## Joint analysis
@@ -212,6 +219,7 @@ get_ipython().run_cell_magic('time', '', 'fit_joint = Fit(datasets)\nresults_joi
 # In[ ]:
 
 
+crab_spec = datasets[0].model["Crab Nebula"].spectral_model
 crab_spec.parameters.covariance = results_joint.parameters.get_subcovariance(
     crab_spec.parameters
 )
@@ -261,9 +269,3 @@ plt.legend();
 # - https://docs.gammapy.org/dev/notebooks/hess.html
 # - https://docs.gammapy.org/dev/notebooks/spectrum_analysis.html
 # 
-
-# In[ ]:
-
-
-
-
