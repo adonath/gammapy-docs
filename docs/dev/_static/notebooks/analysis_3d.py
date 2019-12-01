@@ -206,7 +206,7 @@ model = SkyModel(
     spectral_model=spectral_model,
     name="gc-source",
 )
-stacked.model = model
+stacked.models = model
 
 stacked.background_model.norm.value = 1.3
 
@@ -243,8 +243,8 @@ stacked.plot_residuals(method="diff/sqrt(model)", vmin=-1, vmax=1)
 spec = model.spectral_model
 
 # set covariance on the spectral model
-covariance = result.parameters.covariance
-spec.parameters.covariance = covariance[2:7, 2:7]
+covar = result.parameters.get_subcovariance(spec.parameters)
+spec.parameters.covariance = covar
 
 energy_range = [0.3, 10] * u.TeV
 spec.plot(energy_range=energy_range, energy_power=2)

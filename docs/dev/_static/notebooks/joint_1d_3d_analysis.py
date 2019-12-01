@@ -1,17 +1,20 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Joint Crab analysis with 1D and 3D datasets
+# # Joint modeling, fitting, and serialization
 # 
-# **TODO: move references on how to create the datasets at the beginning. Change title and scope to discuss joint modeling and fitting of the Crab nebula.
-# Discuss at the beginning the 2 types of datasets to be used. Explain better
-# what the Fermi model is.**
 
-# This tutorial illustrates how to run a joint analysis with different datasets.
+# This tutorial illustrates how to perfom a joint modeling and fitting of the Crab Nebula spectrum using different datasets.
 # We look at the gamma-ray emission from the Crab nebula between 10 GeV and 100 TeV.
-# The spectral parameters are optimized by combining a 3D analysis of Fermi-LAT data, a ON/OFF spectral analysis of HESS data, and flux points from HAWC.  
+# The spectral parameters are optimized by combining a 3D analysis of Fermi-LAT data, a ON/OFF spectral analysis of HESS data, and flux points from HAWC.
 # 
+# In this tutorial we are going to use pre-made datasets. We prepared maps of the Crab region as seen by Fermi-LAT using the same event selection than the [3FHL catalog](https://arxiv.org/abs/1702.00664) (7 years of data with energy from 10 GeV to 2 TeV). For the HESS ON/OFF analysis we used two observations from the [first public data release](https://arxiv.org/abs/1810.04516) with a significant signal from energy of about 600 GeV to 10 TeV. These observations have an offset of 0.5° and a zenith angle of 45-48°. The HAWC flux points data are taken from a [recent analysis](https://arxiv.org/pdf/1905.12518.pdf) based on 2.5 years of data with energy between 300 Gev and 300 TeV. 
 # 
+# More details on how to prepare datasets with the high and low level interfaces are available in these tutorials: 
+# 
+# - https://docs.gammapy.org/0.14/notebooks/fermi_lat.html
+# - https://docs.gammapy.org/dev/notebooks/hess.html
+# - https://docs.gammapy.org/dev/notebooks/spectrum_analysis.html
 # 
 
 # In[ ]:
@@ -28,13 +31,14 @@ from gammapy.spectrum import (
     FluxPointsDataset,
     SpectrumDatasetOnOff,
 )
+from gammapy.maps import MapAxis
 from pathlib import Path
 
 
 # ## Data and models files
 # 
-# We are going to use pre-made datasets. Links toward other tutorials detailing on how to prepare datasets are given at the end.
-# The datasets serialization produce YAML files listing the datasets and models. In the following cells we show an example containning only the Fermi-LAT dataset and the Crab model.
+# 
+# The datasets serialization produce YAML files listing the datasets and models. In the following cells we show an example containning only the Fermi-LAT dataset and the Crab model. 
 # 
 # Fermi-LAT-3FHL_datasets.yaml:
 # 
@@ -48,6 +52,8 @@ from pathlib import Path
 #   background: background
 #   filename: $GAMMAPY_DATA/fermi-3fhl-crab/Fermi-LAT-3FHL_data_Fermi-LAT.fits
 # ```
+# 
+# We used as model a point source with a log-parabola spectrum. The initial parameters were taken from the latest Fermi-LAT catalog [4FGL](https://arxiv.org/abs/1902.10045), then we have re-optimized the spectral parameters for our dataset in the 10 GeV - 2 TeV energy range (fixing the source position).
 # 
 # Fermi-LAT-3FHL_models.yaml:
 # 
@@ -134,7 +140,7 @@ from pathlib import Path
 path = "$GAMMAPY_DATA/fermi-3fhl-crab/Fermi-LAT-3FHL"
 filedata = Path(path + "_datasets.yaml")
 filemodel = Path(path + "_models.yaml")
-datasets = Datasets.from_yaml(filedata=filedata, filemodel=filemodel)
+datasets = Datasets.read(filedata=filedata, filemodel=filemodel)
 dataset_fermi = datasets[0]
 
 
@@ -143,9 +149,7 @@ dataset_fermi = datasets[0]
 # In[ ]:
 
 
-crab_model = [
-    model for model in dataset_fermi.model if model.name == "Crab Nebula"
-][0]
+crab_model = dataset_fermi.models["Crab Nebula"]
 crab_spec = crab_model.spectral_model
 print(crab_spec)
 
@@ -159,16 +163,17 @@ print(crab_spec)
 # In[ ]:
 
 
-obs_ids = [23523, 23526]
 datasets = []
-for obs_id in obs_ids:
+
+for obs_id in [23523, 23526]:
     dataset = SpectrumDatasetOnOff.from_ogip_files(
         f"$GAMMAPY_DATA/joint-crab/spectra/hess/pha_obs{obs_id}.fits"
     )
     datasets.append(dataset)
+
 dataset_hess = Datasets(datasets).stack_reduce()
 dataset_hess.name = "HESS"
-dataset_hess.model = crab_model
+dataset_hess.models = crab_model
 
 
 # ### HAWC: 1D dataset for flux point fitting
@@ -197,10 +202,10 @@ datasets = Datasets([dataset_fermi, dataset_hess, dataset_hawc])
 path = Path("crab-3datasets")
 path.mkdir(exist_ok=True)
 
-datasets.to_yaml(path=path, prefix="crab_10GeV_100TeV", overwrite=True)
+datasets.write(path=path, prefix="crab_10GeV_100TeV", overwrite=True)
 filedata = path / "crab_10GeV_100TeV_datasets.yaml"
 filemodel = path / "crab_10GeV_100TeV_models.yaml"
-datasets = Datasets.from_yaml(filedata=filedata, filemodel=filemodel)
+datasets = Datasets.read(filedata=filedata, filemodel=filemodel)
 
 
 # ## Joint analysis
@@ -219,7 +224,7 @@ get_ipython().run_cell_magic('time', '', 'fit_joint = Fit(datasets)\nresults_joi
 # In[ ]:
 
 
-crab_spec = datasets[0].model["Crab Nebula"].spectral_model
+crab_spec = datasets[0].models["Crab Nebula"].spectral_model
 crab_spec.parameters.covariance = results_joint.parameters.get_subcovariance(
     crab_spec.parameters
 )
@@ -232,16 +237,16 @@ print(crab_spec)
 
 
 # compute Fermi-LAT and HESS flux points
-e_min, e_max = 0.01, 2.0
-El_fermi = np.logspace(np.log10(e_min), np.log10(e_max), 6) * u.TeV
+e_edges = MapAxis.from_bounds(0.01, 2.0, nbin=6, interp="log", unit="TeV").edges
+
 flux_points_fermi = FluxPointsEstimator(
-    datasets=[dataset_fermi], e_edges=El_fermi, source="Crab Nebula"
+    datasets=[dataset_fermi], e_edges=e_edges, source="Crab Nebula"
 ).run()
 
-e_min, e_max = 1.0, 15.0
-El_hess = np.logspace(np.log10(e_min), np.log10(e_max), 6) * u.TeV
+
+e_edges = MapAxis.from_bounds(1, 15, nbin=6, interp="log", unit="TeV").edges
 flux_points_hess = FluxPointsEstimator(
-    datasets=[dataset_hess], e_edges=El_hess
+    datasets=[dataset_hess], e_edges=e_edges
 ).run()
 
 
@@ -261,11 +266,3 @@ flux_points_hess.plot(ax=ax, energy_power=2, label="HESS")
 flux_points_hawc.plot(ax=ax, energy_power=2, label="HAWC")
 plt.legend();
 
-
-# ## To go further
-# 
-# More details on how to prepare datasets with the high and low level interfaces are available in these tutorials: 
-# - https://docs.gammapy.org/0.14/notebooks/fermi_lat.html
-# - https://docs.gammapy.org/dev/notebooks/hess.html
-# - https://docs.gammapy.org/dev/notebooks/spectrum_analysis.html
-# 

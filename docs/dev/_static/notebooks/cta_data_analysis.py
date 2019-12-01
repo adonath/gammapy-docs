@@ -285,7 +285,7 @@ plot_spectrum_datasets_off_regions(datasets, ax=ax)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'spectral_model = PowerLawSpectralModel(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\nmodel = SkyModel(spectral_model=spectral_model)\nfor dataset in datasets:\n    dataset.model = model\n\nfit = Fit(datasets)\nresult = fit.run()\nprint(result)')
+get_ipython().run_cell_magic('time', '', 'spectral_model = PowerLawSpectralModel(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\nmodel = SkyModel(spectral_model=spectral_model)\nfor dataset in datasets:\n    dataset.models = model\n\nfit = Fit(datasets)\nresult = fit.run()\nprint(result)')
 
 
 # ### Spectral points
@@ -322,7 +322,7 @@ flux_points.table_formatted
 
 
 model.spectral_model.parameters.covariance = result.parameters.covariance
-flux_points_dataset = FluxPointsDataset(data=flux_points, model=model)
+flux_points_dataset = FluxPointsDataset(data=flux_points, models=model)
 
 
 # In[ ]:

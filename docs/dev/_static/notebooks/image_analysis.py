@@ -188,7 +188,7 @@ background_model.parameters["tilt"].frozen = True
 
 
 dataset = MapDataset(
-    model=model,
+    models=model,
     counts=maps2D["counts"],
     exposure=maps2D["exposure"],
     background_model=background_model,

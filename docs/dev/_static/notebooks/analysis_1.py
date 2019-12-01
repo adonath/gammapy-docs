@@ -3,16 +3,16 @@
 
 # # First analysis
 # 
-# **TODO: Rewrite this notebook to be the "first analysis" one as described in PIG 18. Note that there is now a separate ``hess.ipynb`` that can be referenced from here, for a description of H.E.S.S. and the datasets. Also note that there is a follow-up `analysis2.ipynb`, this notebook can be short.**
+# This notebook shows a simple example of a Crab analysis using the H.E.S.S. DL3 data release 1. It reduces the data to cube datasets and performs a simple 3D model fitting of the Crab nebula.
 # 
-# In September 2018 the [H.E.S.S.](https://www.mpi-hd.mpg.de/hfm/HESS) collaboration released a small subset of archival data in FITS format. This tutorial explains how to analyse this data with Gammapy. We will analyse four observation runs of the Crab nebula, which are part of the [H.E.S.S. first public test data release](https://www.mpi-hd.mpg.de/hfm/HESS/pages/dl3-dr1/). The data was release without corresponding background models. In [background_model.ipynb](background_model.ipynb) we show how to make a simple background model, which is also used in this tutorial. The background model is not perfect; it assumes radial symmetry and is in general derived from only a few observations, but still good enough for a reliable analysis > 1TeV.
+# It uses the high level `Analysis` class to orchestrate data reduction. In its current state, `Analysis` supports the standard analysis cases of joint or stacked 3D and 1D analyses. It is instantiated with an `AnalysisConfig` object that gives access to analysis parameters either directly or via a YAML config file. 
 # 
-# **Note:** The high level `Analysis` class is a new feature added in Gammapy v0.14. In the current state it supports the standard analysis cases of a joint or stacked 3D and 1D analysis. It provides only limited access to analaysis parameters via the config file. It is expected that the format of the YAML config will be extended and change in future Gammapy versions.
+# To see what is happening under-the-hood and to get an idea of the internal API, a second notebook performs the same analysis without using the `Analysis` class. 
 # 
-# We will first show how to configure and run a stacked 3D analysis and then address the classical spectral analysis using reflected regions later. The structure of the tutorial follows a typical analysis:
+# We will first show how to configure and run a stacked 3D analysis. The structure of the tutorial follows a typical analysis:
 # 
 # - Analysis configuration
-# - Observation slection
+# - Observation selection
 # - Data reduction
 # - Model fitting
 # - Estimating flux points
@@ -31,9 +31,9 @@ import matplotlib.pyplot as plt
 # In[ ]:
 
 
-from regions import CircleSkyRegion
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from regions import CircleSkyRegion
 from gammapy.analysis import Analysis, AnalysisConfig
 from gammapy.modeling.models import create_crab_spectral_model
 
@@ -47,48 +47,96 @@ from gammapy.modeling.models import create_crab_spectral_model
 # In[ ]:
 
 
-config_str = """
-general:
-    log:
-        level: info
-    outdir: .
-observations:
-    datastore: $GAMMAPY_DATA/hess-dl3-dr1/
-    obs_cone: {frame: icrs, lon: 83.633 deg, lat: 22.014 deg, radius: 5 deg}
-datasets:
-    type: 3d
-    stack: true
-    geom:
-        wcs:
-            skydir: {frame: icrs, lon: 83.633 deg, lat: 22.014 deg}
-            binsize: 0.04 deg
-            fov: {width: 5 deg, height: 5 deg}
-            binsize_irf: 0.2 deg
-            margin_irf: 0.5 deg
-        selection:
-            offset_max: 2.5 deg
-        axes:
-            energy: {min: 1 TeV, max: 10 TeV, nbins: 4}
-            energy_true: {min: 1 TeV, max: 10 TeV, nbins: 5}            
-fit:
-    fit_range: {min: 1 TeV, max: 30 TeV}
-
-flux_points:
-    energy: {min: 1 TeV, max: 10 TeV, nbins: 3}
-"""
+config = AnalysisConfig()
+# the AnalysisConfig gives access to the various parameters used from logging to reduced dataset geometries
+print(config)
 
 
-# We first create an `~gammapy.analysis.AnalysisConfig` object from it:
+# ### Setting the data to use
+
+# We want to use Crab runs from the H.E.S.S. DL3-DR1. We define here the datastore and a cone search of observations pointing with 5 degrees of the Crab nebula.
+# Parameters can be set directly or as a python dict.
 
 # In[ ]:
 
 
-config = AnalysisConfig.from_yaml(config_str)
+# We define the datastore containing the data
+config.observations.datastore = "$GAMMAPY_DATA/hess-dl3-dr1"
+
+# We define the cone search parameters
+config.observations.obs_cone.frame = "icrs"
+config.observations.obs_cone.lon = "83.633 deg"
+config.observations.obs_cone.lat = "22.014 deg"
+config.observations.obs_cone.radius = "5 deg"
+
+# Equivalently we could have set parameters with a python dict
+# config.observations.obs_cone = {"frame": "icrs", "lon": "83.633 deg", "lat": "22.014 deg", "radius": "5 deg"}
 
 
-# ##  Observation selection
+# ### Setting the reduced datasets geometry
+
+# In[ ]:
+
+
+# We want to perform a 3D analysis
+config.datasets.type = "3d"
+# We want to stack the data into a single reduced dataset
+config.datasets.stack = True
+
+# We fiw the WCS geometry of the datasets
+config.datasets.geom.wcs.skydir = {
+    "lon": "83.633 deg",
+    "lat": "22.014 deg",
+    "frame": "icrs",
+}
+config.datasets.geom.wcs.fov = {"width": "2 deg", "height": "2 deg"}
+config.datasets.geom.wcs.binsize = "0.02 deg"
+
+# We now fix the energy axis for the counts map
+config.datasets.geom.axes.energy.min = "1 TeV"
+config.datasets.geom.axes.energy.max = "10 TeV"
+config.datasets.geom.axes.energy.nbins = 4
+
+# We now fix the energy axis for the IRF maps (exposure, etc)
+config.datasets.geom.axes.energy_true.min = "0.5 TeV"
+config.datasets.geom.axes.energy_true.max = "20 TeV"
+config.datasets.geom.axes.energy.nbins = 10
+
+
+# ### Setting modeling and fitting parameters
+# `Analysis` can perform a few modeling and fitting tasks besides data reduction. Parameters have then to be passed to the configuration object.
+
+# In[ ]:
+
+
+config.fit.fit_range.min = 1 * u.TeV
+config.fit.fit_range.max = 10 * u.TeV
+config.flux_points.energy = {"min": "1 TeV", "max": "10 TeV", "nbins": 3}
+
+
+# We're all set. 
+# But before we go on let's see how to save or import `AnalysisConfig` objects though YAML files.
+
+# ### Using YAML configuration files
 # 
-# Now we create the high level `~gammapy.analysis.Analysis` object from the config object:
+# One can export/import the `AnalysisConfig` to/from a YAML file.
+
+# In[ ]:
+
+
+config.write("config.yaml", overwrite=True)
+
+
+# In[ ]:
+
+
+config = AnalysisConfig.read("config.yaml")
+print(config)
+
+
+# ## Running the analysis
+# 
+# We first create an `~gammapy.analysis.Analysis` object from our configuration.
 
 # In[ ]:
 
@@ -96,7 +144,9 @@ config = AnalysisConfig.from_yaml(config_str)
 analysis = Analysis(config)
 
 
-# And directly select and load the observations from disk using `~gammapy.analysis.Analysis.get_observations()`:
+# ###  Observation selection
+# 
+# We can directly select and load the observations from disk using `~gammapy.analysis.Analysis.get_observations()`:
 
 # In[ ]:
 
@@ -218,19 +268,19 @@ components:
 # In[ ]:
 
 
-analysis.set_model(model_config)
+analysis.set_models(model_config)
 
 
 # In[ ]:
 
 
-print(analysis.model)
+print(analysis.models)
 
 
 # In[ ]:
 
 
-print(analysis.model["crab"])
+print(analysis.models["crab"])
 
 
 # Finally we run the fit:
@@ -252,7 +302,7 @@ print(analysis.fit_result)
 # In[ ]:
 
 
-analysis.model.to_yaml("model-best-fit.yaml")
+analysis.models.to_yaml("model-best-fit.yaml")
 
 
 # In[ ]:

@@ -201,7 +201,7 @@ dataset.parameters["index"].value = 2.0
 dataset.parameters["amplitude"].value = 3.2e-12
 dataset.parameters["lambda_"].value = 0.05
 
-print(dataset.model)
+print(dataset.models)
 print("stat =", dataset.stat_sum())
 
 
@@ -249,7 +249,7 @@ for nwalk in range(0, 6):
 
         # set model parameters
         par_to_model(dataset, pars)
-        spectral_model = dataset.model[0].spectral_model
+        spectral_model = dataset.models[0].spectral_model
 
         spectral_model.plot(
             energy_range=(emin, emax),

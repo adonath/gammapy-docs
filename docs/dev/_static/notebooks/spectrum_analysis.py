@@ -270,7 +270,7 @@ spectral_model = PowerLawSpectralModel(
 model = SkyModel(spectral_model=spectral_model)
 
 for dataset in datasets:
-    dataset.model = model
+    dataset.models = model
 
 fit_joint = Fit(datasets)
 result_joint = fit_joint.run()
@@ -343,7 +343,7 @@ flux_points.to_sed_type("e2dnde").plot_ts_profiles(ax=ax)
 
 
 flux_points_dataset = FluxPointsDataset(
-    data=flux_points, model=model_best_joint
+    data=flux_points, models=model_best_joint
 )
 
 

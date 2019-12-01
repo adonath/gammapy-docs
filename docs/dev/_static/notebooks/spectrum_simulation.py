@@ -150,7 +150,7 @@ print(dataset)
 dataset_onoff = SpectrumDatasetOnOff(
     aeff=dataset.aeff,
     edisp=dataset.edisp,
-    model=model,
+    models=model,
     livetime=livetime,
     acceptance=1,
     acceptance_off=5,
@@ -190,7 +190,7 @@ axes[2].set_xlabel("excess");
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'results = []\nfor dataset in datasets:\n    dataset.model = model.copy()\n    fit = Fit([dataset])\n    result = fit.optimize()\n    results.append(\n        {\n            "index": result.parameters["index"].value,\n            "amplitude": result.parameters["amplitude"].value,\n        }\n    )')
+get_ipython().run_cell_magic('time', '', 'results = []\nfor dataset in datasets:\n    dataset.models = model.copy()\n    fit = Fit([dataset])\n    result = fit.optimize()\n    results.append(\n        {\n            "index": result.parameters["index"].value,\n            "amplitude": result.parameters["amplitude"].value,\n        }\n    )')
 
 
 # We take a look at the distribution of the fitted indices. This matches very well with the spectrum that we initially injected, index=2.1

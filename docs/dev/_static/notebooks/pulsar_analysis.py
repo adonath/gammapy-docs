@@ -290,7 +290,7 @@ model = SkyModel(spectral_model=spectral_model)
 emin_fit, emax_fit = (0.04 * u.TeV, 0.4 * u.TeV)
 
 for dataset in datasets:
-    dataset.model = model
+    dataset.models = model
     dataset.mask_fit = dataset.counts.energy_mask(emin=emin_fit, emax=emax_fit)
 
 joint_fit = Fit(datasets)
@@ -322,7 +322,7 @@ spec_model_true = PowerLawSpectralModel(
     index=4.5, amplitude=amplitude_ref, reference="20 GeV"
 )
 
-flux_points_dataset = FluxPointsDataset(data=flux_points, model=model)
+flux_points_dataset = FluxPointsDataset(data=flux_points, models=model)
 
 
 # Now we can plot.

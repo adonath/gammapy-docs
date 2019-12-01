@@ -57,7 +57,7 @@ from gammapy.modeling.models import (
     SkyModels,
     create_fermi_isotropic_diffuse_model,
 )
-from gammapy.cube import MapDataset, PSFKernel, MapEvaluator
+from gammapy.cube import MapDataset, PSFKernel
 from gammapy.modeling import Fit
 
 
@@ -226,9 +226,11 @@ exposure.get_by_coord({"skycoord": gc_pos, "energy": energy})
 diffuse_galactic_fermi = Map.read(
     "$GAMMAPY_DATA/fermi_3fhl/gll_iem_v06_cutout.fits"
 )
+
 # Unit is not stored in the file, set it manually
 diffuse_galactic_fermi.unit = "cm-2 s-1 MeV-1 sr-1"
 print(diffuse_galactic_fermi.geom)
+
 print(diffuse_galactic_fermi.geom.axes[0])
 
 
@@ -254,7 +256,13 @@ print(diffuse_galactic.geom.axes[0])
 # In[ ]:
 
 
-diffuse_galactic.slice_by_idx({"energy": 0}).plot(add_cbar=True);
+diffuse_gal = SkyDiffuseCube(diffuse_galactic)
+
+
+# In[ ]:
+
+
+diffuse_gal.map.slice_by_idx({"energy": 0}).plot(add_cbar=True);
 
 
 # In[ ]:
@@ -262,7 +270,7 @@ diffuse_galactic.slice_by_idx({"energy": 0}).plot(add_cbar=True);
 
 # Exposure varies very little with energy at these high energies
 energy = np.logspace(1, 3, 10) * u.GeV
-dnde = diffuse_galactic.interp_by_coord(
+dnde = diffuse_gal.map.interp_by_coord(
     {"skycoord": gc_pos, "energy": energy}, interp="linear", fill_value=None
 )
 plt.plot(energy.value, dnde, "*")
@@ -371,65 +379,6 @@ e_reco = counts.geom.axes[0].edges
 edisp = EnergyDispersion.from_diagonal_response(e_true=e_true, e_reco=e_reco)
 
 
-# ## Background
-# 
-# Let's compute a background cube, with predicted number of background events per pixel from the diffuse Galactic and isotropic model components. For this, we use the use the `~gammapy.cube.MapEvaluator` to multiply with the exposure and apply the PSF. The Fermi-LAT energy dispersion at high energies is small, we neglect it here.
-
-# In[ ]:
-
-
-model_diffuse = SkyDiffuseCube(diffuse_galactic, name="diffuse")
-eval_diffuse = MapEvaluator(
-    model=model_diffuse, exposure=exposure, psf=psf_kernel, edisp=edisp
-)
-
-background_gal = eval_diffuse.compute_npred()
-
-background_gal.sum_over_axes().plot()
-print("Background counts from Galactic diffuse: ", background_gal.data.sum())
-
-
-# In[ ]:
-
-
-eval_iso = MapEvaluator(model=diffuse_iso, exposure=exposure, edisp=edisp)
-
-background_iso = eval_iso.compute_npred()
-
-background_iso.sum_over_axes().plot(add_cbar=True)
-print("Background counts from isotropic diffuse: ", background_iso.data.sum())
-
-
-# In[ ]:
-
-
-background_total = background_iso + background_gal
-
-
-# ## Excess and flux
-# 
-# Let's compute an excess and flux image, by subtracting the background, and summing over the energy axis.
-
-# In[ ]:
-
-
-excess = counts.copy()
-excess.data -= background_total.data
-excess.sum_over_axes().smooth("0.1 deg").plot(
-    cmap="coolwarm", vmin=-5, vmax=5, add_cbar=True
-)
-print("Excess counts: ", excess.data.sum())
-
-
-# In[ ]:
-
-
-flux = excess.copy()
-flux.data /= exposure.data
-flux.unit = excess.unit / exposure.unit
-flux.sum_over_axes().smooth("0.1 deg").plot(stretch="sqrt", add_cbar=True);
-
-
 # ## Fit
 # 
 # Finally, the big finale: let's do a 3D map fit for the source at the Galactic center, to measure it's position and spectrum. We keep the background normalization free.
@@ -444,16 +393,12 @@ spectral_model = PowerLawSpectralModel(
     index=2.5, amplitude="1e-11 cm-2 s-1 TeV-1", reference="100 GeV"
 )
 
-model = SkyModel(spectral_model=spectral_model, spatial_model=spatial_model)
+source = SkyModel(spectral_model=spectral_model, spatial_model=spatial_model)
 
-model_total = SkyModels([model, model_diffuse, diffuse_iso])
+models = SkyModels([source, diffuse_gal, diffuse_iso])
 
 dataset = MapDataset(
-    model=model_total,
-    counts=counts,
-    exposure=exposure,
-    psf=psf_kernel,
-    edisp=edisp,
+    models=models, counts=counts, exposure=exposure, psf=psf_kernel, edisp=edisp
 )
 
 
