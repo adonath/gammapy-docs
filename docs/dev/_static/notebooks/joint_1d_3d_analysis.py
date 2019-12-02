@@ -237,7 +237,9 @@ print(crab_spec)
 
 
 # compute Fermi-LAT and HESS flux points
-e_edges = MapAxis.from_bounds(0.01, 2.0, nbin=6, interp="log", unit="TeV").edges
+e_edges = MapAxis.from_bounds(
+    0.01, 2.0, nbin=6, interp="log", unit="TeV"
+).edges
 
 flux_points_fermi = FluxPointsEstimator(
     datasets=[dataset_fermi], e_edges=e_edges, source="Crab Nebula"

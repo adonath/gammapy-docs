@@ -35,6 +35,7 @@ from gammapy.modeling.models import PowerLawSpectralModel, SkyModel
 from gammapy.modeling import Fit, Datasets
 from gammapy.spectrum import (
     PhaseBackgroundMaker,
+    SpectrumDataset,
     SpectrumDatasetMaker,
     FluxPointsEstimator,
     FluxPointsDataset,
@@ -251,9 +252,10 @@ excess_map.smooth(kernel="gauss", width=0.2 * u.deg).plot(add_cbar=True);
 e_true = np.logspace(-2.5, 1, 100) * u.TeV
 e_reco = np.logspace(-2, 1, 30) * u.TeV
 
-dataset_maker = SpectrumDatasetMaker(
+dataset_empty = SpectrumDataset.create(
     e_reco=e_reco, e_true=e_true, region=on_region
 )
+dataset_maker = SpectrumDatasetMaker()
 phase_bkg_maker = PhaseBackgroundMaker(
     on_phase=on_phase_range, off_phase=off_phase_range
 )
@@ -264,7 +266,7 @@ safe_mask_maker = SafeMaskMaker(
 datasets = []
 
 for obs in obs_list_vela:
-    dataset = dataset_maker.run(obs)
+    dataset = dataset_maker.run(dataset_empty, obs)
     dataset_on_off = phase_bkg_maker.run(dataset, obs)
     dataset_on_off = safe_mask_maker.run(dataset_on_off, obs)
     datasets.append(dataset_on_off)

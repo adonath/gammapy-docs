@@ -3,8 +3,6 @@
 
 # # Spectrum simulation for CTA
 # 
-# **TODO: remove adding a use defined model. Move it to how-tos.**
-# 
 # A quick example how to use the functions and classes in `~gammapy.spectrum` in order to simulate and fit spectra. 
 # 
 # We will simulate observations for CTA first using a power law model without any background.
@@ -111,10 +109,11 @@ print(obs)
 
 
 # Make the SpectrumDataset
-maker = SpectrumDatasetMaker(
-    region=on_region, e_reco=energy_axis.edges, e_true=energy_axis_true.edges
+dataset_empty = SpectrumDataset.create(
+    e_reco=energy_axis.edges, e_true=energy_axis_true.edges, region=on_region
 )
-dataset = maker.run(obs, selection=["aeff", "edisp"])
+maker = SpectrumDatasetMaker(selection=["aeff", "edisp", "background"])
+dataset = maker.run(dataset_empty, obs)
 
 
 # In[ ]:
@@ -123,18 +122,6 @@ dataset = maker.run(obs, selection=["aeff", "edisp"])
 # Set the model on the dataset, and fake
 dataset.model = model
 dataset.fake(random_state=42)
-print(dataset)
-
-
-# ## Include Background 
-# 
-# In this section we will include a background component extracted from the IRF. This simply includes re-running the makers with `background` keyword in the selection. Furthermore, we will also simulate more than one observation and fit each one individually in order to get average fit results.
-
-# In[ ]:
-
-
-dataset = maker.run(obs, selection=["aeff", "edisp", "background"])
-dataset.model = model
 print(dataset)
 
 

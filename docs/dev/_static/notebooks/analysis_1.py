@@ -302,7 +302,7 @@ print(analysis.fit_result)
 # In[ ]:
 
 
-analysis.models.to_yaml("model-best-fit.yaml")
+analysis.models.write("model-best-fit.yaml")
 
 
 # In[ ]:

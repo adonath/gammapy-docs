@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Light curve- Flare
+# # Light curve - Flare
 # 
-# To see the general presentation on our light curve estimator, please refer to the notebook `light_curve.ipynb`
+# To see the general presentation on our light curve estimator, please refer to the [light curve notebook](light_curve.ipynb)
 # 
 # Here we present the way to compute a light curve on time intervals smaller than the duration of an observation.
 # 
@@ -46,6 +46,7 @@ from gammapy.modeling import Fit
 from gammapy.cube import SafeMaskMaker
 from gammapy.spectrum import (
     SpectrumDatasetMaker,
+    SpectrumDataset,
     ReflectedRegionsBackgroundMaker,
 )
 
@@ -124,7 +125,7 @@ on_region = CircleSkyRegion(center=target_position, radius=on_region_radius)
 
 
 dataset_maker = SpectrumDatasetMaker(
-    region=on_region, e_reco=e_reco, e_true=e_true, containment_correction=True
+    containment_correction=True, selection=["counts", "aeff", "edisp"]
 )
 bkg_maker = ReflectedRegionsBackgroundMaker()
 safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
@@ -139,8 +140,12 @@ safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
 
 datasets = []
 
+dataset_empty = SpectrumDataset.create(
+    e_reco=e_reco, e_true=e_true, region=on_region
+)
+
 for obs in observations:
-    dataset = dataset_maker.run(obs, selection=["counts", "aeff", "edisp"])
+    dataset = dataset_maker.run(dataset_empty, obs)
 
     dataset_on_off = bkg_maker.run(dataset, obs)
     dataset_on_off = safe_mask_masker.run(dataset_on_off, obs)
@@ -187,12 +192,16 @@ lc_maker_1d = LightCurveEstimator(datasets, source="crab")
 lc_1d = lc_maker_1d.run(e_ref=1 * u.TeV, e_min=1.0 * u.TeV, e_max=10.0 * u.TeV)
 
 
-# ## Compare results between 1D and 3D LC
-# 
-# Finally we compare the result for the 1D and 3D lightcurve in a single figure:
+# Finally we plot the result for the 1D lightcurve:
 
 # In[ ]:
 
 
 lc_1d.plot(marker="o")
+
+
+# In[ ]:
+
+
+
 

@@ -144,9 +144,6 @@ sky_model.parameters["lat_0"].frozen = True
 # In[ ]:
 
 
-# model = {}
-# model["components"] = [sky_model.to_dict()]
-# analysis_3d.set_model(model=model)
 models = SkyModels([sky_model])
 analysis_3d.set_models(models)
 
@@ -270,9 +267,6 @@ sky_model.parameters["lat_0"].frozen = True
 # In[ ]:
 
 
-# model = {}
-# model["components"] = [sky_model.to_dict()]
-# analysis_1d.set_model(model=model)
 models = SkyModels([sky_model])
 analysis_1d.set_models(models)
 

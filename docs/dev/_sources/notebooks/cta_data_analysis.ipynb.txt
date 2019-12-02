@@ -62,7 +62,7 @@
       "\r\n",
       "Gammapy package:\r\n",
       "\r\n",
-      "\tversion                : 0.15.dev1128+g4f223a2cd \r\n",
+      "\tversion                : 0.15.dev1216+gc9e5fe40e \r\n",
       "\tpath                   : /Users/deil/work/code/gammapy-docs/build/dev/gammapy/gammapy \r\n",
       "\r\n",
       "\r\n",
@@ -106,6 +106,7 @@
     "from gammapy.modeling.models import PowerLawSpectralModel, SkyModel\n",
     "from gammapy.spectrum import (\n",
     "    SpectrumDatasetMaker,\n",
+    "    SpectrumDataset,\n",
     "    FluxPointsEstimator,\n",
     "    FluxPointsDataset,\n",
     "    ReflectedRegionsBackgroundMaker,\n",
@@ -187,7 +188,7 @@
      "data": {
       "text/html": [
        "<i>ObservationTable length=3</i>\n",
-       "<table id=\"table4732108528\" class=\"table-striped table-bordered table-condensed\">\n",
+       "<table id=\"table4616690264\" class=\"table-striped table-bordered table-condensed\">\n",
        "<thead><tr><th>OBS_ID</th><th>GLON_PNT</th><th>GLAT_PNT</th><th>LIVETIME</th></tr></thead>\n",
        "<thead><tr><th></th><th>deg</th><th>deg</th><th>s</th></tr></thead>\n",
        "<thead><tr><th>int64</th><th>float64</th><th>float64</th><th>float64</th></tr></thead>\n",
@@ -315,8 +316,8 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "CPU times: user 4.73 s, sys: 1.09 s, total: 5.82 s\n",
-      "Wall time: 5.83 s\n"
+      "CPU times: user 4.69 s, sys: 812 ms, total: 5.5 s\n",
+      "Wall time: 5.53 s\n"
      ]
     }
    ],
@@ -328,7 +329,7 @@
     "\n",
     "for obs in observations:\n",
     "    cutout = stacked.cutout(obs.pointing_radec, width=\"5 deg\")\n",
-    "    dataset = maker.run(stacked, obs)\n",
+    "    dataset = maker.run(cutout, obs)\n",
     "    dataset = maker_safe_mask.run(dataset, obs)\n",
     "    stacked.stack(dataset)"
    ]
@@ -469,8 +470,8 @@
      "output_type": "stream",
      "text": [
       "dict_keys(['ts', 'sqrt_ts', 'flux', 'flux_err', 'flux_ul', 'niter'])\n",
-      "CPU times: user 13.2 s, sys: 364 ms, total: 13.5 s\n",
-      "Wall time: 13.4 s\n"
+      "CPU times: user 20.5 s, sys: 563 ms, total: 21 s\n",
+      "Wall time: 20.9 s\n"
      ]
     }
    ],
@@ -490,7 +491,7 @@
      "data": {
       "text/html": [
        "<i>Table length=2</i>\n",
-       "<table id=\"table4733234872\" class=\"table-striped table-bordered table-condensed\">\n",
+       "<table id=\"table4641324224\" class=\"table-striped table-bordered table-condensed\">\n",
        "<thead><tr><th>value</th><th>x</th><th>y</th><th>ra</th><th>dec</th></tr></thead>\n",
        "<thead><tr><th></th><th></th><th></th><th>deg</th><th>deg</th></tr></thead>\n",
        "<thead><tr><th>float32</th><th>int64</th><th>int64</th><th>float64</th><th>float64</th></tr></thead>\n",
@@ -600,29 +601,21 @@
    "outputs": [],
    "source": [
     "e_reco = np.logspace(-1, np.log10(40), 40) * u.TeV\n",
-    "e_true = np.logspace(np.log10(0.05), 2, 200) * u.TeV"
+    "e_true = np.logspace(np.log10(0.05), 2, 200) * u.TeV\n",
+    "\n",
+    "dataset_empty = SpectrumDataset.create(\n",
+    "    e_reco=e_reco, e_true=e_true, region=on_region\n",
+    ")"
    ]
   },
   {
    "cell_type": "code",
    "execution_count": 23,
    "metadata": {},
-   "outputs": [
-    {
-     "name": "stderr",
-     "output_type": "stream",
-     "text": [
-      "WARNING: AstropyDeprecationWarning: The truth value of a Quantity is ambiguous. In the future this will raise a ValueError. [astropy.units.quantity]\n",
-      "WARNING:astropy:AstropyDeprecationWarning: The truth value of a Quantity is ambiguous. In the future this will raise a ValueError.\n"
-     ]
-    }
-   ],
+   "outputs": [],
    "source": [
     "dataset_maker = SpectrumDatasetMaker(\n",
-    "    region=on_region,\n",
-    "    e_reco=e_reco,\n",
-    "    e_true=e_true,\n",
-    "    containment_correction=False,\n",
+    "    containment_correction=False, selection=[\"counts\", \"aeff\", \"edisp\"]\n",
     ")\n",
     "bkg_maker = ReflectedRegionsBackgroundMaker(exclusion_mask=exclusion_mask)\n",
     "safe_mask_masker = SafeMaskMaker(methods=[\"aeff-max\"], aeff_percent=10)"
@@ -637,8 +630,8 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "CPU times: user 5.49 s, sys: 190 ms, total: 5.68 s\n",
-      "Wall time: 5.69 s\n"
+      "CPU times: user 9.39 s, sys: 428 ms, total: 9.81 s\n",
+      "Wall time: 9.87 s\n"
      ]
     }
    ],
@@ -647,9 +640,7 @@
     "datasets = []\n",
     "\n",
     "for observation in observations:\n",
-    "    dataset = dataset_maker.run(\n",
-    "        observation, selection=[\"counts\", \"aeff\", \"edisp\"]\n",
-    "    )\n",
+    "    dataset = dataset_maker.run(dataset_empty, observation)\n",
     "    dataset_on_off = bkg_maker.run(dataset, observation)\n",
     "    dataset_on_off = safe_mask_masker.run(dataset_on_off, observation)\n",
     "    datasets.append(dataset_on_off)"
@@ -708,8 +699,8 @@
       "\tnfev       : 108\n",
       "\ttotal stat : 75.78\n",
       "\n",
-      "CPU times: user 447 ms, sys: 2.59 ms, total: 450 ms\n",
-      "Wall time: 450 ms\n"
+      "CPU times: user 779 ms, sys: 7.56 ms, total: 787 ms\n",
+      "Wall time: 790 ms\n"
      ]
     }
    ],
@@ -791,7 +782,7 @@
      "data": {
       "text/html": [
        "<i>Table length=4</i>\n",
-       "<table id=\"table4802328672\" class=\"table-striped table-bordered table-condensed\">\n",
+       "<table id=\"table4640137624\" class=\"table-striped table-bordered table-condensed\">\n",
        "<thead><tr><th>e_ref</th><th>e_min</th><th>e_max</th><th>ref_dnde</th><th>ref_flux</th><th>ref_eflux</th><th>ref_e2dnde</th><th>norm</th><th>stat</th><th>norm_err</th><th>counts [1]</th><th>norm_errp</th><th>norm_errn</th><th>norm_ul</th><th>sqrt_ts</th><th>ts</th><th>norm_scan [11]</th><th>stat_scan [11]</th><th>dnde</th><th>dnde_ul</th><th>dnde_err</th><th>dnde_errp</th><th>dnde_errn</th></tr></thead>\n",
        "<thead><tr><th>TeV</th><th>TeV</th><th>TeV</th><th>1 / (cm2 s TeV)</th><th>1 / (cm2 s)</th><th>TeV / (cm2 s)</th><th>TeV / (cm2 s)</th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th></th><th>1 / (cm2 s TeV)</th><th>1 / (cm2 s TeV)</th><th>1 / (cm2 s TeV)</th><th>1 / (cm2 s TeV)</th><th>1 / (cm2 s TeV)</th></tr></thead>\n",
        "<thead><tr><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>int64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th><th>float64</th></tr></thead>\n",

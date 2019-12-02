@@ -80,6 +80,7 @@ from gammapy.cube import SafeMaskMaker
 from gammapy.spectrum import (
     SpectrumDatasetMaker,
     SpectrumDatasetOnOff,
+    SpectrumDataset,
     FluxPointsEstimator,
     FluxPointsDataset,
     ReflectedRegionsBackgroundMaker,
@@ -147,16 +148,16 @@ exclusion_mask.plot();
 
 e_reco = np.logspace(-1, np.log10(40), 40) * u.TeV
 e_true = np.logspace(np.log10(0.05), 2, 200) * u.TeV
+dataset_empty = SpectrumDataset.create(
+    e_reco=e_reco, e_true=e_true, region=on_region
+)
 
 
 # In[ ]:
 
 
 dataset_maker = SpectrumDatasetMaker(
-    region=on_region,
-    e_reco=e_reco,
-    e_true=e_true,
-    containment_correction=False,
+    containment_correction=False, selection=["counts", "aeff", "edisp"]
 )
 bkg_maker = ReflectedRegionsBackgroundMaker(exclusion_mask=exclusion_mask)
 safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
@@ -165,7 +166,7 @@ safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'datasets = []\n\nfor observation in observations:\n    dataset = dataset_maker.run(\n        observation, selection=["counts", "aeff", "edisp"]\n    )\n    dataset_on_off = bkg_maker.run(dataset, observation)\n    dataset_on_off = safe_mask_masker.run(dataset_on_off, observation)\n    datasets.append(dataset_on_off)')
+get_ipython().run_cell_magic('time', '', 'datasets = []\n\nfor observation in observations:\n    dataset = dataset_maker.run(dataset_empty, observation)\n    dataset_on_off = bkg_maker.run(dataset, observation)\n    dataset_on_off = safe_mask_masker.run(dataset_on_off, observation)\n    datasets.append(dataset_on_off)')
 
 
 # ## Plot off regions
@@ -293,7 +294,7 @@ print(result_joint)
 
 plt.figure(figsize=(8, 6))
 ax_spectrum, ax_residual = datasets[0].plot_fit()
-ax_spectrum.set_ylim(0, 25)
+ax_spectrum.set_ylim(0.1, 40)
 
 
 # ## Compute Flux Points

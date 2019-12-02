@@ -38,6 +38,7 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 # In[ ]:
 
 
+import numpy as np
 from astropy import units as u
 from gammapy.modeling.models import (
     PowerLawSpectralModel,
@@ -46,11 +47,7 @@ from gammapy.modeling.models import (
     SkyModel,
 )
 from gammapy.spectrum import FluxPointsDataset, FluxPoints
-from gammapy.catalog import (
-    SourceCatalog3FGL,
-    SourceCatalogGammaCat,
-    SourceCatalog3FHL,
-)
+from gammapy.catalog import SOURCE_CATALOGS
 from gammapy.modeling import Fit
 
 
@@ -61,19 +58,17 @@ from gammapy.modeling import Fit
 # In[ ]:
 
 
-fermi_3fgl = SourceCatalog3FGL()
-fermi_3fhl = SourceCatalog3FHL()
-gammacat = SourceCatalogGammaCat(
-    "$GAMMAPY_DATA/catalogs/gammacat/gammacat.fits.gz"
-)
+catalog_3fgl = SOURCE_CATALOGS["3fgl"]()
+catalog_3fhl = SOURCE_CATALOGS["3fhl"]()
+catalog_gammacat = SOURCE_CATALOGS["gamma-cat"]()
 
 
 # In[ ]:
 
 
-source_gammacat = gammacat["HESS J1507-622"]
-source_fermi_3fgl = fermi_3fgl["3FGL J1506.6-6219"]
-source_fermi_3fhl = fermi_3fhl["3FHL J1507.9-6228e"]
+source_fermi_3fgl = catalog_3fgl["3FGL J1506.6-6219"]
+source_fermi_3fhl = catalog_3fhl["3FHL J1507.9-6228e"]
+source_gammacat = catalog_gammacat["HESS J1507-622"]
 
 
 # The corresponding flux points data can be accessed with `.flux_points` attribute:
@@ -103,13 +98,18 @@ flux_points_3fhl = source_fermi_3fhl.flux_points.to_sed_type(
 # In[ ]:
 
 
-# stack flux point tables
+# Stack flux point tables
 flux_points = FluxPoints.stack(
     [flux_points_gammacat, flux_points_3fhl, flux_points_3fgl]
 )
 
-# drop the flux upper limit values
-flux_points = flux_points.drop_ul()
+t = flux_points.table
+t["dnde_err"] = 0.5 * (t["dnde_errn"] + t["dnde_errp"])
+
+# Remove upper limit points, where `dnde_errn = nan`
+is_ul = np.isfinite(t["dnde_err"])
+flux_points = FluxPoints(t[is_ul])
+flux_points
 
 
 # ## Power Law Fit
@@ -130,7 +130,7 @@ model = SkyModel(spectral_model=pwl)
 # In[ ]:
 
 
-dataset_pwl = FluxPointsDataset(model, flux_points, likelihood="chi2assym")
+dataset_pwl = FluxPointsDataset(model, flux_points)
 fitter = Fit([dataset_pwl])
 result_pwl = fitter.run()
 
@@ -185,7 +185,7 @@ model = SkyModel(spectral_model=ecpl)
 # In[ ]:
 
 
-dataset_ecpl = FluxPointsDataset(model, flux_points, likelihood="chi2assym")
+dataset_ecpl = FluxPointsDataset(model, flux_points)
 fitter = Fit([dataset_ecpl])
 result_ecpl = fitter.run()
 print(ecpl)
@@ -222,9 +222,7 @@ model = SkyModel(spectral_model=log_parabola)
 # In[ ]:
 
 
-dataset_log_parabola = FluxPointsDataset(
-    model, flux_points, likelihood="chi2assym"
-)
+dataset_log_parabola = FluxPointsDataset(model, flux_points)
 fitter = Fit([dataset_log_parabola])
 result_log_parabola = fitter.run()
 print(log_parabola)

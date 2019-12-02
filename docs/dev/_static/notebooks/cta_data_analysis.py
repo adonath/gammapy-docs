@@ -40,6 +40,7 @@ from gammapy.data import DataStore
 from gammapy.modeling.models import PowerLawSpectralModel, SkyModel
 from gammapy.spectrum import (
     SpectrumDatasetMaker,
+    SpectrumDataset,
     FluxPointsEstimator,
     FluxPointsDataset,
     ReflectedRegionsBackgroundMaker,
@@ -143,7 +144,7 @@ exclusion_mask.plot();
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'stacked = MapDataset.create(geom=geom)\nmaker = MapDatasetMaker(selection=["counts", "background", "exposure"])\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=2.5 * u.deg)\n\nfor obs in observations:\n    cutout = stacked.cutout(obs.pointing_radec, width="5 deg")\n    dataset = maker.run(stacked, obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n    stacked.stack(dataset)')
+get_ipython().run_cell_magic('time', '', 'stacked = MapDataset.create(geom=geom)\nmaker = MapDatasetMaker(selection=["counts", "background", "exposure"])\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=2.5 * u.deg)\n\nfor obs in observations:\n    cutout = stacked.cutout(obs.pointing_radec, width="5 deg")\n    dataset = maker.run(cutout, obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n    stacked.stack(dataset)')
 
 
 # In[ ]:
@@ -248,15 +249,16 @@ plt.gca().scatter(
 e_reco = np.logspace(-1, np.log10(40), 40) * u.TeV
 e_true = np.logspace(np.log10(0.05), 2, 200) * u.TeV
 
+dataset_empty = SpectrumDataset.create(
+    e_reco=e_reco, e_true=e_true, region=on_region
+)
+
 
 # In[ ]:
 
 
 dataset_maker = SpectrumDatasetMaker(
-    region=on_region,
-    e_reco=e_reco,
-    e_true=e_true,
-    containment_correction=False,
+    containment_correction=False, selection=["counts", "aeff", "edisp"]
 )
 bkg_maker = ReflectedRegionsBackgroundMaker(exclusion_mask=exclusion_mask)
 safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
@@ -265,7 +267,7 @@ safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'datasets = []\n\nfor observation in observations:\n    dataset = dataset_maker.run(\n        observation, selection=["counts", "aeff", "edisp"]\n    )\n    dataset_on_off = bkg_maker.run(dataset, observation)\n    dataset_on_off = safe_mask_masker.run(dataset_on_off, observation)\n    datasets.append(dataset_on_off)')
+get_ipython().run_cell_magic('time', '', 'datasets = []\n\nfor observation in observations:\n    dataset = dataset_maker.run(dataset_empty, observation)\n    dataset_on_off = bkg_maker.run(dataset, observation)\n    dataset_on_off = safe_mask_masker.run(dataset_on_off, observation)\n    datasets.append(dataset_on_off)')
 
 
 # In[ ]:
