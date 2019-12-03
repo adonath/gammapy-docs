@@ -21,12 +21,12 @@ from gammapy.analysis import Analysis, AnalysisConfig
 from gammapy.modeling.models import (
     SkyModel,
     SkyModels,
-    SkyDiffuseCube,
     ExpCutoffPowerLawSpectralModel,
     PointSpatialModel,
 )
 from gammapy.modeling import Fit
 from gammapy.spectrum import FluxPointsEstimator
+from gammapy.maps import Map
 
 
 # ## Analysis configuration
@@ -65,7 +65,7 @@ config.datasets.geom.wcs.fov = {"width": "10 deg", "height": "8 deg"}
 config.datasets.geom.wcs.binsize = "0.02 deg"
 
 # The FoV offset cut
-config.datasets.geom.selection.offset_max = 4.0 * u.deg
+config.datasets.geom.selection.offset_max = 3.5 * u.deg
 
 # We now fix the energy axis for the counts map - (the reconstructed energy binning)
 config.datasets.geom.axes.energy.min = "0.1 TeV"
@@ -73,9 +73,9 @@ config.datasets.geom.axes.energy.max = "10 TeV"
 config.datasets.geom.axes.energy.nbins = 10
 
 # We now fix the energy axis for the IRF maps (exposure, etc) - (the true enery binning)
-config.datasets.geom.axes.energy_true.min = "0.02 TeV"
-config.datasets.geom.axes.energy_true.max = "20 TeV"
-config.datasets.geom.axes.energy_true.nbins = 20
+config.datasets.geom.axes.energy_true.min = "0.08 TeV"
+config.datasets.geom.axes.energy_true.max = "12 TeV"
+config.datasets.geom.axes.energy_true.nbins = 14
 
 
 # In[ ]:
@@ -139,20 +139,15 @@ get_ipython().run_cell_magic('time', '', '# select observations:\nanalysis_stack
 # In[ ]:
 
 
-print(analysis_stacked.datasets)
-
-
-# In[ ]:
-
-
-print(analysis_stacked.datasets["stacked"])
+dataset_stacked = analysis_stacked.datasets["stacked"]
+print(dataset_stacked)
 
 
 # In[ ]:
 
 
 # To plot a smooth counts map
-analysis_stacked.datasets["stacked"].counts.smooth(
+dataset_stacked.counts.smooth(
     0.02 * u.deg
 ).plot_interactive(add_cbar=True)
 
@@ -161,21 +156,17 @@ analysis_stacked.datasets["stacked"].counts.smooth(
 
 
 # And the background map
-analysis_stacked.datasets["stacked"].background_model.map.smooth(
-    0.02 * u.deg
-).plot_interactive(add_cbar=True)
+dataset_stacked.background_model.map.plot_interactive(add_cbar=True)
 
 
 # In[ ]:
 
 
 # You can also get an excess image with a few lines of code:
-counts = analysis_stacked.datasets["stacked"].counts.sum_over_axes()
-background = analysis_stacked.datasets[
-    "stacked"
-].background_model.map.sum_over_axes()
+counts = dataset_stacked.counts.sum_over_axes()
+background = dataset_stacked.background_model.map.sum_over_axes()
 excess = counts - background
-excess.smooth(5).plot(stretch="sqrt", add_cbar=True);
+excess.smooth("0.06 deg").plot(stretch="sqrt", add_cbar=True);
 
 
 # ### Modeling and fitting
@@ -189,39 +180,38 @@ excess.smooth(5).plot(stretch="sqrt", add_cbar=True);
 # In[ ]:
 
 
-coords = analysis_stacked.datasets["stacked"].counts.geom.get_coord()
+coords = dataset_stacked.counts.geom.get_coord()
 mask_energy = coords["energy"] > 0.3 * u.TeV
-analysis_stacked.datasets["stacked"].mask_safe.data &= mask_energy
+dataset_stacked.mask_fit = Map.from_geom(geom=dataset_stacked.counts.geom, data=mask_energy)
 
 
 # In[ ]:
 
 
 spatial_model = PointSpatialModel(
-    lon_0="0.01 deg", lat_0="0.01 deg", frame="galactic"
+    lon_0="-0.05 deg", lat_0="-0.05 deg", frame="galactic"
 )
 spectral_model = ExpCutoffPowerLawSpectralModel(
-    index=2,
-    amplitude=3e-12 * u.Unit("cm-2 s-1 TeV-1"),
+    index=2.3,
+    amplitude=2.8e-12 * u.Unit("cm-2 s-1 TeV-1"),
     reference=1.0 * u.TeV,
-    lambda_=0.1 / u.TeV,
+    lambda_=0.02 / u.TeV,
 )
 
-sky_model = SkyModel(
+model = SkyModel(
     spatial_model=spatial_model,
     spectral_model=spectral_model,
     name="gc-source",
 )
-model = sky_model.copy()
-analysis_stacked.datasets["stacked"].models = model
 
-analysis_stacked.datasets["stacked"].background_model.norm.value = 1.3
+dataset_stacked.models = model
+dataset_stacked.background_model.norm.value = 1.3
 
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'fit = Fit(analysis_stacked.datasets)\nresult = fit.run(optimize_opts={"print_level": 1})')
+get_ipython().run_cell_magic('time', '', 'fit = Fit([dataset_stacked])\nresult = fit.run(optimize_opts={"print_level": 1})')
 
 
 # In[ ]:
@@ -237,111 +227,12 @@ result.parameters.to_table()
 # In[ ]:
 
 
-analysis_stacked.datasets["stacked"].plot_residuals(
+dataset_stacked.plot_residuals(
     method="diff/sqrt(model)", vmin=-1, vmax=1
 )
 
 
 # We can also plot the best fit spectrum. For that need to extract the covariance of the spectral parameters.
-
-# In[ ]:
-
-
-spec = model.spectral_model
-
-# set covariance on the spectral model
-covar = result.parameters.get_subcovariance(spec.parameters)
-spec.parameters.covariance = covar
-
-energy_range = [0.3, 10] * u.TeV
-spec.plot(energy_range=energy_range, energy_power=2)
-spec.plot_error(energy_range=energy_range, energy_power=2)
-
-
-# The high value of the background normalisation `norm = 1.24` suggests that our model should be improved by adding a component for diffuse Galactic emission and at least one second point source.
-
-# ### Galactic diffuse emission
-# 
-# We use both models at the same time, our diffuse model (from the Fermi diffuse model) and our model for the central source. This time, in order to make it more realistic, we will consider an exponential cut off power law spectral model for the source. We will fit again the normalization and tilt of the background.
-
-# In[ ]:
-
-
-diffuse_model = SkyDiffuseCube.read(
-    "$GAMMAPY_DATA/fermi-3fhl-gc/gll_iem_v06_gc.fits.gz"
-)
-
-
-# In[ ]:
-
-
-dataset_stacked = analysis_stacked.datasets["stacked"].copy()
-
-
-# In[ ]:
-
-
-dataset_stacked.models = SkyModels([model, diffuse_model])
-
-
-# In[ ]:
-
-
-# As we can see we have now two components in our model, and we can access them separately.
-print(dataset_stacked)
-
-
-# In[ ]:
-
-
-get_ipython().run_cell_magic('time', '', 'fit_combined = Fit([dataset_stacked])\nresult_combined = fit_combined.run()')
-
-
-# In[ ]:
-
-
-result_combined.parameters.to_table()
-
-
-# You can see that the normalization of the background has vastly improved
-
-# Just as a comparison, we can the previous residual map (top) and the new one (bottom) with the same scale:
-
-# In[ ]:
-
-
-analysis_stacked.datasets["stacked"].plot_residuals(vmin=-1, vmax=1)
-dataset_stacked.plot_residuals(vmin=-1, vmax=1);
-
-
-# ### Flux points
-# 
-# Finally we compute flux points for the galactic center source. For this we first define an energy binning:
-
-# In[ ]:
-
-
-e_edges = [0.3, 1, 3, 10] * u.TeV
-fpe = FluxPointsEstimator(
-    datasets=[dataset_stacked], e_edges=e_edges, source="gc-source-copy"
-)
-
-
-# In[ ]:
-
-
-get_ipython().run_cell_magic('time', '', 'flux_points = fpe.run()')
-
-
-# Now let's plot the best fit model and flux points:
-
-# In[ ]:
-
-
-flux_points.table["is_ul"] = flux_points.table["ts"] < 4
-ax = flux_points.plot(energy_power=2)
-model.spectral_model.plot(ax=ax, energy_range=energy_range, energy_power=2);
-
 
 # ## Joint analysis
 # 
@@ -373,9 +264,10 @@ print(analysis_joint.datasets["obs_110380"])
 
 
 # Add the model on each of the datasets
-model = sky_model.copy()
+model_joint = model.copy()
 for dataset in analysis_joint.datasets:
-    dataset.models = model
+    dataset.models = model_joint
+    dataset.background_model.norm.value = 1.1
 
 
 # In[ ]:
@@ -428,7 +320,14 @@ for dataset in analysis_joint.datasets:
 # In[ ]:
 
 
-from gammapy.maps import Map
+for dataset in analysis_joint.datasets:
+    ax_image, ax_spec = dataset.plot_residuals(
+        region=region, vmin=-0.5, vmax=0.5, method="diff"
+    )
+
+
+# In[ ]:
+
 
 # We need to stack on the full geometry, so we use to geom from the stacked counts map.
 residuals_stacked = Map.from_geom(analysis_stacked.datasets[0].counts.geom)
@@ -437,14 +336,39 @@ for dataset in analysis_joint.datasets:
     residuals = dataset.residuals()
     residuals_stacked.stack(residuals)
 
-    residuals_stacked.sum_over_axes().smooth("0.08 deg").plot(
-        vmin=-1, vmax=1, cmap="coolwarm", add_cbar=True, stretch="linear"
-    );
+residuals_stacked.sum_over_axes().smooth("0.08 deg").plot(
+    vmin=-1, vmax=1, cmap="coolwarm", add_cbar=True, stretch="linear"
+);
+
+
+# Finally let us compare the spectral results from the stacked and joint fit:
+
+# In[ ]:
+
+
+def plot_spectrum(model, result, label):
+    spec = model.spectral_model
+
+    # set covariance on the spectral model
+    covar = result.parameters.get_subcovariance(spec.parameters)
+    spec.parameters.covariance = covar
+
+    energy_range = [0.3, 10] * u.TeV
+    spec.plot(energy_range=energy_range, energy_power=2, label=label)
+    spec.plot_error(energy_range=energy_range, energy_power=2)
+
+
+# In[ ]:
+
+
+plot_spectrum(model, result, label="stacked")
+plot_spectrum(model_joint, result_joint, label="joint")
+plt.legend()
 
 
 # ## Summary
 # 
-# Note that this notebook aims to show you the procedure of a 3D analysis using just a few observations and a cutted Fermi model. Results get much better for a more complete analysis considering the GPS dataset from the CTA First Data Challenge (DC-1) and also the CTA model for the Galactic diffuse emission, as shown in the next image:
+# Note that this notebook aims to show you the procedure of a 3D analysis using just a few observations. Results get much better for a more complete analysis considering the GPS dataset from the CTA First Data Challenge (DC-1) and also the CTA model for the Galactic diffuse emission, as shown in the next image:
 
 # ![](images/DC1_3d.png)
 
@@ -453,4 +377,4 @@ for dataset in analysis_joint.datasets:
 # ## Exercises
 # 
 # * Analyse the second source in the field of view: G0.9+0.1 and add it to the combined model.
-# * Perform joint fit in more details - Add diffuse component, get flux points.
+# * Perform modeling in more details - Add diffuse component, get flux points.

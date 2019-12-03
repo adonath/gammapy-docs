@@ -61,14 +61,6 @@ from gammapy.spectrum import FluxPointsEstimator
 data_store = DataStore.from_dir("$GAMMAPY_DATA/hess-dl3-dr1")
 
 
-# We can briefly inspect observations it contains by looking at the `~gammapy.data.ObservationTable` which summarizes informations for all observations in the `DataStore`.
-
-# In[ ]:
-
-
-data_store.obs_table
-
-
 # We can now define an observation filter to select only the relevant observations. 
 # Here we use a cone search which we define with a python dict.
 # 
@@ -83,7 +75,6 @@ selection = dict(
     lon="83.633 deg",
     lat="22.014 deg",
     radius="5 deg",
-    border="0 deg",
 )
 selected_obs_table = data_store.obs_table.select_observations(selection)
 
@@ -233,10 +224,65 @@ get_ipython().run_cell_magic('time', '', 'fit = Fit([stacked])\nresult = fit.run
 result.parameters.to_table()
 
 
+# ### Inspecting residuals
+# 
+# For any fit it is usefull to inspect the residual images. We have a few option on the dataset object to handle this. First we can use `.plot_residuals()` to plot a residual image, summed over all energies: 
+
 # In[ ]:
 
 
-stacked.plot_residuals(method="diff/sqrt(model)", vmin=-1, vmax=1)
+stacked.plot_residuals(method="diff/sqrt(model)", vmin=-0.5, vmax=0.5)
+
+
+# In addition we can aslo specify a region in the map to show the spectral residuals:
+
+# In[ ]:
+
+
+region = CircleSkyRegion(
+    center=SkyCoord("83.63 deg", "22.14 deg"), radius=0.5 * u.deg
+)
+
+
+# In[ ]:
+
+
+stacked.plot_residuals(
+    region=region, method="diff/sqrt(model)", vmin=-0.5, vmax=0.5
+)
+
+
+# We can also directly access the `.residuals()` to get a map, that we can plot interactively:
+
+# In[ ]:
+
+
+residuals = stacked.residuals(method="diff")
+residuals.smooth("0.08 deg").plot_interactive(
+    cmap="coolwarm", vmin=-0.1, vmax=0.1, stretch="linear", add_cbar=True
+)
+
+
+# ### Inspecting fit statistic profiles
+# 
+# To check the quality of the fit it is also useful to plot fit statistic profiles for specific parameters.
+# For this we use `~gammapy.modeling.Fit.stat_profile()`.
+
+# In[ ]:
+
+
+profile = fit.stat_profile(parameter="lon_0")
+
+
+# For a good fit and error estimate the profile should be parabolic, if we plot it:
+
+# In[ ]:
+
+
+total_stat = result.total_stat
+plt.plot(profile["values"], profile["stat"] - total_stat)
+plt.xlabel("Lon (deg)")
+plt.ylabel("Delta TS")
 
 
 # ## Plot the fitted spectrum

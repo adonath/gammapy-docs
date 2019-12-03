@@ -28,7 +28,7 @@ from gammapy.maps import WcsGeom, MapAxis, WcsNDMap
 from gammapy.modeling.models import PowerLawSpectralModel
 from gammapy.modeling.models import GaussianSpatialModel
 from gammapy.modeling.models import SkyModel, BackgroundModel
-from gammapy.cube import MapDataset, MapDatasetMaker
+from gammapy.cube import MapDataset, MapDatasetMaker, SafeMaskMaker
 from gammapy.modeling import Fit
 from gammapy.data import Observation
 
@@ -88,12 +88,14 @@ spectral_model = PowerLawSpectralModel(
     index=3, amplitude="1e-11 cm-2 s-1 TeV-1", reference="1 TeV"
 )
 model_simu = SkyModel(
-    spatial_model=spatial_model, spectral_model=spectral_model
+    spatial_model=spatial_model,
+    spectral_model=spectral_model,
+    name="model_simu",
 )
 print(model_simu)
 
 
-# Now, comes the main part of dataset simulation. We create an in-memory observation and an empty dataset. We then predict the number of counts for the given model, and Poission fluctuate it using `fake()` to make a simulated counts maps.
+# Now, comes the main part of dataset simulation. We create an in-memory observation and an empty dataset. We then predict the number of counts for the given model, and Poission fluctuate it using `fake()` to make a simulated counts maps. Keep in mind that it is important to specify the `selection` of the maps that you want to produce 
 
 # In[ ]:
 
@@ -104,30 +106,17 @@ print(obs)
 # Make the MapDataset
 empty = MapDataset.create(geom)
 maker = MapDatasetMaker(selection=["exposure", "background", "psf", "edisp"])
+maker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=4.0 * u.deg)
 dataset = maker.run(empty, obs)
+dataset = maker_safe_mask.run(dataset, obs)
 print(dataset)
 
 
 # In[ ]:
 
 
-# Ugly lines to change PSF and EDISP maps - will be removed soon
-dataset.edisp = dataset.edisp.get_energy_dispersion(
-    position=SkyCoord(0, 0, unit="deg", frame="galactic"),
-    e_reco=energy_reco.edges,
-)
-dataset.psf = dataset.psf.get_psf_kernel(
-    position=SkyCoord(0, 0, unit="deg", frame="galactic"),
-    geom=geom,
-    max_radius="0.6 deg",
-)
-
-
-# In[ ]:
-
-
 # Add the model on the dataset and Poission fluctuate
-dataset.model = model_simu
+dataset.models = model_simu
 dataset.fake()
 # Do a print on the dataset - there is now a counts maps
 print(dataset)
@@ -167,10 +156,12 @@ spectral_model1 = PowerLawSpectralModel(
     index=2, amplitude="1e-11 cm-2 s-1 TeV-1", reference="1 TeV"
 )
 model_fit = SkyModel(
-    spatial_model=spatial_model1, spectral_model=spectral_model1
+    spatial_model=spatial_model1,
+    spectral_model=spectral_model1,
+    name="model_fit",
 )
 
-dataset1.model = model_fit
+dataset1.models = model_fit
 print(model_fit)
 
 
@@ -206,7 +197,7 @@ dataset1.plot_residuals(method="diff/sqrt(model)", vmin=-0.5, vmax=0.5)
 print("True model: \n", model_simu, "\n\n Fitted model: \n", model_fit)
 
 
-# Check the parameter table to see the best fit values along with the errors obtained from the covariance matrix
+# Get the errors on the fitted parameters from the parameter table
 
 # In[ ]:
 

@@ -31,9 +31,8 @@ import matplotlib.pyplot as plt
 # In[ ]:
 
 
+from pathlib import Path
 from astropy import units as u
-from astropy.coordinates import SkyCoord
-from regions import CircleSkyRegion
 from gammapy.analysis import Analysis, AnalysisConfig
 from gammapy.modeling.models import create_crab_spectral_model
 
@@ -162,21 +161,7 @@ analysis.get_observations()
 analysis.observations.ids
 
 
-# Now we can access and inspect individual observations by accessing with the observation id:
-
-# In[ ]:
-
-
-print(analysis.observations["23592"])
-
-
-# And also show a few overview plots using the `.peek()` method:
-
-# In[ ]:
-
-
-analysis.observations["23592"].peek()
-
+# To see how to explore observations, please refer to the following notebook: [CTA with Gammapy](cta.ipynb) or  [HESS with Gammapy](hess.ipynb) 
 
 # ## Data reduction
 # 
@@ -188,15 +173,7 @@ analysis.observations["23592"].peek()
 get_ipython().run_cell_magic('time', '', 'analysis.get_datasets()')
 
 
-# As we have chosen to stack the data, there is finally one dataset contained:
-
-# In[ ]:
-
-
-print(analysis.datasets)
-
-
-# We can print the dataset as well:
+# As we have chosen to stack the data, there is finally one dataset contained which we can print:
 
 # In[ ]:
 
@@ -212,23 +189,32 @@ print(analysis.datasets["stacked"])
 
 
 counts = analysis.datasets["stacked"].counts
-
-
-# In[ ]:
-
-
-print(counts)
-
-
-# In[ ]:
-
-
 counts.smooth("0.05 deg").plot_interactive()
+
+
+# ## Save dataset to disk
+# 
+# It is common to run the preparation step independent of the likelihood fit, because often the preparation of maps, PSF and energy dispersion is slow if you have a lot of data. We first create a folder:
+
+# In[ ]:
+
+
+path = Path("analysis_1")
+path.mkdir(exist_ok=True)
+
+
+# And then write the maps and IRFs to disk by calling the dedicated `write()` method:
+
+# In[ ]:
+
+
+filename = path / "crab-stacked-dataset.fits.gz"
+analysis.datasets[0].write(filename, overwrite=True)
 
 
 # ## Model fitting
 # 
-# Now we define a model to be fitted to the dataset:
+# Now we define a model to be fitted to the dataset. Here we use its YAML definition to load it:
 
 # In[ ]:
 
@@ -271,18 +257,6 @@ components:
 analysis.set_models(model_config)
 
 
-# In[ ]:
-
-
-print(analysis.models)
-
-
-# In[ ]:
-
-
-print(analysis.models["crab"])
-
-
 # Finally we run the fit:
 
 # In[ ]:
@@ -302,76 +276,14 @@ print(analysis.fit_result)
 # In[ ]:
 
 
-analysis.models.write("model-best-fit.yaml")
+filename = path / "model-best-fit.yaml"
+analysis.models.write(filename, overwrite=True)
 
 
 # In[ ]:
 
 
-get_ipython().system('cat model-best-fit.yaml')
-
-
-# ### Inspecting residuals
-# 
-# For any fit it is usefull to inspect the residual images. We have a few option on the dataset object to handle this. First we can use `.plot_residuals()` to plot a residual image, summed over all energies: 
-
-# In[ ]:
-
-
-analysis.datasets["stacked"].plot_residuals(
-    method="diff/sqrt(model)", vmin=-0.5, vmax=0.5
-);
-
-
-# In addition we can aslo specify a region in the map to show the spectral residuals:
-
-# In[ ]:
-
-
-region = CircleSkyRegion(
-    center=SkyCoord("83.63 deg", "22.14 deg"), radius=0.5 * u.deg
-)
-
-
-# In[ ]:
-
-
-analysis.datasets["stacked"].plot_residuals(
-    region=region, method="diff/sqrt(model)", vmin=-0.5, vmax=0.5
-);
-
-
-# We can also directly access the `.residuals()` to get a map, that we can plot interactively:
-
-# In[ ]:
-
-
-residuals = analysis.datasets["stacked"].residuals(method="diff")
-residuals.smooth("0.08 deg").plot_interactive(
-    cmap="coolwarm", vmin=-0.1, vmax=0.1, stretch="linear", add_cbar=True
-)
-
-
-# ### Inspecting fit statistic profiles
-# 
-# To check the quality of the fit it is also useful to plot fit statistic profiles for specific parameters.
-# For this we use `~gammapy.modeling.Fit.stat_profile()`.
-
-# In[ ]:
-
-
-profile = analysis.fit.stat_profile(parameter="lon_0")
-
-
-# For a good fit and error estimate the profile should be parabolic, if we plot it:
-
-# In[ ]:
-
-
-total_stat = analysis.fit_result.total_stat
-plt.plot(profile["values"], profile["stat"] - total_stat)
-plt.xlabel("Lon (deg)")
-plt.ylabel("Delta TS")
+get_ipython().system('cat analysis_1/model-best-fit.yaml')
 
 
 # ### Flux points
@@ -387,16 +299,25 @@ analysis.get_flux_points(source="crab")
 
 plt.figure(figsize=(8, 5))
 ax_sed, ax_residuals = analysis.flux_points.peek()
-crab_spectrum = create_crab_spectral_model("hess_pl")
-crab_spectrum.plot(
-    ax=ax_sed,
-    energy_range=[1, 10] * u.TeV,
-    energy_power=2,
-    flux_unit="erg-1 cm-2 s-1",
-)
 
 
-# ## Exercises
+# The flux points can be exported to a fits table following the format defined [here](https://gamma-astro-data-formats.readthedocs.io/en/latest/spectra/flux_points/index.html) 
+
+# In[ ]:
+
+
+filename = path / "flux-points.fits"
+analysis.flux_points.write(filename, overwrite=True)
+
+
+# ## What's next
 # 
-# - Run a spectral analysis using reflected regions without stacking the datasets. You can use `AnalysisConfig.from_template("1d")` to get an example configuration file. Add the resulting flux points to the SED plotted above. 
+# You can look at the same analysis without the high level interface in [analysis_2](analysis_2.ipynb)
 # 
+# You can see how to perform a 1D spectral analysis of the same data in [spectrum analysis](spectrum_analysis.ipynb)
+
+# In[ ]:
+
+
+
+
