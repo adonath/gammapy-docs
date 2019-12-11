@@ -23,24 +23,29 @@ Special versions:
 
 ## Howto
 
+First make sure you have the full datasets available under $GAMMAPY_DATA. They are downloaded with `gammapy download datasets`.
 
-## Update dev version
+### Update dev version
+
+*Beware: the command `git clean -fdx` will remove all untracked files and directories* 
+
+Below we assume that the gammapy and the gammapy-docs are installed in the same directory.
 
 ```
-cd build/dev/gammapy
+cd gammapy
 git clean -fdx
 git pull
 python setup.py develop
 time make docs-all
-cd ../../..
+cd ../gammapy-docs
 rm -r docs/dev
-cp -r build/dev/gammapy/docs/_build/html docs/dev
+cp -r ../gammapy/docs/_build/html docs/dev
 git add docs/dev
 git commit -m 'update docs/dev'
 git push
 ```
 
-## Update a stable version
+### Update a stable version
 
 ```
 cd build
@@ -66,7 +71,6 @@ https://github.com/cdeil/gammapy-docs-rtd-archive
 
 ## TODO
 
-* How to fetch the right version of `gammapy-extra`?
 * How to set up a conda env for older versions?
 * How to avoid the repo from growing forever, i.e. discarding old committed versions in `docs/dev`?
 
