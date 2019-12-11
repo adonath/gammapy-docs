@@ -22,12 +22,12 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 
 import numpy as np
 import astropy.units as u
-from astropy.coordinates import Angle, SkyCoord
+from astropy.coordinates import SkyCoord
 from gammapy.irf import load_cta_irfs
-from gammapy.maps import WcsGeom, MapAxis, WcsNDMap
+from gammapy.maps import WcsGeom, MapAxis
 from gammapy.modeling.models import PowerLawSpectralModel
 from gammapy.modeling.models import GaussianSpatialModel
-from gammapy.modeling.models import SkyModel, BackgroundModel
+from gammapy.modeling.models import SkyModel
 from gammapy.cube import MapDataset, MapDatasetMaker, SafeMaskMaker
 from gammapy.modeling import Fit
 from gammapy.data import Observation

@@ -49,7 +49,6 @@ from gammapy.maps import Map, MapAxis, WcsNDMap, WcsGeom
 from gammapy.modeling.models import (
     PowerLawSpectralModel,
     PointSpatialModel,
-    ConstantSpatialModel,
     SkyModel,
     SkyDiffuseCube,
     SkyModels,

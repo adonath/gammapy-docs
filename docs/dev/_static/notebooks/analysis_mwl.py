@@ -20,8 +20,6 @@
 # In[ ]:
 
 
-import os
-import numpy as np
 from astropy import units as u
 import matplotlib.pyplot as plt
 from gammapy.modeling import Fit, Datasets

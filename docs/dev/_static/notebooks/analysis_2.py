@@ -40,7 +40,7 @@ from regions import CircleSkyRegion
 
 
 from gammapy.data import DataStore
-from gammapy.maps import WcsGeom, MapAxis, Map
+from gammapy.maps import WcsGeom, MapAxis
 from gammapy.cube import MapDatasetMaker, MapDataset, SafeMaskMaker
 from gammapy.modeling.models import (
     SkyModel,

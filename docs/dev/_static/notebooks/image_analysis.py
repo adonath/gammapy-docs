@@ -33,7 +33,6 @@ from gammapy.data import DataStore
 from gammapy.irf import make_mean_psf
 from gammapy.maps import Map, MapAxis, WcsGeom
 from gammapy.cube import (
-    MapDatasetMaker,
     SafeMaskMaker,
     PSFKernel,
     MapDataset,

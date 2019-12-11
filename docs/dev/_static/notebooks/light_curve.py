@@ -24,7 +24,6 @@
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
-import numpy as np
 
 import astropy.units as u
 from astropy.coordinates import SkyCoord
@@ -40,7 +39,6 @@ log = logging.getLogger(__name__)
 # In[ ]:
 
 
-from gammapy.data import DataStore
 from gammapy.modeling.models import PowerLawSpectralModel
 from gammapy.modeling.models import PointSpatialModel
 from gammapy.modeling.models import SkyModel, SkyModels
@@ -51,7 +49,7 @@ from gammapy.analysis import Analysis, AnalysisConfig
 # ## Analysis configuration 
 # For the 1D and 3D extraction, we will use the same CrabNebula configuration than in the notebook analysis_1.ipynb using the high level interface of Gammapy.
 # 
-# From the high level interface, the datareduction for those observations is performed as followed
+# From the high level interface, the data reduction for those observations is performed as followed
 
 # ### Building the 3D analysis configuration
 # 

@@ -13,19 +13,16 @@
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
-import numpy as np
 import astropy.units as u
 from pathlib import Path
 from regions import CircleSkyRegion
 from gammapy.analysis import Analysis, AnalysisConfig
 from gammapy.modeling.models import (
     SkyModel,
-    SkyModels,
     ExpCutoffPowerLawSpectralModel,
     PointSpatialModel,
 )
 from gammapy.modeling import Fit
-from gammapy.spectrum import FluxPointsEstimator
 from gammapy.maps import Map
 
 
@@ -147,9 +144,7 @@ print(dataset_stacked)
 
 
 # To plot a smooth counts map
-dataset_stacked.counts.smooth(
-    0.02 * u.deg
-).plot_interactive(add_cbar=True)
+dataset_stacked.counts.smooth(0.02 * u.deg).plot_interactive(add_cbar=True)
 
 
 # In[ ]:
@@ -182,7 +177,9 @@ excess.smooth("0.06 deg").plot(stretch="sqrt", add_cbar=True);
 
 coords = dataset_stacked.counts.geom.get_coord()
 mask_energy = coords["energy"] > 0.3 * u.TeV
-dataset_stacked.mask_fit = Map.from_geom(geom=dataset_stacked.counts.geom, data=mask_energy)
+dataset_stacked.mask_fit = Map.from_geom(
+    geom=dataset_stacked.counts.geom, data=mask_energy
+)
 
 
 # In[ ]:
@@ -227,9 +224,7 @@ result.parameters.to_table()
 # In[ ]:
 
 
-dataset_stacked.plot_residuals(
-    method="diff/sqrt(model)", vmin=-1, vmax=1
-)
+dataset_stacked.plot_residuals(method="diff/sqrt(model)", vmin=-1, vmax=1)
 
 
 # We can also plot the best fit spectrum. For that need to extract the covariance of the spectral parameters.

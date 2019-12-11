@@ -36,7 +36,6 @@ from astropy.coordinates import SkyCoord, Angle
 from regions import CircleSkyRegion
 from gammapy.spectrum import (
     SpectrumDatasetOnOff,
-    CountsSpectrum,
     SpectrumDataset,
     SpectrumDatasetMaker,
 )
