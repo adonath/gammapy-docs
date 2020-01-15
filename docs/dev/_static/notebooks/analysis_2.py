@@ -101,7 +101,7 @@ geom = WcsGeom.create(
     skydir=(83.633, 22.014),
     binsz=0.02,
     width=(2, 2),
-    coordsys="CEL",
+    frame="icrs",
     proj="CAR",
     axes=[energy_axis],
 )

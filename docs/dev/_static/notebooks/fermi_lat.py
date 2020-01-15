@@ -44,7 +44,7 @@ import numpy as np
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from gammapy.data import EventList
-from gammapy.irf import EnergyDependentTablePSF, EnergyDispersion
+from gammapy.irf import EnergyDependentTablePSF, EDispKernel
 from gammapy.maps import Map, MapAxis, WcsNDMap, WcsGeom
 from gammapy.modeling.models import (
     PowerLawSpectralModel,
@@ -124,7 +124,7 @@ counts = Map.create(
     skydir=gc_pos,
     npix=(100, 80),
     proj="TAN",
-    coordsys="GAL",
+    frame="galactic",
     binsz=0.1,
     axes=[energy_axis],
     dtype=float,
@@ -373,7 +373,7 @@ psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch="log", add_cbar=True);
 
 e_true = exposure.geom.axes[0].edges
 e_reco = counts.geom.axes[0].edges
-edisp = EnergyDispersion.from_diagonal_response(e_true=e_true, e_reco=e_reco)
+edisp = EDispKernel.from_diagonal_response(e_true=e_true, e_reco=e_reco)
 
 
 # ## Fit

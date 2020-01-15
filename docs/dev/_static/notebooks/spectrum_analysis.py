@@ -131,7 +131,7 @@ exclusion_region = CircleSkyRegion(
 
 skydir = target_position.galactic
 exclusion_mask = Map.create(
-    npix=(150, 150), binsz=0.05, skydir=skydir, proj="TAN", coordsys="CEL"
+    npix=(150, 150), binsz=0.05, skydir=skydir, proj="TAN", frame="icrs"
 )
 
 mask = exclusion_mask.geom.region_mask([exclusion_region], inside=False)
@@ -370,7 +370,7 @@ dataset_stacked = Datasets(datasets).stack_reduce()
 # In[ ]:
 
 
-dataset_stacked.model = model
+dataset_stacked.models = model
 stacked_fit = Fit([dataset_stacked])
 result_stacked = stacked_fit.run()
 

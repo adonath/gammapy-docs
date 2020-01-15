@@ -82,7 +82,7 @@ config.datasets.type = "3d"
 # We want to stack the data into a single reduced dataset
 config.datasets.stack = True
 
-# We fiw the WCS geometry of the datasets
+# We fix the WCS geometry of the datasets
 config.datasets.geom.wcs.skydir = {
     "lon": "83.633 deg",
     "lat": "22.014 deg",

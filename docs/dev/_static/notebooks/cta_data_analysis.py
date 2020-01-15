@@ -116,7 +116,7 @@ axis = MapAxis.from_edges(
     np.logspace(-1.0, 1.0, 10), unit="TeV", name="energy", interp="log"
 )
 geom = WcsGeom.create(
-    skydir=(0, 0), npix=(500, 400), binsz=0.02, coordsys="GAL", axes=[axis]
+    skydir=(0, 0), npix=(500, 400), binsz=0.02, frame="galactic", axes=[axis]
 )
 geom
 

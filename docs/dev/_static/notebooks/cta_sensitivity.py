@@ -21,32 +21,38 @@
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 # In[ ]:
 
 
-import numpy as np
 import astropy.units as u
-from astropy.coordinates import Angle
+from astropy.coordinates import Angle, SkyCoord
 from gammapy.irf import load_cta_irfs
-from gammapy.spectrum import SensitivityEstimator, CountsSpectrum
+from gammapy.spectrum import SensitivityEstimator, SpectrumDatasetMaker, SpectrumDataset, SpectrumDatasetOnOff
+from gammapy.data import Observation
+from regions import CircleSkyRegion
+from gammapy.maps import MapAxis
 
 
 # ## Define analysis region and energy binning
 # 
-# Here we assume a source at 0.7 degree from pointing position. We perform a simple energy independent extraction for now with a radius of 0.1 degree.
+# Here we assume a source at 0.5 degree from pointing position. We perform a simple energy independent extraction for now with a radius of 0.1 degree.
 
 # In[ ]:
 
 
-offset = Angle("0.5 deg")
+center = SkyCoord("0 deg", "0.5 deg")
+region = CircleSkyRegion(center=center, radius=0.1 * u.deg)
 
-energy_reco = np.logspace(-1.8, 1.5, 20) * u.TeV
-energy_true = np.logspace(-2, 2, 100) * u.TeV
+e_reco = MapAxis.from_energy_bounds("0.03 TeV", "30 TeV", nbin=20)
+e_true = MapAxis.from_energy_bounds("0.01 TeV", "100 TeV", nbin=100)
+
+empty_dataset = SpectrumDataset.create(e_reco=e_reco.edges, e_true=e_true.edges, region=region)
 
 
-# ## Load IRFs
+# ## Load IRFs and prepare dataset
 # 
 # We extract the 1D IRFs from the full 3D IRFs provided by CTA. 
 
@@ -56,49 +62,41 @@ energy_true = np.logspace(-2, 2, 100) * u.TeV
 irfs = load_cta_irfs(
     "$GAMMAPY_DATA/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
 )
-arf = irfs["aeff"].to_effective_area_table(offset, energy=energy_true)
-rmf = irfs["edisp"].to_energy_dispersion(
-    offset, e_true=energy_true, e_reco=energy_reco
-)
-psf = irfs["psf"].to_energy_dependent_table_psf(theta=offset)
+
+pointing = SkyCoord("0 deg", "0 deg")
+obs = Observation.create(pointing=pointing, irfs=irfs, livetime="5 h")
 
 
-# ## Determine energy dependent integration radius
-# 
-# Here we will determine an integration radius that varies with the energy to ensure a constant fraction of flux enclosure (e.g. 68%). We then apply the fraction to the effective area table.
-# 
-# By doing so we implicitly assume that energy dispersion has a neglible effect. This should be valid for large enough energy reco bins as long as the bias in the energy estimation is close to zero.
+# In[ ]:
+
+
+spectrum_maker = SpectrumDatasetMaker(selection=["aeff", "edisp", "background"])
+dataset = spectrum_maker.run(empty_dataset, obs)
+
+
+# Now we correct for the energy dependent region size:
 
 # In[ ]:
 
 
 containment = 0.68
-energy = np.sqrt(energy_reco[1:] * energy_reco[:-1])
-on_radii = psf.containment_radius(energy=energy, fraction=containment)
-solid_angles = 2 * np.pi * (1 - np.cos(on_radii)) * u.sr
+
+# correct effective area 
+dataset.aeff.data.data *= containment
+
+# correct background estimation
+on_radii = obs.psf.containment_radius(energy=e_reco.center, theta=0.5 * u.deg, fraction=containment)[0]
+factor = (1 - np.cos(on_radii)) / (1 - np.cos(region.radius))
+dataset.background.data *= factor.value
 
 
-# In[ ]:
-
-
-arf.data.data *= containment
-
-
-# ## Estimate background 
-# 
-# We now provide a workaround to estimate the background from the tabulated IRF in the energy bins we consider.  
+# And finally define a `SpectrumDatasetOnOff` with an alpha of `0.2`. The off counts are created from the background model:
 
 # In[ ]:
 
 
-bkg_data = irfs["bkg"].evaluate_integrate(
-    fov_lon=0 * u.deg, fov_lat=offset, energy_reco=energy_reco
-)
-bkg = CountsSpectrum(
-    energy_reco[:-1],
-    energy_reco[1:],
-    data=(bkg_data * solid_angles).to_value("s-1"),
-    unit="s-1",
+dataset_on_off = SpectrumDatasetOnOff.from_spectrum_dataset(
+    dataset=dataset, acceptance=1, acceptance_off=5
 )
 
 
@@ -110,10 +108,8 @@ bkg = CountsSpectrum(
 # In[ ]:
 
 
-sensitivity_estimator = SensitivityEstimator(
-    arf=arf, rmf=rmf, bkg=bkg, livetime="5h", gamma_min=5, sigma=3, alpha=0.2
-)
-sensitivity_table = sensitivity_estimator.run()
+sensitivity_estimator = SensitivityEstimator(gamma_min=5, sigma=3)
+sensitivity_table = sensitivity_estimator.run(dataset_on_off)
 
 
 # ## Results
@@ -139,7 +135,7 @@ sensitivity_table
 
 
 # Plot the sensitivity curve
-t = sensitivity_estimator.results_table
+t = sensitivity_table
 
 is_s = t["criterion"] == "significance"
 plt.plot(
@@ -188,9 +184,3 @@ ax2.set_ylim(0.01, 0.5)
 # 
 # * Also compute the sensitivity for a 20 hour observation
 # * Compare how the sensitivity differs between 5 and 20 hours by plotting the ratio as a function of energy.
-
-# In[ ]:
-
-
-
-

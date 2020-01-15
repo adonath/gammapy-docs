@@ -81,7 +81,7 @@ m_allsky.data
 
 skydir = SkyCoord(0, 0, frame="galactic", unit="deg")
 m_gc = Map.create(
-    binsz=0.02, width=(10, 5), skydir=skydir, coordsys="GAL", proj="TAN"
+    binsz=0.02, width=(10, 5), skydir=skydir, frame="galactic", proj="TAN"
 )
 print(m_gc.geom)
 
@@ -96,7 +96,7 @@ print(m_gc.geom)
 
 
 wcs_geom = WcsGeom.create(
-    binsz=0.02, width=(10, 5), skydir=(0, 0), coordsys="GAL"
+    binsz=0.02, width=(10, 5), skydir=(0, 0), frame="galactic"
 )
 
 
@@ -156,7 +156,7 @@ print(energy_axis)
 
 
 m_cube = Map.create(
-    binsz=0.02, width=(10, 5), coordsys="GAL", axes=[energy_axis]
+    binsz=0.02, width=(10, 5), frame="galactic", axes=[energy_axis]
 )
 print(m_cube.geom)
 
@@ -174,7 +174,7 @@ time_axis = MapAxis.from_bounds(
 )
 
 m_4d = Map.create(
-    binsz=0.02, width=(10, 5), coordsys="GAL", axes=[energy_axis, time_axis]
+    binsz=0.02, width=(10, 5), frame="galactic", axes=[energy_axis, time_axis]
 )
 print(m_4d.geom)
 
@@ -529,7 +529,7 @@ m_iem_gc.plot_interactive(add_cbar=True, stretch="sqrt", rc_params=rc_params)
 
 skydir = SkyCoord(266.4, -28.9, frame="icrs", unit="deg")
 wcs_geom_cel = WcsGeom.create(
-    skydir=skydir, binsz=0.1, coordsys="CEL", width=(8, 4)
+    skydir=skydir, binsz=0.1, frame="icrs", width=(8, 4)
 )
 
 

@@ -7,7 +7,6 @@
 # 
 # We will simulate observations for CTA first using a power law model without any background.
 # Then we will add a power law shaped background component.
-# The next part of the tutorial shows how to use user defined models for simulations and fitting.
 # 
 # We will use the following classes:
 # 
@@ -188,64 +187,6 @@ index = np.array([_["index"] for _ in results])
 plt.hist(index, bins=10, alpha=0.5)
 plt.axvline(x=model_simu.parameters["index"].value, color="red")
 print(f"index: {index.mean()} += {index.std()}")
-
-
-# ## Adding a user defined model
-# 
-# Many spectral models in gammapy are subclasses of `~gammapy.modeling.models.SpectralModel`. The list of available models is shown below.
-
-# In[ ]:
-
-
-SpectralModel.__subclasses__()
-
-
-# This section shows how to add a user defined spectral model. 
-# 
-# To do that you need to subclass `SpectralModel`. All `SpectralModel` subclasses need to have an `__init__` function, which sets up the `Parameters` of the model and a `static` function called `evaluate` where the mathematical expression for the model is defined.
-# 
-# As an example we will use a PowerLawSpectralModel plus a Gaussian (with fixed width).
-
-# In[ ]:
-
-
-class UserModel(SpectralModel):
-    index = Parameter("index", 2, min=0)
-    amplitude = Parameter("amplitude", "1e-12 cm-2 s-1 TeV-1", min=0)
-    reference = Parameter("reference", "1 TeV", frozen=True)
-    mean = Parameter("mean", "1 TeV", min=0)
-    width = Parameter("width", "0.1 TeV", min=0, frozen=True)
-
-    @staticmethod
-    def evaluate(energy, index, amplitude, reference, mean, width):
-        pwl = PowerLawSpectralModel.evaluate(
-            energy=energy,
-            index=index,
-            amplitude=amplitude,
-            reference=reference,
-        )
-        gauss = amplitude * np.exp(-((energy - mean) ** 2) / (2 * width ** 2))
-        return pwl + gauss
-
-
-# In[ ]:
-
-
-model = UserModel(
-    index=2,
-    amplitude=1e-12 * u.Unit("cm-2 s-1 TeV-1"),
-    reference=1 * u.TeV,
-    mean=5 * u.TeV,
-    width=0.2 * u.TeV,
-)
-print(model)
-
-
-# In[ ]:
-
-
-energy_range = [1, 10] * u.TeV
-model.plot(energy_range=energy_range);
 
 
 # ## Exercises

@@ -68,7 +68,7 @@ energy_reco = MapAxis.from_edges(
     np.logspace(-1.0, 1.0, 10), unit="TeV", name="energy", interp="log"
 )
 geom = WcsGeom.create(
-    skydir=(0, 0), binsz=0.02, width=(6, 6), coordsys="GAL", axes=[energy_reco]
+    skydir=(0, 0), binsz=0.02, width=(6, 6), frame="galactic", axes=[energy_reco]
 )
 # It is usually useful to have a separate binning for the true energy axis
 energy_true = MapAxis.from_edges(

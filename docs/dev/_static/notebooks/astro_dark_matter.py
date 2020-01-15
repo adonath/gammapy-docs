@@ -81,7 +81,7 @@ profiles.DMProfile.LOCAL_DENSITY = 0.39 * u.Unit("GeV / cm3")
 profile.scale_to_local_density()
 
 position = SkyCoord(0.0, 0.0, frame="galactic", unit="deg")
-geom = WcsGeom.create(binsz=0.05, skydir=position, width=3.0, coordsys="GAL")
+geom = WcsGeom.create(binsz=0.05, skydir=position, width=3.0, frame="galactic")
 
 
 # In[ ]:
