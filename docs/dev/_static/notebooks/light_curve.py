@@ -3,17 +3,26 @@
 
 # # Light curve estimation
 # 
-# ## Introduction
+# ## Prerequisites
 # 
-# This tutorial presents how light curve extraction is performed in gammapy. 
+# - Knowledge of the high level interface to perform data reduction, see [first gammapy analysis with the high level interface tutorial](analysis_1.ipynb)
+# 
+# ## Context
+# 
+# This tutorial presents how light curve extraction is performed in gammapy, i.e. how to measure the flux of a source
+# in different time bins.
+# 
+# Cherenkov telescopes usually work with observing runs and distribute data according to this basic time interval. A typical use case is to look for variability of a source on various time binnings: observation run-wise binning, nightly, weekly etc.
+# 
+# **Objective: The Crab nebula is not known to be variable at TeV energies, so we expect constant brightness within statistical and systematic errors. Compute per-observation and nightly fluxes of the four Crab nebula observations from the [H.E.S.S. first public test data release](https://www.mpi-hd.mpg.de/hfm/HESS/pages/dl3-dr1/) to check it.**
+# 
+# ## Proposed approach
 # 
 # We will demonstrate how to compute a `~gammapy.time.LightCurve` from 3D reduced datasets (`~gammapy.cube.MapDataset`) as well as 1D ON-OFF spectral datasets (`~gammapy.spectrum.SpectrumDatasetOnOff`). 
 # 
 # The data reduction will be performed with the high level interface for the data reduction. Then we will use the `~gammapy.time.LightCurveEstimator` class, which  is able to extract a light curve independently of the dataset type. 
 # 
-# We will compute two LCs: one per observing run and one per night.
 # 
-# We will use the four Crab nebula observations from the [H.E.S.S. first public test data release](https://www.mpi-hd.mpg.de/hfm/HESS/pages/dl3-dr1/) and compute per-observation fluxes. The Crab nebula is not known to be variable at TeV energies, so we expect constant brightness within statistical and systematic errors.
 
 # ## Setup
 # 
@@ -41,7 +50,7 @@ log = logging.getLogger(__name__)
 
 from gammapy.modeling.models import PowerLawSpectralModel
 from gammapy.modeling.models import PointSpatialModel
-from gammapy.modeling.models import SkyModel, SkyModels
+from gammapy.modeling.models import SkyModel, Models
 from gammapy.time import LightCurveEstimator
 from gammapy.analysis import Analysis, AnalysisConfig
 
@@ -142,7 +151,7 @@ sky_model.parameters["lat_0"].frozen = True
 # In[ ]:
 
 
-models = SkyModels([sky_model])
+models = Models([sky_model])
 analysis_3d.set_models(models)
 
 
@@ -265,7 +274,7 @@ sky_model.parameters["lat_0"].frozen = True
 # In[ ]:
 
 
-models = SkyModels([sky_model])
+models = Models([sky_model])
 analysis_1d.set_models(models)
 
 
@@ -326,6 +335,10 @@ nightwise_lc = lc_maker_1d.run(
 
 nightwise_lc.plot()
 
+
+# ## What next?
+# 
+# When sources are bight enough to look for variability at small time scales, the per-observation time binning is no longer relevant. One can easily extend the light curve estimation approach presented above to any time binning. This is demonstrated in the [following tutorial](light_curve_flare.ipynb) which shows the extraction of the lightcurve of an AGN flare.
 
 # In[ ]:
 

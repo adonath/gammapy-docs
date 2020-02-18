@@ -4,6 +4,8 @@ r"""
 Disk Spatial Model
 ==================
 
+This is a spatial model parametrising a disk.
+
 By default, the model is symmetric, i.e. a disk:
 
 .. math::
@@ -28,7 +30,7 @@ The model is defined on the celestial sphere, with a normalization defined by:
     \int_{4\pi}\phi(\text{lon}, \text{lat}) \,d\Omega = 1\,.
 """
 
-#%%
+# %%
 # Example plot
 # ------------
 # Here is an example plot of the model:
@@ -38,9 +40,9 @@ import numpy as np
 from astropy.coordinates import Angle
 from gammapy.modeling.models import (
     DiskSpatialModel,
-    SkyModel,
-    SkyModels,
+    Models,
     PowerLawSpectralModel,
+    SkyModel,
 )
 
 phi = Angle("30 deg")
@@ -48,7 +50,7 @@ model = DiskSpatialModel(
     lon_0="2 deg", lat_0="2 deg", r_0="1 deg", e=0.8, phi="30 deg", frame="galactic",
 )
 
-ax = model.plot()
+ax = model.plot(add_cbar=True)
 
 # illustrate size parameter
 region = model.to_region().to_pixel(ax.wcs)
@@ -62,7 +64,7 @@ ax.plot([2, 2 + np.sin(phi)], [2, 2 + np.cos(phi)], color="r", transform=transfo
 ax.vlines(x=2, color="r", linestyle="--", transform=transform, ymin=0, ymax=5)
 ax.text(2.15, 2.3, r"$\phi$", transform=transform)
 
-#%%
+# %%
 # YAML representation
 # -------------------
 # Here is an example YAML file using the model:
@@ -70,7 +72,7 @@ ax.text(2.15, 2.3, r"$\phi$", transform=transform)
 pwl = PowerLawSpectralModel()
 gauss = DiskSpatialModel()
 
-model = SkyModel(spectral_model=pwl, spatial_model=gauss)
-models = SkyModels([model])
+model = SkyModel(spectral_model=pwl, spatial_model=gauss, name="pwl-disk-model")
+models = Models([model])
 
 print(models.to_yaml())

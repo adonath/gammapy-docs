@@ -61,8 +61,9 @@ config.datasets.geom.wcs.skydir = {
 config.datasets.geom.wcs.fov = {"width": "10 deg", "height": "8 deg"}
 config.datasets.geom.wcs.binsize = "0.02 deg"
 
-# The FoV offset cut
+# The FoV radius to use for cutouts
 config.datasets.geom.selection.offset_max = 3.5 * u.deg
+config.datasets.safe_mask.methods = ["aeff-default", "offset-max"]
 
 # We now fix the energy axis for the counts map - (the reconstructed energy binning)
 config.datasets.geom.axes.energy.min = "0.1 TeV"
@@ -201,7 +202,7 @@ model = SkyModel(
     name="gc-source",
 )
 
-dataset_stacked.models = model
+dataset_stacked.models.append(model)
 dataset_stacked.background_model.norm.value = 1.3
 
 
@@ -251,8 +252,8 @@ print(analysis_joint.datasets)
 # In[ ]:
 
 
-# You can access each one by its name, eg:
-print(analysis_joint.datasets["obs_110380"])
+# You can access each one by name or by index, eg:
+print(analysis_joint.datasets[0])
 
 
 # In[ ]:
@@ -261,7 +262,7 @@ print(analysis_joint.datasets["obs_110380"])
 # Add the model on each of the datasets
 model_joint = model.copy()
 for dataset in analysis_joint.datasets:
-    dataset.models = model_joint
+    dataset.models.append(model_joint)
     dataset.background_model.norm.value = 1.1
 
 

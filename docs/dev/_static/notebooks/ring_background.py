@@ -45,7 +45,7 @@ log = logging.getLogger(__name__)
 
 from gammapy.analysis import Analysis, AnalysisConfig
 from gammapy.cube import RingBackgroundMaker, MapDatasetOnOff
-from gammapy.detect import compute_lima_on_off_image
+from gammapy.detect import LiMaMapEstimator
 from gammapy.maps import Map
 
 
@@ -87,7 +87,7 @@ config.datasets.geom.wcs.skydir = {
 config.datasets.geom.wcs.fov = {"width": "3 deg", "height": "3 deg"}
 config.datasets.geom.wcs.binsize = "0.02 deg"
 
-# The FoV offset cut
+# The FoV radius to use for cutouts
 config.datasets.geom.selection.offset_max = 3.5 * u.deg
 
 # We now fix the energy axis for the counts map - (the reconstructed energy binning)
@@ -188,19 +188,9 @@ print(stacked_on_off)
 # In[ ]:
 
 
-scale = geom.pixel_scales[0].to("deg")
 # Using a convolution radius of 0.04 degrees
-theta = 0.04 * u.deg / scale
-tophat = Tophat2DKernel(theta)
-tophat.normalize("peak")
-
-lima_maps = compute_lima_on_off_image(
-    stacked_on_off.counts,
-    stacked_on_off.counts_off,
-    stacked_on_off.acceptance,
-    stacked_on_off.acceptance_off,
-    tophat,
-)
+estimator = LiMaMapEstimator(0.04*u.deg)
+lima_maps = estimator.run(stacked_on_off)
 
 
 # In[ ]:

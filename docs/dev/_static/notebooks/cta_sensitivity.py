@@ -30,7 +30,12 @@ import numpy as np
 import astropy.units as u
 from astropy.coordinates import Angle, SkyCoord
 from gammapy.irf import load_cta_irfs
-from gammapy.spectrum import SensitivityEstimator, SpectrumDatasetMaker, SpectrumDataset, SpectrumDatasetOnOff
+from gammapy.spectrum import (
+    SensitivityEstimator,
+    SpectrumDatasetMaker,
+    SpectrumDataset,
+    SpectrumDatasetOnOff,
+)
 from gammapy.data import Observation
 from regions import CircleSkyRegion
 from gammapy.maps import MapAxis
@@ -49,7 +54,9 @@ region = CircleSkyRegion(center=center, radius=0.1 * u.deg)
 e_reco = MapAxis.from_energy_bounds("0.03 TeV", "30 TeV", nbin=20)
 e_true = MapAxis.from_energy_bounds("0.01 TeV", "100 TeV", nbin=100)
 
-empty_dataset = SpectrumDataset.create(e_reco=e_reco.edges, e_true=e_true.edges, region=region)
+empty_dataset = SpectrumDataset.create(
+    e_reco=e_reco.edges, e_true=e_true.edges, region=region
+)
 
 
 # ## Load IRFs and prepare dataset
@@ -70,7 +77,9 @@ obs = Observation.create(pointing=pointing, irfs=irfs, livetime="5 h")
 # In[ ]:
 
 
-spectrum_maker = SpectrumDatasetMaker(selection=["aeff", "edisp", "background"])
+spectrum_maker = SpectrumDatasetMaker(
+    selection=["aeff", "edisp", "background"]
+)
 dataset = spectrum_maker.run(empty_dataset, obs)
 
 
@@ -81,11 +90,13 @@ dataset = spectrum_maker.run(empty_dataset, obs)
 
 containment = 0.68
 
-# correct effective area 
+# correct effective area
 dataset.aeff.data.data *= containment
 
 # correct background estimation
-on_radii = obs.psf.containment_radius(energy=e_reco.center, theta=0.5 * u.deg, fraction=containment)[0]
+on_radii = obs.psf.containment_radius(
+    energy=e_reco.center, theta=0.5 * u.deg, fraction=containment
+)[0]
 factor = (1 - np.cos(on_radii)) / (1 - np.cos(region.radius))
 dataset.background.data *= factor.value
 

@@ -1,12 +1,23 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Spectrum simulation for CTA
+# # Spectrum simulation
 # 
-# A quick example how to use the functions and classes in `~gammapy.spectrum` in order to simulate and fit spectra. 
+# ## Prerequisites
 # 
-# We will simulate observations for CTA first using a power law model without any background.
-# Then we will add a power law shaped background component.
+# - Knowledge of spectral extraction and datasets used in gammapy, see for instance the [spectral analysis tutorial](spectrum_analysis.ipynb)
+# 
+# ## Context
+# 
+# To simulate a specific observation, it is not always necessary to simulate the full photon list. For many uses cases, simulating directly a reduced binned dataset is enough: the IRFs reduced in the correct geometry are combined with a source model to predict an actual number of counts per bin. The latter is then used to simulate a reduced dataset using Poisson probability distribution.
+# 
+# This can be done to check the feasibility of a measurement, to test whether fitted parameters really provide a good fit to the data etc.
+# 
+# Here we will see how to perform a 1D spectral simulation of a CTA observation, in particular, we will generate OFF observations following the template background stored in the CTA IRFs.
+# 
+# **Objective: simulate a number of spectral ON-OFF observations of a source with a power-law spectral model with CTA using the CTA 1DC response, fit them with the assumed spectral model and check that the distribution of fitted parameters is consistent with the input values.**
+# 
+# ## Proposed approach:
 # 
 # We will use the following classes:
 # 
@@ -17,7 +28,6 @@
 
 # ## Setup
 # 
-# Same procedure as in every script ...
 
 # In[ ]:
 
@@ -149,7 +159,7 @@ print(dataset_onoff)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '\nn_obs = 100\ndatasets = []\n\nfor idx in range(n_obs):\n    dataset_onoff.fake(random_state=idx, background_model=dataset.background)\n    dataset_onoff.name = f"obs_{idx}"\n    datasets.append(dataset_onoff.copy())')
+get_ipython().run_cell_magic('time', '', '\nn_obs = 100\ndatasets = []\n\nfor idx in range(n_obs):\n    dataset_onoff.fake(\n        random_state=idx,\n        background_model=dataset.background,\n        name=f"obs_{idx}",\n    )\n    datasets.append(dataset_onoff.copy())')
 
 
 # Before moving on to the fit let's have a look at the simulated observations.
@@ -194,12 +204,6 @@ print(f"index: {index.mean()} += {index.std()}")
 # * Change the observation time to something longer or shorter. Does the observation and spectrum results change as you expected?
 # * Change the spectral model, e.g. add a cutoff at 5 TeV, or put a steep-spectrum source with spectral index of 4.0
 # * Simulate spectra with the spectral model we just defined. How much observation duration do you need to get back the injected parameters?
-
-# ## What next?
-# 
-# In this tutorial we simulated and analysed the spectrum of source using CTA prod 2 IRFs.
-# 
-# If you'd like to go further, please see the other tutorial notebooks.
 
 # In[ ]:
 

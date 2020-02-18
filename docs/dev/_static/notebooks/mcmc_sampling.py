@@ -59,7 +59,8 @@ from gammapy.modeling.models import (
     GaussianSpatialModel,
     SkyModel,
 )
-from gammapy.cube.simulate import simulate_dataset
+from gammapy.cube import MapDataset, MapDatasetMaker
+from gammapy.data import Observation
 from gammapy.modeling.sampling import (
     run_mcmc,
     par_to_model,
@@ -87,6 +88,12 @@ irfs = load_cta_irfs(
     "$GAMMAPY_DATA/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
 )
 
+observation = Observation.create(
+    pointing=SkyCoord(0 * u.deg, 0 * u.deg, frame="galactic"),
+    livetime=20 * u.h,
+    irfs=irfs,
+)
+
 
 # In[ ]:
 
@@ -104,7 +111,7 @@ spectral_model = ExpCutoffPowerLawSpectralModel(
 )
 
 sky_model_simu = SkyModel(
-    spatial_model=spatial_model, spectral_model=spectral_model
+    spatial_model=spatial_model, spectral_model=spectral_model, name="source"
 )
 print(sky_model_simu)
 
@@ -120,13 +127,11 @@ geom = WcsGeom.create(
     skydir=(0, 0), binsz=0.05, width=(2, 2), frame="galactic", axes=[axis]
 )
 
-# Define some observation parameters
-pointing = SkyCoord(0 * u.deg, 0 * u.deg, frame="galactic")
-
-
-dataset = simulate_dataset(
-    sky_model_simu, geom, pointing, irfs, livetime=20 * u.h, random_state=42
-)
+empty_dataset = MapDataset.create(geom=geom)
+maker = MapDatasetMaker(selection=["background", "edisp", "psf", "exposure"])
+dataset = maker.run(empty_dataset, observation)
+dataset.models.append(sky_model_simu)
+dataset.fake()
 
 
 # In[ ]:
@@ -249,7 +254,7 @@ for nwalk in range(0, 6):
 
         # set model parameters
         par_to_model(dataset, pars)
-        spectral_model = dataset.models[0].spectral_model
+        spectral_model = dataset.models["source"].spectral_model
 
         spectral_model.plot(
             energy_range=(emin, emax),

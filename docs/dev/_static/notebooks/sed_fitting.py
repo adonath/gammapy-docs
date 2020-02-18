@@ -3,11 +3,20 @@
 
 # # Flux point fitting in Gammapy
 # 
+# ## Prerequisites
 # 
-# ## Introduction
+# - Some knowledge about retrieving information from catalogs, see [the catalogs tutorial](catalog.ipynb)
+#  
+# ## Context
 # 
-# In this tutorial we're going to learn how to fit spectral models to combined Fermi-LAT and IACT flux points.
+# Some high level studies do not rely on reduced datasets with their IRFs but directly on higher level products such as flux points. This is not ideal because flux points already contain some hypothesis for the underlying spectral shape and the uncertainties they carry are usually simplified (e.g. symmetric gaussian errors). Yet, this is an efficient way to combine heterogeneous data. 
 # 
+# **Objective: fit spectral models to combined Fermi-LAT and IACT flux points.**
+# 
+# ## Proposed approach
+# 
+# Here we will load, the spectral points from Fermi-LAT and TeV catalogs and fit them with various spectral models to find the best representation of the wide band spectrum.
+#  
 # The central class we're going to use for this example analysis is:  
 # 
 # - `~gammapy.spectrum.FluxPointsDataset`
@@ -253,9 +262,7 @@ ax.set_ylim(1e-13, 1e-11);
 # This was an introduction to SED fitting in Gammapy.
 # 
 # * If you would like to learn how to perform a full Poisson maximum likelihood spectral fit, please check out the [spectrum analysis](spectrum_analysis.ipynb) tutorial.
-# * To learn more about other parts of Gammapy (e.g. Fermi-LAT and TeV data analysis), check out the other tutorial notebooks.
-# * To see what's available in Gammapy, browse the Gammapy docs or use the full-text search.
-# * If you have any questions, ask on the mailing list .
+# * To learn how to combine heterogeneous datasets to perform a multi-instrument forward-folding fit see the [MWL analysis tutorial](analysis_mwl.ipynb)
 
 # In[ ]:
 

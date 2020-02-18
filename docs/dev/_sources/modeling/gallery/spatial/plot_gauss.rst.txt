@@ -11,6 +11,9 @@
 
 Gaussian Spatial Model
 ======================
+
+This is a spatial model parametrising a Gaussian function.
+
 By default, the Gaussian is symmetric:
 
 .. math::
@@ -51,20 +54,23 @@ this model is not correctly normalized. However, this approximation is perfectly
 common case of models with modest dimensions: indeed, the error introduced by normalizing on the plane
 rather than on the sphere is below 0.1\% for Gaussians with radii smaller than ~ 5 deg.
 
+Example plot
+------------
+Here is an example plot of the model:
+
 
 .. code-block:: default
-   :lineno-start: 46
+
 
     import numpy as np
     from astropy.coordinates import Angle
     from gammapy.maps import WcsGeom
     from gammapy.modeling.models import (
         GaussianSpatialModel,
+        Models,
         PowerLawSpectralModel,
         SkyModel,
-        SkyModels,
     )
-
 
     phi = Angle("30 deg")
     model = GaussianSpatialModel(
@@ -74,13 +80,12 @@ rather than on the sphere is below 0.1\% for Gaussians with radii smaller than ~
     geom = WcsGeom.create(
         skydir=model.position, frame=model.frame, width=(4, 4), binsz=0.02
     )
-    ax = model.plot(geom=geom)
+    ax = model.plot(geom=geom, add_cbar=True)
 
     # illustrate size parameter
     region = model.to_region().to_pixel(ax.wcs)
     artist = region.as_artist(facecolor="none", edgecolor="red")
     ax.add_artist(artist)
-
 
     transform = ax.get_transform("galactic")
     ax.scatter(2, 2, transform=transform, s=20, edgecolor="red", facecolor="red")
@@ -105,14 +110,13 @@ Here is an example YAML file using the model:
 
 
 .. code-block:: default
-   :lineno-start: 85
 
 
     pwl = PowerLawSpectralModel()
     gauss = GaussianSpatialModel()
 
-    model = SkyModel(spectral_model=pwl, spatial_model=gauss)
-    models = SkyModels([model])
+    model = SkyModel(spectral_model=pwl, spatial_model=gauss, name="pwl-gauss-model")
+    models = Models([model])
 
     print(models.to_yaml())
 
@@ -126,7 +130,7 @@ Here is an example YAML file using the model:
  .. code-block:: none
 
     components:
-    -   name: source
+    -   name: pwl-gauss-model
         type: SkyModel
         spectral:
             type: PowerLawSpectralModel
@@ -148,11 +152,6 @@ Here is an example YAML file using the model:
 
 
 
-
-
-.. rst-class:: sphx-glr-timing
-
-   **Total running time of the script:** ( 0 minutes  0.147 seconds)
 
 
 .. _sphx_glr_download_modeling_gallery_spatial_plot_gauss.py:

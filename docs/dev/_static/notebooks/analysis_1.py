@@ -1,21 +1,44 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # First analysis
+# # First analysis with gammapy high level interface
 # 
-# This notebook shows a simple example of a Crab analysis using the H.E.S.S. DL3 data release 1. It reduces the data to cube datasets and performs a simple 3D model fitting of the Crab nebula.
+# ## Prerequisites:
 # 
-# It uses the high level `Analysis` class to orchestrate data reduction. In its current state, `Analysis` supports the standard analysis cases of joint or stacked 3D and 1D analyses. It is instantiated with an `AnalysisConfig` object that gives access to analysis parameters either directly or via a YAML config file. 
+# - Understanding the gammapy data workflow, in particular what are DL3 events and intrument response functions (IRF).
+# 
+# ## Context
+# 
+# This notebook is an introduction to gammapy analysis using the high level interface. 
+# 
+# Gammapy analysis consists in two main steps. 
+# 
+# The first one is data reduction: user selected observations  are reduced to a geometry defined by the user. 
+# It can be 1D (spectrum from a given extraction region) or 3D (with a sky projection and an energy axis). 
+# The resulting reduced data and instrument response functions (IRF) are called datasets in Gammapy.
+# 
+# The second step consists in setting a physical model on the datasets and fitting it to obtain relevant physical informations.
+# 
+# 
+# **Objective: Create a 3D dataset of the Crab using the H.E.S.S. DL3 data release 1 and perform a simple model fitting of the Crab nebula.**
+# 
+# ## Proposed approach:
+# 
+# This notebook uses the high level `Analysis` class to orchestrate data reduction. In its current state, `Analysis` supports the standard analysis cases of joint or stacked 3D and 1D analyses. It is instantiated with an `AnalysisConfig` object that gives access to analysis parameters either directly or via a YAML config file. 
 # 
 # To see what is happening under-the-hood and to get an idea of the internal API, a second notebook performs the same analysis without using the `Analysis` class. 
 # 
-# We will first show how to configure and run a stacked 3D analysis. The structure of the tutorial follows a typical analysis:
+# In summary, we have to:
 # 
-# - Analysis configuration
-# - Observation selection
-# - Data reduction
-# - Model fitting
-# - Estimating flux points
+# - Create an `~gammapy.analysis.AnalysisConfig` object and edit it to define the analysis configuration:
+#     - Define what observations to use
+#     - Define the geometry of the dataset (data and IRFs)
+#     - Define the model we want to fit on the dataset.
+# - Instantiate a `~gammapy.analysis.Analysis` from this configuration and run the different analysis steps
+#     - Observation selection
+#     - Data reduction
+#     - Model fitting
+#     - Estimating flux points
 # 
 # Finally we will compare the results against a reference model.
 
@@ -291,7 +314,8 @@ get_ipython().system('cat analysis_1/model-best-fit.yaml')
 # In[ ]:
 
 
-analysis.get_flux_points(source="crab")
+analysis.config.flux_points.source = "crab"
+analysis.get_flux_points()
 
 
 # In[ ]:

@@ -3,11 +3,28 @@
 
 # # 3D simulation and fitting
 # 
-# This tutorial shows how to do a 3D map-based simulation and fit.
+# ## Prerequisites
 # 
-# For a tutorial on how to do a 3D map analyse of existing data, see the [analysis_3d](analysis_3d.ipynb) tutorial.
+# - Knowledge of 3D extraction and datasets used in gammapy, see for instance the [first analysis tutorial](analysis_1.ipynb)
 # 
-# This can be useful to do a performance / sensitivity study, or to evaluate the capabilities of Gammapy or a given analysis method. Note that is is a binned simulation as is e.g. done also in Sherpa for Chandra, not an event sampling and anbinned analysis as is done e.g. in the Fermi ST or ctools.
+# ## Context
+# 
+# To simulate a specific observation, it is not always necessary to simulate the full photon list. For many uses cases, simulating directly a reduced binned dataset is enough: the IRFs reduced in the correct geometry are combined with a source model to predict an actual number of counts per bin. The latter is then used to simulate a reduced dataset using Poisson probability distribution.
+# 
+# This can be done to check the feasibility of a measurement (performance / sensitivity study), to test whether fitted parameters really provide a good fit to the data etc.
+# 
+# Here we will see how to perform a 3D simulation of a CTA observation, assuming both the spectral and spatial morphology of an observed source.
+# 
+# **Objective: simulate a 3D observation of a source with CTA using the CTA 1DC response and fit it with the assumed source model.**
+# 
+# ## Proposed approach:
+# 
+# Here we can't use the regular observation objects that are connected to a `DataStore`. Instead we will create a fake `~gammapy.data.Observation` that contain some pointing information and the CTA 1DC IRFs (that are loaded with `~gammapy.irf.load_cta_irfs`).
+# 
+# Then we will create a `~gammapy.cube.MapDataset` geometry and create it with the `~gammapy.cube.MapDatasetMaker`.
+# 
+# Then we will be able to define a model consisting of  a `~gammapy.modeling.models.PowerLawSpectralModel` and a `~gammapy.modeling.models.GaussianSpatialModel`. We will assign it to the dataset and fake the count data.
+# 
 
 # ## Imports and versions
 
@@ -68,7 +85,11 @@ energy_reco = MapAxis.from_edges(
     np.logspace(-1.0, 1.0, 10), unit="TeV", name="energy", interp="log"
 )
 geom = WcsGeom.create(
-    skydir=(0, 0), binsz=0.02, width=(6, 6), frame="galactic", axes=[energy_reco]
+    skydir=(0, 0),
+    binsz=0.02,
+    width=(6, 6),
+    frame="galactic",
+    axes=[energy_reco],
 )
 # It is usually useful to have a separate binning for the true energy axis
 energy_true = MapAxis.from_edges(
@@ -116,7 +137,7 @@ print(dataset)
 
 
 # Add the model on the dataset and Poission fluctuate
-dataset.models = model_simu
+dataset.models.append(model_simu)
 dataset.fake()
 # Do a print on the dataset - there is now a counts maps
 print(dataset)
@@ -148,6 +169,12 @@ dataset1 = dataset.copy()
 # In[ ]:
 
 
+print(dataset1.models)
+
+
+# In[ ]:
+
+
 # Define sky model to fit the data
 spatial_model1 = GaussianSpatialModel(
     lon_0="0.1 deg", lat_0="0.1 deg", sigma="0.5 deg", frame="galactic"
@@ -161,8 +188,8 @@ model_fit = SkyModel(
     name="model_fit",
 )
 
-dataset1.models = model_fit
-print(model_fit)
+dataset1.models = [model_fit, dataset.models[0]]
+print(dataset1.models)
 
 
 # In[ ]:

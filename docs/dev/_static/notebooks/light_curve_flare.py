@@ -179,7 +179,7 @@ safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'datasets = []\n\ndataset_empty = SpectrumDataset.create(\n    e_reco=e_reco, e_true=e_true, region=on_region\n)\n\nfor obs in short_observations:\n    dataset = dataset_maker.run(dataset_empty, obs)\n\n    dataset_on_off = bkg_maker.run(dataset, obs)\n    dataset_on_off = safe_mask_masker.run(dataset_on_off, obs)\n    datasets.append(dataset_on_off)')
+get_ipython().run_cell_magic('time', '', 'datasets = []\n\ndataset_empty = SpectrumDataset.create(\n    e_reco=e_reco, e_true=e_true, region=on_region\n)\n\nfor obs in short_observations:\n    dataset = dataset_maker.run(dataset_empty.copy(), obs)\n\n    dataset_on_off = bkg_maker.run(dataset, obs)\n    dataset_on_off = safe_mask_masker.run(dataset_on_off, obs)\n    datasets.append(dataset_on_off)')
 
 
 # ## Define the Model

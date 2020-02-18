@@ -4,17 +4,26 @@
 # # Joint modeling, fitting, and serialization
 # 
 
+# ## Prerequisites
+# 
+# - Handling of Fermi-LAT data with gammapy [see the corresponding tutorial](fermi_lat.ipynb)
+# - Knowledge of spectral analysis to produce 1D On-Off datasets, [see the following tutorial](spectrum_analysis.ipynb)
+# - Using flux points to directly fit a model (without forward-folding)  [see the SED fitting tutorial](sed_fitting.ipynb)
+# 
+# ## Context
+# 
+# Some science studies require to combine heterogeneous data from various instruments to extract physical informations. In particular, it is often useful to add flux measurements of a source at different energies to an analysis to better constrain the wide-band spectral parameters. This can be done using a joint fit of heterogeneous datasets.
+#  
+# **Objectives: Constrain the spectral parameters of the gamma-ray emission from the Crab nebula between 10 GeV and 100 TeV, using a 3D Fermi dataset, a H.E.S.S. reduced spectrum and HAWC flux points.**
+# 
+# ## Proposed approach
+# 
 # This tutorial illustrates how to perfom a joint modeling and fitting of the Crab Nebula spectrum using different datasets.
-# We look at the gamma-ray emission from the Crab nebula between 10 GeV and 100 TeV.
 # The spectral parameters are optimized by combining a 3D analysis of Fermi-LAT data, a ON/OFF spectral analysis of HESS data, and flux points from HAWC.
 # 
 # In this tutorial we are going to use pre-made datasets. We prepared maps of the Crab region as seen by Fermi-LAT using the same event selection than the [3FHL catalog](https://arxiv.org/abs/1702.00664) (7 years of data with energy from 10 GeV to 2 TeV). For the HESS ON/OFF analysis we used two observations from the [first public data release](https://arxiv.org/abs/1810.04516) with a significant signal from energy of about 600 GeV to 10 TeV. These observations have an offset of 0.5° and a zenith angle of 45-48°. The HAWC flux points data are taken from a [recent analysis](https://arxiv.org/pdf/1905.12518.pdf) based on 2.5 years of data with energy between 300 Gev and 300 TeV. 
 # 
-# More details on how to prepare datasets with the high and low level interfaces are available in these tutorials: 
-# 
-# - https://docs.gammapy.org/0.14/notebooks/fermi_lat.html
-# - https://docs.gammapy.org/dev/notebooks/hess.html
-# - https://docs.gammapy.org/dev/notebooks/spectrum_analysis.html
+# ## The setup
 # 
 
 # In[ ]:
@@ -169,8 +178,7 @@ for obs_id in [23523, 23526]:
     )
     datasets.append(dataset)
 
-dataset_hess = Datasets(datasets).stack_reduce()
-dataset_hess.name = "HESS"
+dataset_hess = Datasets(datasets).stack_reduce(name="HESS")
 dataset_hess.models = crab_model
 
 
@@ -246,7 +254,7 @@ flux_points_fermi = FluxPointsEstimator(
 
 e_edges = MapAxis.from_bounds(1, 15, nbin=6, interp="log", unit="TeV").edges
 flux_points_hess = FluxPointsEstimator(
-    datasets=[dataset_hess], e_edges=e_edges
+    datasets=[dataset_hess], e_edges=e_edges, source="Crab Nebula"
 ).run()
 
 
@@ -265,4 +273,10 @@ flux_points_fermi.plot(ax=ax, energy_power=2, label="Fermi-LAT")
 flux_points_hess.plot(ax=ax, energy_power=2, label="HESS")
 flux_points_hawc.plot(ax=ax, energy_power=2, label="HAWC")
 plt.legend();
+
+
+# In[ ]:
+
+
+
 

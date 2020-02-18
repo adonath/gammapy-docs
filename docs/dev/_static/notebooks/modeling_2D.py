@@ -73,7 +73,7 @@ config.datasets.geom.wcs.skydir = {
 config.datasets.geom.wcs.fov = {"width": "10 deg", "height": "8 deg"}
 config.datasets.geom.wcs.binsize = "0.02 deg"
 
-# The FoV offset cut
+# The FoV radius to use for cutouts
 config.datasets.geom.selection.offset_max = 3.5 * u.deg
 
 # We now fix the energy axis for the counts map - (the reconstructed energy binning)

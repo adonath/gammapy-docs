@@ -199,7 +199,7 @@ plt.imshow(kernel);
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'ts_image_estimator = TSMapEstimator()\nimages_ts = ts_image_estimator.run(images, kernel)\nprint(images_ts.keys())')
+get_ipython().run_cell_magic('time', '', 'ts_image_estimator = TSMapEstimator()\nimages_ts = ts_image_estimator.run(dataset_image, kernel)\nprint(images_ts.keys())')
 
 
 # In[ ]:
@@ -267,7 +267,7 @@ safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'datasets = []\n\nfor observation in observations:\n    dataset = dataset_maker.run(dataset_empty, observation)\n    dataset_on_off = bkg_maker.run(dataset, observation)\n    dataset_on_off = safe_mask_masker.run(dataset_on_off, observation)\n    datasets.append(dataset_on_off)')
+get_ipython().run_cell_magic('time', '', 'datasets = []\n\nfor observation in observations:\n    dataset = dataset_maker.run(dataset_empty.copy(name=f"obs-{observation.obs_id}"), observation)\n    dataset_on_off = bkg_maker.run(dataset, observation)\n    dataset_on_off = safe_mask_masker.run(dataset_on_off, observation)\n    datasets.append(dataset_on_off)')
 
 
 # In[ ]:
@@ -287,7 +287,7 @@ plot_spectrum_datasets_off_regions(datasets, ax=ax)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'spectral_model = PowerLawSpectralModel(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\nmodel = SkyModel(spectral_model=spectral_model)\nfor dataset in datasets:\n    dataset.models = model\n\nfit = Fit(datasets)\nresult = fit.run()\nprint(result)')
+get_ipython().run_cell_magic('time', '', 'spectral_model = PowerLawSpectralModel(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\nmodel = SkyModel(spectral_model=spectral_model, name="source-gc")\nfor dataset in datasets:\n    dataset.models = model\n\nfit = Fit(datasets)\nresult = fit.run()\nprint(result)')
 
 
 # ### Spectral points
@@ -298,7 +298,7 @@ get_ipython().run_cell_magic('time', '', 'spectral_model = PowerLawSpectralModel
 
 
 # Flux points are computed on stacked observation
-stacked_dataset = Datasets(datasets).stack_reduce()
+stacked_dataset = Datasets(datasets).stack_reduce(name="stacked")
 
 print(stacked_dataset)
 
@@ -306,11 +306,11 @@ print(stacked_dataset)
 # In[ ]:
 
 
-e_edges = np.logspace(0, 1.5, 5) * u.TeV
+e_edges = MapAxis.from_energy_bounds("1 TeV", "30 TeV", nbin=5).edges
 
-stacked_dataset.model = model
+stacked_dataset.models = model
 
-fpe = FluxPointsEstimator(datasets=[stacked_dataset], e_edges=e_edges)
+fpe = FluxPointsEstimator(datasets=[stacked_dataset], e_edges=e_edges, source="source-gc")
 flux_points = fpe.run()
 flux_points.table_formatted
 

@@ -51,7 +51,7 @@ from gammapy.modeling.models import (
     PointSpatialModel,
     SkyModel,
     SkyDiffuseCube,
-    SkyModels,
+    Models,
     create_fermi_isotropic_diffuse_model,
 )
 from gammapy.cube import MapDataset, PSFKernel
@@ -392,7 +392,7 @@ spectral_model = PowerLawSpectralModel(
 
 source = SkyModel(spectral_model=spectral_model, spatial_model=spatial_model)
 
-models = SkyModels([source, diffuse_gal, diffuse_iso])
+models = Models([source, diffuse_gal, diffuse_iso])
 
 dataset = MapDataset(
     models=models,

@@ -288,7 +288,7 @@ datasets[0].peek()
 spectral_model = PowerLawSpectralModel(
     index=4, amplitude="1.3e-9 cm-2 s-1 TeV-1", reference="0.02 TeV"
 )
-model = SkyModel(spectral_model=spectral_model)
+model = SkyModel(spectral_model=spectral_model, name="vela psr")
 emin_fit, emax_fit = (0.04 * u.TeV, 0.4 * u.TeV)
 
 for dataset in datasets:
@@ -314,7 +314,7 @@ dataset = Datasets(datasets).stack_reduce()
 
 dataset.model = model
 
-fpe = FluxPointsEstimator(datasets=[dataset], e_edges=e_edges)
+fpe = FluxPointsEstimator(datasets=[dataset], e_edges=e_edges, source="vela psr")
 
 flux_points = fpe.run()
 flux_points.table["is_ul"] = flux_points.table["ts"] < 1
