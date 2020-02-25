@@ -76,9 +76,10 @@
     "    TSMapEstimator,\n",
     "    find_peaks,\n",
     ")\n",
+    "from gammapy.datasets import MapDataset\n",
     "from gammapy.catalog import SOURCE_CATALOGS\n",
     "from gammapy.modeling.models import BackgroundModel\n",
-    "from gammapy.cube import PSFKernel, MapDataset\n",
+    "from gammapy.irf import PSFKernel\n",
     "from gammapy.stats import significance\n",
     "from astropy.coordinates import SkyCoord\n",
     "from astropy.convolution import Tophat2DKernel\n",
@@ -120,7 +121,7 @@
     "background = Map.read(\n",
     "    \"$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-background-cube.fits.gz\"\n",
     ")\n",
-    "background = BackgroundModel(background)\n",
+    "background = BackgroundModel(background, datasets_names=[\"fermi-3fhl-gc\"])\n",
     "\n",
     "exposure = Map.read(\n",
     "    \"$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-exposure-cube.fits.gz\"\n",
@@ -128,29 +129,14 @@
     "mask_safe = counts.copy(data=np.ones_like(counts.data).astype(\"bool\"))\n",
     "\n",
     "dataset = MapDataset(\n",
-    "    counts=counts, models=[background], exposure=exposure, mask_safe=mask_safe,\n",
+    "    counts=counts,\n",
+    "    models=[background],\n",
+    "    exposure=exposure,\n",
+    "    mask_safe=mask_safe,\n",
+    "    name=\"fermi-3fhl-gc\",\n",
     ")\n",
     "\n",
     "dataset = dataset.to_image()"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 3,
-   "metadata": {},
-   "outputs": [
-    {
-     "name": "stderr",
-     "output_type": "stream",
-     "text": [
-      "WARNING: FITSFixedWarning: 'datfix' made the change 'Set DATE-REF to '1858-11-17' from MJD-REF'. [astropy.wcs.wcs]\n"
-     ]
-    }
-   ],
-   "source": [
-    "kernel = PSFKernel.read(\n",
-    "    \"$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-psf.fits.gz\"\n",
-    ")"
    ]
   },
   {
@@ -166,26 +152,26 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 4,
+   "execution_count": 3,
    "metadata": {},
    "outputs": [
     {
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "CPU times: user 1.1 s, sys: 430 ms, total: 1.53 s\n",
-      "Wall time: 1.6 s\n"
+      "CPU times: user 1.22 s, sys: 477 ms, total: 1.7 s\n",
+      "Wall time: 2.24 s\n"
      ]
     },
     {
      "data": {
       "text/plain": [
        "(<Figure size 1080x360 with 2 Axes>,\n",
-       " <matplotlib.axes._subplots.WCSAxesSubplot at 0x1c1b8b9278>,\n",
-       " <matplotlib.colorbar.Colorbar at 0x1c1cd48c18>)"
+       " <matplotlib.axes._subplots.WCSAxesSubplot at 0x1c1e463e80>,\n",
+       " <matplotlib.colorbar.Colorbar at 0x1c1f499c88>)"
       ]
      },
-     "execution_count": 4,
+     "execution_count": 3,
      "metadata": {},
      "output_type": "execute_result"
     },
@@ -224,6 +210,25 @@
   },
   {
    "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "WARNING: FITSFixedWarning: 'datfix' made the change 'Set DATE-REF to '1858-11-17' from MJD-REF'. [astropy.wcs.wcs]\n"
+     ]
+    }
+   ],
+   "source": [
+    "kernel = PSFKernel.read(\n",
+    "    \"$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-psf.fits.gz\"\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "code",
    "execution_count": 5,
    "metadata": {},
    "outputs": [
@@ -231,8 +236,8 @@
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "CPU times: user 8.77 s, sys: 147 ms, total: 8.91 s\n",
-      "Wall time: 9.28 s\n"
+      "CPU times: user 8.62 s, sys: 116 ms, total: 8.73 s\n",
+      "Wall time: 8.94 s\n"
      ]
     }
    ],
@@ -347,7 +352,7 @@
      "data": {
       "text/html": [
        "<i>Table length=8</i>\n",
-       "<table id=\"table120760391832\" class=\"table-striped table-bordered table-condensed\">\n",
+       "<table id=\"table120800860760\" class=\"table-striped table-bordered table-condensed\">\n",
        "<thead><tr><th>value</th><th>x</th><th>y</th><th>ra</th><th>dec</th></tr></thead>\n",
        "<thead><tr><th></th><th></th><th></th><th>deg</th><th>deg</th></tr></thead>\n",
        "<thead><tr><th>float64</th><th>int64</th><th>int64</th><th>float64</th><th>float64</th></tr></thead>\n",

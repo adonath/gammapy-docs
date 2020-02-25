@@ -2,20 +2,20 @@
 # coding: utf-8
 
 # # Ring Background Estimation
-# 
+#
 # ## Context:
 # One of the challenges of IACT analysis is accounting for the large residual hadronic emission. An excess map, assumed to be a map of only gamma-ray events, requires a good estimate of the background.  However, in the absence of a solid template bkg model it is not possible to obtain reliable background model a priori. It was often found necessary in classical cherenkov astronomy to perform a local renormalization of the existing templates, usually with a ring kernel. This assumes that most of the events are background and requires to have an exclusion mask to remove regions with bright signal from the estimation. To read more about this method, see [here.](https://arxiv.org/abs/astro-ph/0610959)
-# 
+#
 # ## Objective:
 # Create an excess (gamma-ray events) map of MSH 15-52 as well as a significance map to determine how solid the signal is.
-# 
+#
 # ## Proposed approach:
-# 
+#
 # The analysis workflow is roughly
 #  - Compute the sky maps keeping each observation separately using the `Analysis` class
 #  - Estimate the background using the `RingBackgroundMaker`
 #  - Compute the correlated excess and significance maps using `compute_lima_on_off_image`
-#  
+#
 # The normalised background thus obtained can be used for general modelling and fitting.
 
 # ## Setup
@@ -44,14 +44,15 @@ log = logging.getLogger(__name__)
 
 
 from gammapy.analysis import Analysis, AnalysisConfig
-from gammapy.cube import RingBackgroundMaker, MapDatasetOnOff
+from gammapy.makers import RingBackgroundMaker
 from gammapy.detect import LiMaMapEstimator
 from gammapy.maps import Map
+from gammapy.datasets import MapDatasetOnOff
 
 
 # ## Creating the config file
 # Now, we create a config file for out analysis. You may load this from disc if you have a pre-defined config file.
-# 
+#
 # In this example, we will use a few HESS runs on the pulsar wind nebula, MSH 1552
 
 # In[ ]:
@@ -127,7 +128,7 @@ get_ipython().run_cell_magic('time', '', '# Data extraction\nanalysis.get_datase
 
 
 # ## Extracting the ring background
-# 
+#
 # Since the ring background is extracted from real off events, we need to use the wstat statistics in this case. For this, we will use the `MapDatasetOnOFF` and the `RingBackgroundMaker` classes.
 
 # ### Create exclusion mask

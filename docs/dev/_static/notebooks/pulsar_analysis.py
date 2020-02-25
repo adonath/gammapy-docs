@@ -5,8 +5,8 @@
 
 # ## Introduction
 
-# This notebook shows how to do a pulsar analysis with Gammapy. It's based on a Vela simulation file from the CTA DC1, which already contains a column of phases. We will produce a phasogram, a phase-resolved map and a phase-resolved spectrum of the Vela pulsar using the class PhaseBackgroundEstimator. 
-# 
+# This notebook shows how to do a pulsar analysis with Gammapy. It's based on a Vela simulation file from the CTA DC1, which already contains a column of phases. We will produce a phasogram, a phase-resolved map and a phase-resolved spectrum of the Vela pulsar using the class PhaseBackgroundEstimator.
+#
 # The phasing in itself is not done here, and it requires specific packages like Tempo2 or [PINT](https://nanograv-pint.readthedocs.io).
 
 # ## Opening the data
@@ -28,18 +28,13 @@ from gammapy.utils.regions import SphericalCircleSkyRegion
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 
-from gammapy.cube import SafeMaskMaker
+from gammapy.makers import SafeMaskMaker, PhaseBackgroundMaker, SpectrumDatasetMaker
 from gammapy.maps import Map, WcsGeom
 from gammapy.data import DataStore
+from gammapy.datasets import Datasets, SpectrumDataset, FluxPointsDataset
 from gammapy.modeling.models import PowerLawSpectralModel, SkyModel
-from gammapy.modeling import Fit, Datasets
-from gammapy.spectrum import (
-    PhaseBackgroundMaker,
-    SpectrumDataset,
-    SpectrumDatasetMaker,
-    FluxPointsEstimator,
-    FluxPointsDataset,
-)
+from gammapy.modeling import Fit
+from gammapy.spectrum import FluxPointsEstimator
 
 
 # Load the data store (which is a subset of CTA-DC1 data):

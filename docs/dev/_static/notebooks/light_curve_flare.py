@@ -2,37 +2,37 @@
 # coding: utf-8
 
 # # Light curve - Flare
-# 
+#
 # ## Prerequisites:
-# 
+#
 # - Understanding of how the light curve estimator works, please refer to the [light curve notebook](light_curve.ipynb).
-# 
+#
 # ## Context
-# 
+#
 # Frequently, especially when studying flares of bright sources, it is necessary to explore the time behaviour of a source on short time scales, in particular on time scales shorter than observing runs.
-# 
+#
 # A typical example is given by the flare of PKS 2155-304 during the night from July 29 to 30 2006. See the [following article](https://ui.adsabs.harvard.edu/abs/2009A%26A...502..749A/abstract).
-# 
+#
 # **Objective: Compute the light curve of a PKS 2155-304 flare on 5 minutes time intervals, i.e. smaller than the duration of individual observations.**
-# 
+#
 # ## Proposed approach:
-# 
-# We have seen in the general presentation of the light curve estimator, see [light curve notebook](light_curve.ipynb), Gammapy produces datasets in a given time interval, by default that of the parent observation. To be able to produce datasets on smaller time steps, it is necessary to split the observations into the required time intervals. 
-# 
+#
+# We have seen in the general presentation of the light curve estimator, see [light curve notebook](light_curve.ipynb), Gammapy produces datasets in a given time interval, by default that of the parent observation. To be able to produce datasets on smaller time steps, it is necessary to split the observations into the required time intervals.
+#
 # This is easily performed with the `select_time` method of `~gammapy.data.Observations`. If you pass it a list of time intervals it will produce a list of time filtered observations in a new `~gammapy.data.Observations` object. Data reduction can then be performed and will result in datasets defined on the required time intervals and light curve estimation can proceed directly.
-# 
+#
 # In summary, we have to:
-# 
+#
 # - Select relevant `~gammapy.data.Observations` from the `~gammapy.data.DataStore`
 # - Apply the time selection in our predefined time intervals to obtain a new `~gammapy.data.Observations`
 # - Perform the data reduction (in 1D or 3D)
 # - Define the source model
 # - Extract the light curve from the reduced dataset
-# 
+#
 # Here, we will use the PKS 2155-304 observations from the H.E.S.S. first public test data release. We will use time intervals of 5 minutes duration. The tutorial is implemented with the intermediate level API.
-# 
-# ## Setup 
-# 
+#
+# ## Setup
+#
 # As usual, we'll start with some general imports...
 
 # In[ ]:
@@ -57,19 +57,19 @@ log = logging.getLogger(__name__)
 
 
 from gammapy.data import DataStore
+from gammapy.datasets import SpectrumDataset
 from gammapy.modeling.models import PowerLawSpectralModel, SkyModel
 from gammapy.maps import MapAxis
 from gammapy.time import LightCurveEstimator
-from gammapy.cube import SafeMaskMaker
-from gammapy.spectrum import (
+from gammapy.makers import (
     SpectrumDatasetMaker,
-    SpectrumDataset,
     ReflectedRegionsBackgroundMaker,
+    SafeMaskMaker
 )
 
 
 # ## Select the data
-# 
+#
 # We first set the datastore.
 
 # In[ ]:
@@ -78,7 +78,7 @@ from gammapy.spectrum import (
 data_store = DataStore.from_dir("$GAMMAPY_DATA/hess-dl3-dr1/")
 
 
-# Now we select observations within 2 degrees of PKS 2155-304. 
+# Now we select observations within 2 degrees of PKS 2155-304.
 
 # In[ ]:
 
@@ -115,10 +115,10 @@ print(time_intervals[0].mjd)
 
 
 # ## Filter the observations list in time intervals
-# 
+#
 # Here we apply the list of time intervals to the observations with `~gammapy.data.Observations.select_time()`.
-# 
-# This will return a new list of Observations filtered by time_intervals. For each time interval, a new observation is created that convers the intersection of the GTIs and time interval. 
+#
+# This will return a new list of Observations filtered by time_intervals. For each time interval, a new observation is created that convers the intersection of the GTIs and time interval.
 
 # In[ ]:
 
@@ -132,19 +132,19 @@ print(short_observations[1].gti)
 
 
 # As we can see, we have now observations of duration equal to the chosen time step.
-# 
+#
 # Now data reduction and light curve extraction can proceed exactly as before.
 
 # ## Building 1D datasets from the new observations
-# 
+#
 # Here we will perform the data reduction in 1D with reflected regions.
-# 
+#
 # *Beware, with small time intervals the background normalization with OFF regions might become problematic.*
 
 # ### Defining the geometry
-# 
-# We define the energy axes. As usual, the true energy axis has to cover a wider range to ensure a good coverage of the measured energy range chosen. 
-# 
+#
+# We define the energy axes. As usual, the true energy axis has to cover a wider range to ensure a good coverage of the measured energy range chosen.
+#
 # We need to define the ON extraction region. Its size follows typical spectral extraction regions for HESS analyses.
 
 # In[ ]:
@@ -159,7 +159,7 @@ on_region = CircleSkyRegion(center=target_position, radius=on_region_radius)
 
 
 # ### Creation of the data reduction makers
-# 
+#
 # We now create the dataset and background makers for the selected geometry.
 
 # In[ ]:
@@ -173,7 +173,7 @@ safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
 
 
 # ### Creation of the datasets
-# 
+#
 # Now we perform the actual data reduction in the time_intervals.
 
 # In[ ]:
@@ -183,9 +183,9 @@ get_ipython().run_cell_magic('time', '', 'datasets = []\n\ndataset_empty = Spect
 
 
 # ## Define the Model
-# 
+#
 # The actual flux will depend on the spectral shape assumed. For simplicity, we use the power law spectral model of index 3.4 used in the [reference paper](https://ui.adsabs.harvard.edu/abs/2009A%26A...502..749A/abstract).
-# 
+#
 # Here we use only a spectral model in the `~gammapy.modeling.models.SkyModel` object.
 
 # In[ ]:
@@ -204,7 +204,7 @@ sky_model = SkyModel(
 
 
 # ### Assign to model to all datasets
-# 
+#
 # We assign each dataset its spectral model
 
 # In[ ]:
@@ -215,7 +215,7 @@ for dataset in datasets:
 
 
 # ## Extract the light curve
-# 
+#
 # We first create the `~gammapy.time.LightCurveEstimator` for the list of datasets we just produced. We give the estimator the name of the source component to be fitted.
 
 # In[ ]:

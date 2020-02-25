@@ -2,34 +2,34 @@
 # coding: utf-8
 
 # # First analysis with gammapy high level interface
-# 
+#
 # ## Prerequisites:
-# 
+#
 # - Understanding the gammapy data workflow, in particular what are DL3 events and intrument response functions (IRF).
-# 
+#
 # ## Context
-# 
-# This notebook is an introduction to gammapy analysis using the high level interface. 
-# 
-# Gammapy analysis consists in two main steps. 
-# 
-# The first one is data reduction: user selected observations  are reduced to a geometry defined by the user. 
-# It can be 1D (spectrum from a given extraction region) or 3D (with a sky projection and an energy axis). 
+#
+# This notebook is an introduction to gammapy analysis using the high level interface.
+#
+# Gammapy analysis consists in two main steps.
+#
+# The first one is data reduction: user selected observations  are reduced to a geometry defined by the user.
+# It can be 1D (spectrum from a given extraction region) or 3D (with a sky projection and an energy axis).
 # The resulting reduced data and instrument response functions (IRF) are called datasets in Gammapy.
-# 
+#
 # The second step consists in setting a physical model on the datasets and fitting it to obtain relevant physical informations.
-# 
-# 
+#
+#
 # **Objective: Create a 3D dataset of the Crab using the H.E.S.S. DL3 data release 1 and perform a simple model fitting of the Crab nebula.**
-# 
+#
 # ## Proposed approach:
-# 
-# This notebook uses the high level `Analysis` class to orchestrate data reduction. In its current state, `Analysis` supports the standard analysis cases of joint or stacked 3D and 1D analyses. It is instantiated with an `AnalysisConfig` object that gives access to analysis parameters either directly or via a YAML config file. 
-# 
-# To see what is happening under-the-hood and to get an idea of the internal API, a second notebook performs the same analysis without using the `Analysis` class. 
-# 
+#
+# This notebook uses the high level `Analysis` class to orchestrate data reduction. In its current state, `Analysis` supports the standard analysis cases of joint or stacked 3D and 1D analyses. It is instantiated with an `AnalysisConfig` object that gives access to analysis parameters either directly or via a YAML config file.
+#
+# To see what is happening under-the-hood and to get an idea of the internal API, a second notebook performs the same analysis without using the `Analysis` class.
+#
 # In summary, we have to:
-# 
+#
 # - Create an `~gammapy.analysis.AnalysisConfig` object and edit it to define the analysis configuration:
 #     - Define what observations to use
 #     - Define the geometry of the dataset (data and IRFs)
@@ -39,7 +39,7 @@
 #     - Data reduction
 #     - Model fitting
 #     - Estimating flux points
-# 
+#
 # Finally we will compare the results against a reference model.
 
 # ## Setup
@@ -61,9 +61,9 @@ from gammapy.modeling.models import create_crab_spectral_model
 
 
 # ## Analysis configuration
-# 
+#
 # For configuration of the analysis we use the [YAML](https://en.wikipedia.org/wiki/YAML) data format. YAML is a machine readable serialisation format, that is also friendly for humans to read. In this tutorial we will write the configuration file just using Python strings, but of course the file can be created and modified with any text editor of your choice.
-# 
+#
 # Here is what the configuration for our analysis looks like:
 
 # In[ ]:
@@ -125,6 +125,15 @@ config.datasets.geom.axes.energy_true.max = "20 TeV"
 config.datasets.geom.axes.energy.nbins = 10
 
 
+# ### Setting the background normalization maker
+
+# In[ ]:
+
+
+config.datasets.background.method = "fov_background"
+config.datasets.background.parameters = {"method": "scale"}
+
+
 # ### Setting modeling and fitting parameters
 # `Analysis` can perform a few modeling and fitting tasks besides data reduction. Parameters have then to be passed to the configuration object.
 
@@ -136,11 +145,11 @@ config.fit.fit_range.max = 10 * u.TeV
 config.flux_points.energy = {"min": "1 TeV", "max": "10 TeV", "nbins": 3}
 
 
-# We're all set. 
+# We're all set.
 # But before we go on let's see how to save or import `AnalysisConfig` objects though YAML files.
 
 # ### Using YAML configuration files
-# 
+#
 # One can export/import the `AnalysisConfig` to/from a YAML file.
 
 # In[ ]:
@@ -157,7 +166,7 @@ print(config)
 
 
 # ## Running the analysis
-# 
+#
 # We first create an `~gammapy.analysis.Analysis` object from our configuration.
 
 # In[ ]:
@@ -167,7 +176,7 @@ analysis = Analysis(config)
 
 
 # ###  Observation selection
-# 
+#
 # We can directly select and load the observations from disk using `~gammapy.analysis.Analysis.get_observations()`:
 
 # In[ ]:
@@ -184,10 +193,10 @@ analysis.get_observations()
 analysis.observations.ids
 
 
-# To see how to explore observations, please refer to the following notebook: [CTA with Gammapy](cta.ipynb) or  [HESS with Gammapy](hess.ipynb) 
+# To see how to explore observations, please refer to the following notebook: [CTA with Gammapy](cta.ipynb) or  [HESS with Gammapy](hess.ipynb)
 
 # ## Data reduction
-# 
+#
 # Now we proceed to the data reduction. In the config file we have chosen a WCS map geometry, energy axis and decided to stack the maps. We can run the reduction using `.get_datasets()`:
 
 # In[ ]:
@@ -205,7 +214,7 @@ print(analysis.datasets["stacked"])
 
 
 # As you can see the dataset comes with a predefined background model out of the data reduction, but no source model has been set yet.
-# 
+#
 # The counts, exposure and background model maps are directly available on the dataset and can be printed and plotted:
 
 # In[ ]:
@@ -216,7 +225,7 @@ counts.smooth("0.05 deg").plot_interactive()
 
 
 # ## Save dataset to disk
-# 
+#
 # It is common to run the preparation step independent of the likelihood fit, because often the preparation of maps, PSF and energy dispersion is slow if you have a lot of data. We first create a folder:
 
 # In[ ]:
@@ -236,7 +245,7 @@ analysis.datasets[0].write(filename, overwrite=True)
 
 
 # ## Model fitting
-# 
+#
 # Now we define a model to be fitted to the dataset. Here we use its YAML definition to load it:
 
 # In[ ]:
@@ -253,13 +262,13 @@ components:
     - name: lon_0
       value: 83.63
       unit: deg
-    - name: lat_0 
-      value: 22.14    
+    - name: lat_0
+      value: 22.14
       unit: deg
   spectral:
     type: PowerLawSpectralModel
     parameters:
-    - name: amplitude      
+    - name: amplitude
       value: 1.0e-12
       unit: cm-2 s-1 TeV-1
     - name: index
@@ -325,7 +334,7 @@ plt.figure(figsize=(8, 5))
 ax_sed, ax_residuals = analysis.flux_points.peek()
 
 
-# The flux points can be exported to a fits table following the format defined [here](https://gamma-astro-data-formats.readthedocs.io/en/latest/spectra/flux_points/index.html) 
+# The flux points can be exported to a fits table following the format defined [here](https://gamma-astro-data-formats.readthedocs.io/en/latest/spectra/flux_points/index.html)
 
 # In[ ]:
 
@@ -335,9 +344,9 @@ analysis.flux_points.write(filename, overwrite=True)
 
 
 # ## What's next
-# 
+#
 # You can look at the same analysis without the high level interface in [analysis_2](analysis_2.ipynb)
-# 
+#
 # You can see how to perform a 1D spectral analysis of the same data in [spectrum analysis](spectrum_analysis.ipynb)
 
 # In[ ]:

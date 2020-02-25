@@ -3,53 +3,53 @@
 
 # # Spectral analysis with Gammapy
 
-# ## Prerequisites 
-# 
-# - Understanding how spectral extraction is performed in Cherenkov astronomy, in particular regarding OFF background measurements. 
+# ## Prerequisites
+#
+# - Understanding how spectral extraction is performed in Cherenkov astronomy, in particular regarding OFF background measurements.
 # - Understanding the basics data reduction and modeling/fitting process with the gammapy library API as shown in the [first gammapy analysis with the gammapy library API tutorial](analysis_2.ipynb)
-# 
+#
 # ## Context
-# 
-# While 3D analysis allows in principle to deal with complex situations such as overlapping sources, in many cases, it is not required to extract the spectrum of a source. Spectral analysis, where all data inside a ON region are binned into 1D datasets, provides a nice alternative. 
-# 
+#
+# While 3D analysis allows in principle to deal with complex situations such as overlapping sources, in many cases, it is not required to extract the spectrum of a source. Spectral analysis, where all data inside a ON region are binned into 1D datasets, provides a nice alternative.
+#
 # In classical Cherenkov astronomy, it is used with a specific background estimation technique that relies on OFF measurements taken in the field-of-view in regions where the background
-# rate is assumed to be equal to the one in the ON region. 
-# 
+# rate is assumed to be equal to the one in the ON region.
+#
 # This allows to use a specific fit statistics for ON-OFF measurements, the wstat (see `~gammapy.stats.fit_statistics`), where no background model is assumed. Background is treated as a set of nuisance parameters. This removes some systematic effects connected
 # to the choice or the quality of the background model. But this comes at the expense of larger statistical uncertainties on the fitted model parameters.
-# 
+#
 # **Objective: perform a full region based spectral analysis of 4 Crab observations of  H.E.S.S. data release 1 and fit the resulting datasets.**
-# 
+#
 # ## Introduction
-# 
-# Here, as usual, we use the `~gammapy.data.DataStore` to retrieve a list of selected observations (`~gammapy.data.Observations`). Then, we define the ON region containing the source and the geometry of the `~gammapy.cube.SpectrumDataset` object we want to produce. We then create the corresponding dataset Maker. 
-# 
+#
+# Here, as usual, we use the `~gammapy.data.DataStore` to retrieve a list of selected observations (`~gammapy.data.Observations`). Then, we define the ON region containing the source and the geometry of the `~gammapy.cube.SpectrumDataset` object we want to produce. We then create the corresponding dataset Maker.
+#
 # We have to define the Maker object that will extract the OFF counts from reflected regions in the field-of-view. To ensure we use data in an energy range where the quality of the IRFs is good enough we also create a safe range Maker.
-# 
+#
 # We can then proceed with data reduction with a loop over all selected observations to produce datasets in the relevant geometry.
-# 
-# We can then explore the resulting datasets and look at the cumulative signal and significance of our source. We finally proceed with model fitting. 
-# 
+#
+# We can then explore the resulting datasets and look at the cumulative signal and significance of our source. We finally proceed with model fitting.
+#
 # In practice, we have to:
-# - Create a `~gammapy.data.DataStore` poiting to the relevant data 
+# - Create a `~gammapy.data.DataStore` poiting to the relevant data
 # - Apply an observation selection to produce a list of observations, a `~gammapy.data.Observations` object.
 # - Define a geometry of the spectrum we want to produce:
 #     - Create a `~regions.CircleSkyRegion` for the ON extraction region
 #     - Create a `~gammapy.maps.MapAxis` for the energy binnings: one for the reconstructed (i.e. measured) energy, the other for the true energy (i.e. the one used by IRFs and models)
-# - Create the necessary makers : 
-#     - the spectrum dataset maker : `~gammapy.cube.SpectrumDatasetMaker`
-#     - the OFF background maker, here a `~gammapy.cube.ReflectedRegionsBackgroundMaker`
-#     - and the safe range maker : `~gammapy.cube.SafeRangeMaker`
+# - Create the necessary makers :
+#     - the spectrum dataset maker : `~gammapy.makers.SpectrumDatasetMaker`
+#     - the OFF background maker, here a `~gammapy.makers.ReflectedRegionsBackgroundMaker`
+#     - and the safe range maker : `~gammapy.makers.SafeRangeMaker`
 # - Perform the data reduction loop. And for every observation:
-#     - Apply the makers sequentially to produce a `~gammapy.maps.SpectrumDatasetOnOff`
+#     - Apply the makers sequentially to produce a `~gammapy.datasets.SpectrumDatasetOnOff`
 #     - Append it to list of datasets
 # - Define the `~gammapy.modeling.models.SkyModel` to apply to the dataset.
 # - Create a `~gammapy.modeling.Fit` object and run it to fit the model parameters
 # - Apply a `~gammapy.spectrum.FluxPointsEstimator` to compute flux points for the spectral part of the fit.
-# 
+#
 
 # ## Setup
-# 
+#
 # As usual, we'll start with some setup ...
 
 # In[ ]:
@@ -82,29 +82,22 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 from regions import CircleSkyRegion
 from gammapy.maps import Map
-from gammapy.modeling import Fit, Datasets
+from gammapy.modeling import Fit
 from gammapy.data import DataStore
+from gammapy.datasets import Datasets, SpectrumDataset, SpectrumDatasetOnOff, FluxPointsDataset, plot_spectrum_datasets_off_regions
 from gammapy.modeling.models import (
     PowerLawSpectralModel,
     create_crab_spectral_model,
     SkyModel,
 )
-from gammapy.cube import SafeMaskMaker
-from gammapy.spectrum import (
-    SpectrumDatasetMaker,
-    SpectrumDatasetOnOff,
-    SpectrumDataset,
-    FluxPointsEstimator,
-    FluxPointsDataset,
-    ReflectedRegionsBackgroundMaker,
-    plot_spectrum_datasets_off_regions,
-)
+from gammapy.makers import SafeMaskMaker, SpectrumDatasetMaker, ReflectedRegionsBackgroundMaker
+from gammapy.spectrum import FluxPointsEstimator
 
 
 # ## Load Data
-# 
+#
 # First, we select and load some H.E.S.S. observations of the Crab nebula (simulated events for now).
-# 
+#
 # We will access the events, effective area, energy dispersion, livetime and PSF for containement correction.
 
 # In[ ]:
@@ -116,7 +109,7 @@ observations = datastore.get_observations(obs_ids)
 
 
 # ## Define Target Region
-# 
+#
 # The next step is to define a signal extraction region, also known as on region. In the simplest case this is just a [CircleSkyRegion](http://astropy-regions.readthedocs.io/en/latest/api/regions.CircleSkyRegion.html), but here we will use the ``Target`` class in gammapy that is useful for book-keeping if you run several analysis in a script.
 
 # In[ ]:
@@ -128,10 +121,10 @@ on_region = CircleSkyRegion(center=target_position, radius=on_region_radius)
 
 
 # ## Create exclusion mask
-# 
+#
 # We will use the reflected regions method to place off regions to estimate the background level in the on region.
 # To make sure the off regions don't contain gamma-ray emission, we create an exclusion mask.
-# 
+#
 # Using http://gamma-sky.net/ we find that there's only one known gamma-ray source near the Crab nebula: the AGN called [RGB J0521+212](http://gamma-sky.net/#/cat/tev/23) at GLON = 183.604 deg and GLAT = -8.708 deg.
 
 # In[ ]:
@@ -153,7 +146,7 @@ exclusion_mask.plot();
 
 
 # ## Run data reduction chain
-# 
+#
 # We begin with the configuration of the maker classes:
 
 # In[ ]:
@@ -194,7 +187,7 @@ plot_spectrum_datasets_off_regions(ax=ax, datasets=datasets)
 
 
 # ## Source statistic
-# 
+#
 # Next we're going to look at the overall source statistics in our signal region.
 
 # In[ ]:
@@ -272,7 +265,7 @@ for obs_id in obs_ids:
 
 
 # ## Fit spectrum
-# 
+#
 # Now we'll fit a global model to the spectrum. First we do a joint likelihood fit to all observations. If you want to stack the observations see below. We will also produce a debug plot in order to show how the global fit matches one of the individual observations.
 
 # In[ ]:
@@ -311,7 +304,7 @@ ax_spectrum.set_ylim(0.1, 40)
 
 
 # ## Compute Flux Points
-# 
+#
 # To round up our analysis we can compute flux points by fitting the norm of the global model in energy bands. We'll use a fixed energy binning for now:
 
 # In[ ]:
@@ -351,7 +344,7 @@ ax = flux_points.plot(
 flux_points.to_sed_type("e2dnde").plot_ts_profiles(ax=ax)
 
 
-# The final plot with the best fit model, flux points and residuals can be quickly made like this: 
+# The final plot with the best fit model, flux points and residuals can be quickly made like this:
 
 # In[ ]:
 
@@ -369,7 +362,7 @@ flux_points_dataset.peek();
 
 
 # ## Stack observations
-# 
+#
 # And alternative approach to fitting the spectrum is stacking all observations first and the fitting a model. For this we first stack the individual datasets:
 
 # In[ ]:
@@ -442,16 +435,16 @@ plt.legend()
 
 
 # ## Exercises
-# 
+#
 # Now you have learned the basics of a spectral analysis with Gammapy. To practice you can continue with the following exercises:
-# 
+#
 # - Fit a different spectral model to the data.
 #   You could try `~gammapy.modeling.models.ExpCutoffPowerLawSpectralModel` or `~gammapy.modeling.models.LogParabolaSpectralModel`.
 # - Compute flux points for the stacked dataset.
 # - Create a `~gammapy.spectrum.FluxPointsDataset` with the flux points you have computed for the stacked dataset and fit the flux points again with obe of the spectral models. How does the result compare to the best fit model, that was directly fitted to the counts data?
 
 # ## What next?
-# 
+#
 # The methods shown in this tutorial is valid for point-like or midly extended sources where we can assume that the IRF taken at the region center is valid over the whole region. If one wants to extract the 1D spectrum of a large source and properly average the response over the extraction region, one has to use a different approach explained in [the extended source spectral analysis tutorial](extended_source_spectral_analysis.ipynb).
 
 # In[ ]:

@@ -2,16 +2,16 @@
 # coding: utf-8
 
 # # CTA data analysis with Gammapy
-# 
+#
 # ## Introduction
-# 
+#
 # **This notebook shows an example how to make a sky image and spectrum for simulated CTA data with Gammapy.**
-# 
+#
 # The dataset we will use is three observation runs on the Galactic center. This is a tiny (and thus quick to process and play with and learn) subset of the simulated CTA dataset that was produced for the first data challenge in August 2017.
-# 
+#
 
 # ## Setup
-# 
+#
 # As usual, we'll start with some setup ...
 
 # In[ ]:
@@ -35,19 +35,13 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 from astropy.convolution import Gaussian2DKernel
 from regions import CircleSkyRegion
-from gammapy.modeling import Fit, Datasets
+from gammapy.modeling import Fit
 from gammapy.data import DataStore
+from gammapy.datasets import Datasets, FluxPointsDataset, SpectrumDataset, plot_spectrum_datasets_off_regions, MapDataset
 from gammapy.modeling.models import PowerLawSpectralModel, SkyModel
-from gammapy.spectrum import (
-    SpectrumDatasetMaker,
-    SpectrumDataset,
-    FluxPointsEstimator,
-    FluxPointsDataset,
-    ReflectedRegionsBackgroundMaker,
-    plot_spectrum_datasets_off_regions,
-)
+from gammapy.spectrum import FluxPointsEstimator
 from gammapy.maps import MapAxis, WcsNDMap, WcsGeom
-from gammapy.cube import MapDatasetMaker, MapDataset, SafeMaskMaker
+from gammapy.makers import MapDatasetMaker, SafeMaskMaker, SpectrumDatasetMaker, ReflectedRegionsBackgroundMaker
 from gammapy.detect import TSMapEstimator, find_peaks
 
 
@@ -64,9 +58,9 @@ log.setLevel(logging.ERROR)
 
 
 # ## Select observations
-# 
+#
 # A Gammapy analysis usually starts by creating a `~gammapy.data.DataStore` and selecting observations.
-# 
+#
 # This is shown in detail in the other notebook, here we just pick three observations near the galactic center.
 
 # In[ ]:
@@ -104,9 +98,9 @@ data_store.obs_table.select_obs_id(obs_id)[obs_cols]
 
 
 # ## Make sky images
-# 
+#
 # ### Define map geometry
-# 
+#
 # Select the target position and define an ON region for the spectral analysis
 
 # In[ ]:
@@ -122,7 +116,7 @@ geom
 
 
 # ### Compute images
-# 
+#
 # Exclusion mask currently unused. Remove here or move to later in the tutorial?
 
 # In[ ]:
@@ -164,7 +158,7 @@ images["excess"] = images["counts"] - images["background"]
 
 
 # ### Show images
-# 
+#
 # Let's have a quick look at the images we computed ...
 
 # In[ ]:
@@ -186,7 +180,7 @@ images["excess"].smooth(3).plot(vmax=2);
 
 
 # ## Source Detection
-# 
+#
 # Use the class `~gammapy.detect.TSMapEstimator` and `~gammapy.detect.find_peaks` to detect sources on the images:
 
 # In[ ]:
@@ -235,11 +229,11 @@ plt.gca().scatter(
 
 
 # ## Spatial analysis
-# 
+#
 # See other notebooks for how to run a 3D cube or 2D image based analysis.
 
 # ## Spectrum
-# 
+#
 # We'll run a spectral analysis using the classical reflected regions background estimation method,
 # and using the on-off (often called WSTAT) likelihood function.
 
@@ -281,7 +275,7 @@ plot_spectrum_datasets_off_regions(datasets, ax=ax)
 
 
 # ### Model fit
-# 
+#
 # The next step is to fit a spectral model, using all data (i.e. a "global" fit, using all energies).
 
 # In[ ]:
@@ -291,7 +285,7 @@ get_ipython().run_cell_magic('time', '', 'spectral_model = PowerLawSpectralModel
 
 
 # ### Spectral points
-# 
+#
 # Finally, let's compute spectral points. The method used is to first choose an energy binning, and then to do a 1-dim likelihood fit / profile to compute the flux and flux error.
 
 # In[ ]:
@@ -316,7 +310,7 @@ flux_points.table_formatted
 
 
 # ### Plot
-# 
+#
 # Let's plot the spectral model and points. You could do it directly, but there is a helper class.
 # Note that a spectral uncertainty band, a "butterfly" is drawn, but it is very thin, i.e. barely visible.
 
@@ -335,7 +329,7 @@ flux_points_dataset.peek();
 
 
 # ## Exercises
-# 
+#
 # * Re-run the analysis above, varying some analysis parameters, e.g.
 #     * Select a few other observations
 #     * Change the energy band for the map
@@ -352,6 +346,6 @@ flux_points_dataset.peek();
 
 
 # ## What next?
-# 
+#
 # * This notebook showed an example of a first CTA analysis with Gammapy, using simulated 1DC data.
 # * Let us know if you have any question or issues!

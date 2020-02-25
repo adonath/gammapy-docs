@@ -51,11 +51,11 @@
     "    - Create a `~gammapy.maps.MapAxis` for the energy\n",
     "    - Create a `~gammapy.maps.WcsGeom` for the geometry\n",
     "- Create the necessary makers : \n",
-    "    - the map dataset maker : `~gammapy.cube.MapDatasetMaker`\n",
-    "    - the background normalization maker, here a `~gammapy.cube.FoVBackgroundMaker`\n",
-    "    - and usually the safe range maker : `~gammapy.cube.SafeRangeMaker`\n",
+    "    - the map dataset maker : `~gammapy.makers.MapDatasetMaker`\n",
+    "    - the background normalization maker, here a `~gammapy.makers.FoVBackgroundMaker`\n",
+    "    - and usually the safe range maker : `~gammapy.makers.SafeRangeMaker`\n",
     "- Perform the data reduction loop. And for every observation:\n",
-    "    - Apply the makers sequentially to produce the current `~gammapy.maps.MapDataset`\n",
+    "    - Apply the makers sequentially to produce the current `~gammapy.datasets.MapDataset`\n",
     "    - Stack it on the target one.\n",
     "- Define the `~gammapy.modeling.models.SkyModel` to apply to the dataset.\n",
     "- Create a `~gammapy.modeling.Fit` object and run it to fit the model parameters\n",
@@ -95,13 +95,9 @@
    "outputs": [],
    "source": [
     "from gammapy.data import DataStore\n",
+    "from gammapy.datasets import MapDataset\n",
     "from gammapy.maps import WcsGeom, MapAxis, Map\n",
-    "from gammapy.cube import (\n",
-    "    MapDatasetMaker,\n",
-    "    MapDataset,\n",
-    "    SafeMaskMaker,\n",
-    "    FoVBackgroundMaker,\n",
-    ")\n",
+    "from gammapy.makers import MapDatasetMaker, SafeMaskMaker, FoVBackgroundMaker\n",
     "from gammapy.modeling.models import (\n",
     "    SkyModel,\n",
     "    PowerLawSpectralModel,\n",
@@ -198,7 +194,9 @@
     ")\n",
     "\n",
     "# Reduced IRFs are defined in true energy (i.e. not measured energy).\n",
-    "energy_axis_true = MapAxis.from_energy_bounds(0.5, 20, 10, unit=\"TeV\")"
+    "energy_axis_true = MapAxis.from_energy_bounds(\n",
+    "    0.5, 20, 10, unit=\"TeV\", name=\"energy_true\"\n",
+    ")"
    ]
   },
   {
@@ -275,8 +273,8 @@
       "Background norm obs 23526: 1.08\n",
       "Background norm obs 23559: 0.98\n",
       "Background norm obs 23592: 1.09\n",
-      "CPU times: user 2.19 s, sys: 129 ms, total: 2.32 s\n",
-      "Wall time: 2.42 s\n"
+      "CPU times: user 1.68 s, sys: 90.7 ms, total: 1.77 s\n",
+      "Wall time: 1.79 s\n"
      ]
     }
    ],
@@ -285,7 +283,9 @@
     "\n",
     "for obs in observations:\n",
     "    # First a cutout of the target map is produced\n",
-    "    cutout = stacked.cutout(obs.pointing_radec, width=2 * offset_max)\n",
+    "    cutout = stacked.cutout(\n",
+    "        obs.pointing_radec, width=2 * offset_max, name=f\"obs-{obs.obs_id}\"\n",
+    "    )\n",
     "    # A MapDataset is filled in this cutout geometry\n",
     "    dataset = maker.run(cutout, obs)\n",
     "    # fit background model\n",
@@ -300,6 +300,54 @@
    ]
   },
   {
+   "cell_type": "code",
+   "execution_count": 12,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "MapDataset\n",
+      "----------\n",
+      "\n",
+      "  Name                            : crab-stacked \n",
+      "\n",
+      "  Total counts                    : 2479 \n",
+      "  Total predicted counts          : 2106.52\n",
+      "  Total background counts         : 2106.52\n",
+      "\n",
+      "  Exposure min                    : 3.75e+08 m2 s\n",
+      "  Exposure max                    : 3.48e+09 m2 s\n",
+      "\n",
+      "  Number of total bins            : 40000 \n",
+      "  Number of fit bins              : 40000 \n",
+      "\n",
+      "  Fit statistic type              : cash\n",
+      "  Fit statistic value (-2 log(L)) : 17780.34\n",
+      "\n",
+      "  Number of models                : 1 \n",
+      "  Number of parameters            : 3\n",
+      "  Number of free parameters       : 1\n",
+      "\n",
+      "  Component 0: BackgroundModel\n",
+      "  \n",
+      "    Name                      : crab-stacked-bkg\n",
+      "    Datasets names            : ['crab-stacked']\n",
+      "    Parameters:\n",
+      "      norm                    :   1.000              \n",
+      "      tilt         (frozen)   :   0.000              \n",
+      "      reference    (frozen)   :   1.000  TeV         \n",
+      "  \n",
+      "  \n"
+     ]
+    }
+   ],
+   "source": [
+    "print(stacked)"
+   ]
+  },
+  {
    "cell_type": "markdown",
    "metadata": {},
    "source": [
@@ -308,18 +356,18 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 12,
+   "execution_count": 13,
    "metadata": {},
    "outputs": [
     {
      "data": {
       "text/plain": [
        "(<Figure size 432x288 with 2 Axes>,\n",
-       " <matplotlib.axes._subplots.WCSAxesSubplot at 0x1c1a87a0f0>,\n",
-       " <matplotlib.colorbar.Colorbar at 0x1c1ab4c240>)"
+       " <matplotlib.axes._subplots.WCSAxesSubplot at 0x1c11b52a90>,\n",
+       " <matplotlib.colorbar.Colorbar at 0x1c11c66b70>)"
       ]
      },
-     "execution_count": 12,
+     "execution_count": 13,
      "metadata": {},
      "output_type": "execute_result"
     },
@@ -353,7 +401,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 13,
+   "execution_count": 14,
    "metadata": {},
    "outputs": [],
    "source": [
@@ -370,7 +418,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 14,
+   "execution_count": 15,
    "metadata": {},
    "outputs": [],
    "source": [
@@ -388,7 +436,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 15,
+   "execution_count": 16,
    "metadata": {},
    "outputs": [],
    "source": [
@@ -417,7 +465,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 16,
+   "execution_count": 17,
    "metadata": {},
    "outputs": [],
    "source": [
@@ -437,7 +485,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 17,
+   "execution_count": 18,
    "metadata": {},
    "outputs": [
     {
@@ -456,8 +504,8 @@
       "------------------------------------------------------------------\n",
       "|     False     |     True      |   True    |   True    | False  |\n",
       "------------------------------------------------------------------\n",
-      "CPU times: user 3.32 s, sys: 148 ms, total: 3.47 s\n",
-      "Wall time: 3.59 s\n"
+      "CPU times: user 3.12 s, sys: 130 ms, total: 3.25 s\n",
+      "Wall time: 3.31 s\n"
      ]
     }
    ],
@@ -476,14 +524,14 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 18,
+   "execution_count": 19,
    "metadata": {},
    "outputs": [
     {
      "data": {
       "text/html": [
        "<i>Table length=8</i>\n",
-       "<table id=\"table120708241336\" class=\"table-striped table-bordered table-condensed\">\n",
+       "<table id=\"table120556238104\" class=\"table-striped table-bordered table-condensed\">\n",
        "<thead><tr><th>name</th><th>value</th><th>error</th><th>unit</th><th>min</th><th>max</th><th>frozen</th></tr></thead>\n",
        "<thead><tr><th>str9</th><th>float64</th><th>float64</th><th>str14</th><th>float64</th><th>float64</th><th>bool</th></tr></thead>\n",
        "<tr><td>norm</td><td>9.370e-01</td><td>2.198e-02</td><td></td><td>0.000e+00</td><td>nan</td><td>False</td></tr>\n",
@@ -511,7 +559,7 @@
        "reference 1.000e+00 0.000e+00            TeV        nan       nan   True"
       ]
      },
-     "execution_count": 18,
+     "execution_count": 19,
      "metadata": {},
      "output_type": "execute_result"
     }
@@ -531,16 +579,16 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 19,
+   "execution_count": 20,
    "metadata": {},
    "outputs": [
     {
      "data": {
       "text/plain": [
-       "(<matplotlib.axes._subplots.WCSAxesSubplot at 0x1c1ccdf940>, None)"
+       "(<matplotlib.axes._subplots.WCSAxesSubplot at 0x1c11f00978>, None)"
       ]
      },
-     "execution_count": 19,
+     "execution_count": 20,
      "metadata": {},
      "output_type": "execute_result"
     },
@@ -570,7 +618,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 20,
+   "execution_count": 21,
    "metadata": {},
    "outputs": [],
    "source": [
@@ -581,17 +629,17 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 21,
+   "execution_count": 22,
    "metadata": {},
    "outputs": [
     {
      "data": {
       "text/plain": [
-       "(<matplotlib.axes._subplots.WCSAxesSubplot at 0x1c1a993780>,\n",
-       " <matplotlib.axes._subplots.AxesSubplot at 0x1c1cf532e8>)"
+       "(<matplotlib.axes._subplots.WCSAxesSubplot at 0x1c1422b780>,\n",
+       " <matplotlib.axes._subplots.AxesSubplot at 0x1c14396b38>)"
       ]
      },
-     "execution_count": 21,
+     "execution_count": 22,
      "metadata": {},
      "output_type": "execute_result"
     },
@@ -623,7 +671,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 22,
+   "execution_count": 23,
    "metadata": {},
    "outputs": [
     {
@@ -666,7 +714,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 23,
+   "execution_count": 24,
    "metadata": {},
    "outputs": [],
    "source": [
@@ -686,7 +734,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 24,
+   "execution_count": 25,
    "metadata": {},
    "outputs": [
     {
@@ -721,7 +769,7 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 25,
+   "execution_count": 26,
    "metadata": {},
    "outputs": [],
    "source": [
@@ -731,15 +779,15 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 26,
+   "execution_count": 27,
    "metadata": {},
    "outputs": [
     {
      "name": "stdout",
      "output_type": "stream",
      "text": [
-      "CPU times: user 2.01 s, sys: 62.9 ms, total: 2.07 s\n",
-      "Wall time: 2.49 s\n"
+      "CPU times: user 2.09 s, sys: 79.4 ms, total: 2.17 s\n",
+      "Wall time: 2.68 s\n"
      ]
     }
    ],
@@ -750,16 +798,16 @@
   },
   {
    "cell_type": "code",
-   "execution_count": 27,
+   "execution_count": 28,
    "metadata": {},
    "outputs": [
     {
      "data": {
       "text/plain": [
-       "<matplotlib.axes._subplots.AxesSubplot at 0x1c19825be0>"
+       "<matplotlib.axes._subplots.AxesSubplot at 0x1c1018ff60>"
       ]
      },
-     "execution_count": 27,
+     "execution_count": 28,
      "metadata": {},
      "output_type": "execute_result"
     },
@@ -806,98 +854,7 @@
   "widgets": {
    "application/vnd.jupyter.widget-state+json": {
     "state": {
-     "23cd7718000449abb2354fd4f33f41c3": {
-      "model_module": "@jupyter-widgets/base",
-      "model_module_version": "1.2.0",
-      "model_name": "LayoutModel",
-      "state": {
-       "_model_module": "@jupyter-widgets/base",
-       "_model_module_version": "1.2.0",
-       "_model_name": "LayoutModel",
-       "_view_count": null,
-       "_view_module": "@jupyter-widgets/base",
-       "_view_module_version": "1.2.0",
-       "_view_name": "LayoutView",
-       "align_content": null,
-       "align_items": null,
-       "align_self": null,
-       "border": null,
-       "bottom": null,
-       "display": null,
-       "flex": null,
-       "flex_flow": null,
-       "grid_area": null,
-       "grid_auto_columns": null,
-       "grid_auto_flow": null,
-       "grid_auto_rows": null,
-       "grid_column": null,
-       "grid_gap": null,
-       "grid_row": null,
-       "grid_template_areas": null,
-       "grid_template_columns": null,
-       "grid_template_rows": null,
-       "height": null,
-       "justify_content": null,
-       "justify_items": null,
-       "left": null,
-       "margin": null,
-       "max_height": null,
-       "max_width": null,
-       "min_height": null,
-       "min_width": null,
-       "object_fit": null,
-       "object_position": null,
-       "order": null,
-       "overflow": null,
-       "overflow_x": null,
-       "overflow_y": null,
-       "padding": null,
-       "right": null,
-       "top": null,
-       "visibility": null,
-       "width": null
-      }
-     },
-     "25ffcf44f3cf462fa1e45bd2540c7a2e": {
-      "model_module": "@jupyter-widgets/controls",
-      "model_module_version": "1.5.0",
-      "model_name": "DescriptionStyleModel",
-      "state": {
-       "_model_module": "@jupyter-widgets/controls",
-       "_model_module_version": "1.5.0",
-       "_model_name": "DescriptionStyleModel",
-       "_view_count": null,
-       "_view_module": "@jupyter-widgets/base",
-       "_view_module_version": "1.2.0",
-       "_view_name": "StyleView",
-       "description_width": "initial"
-      }
-     },
-     "3aaf473e0a754fbb8dbf0d743b58915f": {
-      "model_module": "@jupyter-widgets/controls",
-      "model_module_version": "1.5.0",
-      "model_name": "VBoxModel",
-      "state": {
-       "_dom_classes": [
-        "widget-interact"
-       ],
-       "_model_module": "@jupyter-widgets/controls",
-       "_model_module_version": "1.5.0",
-       "_model_name": "VBoxModel",
-       "_view_count": null,
-       "_view_module": "@jupyter-widgets/controls",
-       "_view_module_version": "1.5.0",
-       "_view_name": "VBoxView",
-       "box_style": "",
-       "children": [
-        "IPY_MODEL_88a90ebec2d84f6b847acacbd49a1202",
-        "IPY_MODEL_54155136d4a24edda4ccc47382578c4d",
-        "IPY_MODEL_a2f119008d2e4afbbba12e7c76338577"
-       ],
-       "layout": "IPY_MODEL_c0c3d8d1003949e083594c5329b12323"
-      }
-     },
-     "4d3e5a7988f64b09a66d867c16474b93": {
+     "27c3d382704a4ef086306e4d2c6649d6": {
       "model_module": "@jupyter-widgets/base",
       "model_module_version": "1.2.0",
       "model_name": "LayoutModel",
@@ -949,48 +906,7 @@
        "width": "50%"
       }
      },
-     "54155136d4a24edda4ccc47382578c4d": {
-      "model_module": "@jupyter-widgets/controls",
-      "model_module_version": "1.5.0",
-      "model_name": "RadioButtonsModel",
-      "state": {
-       "_dom_classes": [],
-       "_model_module": "@jupyter-widgets/controls",
-       "_model_module_version": "1.5.0",
-       "_model_name": "RadioButtonsModel",
-       "_options_labels": [
-        "linear",
-        "sqrt",
-        "log"
-       ],
-       "_view_count": null,
-       "_view_module": "@jupyter-widgets/controls",
-       "_view_module_version": "1.5.0",
-       "_view_name": "RadioButtonsView",
-       "description": "Select stretch:",
-       "description_tooltip": null,
-       "disabled": false,
-       "index": 0,
-       "layout": "IPY_MODEL_6172a98504df4b7d93e9967cf69b5384",
-       "style": "IPY_MODEL_5ec5dc807c8348c8844c8a4df6ce73ee"
-      }
-     },
-     "5ec5dc807c8348c8844c8a4df6ce73ee": {
-      "model_module": "@jupyter-widgets/controls",
-      "model_module_version": "1.5.0",
-      "model_name": "DescriptionStyleModel",
-      "state": {
-       "_model_module": "@jupyter-widgets/controls",
-       "_model_module_version": "1.5.0",
-       "_model_name": "DescriptionStyleModel",
-       "_view_count": null,
-       "_view_module": "@jupyter-widgets/base",
-       "_view_module_version": "1.2.0",
-       "_view_name": "StyleView",
-       "description_width": "initial"
-      }
-     },
-     "6172a98504df4b7d93e9967cf69b5384": {
+     "4080cdd5813343f787fd863a2522720a": {
       "model_module": "@jupyter-widgets/base",
       "model_module_version": "1.2.0",
       "model_name": "LayoutModel",
@@ -1042,7 +958,157 @@
        "width": null
       }
      },
-     "88a90ebec2d84f6b847acacbd49a1202": {
+     "489c9b60cbcf4b6c8b46abb93639143a": {
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "1.5.0",
+      "model_name": "VBoxModel",
+      "state": {
+       "_dom_classes": [
+        "widget-interact"
+       ],
+       "_model_module": "@jupyter-widgets/controls",
+       "_model_module_version": "1.5.0",
+       "_model_name": "VBoxModel",
+       "_view_count": null,
+       "_view_module": "@jupyter-widgets/controls",
+       "_view_module_version": "1.5.0",
+       "_view_name": "VBoxView",
+       "box_style": "",
+       "children": [
+        "IPY_MODEL_cbd5c3b1fae44f7e8f8ab826a6740346",
+        "IPY_MODEL_9343bf0336bf4b5b940276a7a8624422",
+        "IPY_MODEL_55b47f70d993488daf01a145bdcf1620"
+       ],
+       "layout": "IPY_MODEL_4080cdd5813343f787fd863a2522720a"
+      }
+     },
+     "55b47f70d993488daf01a145bdcf1620": {
+      "model_module": "@jupyter-widgets/output",
+      "model_module_version": "1.0.0",
+      "model_name": "OutputModel",
+      "state": {
+       "_dom_classes": [],
+       "_model_module": "@jupyter-widgets/output",
+       "_model_module_version": "1.0.0",
+       "_model_name": "OutputModel",
+       "_view_count": null,
+       "_view_module": "@jupyter-widgets/output",
+       "_view_module_version": "1.0.0",
+       "_view_name": "OutputView",
+       "layout": "IPY_MODEL_e2d74aeae9484756b7c03c64d36d72e8",
+       "msg_id": "",
+       "outputs": []
+      }
+     },
+     "5d26f9ca47ef4c5582b870b51d83d540": {
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "1.5.0",
+      "model_name": "DescriptionStyleModel",
+      "state": {
+       "_model_module": "@jupyter-widgets/controls",
+       "_model_module_version": "1.5.0",
+       "_model_name": "DescriptionStyleModel",
+       "_view_count": null,
+       "_view_module": "@jupyter-widgets/base",
+       "_view_module_version": "1.2.0",
+       "_view_name": "StyleView",
+       "description_width": "initial"
+      }
+     },
+     "9343bf0336bf4b5b940276a7a8624422": {
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "1.5.0",
+      "model_name": "RadioButtonsModel",
+      "state": {
+       "_dom_classes": [],
+       "_model_module": "@jupyter-widgets/controls",
+       "_model_module_version": "1.5.0",
+       "_model_name": "RadioButtonsModel",
+       "_options_labels": [
+        "linear",
+        "sqrt",
+        "log"
+       ],
+       "_view_count": null,
+       "_view_module": "@jupyter-widgets/controls",
+       "_view_module_version": "1.5.0",
+       "_view_name": "RadioButtonsView",
+       "description": "Select stretch:",
+       "description_tooltip": null,
+       "disabled": false,
+       "index": 0,
+       "layout": "IPY_MODEL_b4ba6e09db1345df8843c59d7255e09b",
+       "style": "IPY_MODEL_a556646d331841c98256826d6b152248"
+      }
+     },
+     "a556646d331841c98256826d6b152248": {
+      "model_module": "@jupyter-widgets/controls",
+      "model_module_version": "1.5.0",
+      "model_name": "DescriptionStyleModel",
+      "state": {
+       "_model_module": "@jupyter-widgets/controls",
+       "_model_module_version": "1.5.0",
+       "_model_name": "DescriptionStyleModel",
+       "_view_count": null,
+       "_view_module": "@jupyter-widgets/base",
+       "_view_module_version": "1.2.0",
+       "_view_name": "StyleView",
+       "description_width": "initial"
+      }
+     },
+     "b4ba6e09db1345df8843c59d7255e09b": {
+      "model_module": "@jupyter-widgets/base",
+      "model_module_version": "1.2.0",
+      "model_name": "LayoutModel",
+      "state": {
+       "_model_module": "@jupyter-widgets/base",
+       "_model_module_version": "1.2.0",
+       "_model_name": "LayoutModel",
+       "_view_count": null,
+       "_view_module": "@jupyter-widgets/base",
+       "_view_module_version": "1.2.0",
+       "_view_name": "LayoutView",
+       "align_content": null,
+       "align_items": null,
+       "align_self": null,
+       "border": null,
+       "bottom": null,
+       "display": null,
+       "flex": null,
+       "flex_flow": null,
+       "grid_area": null,
+       "grid_auto_columns": null,
+       "grid_auto_flow": null,
+       "grid_auto_rows": null,
+       "grid_column": null,
+       "grid_gap": null,
+       "grid_row": null,
+       "grid_template_areas": null,
+       "grid_template_columns": null,
+       "grid_template_rows": null,
+       "height": null,
+       "justify_content": null,
+       "justify_items": null,
+       "left": null,
+       "margin": null,
+       "max_height": null,
+       "max_width": null,
+       "min_height": null,
+       "min_width": null,
+       "object_fit": null,
+       "object_position": null,
+       "order": null,
+       "overflow": null,
+       "overflow_x": null,
+       "overflow_y": null,
+       "padding": null,
+       "right": null,
+       "top": null,
+       "visibility": null,
+       "width": null
+      }
+     },
+     "cbd5c3b1fae44f7e8f8ab826a6740346": {
       "model_module": "@jupyter-widgets/controls",
       "model_module_version": "1.5.0",
       "model_name": "SelectionSliderModel",
@@ -1066,31 +1132,13 @@
        "description_tooltip": null,
        "disabled": false,
        "index": 0,
-       "layout": "IPY_MODEL_4d3e5a7988f64b09a66d867c16474b93",
+       "layout": "IPY_MODEL_27c3d382704a4ef086306e4d2c6649d6",
        "orientation": "horizontal",
        "readout": true,
-       "style": "IPY_MODEL_25ffcf44f3cf462fa1e45bd2540c7a2e"
+       "style": "IPY_MODEL_5d26f9ca47ef4c5582b870b51d83d540"
       }
      },
-     "a2f119008d2e4afbbba12e7c76338577": {
-      "model_module": "@jupyter-widgets/output",
-      "model_module_version": "1.0.0",
-      "model_name": "OutputModel",
-      "state": {
-       "_dom_classes": [],
-       "_model_module": "@jupyter-widgets/output",
-       "_model_module_version": "1.0.0",
-       "_model_name": "OutputModel",
-       "_view_count": null,
-       "_view_module": "@jupyter-widgets/output",
-       "_view_module_version": "1.0.0",
-       "_view_name": "OutputView",
-       "layout": "IPY_MODEL_23cd7718000449abb2354fd4f33f41c3",
-       "msg_id": "",
-       "outputs": []
-      }
-     },
-     "c0c3d8d1003949e083594c5329b12323": {
+     "e2d74aeae9484756b7c03c64d36d72e8": {
       "model_module": "@jupyter-widgets/base",
       "model_module_version": "1.2.0",
       "model_name": "LayoutModel",

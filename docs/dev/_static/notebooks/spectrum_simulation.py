@@ -2,32 +2,32 @@
 # coding: utf-8
 
 # # Spectrum simulation
-# 
+#
 # ## Prerequisites
-# 
+#
 # - Knowledge of spectral extraction and datasets used in gammapy, see for instance the [spectral analysis tutorial](spectrum_analysis.ipynb)
-# 
+#
 # ## Context
-# 
+#
 # To simulate a specific observation, it is not always necessary to simulate the full photon list. For many uses cases, simulating directly a reduced binned dataset is enough: the IRFs reduced in the correct geometry are combined with a source model to predict an actual number of counts per bin. The latter is then used to simulate a reduced dataset using Poisson probability distribution.
-# 
+#
 # This can be done to check the feasibility of a measurement, to test whether fitted parameters really provide a good fit to the data etc.
-# 
+#
 # Here we will see how to perform a 1D spectral simulation of a CTA observation, in particular, we will generate OFF observations following the template background stored in the CTA IRFs.
-# 
+#
 # **Objective: simulate a number of spectral ON-OFF observations of a source with a power-law spectral model with CTA using the CTA 1DC response, fit them with the assumed spectral model and check that the distribution of fitted parameters is consistent with the input values.**
-# 
+#
 # ## Proposed approach:
-# 
+#
 # We will use the following classes:
-# 
+#
 # * `~gammapy.spectrum.SpectrumDatasetOnOff`
 # * `~gammapy.spectrum.SpectrumDataset`
 # * `~gammapy.irf.load_cta_irfs`
 # * `~gammapy.modeling.models.PowerLawSpectralModel`
 
 # ## Setup
-# 
+#
 
 # In[ ]:
 
@@ -43,12 +43,9 @@ import numpy as np
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 from regions import CircleSkyRegion
-from gammapy.spectrum import (
-    SpectrumDatasetOnOff,
-    SpectrumDataset,
-    SpectrumDatasetMaker,
-)
-from gammapy.modeling import Fit, Parameter
+from gammapy.datasets import SpectrumDatasetOnOff, SpectrumDataset
+from gammapy.makers import SpectrumDatasetMaker
+from gammapy.modeling import Fit
 from gammapy.modeling.models import (
     PowerLawSpectralModel,
     SpectralModel,
@@ -60,8 +57,8 @@ from gammapy.maps import MapAxis
 
 
 # ## Simulation of a single spectrum
-# 
-# To do a simulation, we need to define the observational parameters like the livetime, the offset, the assumed integration radius, the energy range to perform the simulation for and the choice of spectral model. We then use an in-memory observation which is convolved with the IRFs to get the predicted number of counts. This is Poission fluctuated using the `fake()` to get the simulated counts for each observation.  
+#
+# To do a simulation, we need to define the observational parameters like the livetime, the offset, the assumed integration radius, the energy range to perform the simulation for and the choice of spectral model. We then use an in-memory observation which is convolved with the IRFs to get the predicted number of counts. This is Poission fluctuated using the `fake()` to get the simulated counts for each observation.
 
 # In[ ]:
 
@@ -136,8 +133,8 @@ print(dataset)
 # You can see that backgound counts are now simulated
 
 # ### OnOff analysis
-# 
-# To do `OnOff` spectral analysis, which is the usual science case, the standard would be to use `SpectrumDatasetOnOff`, which uses the acceptance to fake off-counts 
+#
+# To do `OnOff` spectral analysis, which is the usual science case, the standard would be to use `SpectrumDatasetOnOff`, which uses the acceptance to fake off-counts
 
 # In[ ]:
 
@@ -180,7 +177,7 @@ axes[2].hist(excess)
 axes[2].set_xlabel("excess");
 
 
-# Now, we fit each simulated spectrum individually 
+# Now, we fit each simulated spectrum individually
 
 # In[ ]:
 
@@ -200,7 +197,7 @@ print(f"index: {index.mean()} += {index.std()}")
 
 
 # ## Exercises
-# 
+#
 # * Change the observation time to something longer or shorter. Does the observation and spectrum results change as you expected?
 # * Change the spectral model, e.g. add a cutoff at 5 TeV, or put a steep-spectrum source with spectral index of 4.0
 # * Simulate spectra with the spectral model we just defined. How much observation duration do you need to get back the injected parameters?

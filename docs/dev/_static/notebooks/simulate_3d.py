@@ -2,29 +2,29 @@
 # coding: utf-8
 
 # # 3D simulation and fitting
-# 
+#
 # ## Prerequisites
-# 
+#
 # - Knowledge of 3D extraction and datasets used in gammapy, see for instance the [first analysis tutorial](analysis_1.ipynb)
-# 
+#
 # ## Context
-# 
+#
 # To simulate a specific observation, it is not always necessary to simulate the full photon list. For many uses cases, simulating directly a reduced binned dataset is enough: the IRFs reduced in the correct geometry are combined with a source model to predict an actual number of counts per bin. The latter is then used to simulate a reduced dataset using Poisson probability distribution.
-# 
+#
 # This can be done to check the feasibility of a measurement (performance / sensitivity study), to test whether fitted parameters really provide a good fit to the data etc.
-# 
+#
 # Here we will see how to perform a 3D simulation of a CTA observation, assuming both the spectral and spatial morphology of an observed source.
-# 
+#
 # **Objective: simulate a 3D observation of a source with CTA using the CTA 1DC response and fit it with the assumed source model.**
-# 
+#
 # ## Proposed approach:
-# 
+#
 # Here we can't use the regular observation objects that are connected to a `DataStore`. Instead we will create a fake `~gammapy.data.Observation` that contain some pointing information and the CTA 1DC IRFs (that are loaded with `~gammapy.irf.load_cta_irfs`).
-# 
+#
 # Then we will create a `~gammapy.cube.MapDataset` geometry and create it with the `~gammapy.cube.MapDatasetMaker`.
-# 
+#
 # Then we will be able to define a model consisting of  a `~gammapy.modeling.models.PowerLawSpectralModel` and a `~gammapy.modeling.models.GaussianSpatialModel`. We will assign it to the dataset and fake the count data.
-# 
+#
 
 # ## Imports and versions
 
@@ -42,12 +42,11 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord
 from gammapy.irf import load_cta_irfs
 from gammapy.maps import WcsGeom, MapAxis
-from gammapy.modeling.models import PowerLawSpectralModel
-from gammapy.modeling.models import GaussianSpatialModel
-from gammapy.modeling.models import SkyModel
-from gammapy.cube import MapDataset, MapDatasetMaker, SafeMaskMaker
+from gammapy.modeling.models import PowerLawSpectralModel, GaussianSpatialModel, SkyModel
+from gammapy.makers import MapDatasetMaker, SafeMaskMaker
 from gammapy.modeling import Fit
 from gammapy.data import Observation
+from gammapy.datasets import MapDataset
 
 
 # In[ ]:
@@ -111,12 +110,12 @@ spectral_model = PowerLawSpectralModel(
 model_simu = SkyModel(
     spatial_model=spatial_model,
     spectral_model=spectral_model,
-    name="model_simu",
+    name="model-simu",
 )
 print(model_simu)
 
 
-# Now, comes the main part of dataset simulation. We create an in-memory observation and an empty dataset. We then predict the number of counts for the given model, and Poission fluctuate it using `fake()` to make a simulated counts maps. Keep in mind that it is important to specify the `selection` of the maps that you want to produce 
+# Now, comes the main part of dataset simulation. We create an in-memory observation and an empty dataset. We then predict the number of counts for the given model, and Poission fluctuate it using `fake()` to make a simulated counts maps. Keep in mind that it is important to specify the `selection` of the maps that you want to produce
 
 # In[ ]:
 
@@ -124,8 +123,13 @@ print(model_simu)
 # Create an in-memory observation
 obs = Observation.create(pointing=pointing, livetime=livetime, irfs=irfs)
 print(obs)
+
+
+# In[ ]:
+
+
 # Make the MapDataset
-empty = MapDataset.create(geom)
+empty = MapDataset.create(geom, name="dataset-simu")
 maker = MapDatasetMaker(selection=["exposure", "background", "psf", "edisp"])
 maker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=4.0 * u.deg)
 dataset = maker.run(empty, obs)
@@ -143,7 +147,7 @@ dataset.fake()
 print(dataset)
 
 
-# Now use this dataset as you would in all standard analysis. You can plot the maps, or proceed with your custom analysis. 
+# Now use this dataset as you would in all standard analysis. You can plot the maps, or proceed with your custom analysis.
 # In the next section, we show the standard 3D fitting as in [analysis_3d](analysis_3d.ipynb).
 
 # In[ ]:
@@ -156,20 +160,26 @@ dataset.counts.smooth(0.05 * u.deg).plot_interactive(
 
 
 # ## Fit
-# 
+#
 # In this section, we do a usual 3D fit with the same model used to simulated the data and see the stability of the simulations. Often, it is useful to simulate many such datasets and look at the distribution of the reconstructed parameters.
 
 # In[ ]:
 
 
 # Make a copy of the dataset
-dataset1 = dataset.copy()
+dataset_fit = dataset.copy(name="dataset-fit")
 
 
 # In[ ]:
 
 
-print(dataset1.models)
+print(dataset_fit.models)
+
+
+# In[ ]:
+
+
+dataset_fit.models["dataset-simu-bkg"].datasets_names = ["dataset-fit"]
 
 
 # In[ ]:
@@ -185,18 +195,18 @@ spectral_model1 = PowerLawSpectralModel(
 model_fit = SkyModel(
     spatial_model=spatial_model1,
     spectral_model=spectral_model1,
-    name="model_fit",
+    name="model-fit",
 )
 
-dataset1.models = [model_fit, dataset.models[0]]
-print(dataset1.models)
+dataset_fit.models = [model_fit, dataset_fit.models[0]]
+print(dataset_fit.models)
 
 
 # In[ ]:
 
 
 # We do not want to fit the background in this case, so we will freeze the parameters
-background_model = dataset1.background_model
+background_model = dataset_fit.background_model
 background_model.parameters["norm"].value = 1.0
 background_model.parameters["norm"].frozen = True
 background_model.parameters["tilt"].frozen = True
@@ -207,16 +217,22 @@ print(background_model)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'fit = Fit([dataset1])\nresult = fit.run(optimize_opts={"print_level": 1})')
+print(dataset_fit)
 
 
 # In[ ]:
 
 
-dataset1.plot_residuals(method="diff/sqrt(model)", vmin=-0.5, vmax=0.5)
+get_ipython().run_cell_magic('time', '', 'fit = Fit([dataset_fit])\nresult = fit.run(optimize_opts={"print_level": 1})')
 
 
-# Compare the injected and fitted models: 
+# In[ ]:
+
+
+dataset_fit.plot_residuals(method="diff/sqrt(model)", vmin=-0.5, vmax=0.5)
+
+
+# Compare the injected and fitted models:
 
 # In[ ]:
 

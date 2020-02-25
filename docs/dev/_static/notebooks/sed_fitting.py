@@ -2,40 +2,40 @@
 # coding: utf-8
 
 # # Flux point fitting in Gammapy
-# 
+#
 # ## Prerequisites
-# 
+#
 # - Some knowledge about retrieving information from catalogs, see [the catalogs tutorial](catalog.ipynb)
-#  
+#
 # ## Context
-# 
-# Some high level studies do not rely on reduced datasets with their IRFs but directly on higher level products such as flux points. This is not ideal because flux points already contain some hypothesis for the underlying spectral shape and the uncertainties they carry are usually simplified (e.g. symmetric gaussian errors). Yet, this is an efficient way to combine heterogeneous data. 
-# 
+#
+# Some high level studies do not rely on reduced datasets with their IRFs but directly on higher level products such as flux points. This is not ideal because flux points already contain some hypothesis for the underlying spectral shape and the uncertainties they carry are usually simplified (e.g. symmetric gaussian errors). Yet, this is an efficient way to combine heterogeneous data.
+#
 # **Objective: fit spectral models to combined Fermi-LAT and IACT flux points.**
-# 
+#
 # ## Proposed approach
-# 
+#
 # Here we will load, the spectral points from Fermi-LAT and TeV catalogs and fit them with various spectral models to find the best representation of the wide band spectrum.
-#  
-# The central class we're going to use for this example analysis is:  
-# 
-# - `~gammapy.spectrum.FluxPointsDataset`
-# 
+#
+# The central class we're going to use for this example analysis is:
+#
+# - `~gammapy.datasets.FluxPointsDataset`
+#
 # In addition we will work with the following data classes:
-# 
+#
 # - `~gammapy.spectrum.FluxPoints`
 # - `~gammapy.catalog.SourceCatalogGammaCat`
 # - `~gammapy.catalog.SourceCatalog3FHL`
 # - `~gammapy.catalog.SourceCatalog3FGL`
-# 
+#
 # And the following spectral model classes:
-# 
+#
 # - `~gammapy.modeling.models.PowerLawSpectralModel`
 # - `~gammapy.modeling.models.ExpCutoffPowerLawSpectralModel`
 # - `~gammapy.modeling.models.LogParabolaSpectralModel`
 
 # ## Setup
-# 
+#
 # Let us start with the usual IPython notebook and Python imports:
 
 # In[ ]:
@@ -55,13 +55,14 @@ from gammapy.modeling.models import (
     LogParabolaSpectralModel,
     SkyModel,
 )
-from gammapy.spectrum import FluxPointsDataset, FluxPoints
+from gammapy.spectrum import FluxPoints
+from gammapy.datasets import FluxPointsDataset
 from gammapy.catalog import SOURCE_CATALOGS
 from gammapy.modeling import Fit
 
 
 # ## Load spectral points
-# 
+#
 # For this analysis we choose to work with the source 'HESS J1507-622' and the associated Fermi-LAT sources '3FGL J1506.6-6219' and '3FHL J1507.9-6228e'. We load the source catalogs, and then access source of interest by name:
 
 # In[ ]:
@@ -122,7 +123,7 @@ flux_points
 
 
 # ## Power Law Fit
-# 
+#
 # First we start with fitting a simple `~gammapy.modeling.models.PowerLawSpectralModel`.
 
 # In[ ]:
@@ -174,7 +175,7 @@ ax.set_ylim(1e-13, 1e-11);
 
 
 # ## Exponential Cut-Off Powerlaw Fit
-# 
+#
 # Next we fit an `~gammapy.modeling.models.ExpCutoffPowerLawSpectralModel` law to the data.
 
 # In[ ]:
@@ -216,7 +217,7 @@ ax.set_ylim(1e-13, 1e-11)
 
 
 # ## Log-Parabola Fit
-# 
+#
 # Finally we try to fit a `~gammapy.modeling.models.LogParabolaSpectralModel` model:
 
 # In[ ]:
@@ -253,14 +254,14 @@ ax.set_ylim(1e-13, 1e-11);
 
 
 # ## Exercises
-# 
+#
 # - Fit a `~gammapy.modeling.models.PowerLaw2SpectralModel` and `~gammapy.modeling.models.ExpCutoffPowerLaw3FGLSpectralModel` to the same data.
 # - Fit a `~gammapy.modeling.models.ExpCutoffPowerLawSpectralModel` model to Vela X ('HESS J0835-455') only and check if the best fit values correspond to the values given in the Gammacat catalog
 
 # ## What next?
-# 
+#
 # This was an introduction to SED fitting in Gammapy.
-# 
+#
 # * If you would like to learn how to perform a full Poisson maximum likelihood spectral fit, please check out the [spectrum analysis](spectrum_analysis.ipynb) tutorial.
 # * To learn how to combine heterogeneous datasets to perform a multi-instrument forward-folding fit see the [MWL analysis tutorial](analysis_mwl.ipynb)
 

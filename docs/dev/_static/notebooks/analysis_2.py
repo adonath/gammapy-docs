@@ -2,47 +2,47 @@
 # coding: utf-8
 
 # # First analysis with gammapy library API
-# 
+#
 # ## Prerequisites:
-# 
+#
 # - Understanding the gammapy data workflow, in particular what are DL3 events and intrument response functions (IRF).
 # - Understanding of the data reduction and modeling fitting process as shown in the [first gammapy analysis with the high level interface tutorial](analysis_1.ipynb)
-# 
+#
 # ## Context
-# 
+#
 # This notebook is an introduction to gammapy analysis this time using the lower level classes and functions
 # the library.
-# This allows to understand what happens during two main gammapy analysis steps, data reduction and modeling/fitting. 
-# 
+# This allows to understand what happens during two main gammapy analysis steps, data reduction and modeling/fitting.
+#
 # **Objective: Create a 3D dataset of the Crab using the H.E.S.S. DL3 data release 1 and perform a simple model fitting of the Crab nebula using the lower level gammapy API.**
-# 
+#
 # ## Proposed approach:
-# 
+#
 # Here, we have to interact with the data archive (with the `~gammapy.data.DataStore`) to retrieve a list of selected observations (`~gammapy.data.Observations`). Then, we define the geometry of the `~gammapy.cube.MapDataset` object we want to produce and the maker object that reduce an observation
-# to a dataset. 
-# 
+# to a dataset.
+#
 # We can then proceed with data reduction with a loop over all selected observations to produce datasets in the relevant geometry and stack them together (i.e. sum them all).
-# 
+#
 # In practice, we have to:
-# - Create a `~gammapy.data.DataStore` poiting to the relevant data 
+# - Create a `~gammapy.data.DataStore` poiting to the relevant data
 # - Apply an observation selection to produce a list of observations, a `~gammapy.data.Observations` object.
 # - Define a geometry of the Map we want to produce, with a sky projection and an energy range.
 #     - Create a `~gammapy.maps.MapAxis` for the energy
 #     - Create a `~gammapy.maps.WcsGeom` for the geometry
-# - Create the necessary makers : 
-#     - the map dataset maker : `~gammapy.cube.MapDatasetMaker`
-#     - the background normalization maker, here a `~gammapy.cube.FoVBackgroundMaker`
-#     - and usually the safe range maker : `~gammapy.cube.SafeRangeMaker`
+# - Create the necessary makers :
+#     - the map dataset maker : `~gammapy.makers.MapDatasetMaker`
+#     - the background normalization maker, here a `~gammapy.makers.FoVBackgroundMaker`
+#     - and usually the safe range maker : `~gammapy.makers.SafeRangeMaker`
 # - Perform the data reduction loop. And for every observation:
-#     - Apply the makers sequentially to produce the current `~gammapy.maps.MapDataset`
+#     - Apply the makers sequentially to produce the current `~gammapy.datasets.MapDataset`
 #     - Stack it on the target one.
 # - Define the `~gammapy.modeling.models.SkyModel` to apply to the dataset.
 # - Create a `~gammapy.modeling.Fit` object and run it to fit the model parameters
 # - Apply a `~gammapy.spectrum.FluxPointsEstimator` to compute flux points for the spectral part of the fit.
-# 
+#
 # ## Setup
 # First, we setup the analysis by performing required imports.
-# 
+#
 
 # In[ ]:
 
@@ -65,8 +65,9 @@ from regions import CircleSkyRegion
 
 
 from gammapy.data import DataStore
+from gammapy.datasets import MapDataset
 from gammapy.maps import WcsGeom, MapAxis, Map
-from gammapy.cube import MapDatasetMaker, MapDataset, SafeMaskMaker, FoVBackgroundMaker
+from gammapy.makers import MapDatasetMaker, SafeMaskMaker, FoVBackgroundMaker
 from gammapy.modeling.models import (
     SkyModel,
     PowerLawSpectralModel,
@@ -77,8 +78,8 @@ from gammapy.spectrum import FluxPointsEstimator
 
 
 # ## Defining the datastore and selecting observations
-# 
-# We first use the `~gammapy.data.DataStore` object to access the observations we want to analyse. Here the H.E.S.S. DL3 DR1. 
+#
+# We first use the `~gammapy.data.DataStore` object to access the observations we want to analyse. Here the H.E.S.S. DL3 DR1.
 
 # In[ ]:
 
@@ -86,9 +87,9 @@ from gammapy.spectrum import FluxPointsEstimator
 data_store = DataStore.from_dir("$GAMMAPY_DATA/hess-dl3-dr1")
 
 
-# We can now define an observation filter to select only the relevant observations. 
+# We can now define an observation filter to select only the relevant observations.
 # Here we use a cone search which we define with a python dict.
-# 
+#
 # We then filter the `ObservationTable` with `~gammapy.data.ObservationTable.select_observations()`.
 
 # In[ ]:
@@ -113,8 +114,8 @@ observations = data_store.get_observations(selected_obs_table["OBS_ID"])
 
 
 # ## Preparing reduced datasets geometry
-# 
-# Now we define a reference geometry for our analysis, We choose a WCS based geometry with a binsize of 0.02 deg and also define an energy axis: 
+#
+# Now we define a reference geometry for our analysis, We choose a WCS based geometry with a binsize of 0.02 deg and also define an energy axis:
 
 # In[ ]:
 
@@ -131,7 +132,7 @@ geom = WcsGeom.create(
 )
 
 # Reduced IRFs are defined in true energy (i.e. not measured energy).
-energy_axis_true = MapAxis.from_energy_bounds(0.5, 20, 10, unit="TeV")
+energy_axis_true = MapAxis.from_energy_bounds(0.5, 20, 10, unit="TeV", name="energy_true")
 
 
 # Now we can define the target dataset with this geometry.
@@ -145,9 +146,9 @@ stacked = MapDataset.create(
 
 
 # ## Data reduction
-# 
+#
 # ### Create the maker classes to be used
-# 
+#
 # The `~gammapy.cube.MapDatasetMaker` object is initialized as well as the `~gammapy.cube.SafeMaskMaker` that carries here a maximum offset selection.
 
 # In[ ]:
@@ -172,7 +173,13 @@ maker_fov = FoVBackgroundMaker(method="fit", exclusion_mask=exclusion_mask)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '\nfor obs in observations:\n    # First a cutout of the target map is produced\n    cutout = stacked.cutout(obs.pointing_radec, width=2 * offset_max)\n    # A MapDataset is filled in this cutout geometry\n    dataset = maker.run(cutout, obs)\n    # fit background model\n    dataset = maker_fov.run(dataset)\n    print(f"Background norm obs {obs.obs_id}: {dataset.background_model.norm.value:.2f}")\n    # The data quality cut is applied\n    dataset = maker_safe_mask.run(dataset, obs)\n    # The resulting dataset cutout is stacked onto the final one\n    stacked.stack(dataset)')
+get_ipython().run_cell_magic('time', '', '\nfor obs in observations:\n    # First a cutout of the target map is produced\n    cutout = stacked.cutout(obs.pointing_radec, width=2 * offset_max, name=f"obs-{obs.obs_id}")\n    # A MapDataset is filled in this cutout geometry\n    dataset = maker.run(cutout, obs)\n    # fit background model\n    dataset = maker_fov.run(dataset)\n    print(f"Background norm obs {obs.obs_id}: {dataset.background_model.norm.value:.2f}")\n    # The data quality cut is applied\n    dataset = maker_safe_mask.run(dataset, obs)\n    # The resulting dataset cutout is stacked onto the final one\n    stacked.stack(dataset)')
+
+
+# In[ ]:
+
+
+print(stacked)
 
 
 # ### Inspect the reduced dataset
@@ -186,7 +193,7 @@ stacked.counts.sum_over_axes().smooth(0.05 * u.deg).plot(
 
 
 # ## Save dataset to disk
-# 
+#
 # It is common to run the preparation step independent of the likelihood fit, because often the preparation of maps, PSF and energy dispersion is slow if you have a lot of data. We first create a folder:
 
 # In[ ]:
@@ -236,9 +243,9 @@ stacked.models.append(sky_model)
 
 
 # ## Fit the model
-# 
+#
 # The `~gammapy.modeling.Fit` class is orchestrating the fit, connecting the `stats` method of the dataset to the minimizer. By default, it uses `iminuit`.
-# 
+#
 # Its contructor takes a list of dataset as argument.
 
 # In[ ]:
@@ -256,8 +263,8 @@ result.parameters.to_table()
 
 
 # ### Inspecting residuals
-# 
-# For any fit it is usefull to inspect the residual images. We have a few option on the dataset object to handle this. First we can use `.plot_residuals()` to plot a residual image, summed over all energies: 
+#
+# For any fit it is usefull to inspect the residual images. We have a few option on the dataset object to handle this. First we can use `.plot_residuals()` to plot a residual image, summed over all energies:
 
 # In[ ]:
 
@@ -296,10 +303,10 @@ residuals.smooth("0.08 deg").plot_interactive(
 
 # ## Plot the fitted spectrum
 
-# ### Making a butterfly plot 
-# 
+# ### Making a butterfly plot
+#
 # The `SpectralModel` component can be used to produce a, so-called, butterfly plot showing the enveloppe of the model taking into account parameter uncertainties.
-# 
+#
 # To do so, we have to copy the part of the covariance matrix stored on the `FitResult` on the model parameters:
 
 # In[ ]:
@@ -323,10 +330,10 @@ ax = spec.plot_error(energy_range=energy_range, energy_power=2)
 
 
 # ### Computing flux points
-# 
-# We can now compute some flux points using the `~gammapy.spectrum.FluxPointsEstimator`. 
-# 
-# Besides the list of datasets to use, we must provide it the energy intervals on which to compute flux points as well as the model component name. 
+#
+# We can now compute some flux points using the `~gammapy.spectrum.FluxPointsEstimator`.
+#
+# Besides the list of datasets to use, we must provide it the energy intervals on which to compute flux points as well as the model component name.
 
 # In[ ]:
 

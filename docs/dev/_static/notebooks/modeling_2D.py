@@ -2,19 +2,19 @@
 # coding: utf-8
 
 # # Modeling and fitting 2D images using Gammapy
-# 
+#
 # ## Prerequisites:
 #  - To understand how a generel modelling and fiiting works in gammapy, please refer to the [analysis_3d tutorial](analysis_3d.ipynb)
-# 
+#
 # ## Context:
 # We often want the determine the position and morphology of an object. To do so, we don't necessarily have to resort to a full 3D fitting but can perform a simple image fitting, in particular, in an energy range where the PSF does not vary strongly, or if we want to explore a possible energy dependance of the morphology.
-# 
-# 
-# ## Objective: 
+#
+#
+# ## Objective:
 # To localize a source and/or constrain its morphology.
-# 
+#
 # ## Proposed approach:
-# 
+#
 # The first step here, as in most analysis with DL3 data, is to create reduced datasets. For this, we will use the `Analysis` class to create a single set of stacked maps with a single bin in energy (thus, an *image* which behaves as a *cube*). This, we will then model with a spatial model of our choice, while keeping the spectral model fixed to an integrated power law.
 
 # ## Setup
@@ -47,7 +47,7 @@ from gammapy.analysis import Analysis, AnalysisConfig
 # ## Creating the config file
 
 # Now, we create a config file for out analysis. You may load this from disc if you have a pre-defined config file.
-# 
+#
 # Here, we use 3 simulated CTA runs of the galactic center.
 
 # In[ ]:
@@ -127,7 +127,7 @@ print(analysis.datasets["stacked"].exposure)
 
 
 # ## Modelling
-# 
+#
 # Now, we define a model to be fitted to the dataset. **The important thing to note here is the dummy spectral model - an integrated powerlaw with only free normalisation**. Here, we use its YAML definition to load it:
 
 # In[ ]:
@@ -144,15 +144,15 @@ components:
     - name: lon_0
       value: 0.02
       unit: deg
-    - name: lat_0 
-      value: 0.01    
+    - name: lat_0
+      value: 0.01
       unit: deg
   spectral:
     type: PowerLaw2SpectralModel
     parameters:
-    - name: amplitude      
+    - name: amplitude
       value: 1.0e-12
-      unit: cm-2 s-1 
+      unit: cm-2 s-1
     - name: index
       value: 2.0
       unit: ''
@@ -164,7 +164,7 @@ components:
     - name: emax
       value: 10.0
       unit: TeV
-      frozen: true 
+      frozen: true
 """
 
 

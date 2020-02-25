@@ -2,31 +2,31 @@
 # coding: utf-8
 
 # # Spectral analysis of extended sources
-# 
+#
 # ## Prerequisites:
-# 
+#
 # - Understanding of spectral analysis techniques in classical Cherenkov astronomy.
 # - Understanding of how the spectrum and cube extraction API works, please refer to the [spectrum extraction notebook](spectrum_analysis.ipynb) and to the [3D analysis notebook](analysis_2.ipynb).
-# 
+#
 # ## Context
-# 
-# Many VHE sources in the Galaxy are extended. Studying them with a 1D spectral analysis is more complex than studying point sources. 
+#
+# Many VHE sources in the Galaxy are extended. Studying them with a 1D spectral analysis is more complex than studying point sources.
 # One often has to use complex (i.e. non circular) regions and more importantly, one has to take into account the fact that the instrument response is non uniform over the selectred region.
 # A typical example is given by the supernova remnant RX J1713-3935 which is nearly 1 degree in diameter. See the [following article](https://ui.adsabs.harvard.edu/abs/2018A%26A...612A...6H/abstract).
-# 
+#
 # **Objective: Measure the spectrum of RX J1713-3945 in a 1 degree region fully enclosing it.**
-# 
+#
 # ## Proposed approach:
-# 
+#
 # We have seen in the general presentation of the spectrum extraction for point sources, see [the corresponding notebook](spectrum_analysis.ipynb), that Gammapy uses specific datasets makers to first produce reduced spectral data and then to extract OFF measurements with reflected background techniques: the `~gammapy.spectrum.SpectrumDatasetMaker` and the `~gammapy.spectrum.ReflectedRegionsBackgroundMaker`. The former simply computes the reduced IRF at the center of the ON region (assumed to be circular).
-# 
+#
 # This is no longer valid for extended sources. To be able to compute average responses in the ON region, Gammapy relies on the creation of a cube enclosing it (i.e. a `~gammapy.cube.MapDataset`) which can be reduced to a simple spectrum (i.e. a `~gammapy.spectrum.SpectrumDataset`). We can then proceed with the OFF extraction as the standard point source case.
-# 
+#
 # In summary, we have to:
-# 
+#
 # - Define an ON region (a `~regions.SkyRegion`) fully enclosing the source we want to study.
-# - Define a geometry that fully contains the region and that covers the required energy range (beware in particular, the true energy range).  
-# - Create the necessary makers : 
+# - Define a geometry that fully contains the region and that covers the required energy range (beware in particular, the true energy range).
+# - Create the necessary makers :
 #     - the map dataset maker : `~gammapy.cube.MapDatasetMaker`
 #     - the OFF background maker, here a `~gammapy.spectrum.ReflectedRegionsBackgroundMaker`
 #     - and usually the safe range maker : `~gammapy.cube.SafeRangeMaker`
@@ -35,11 +35,11 @@
 #     - Extract the OFF data to produce a `~gammapy.spectrum.SpectrumDatasetOnOff` and compute a safe range for it.
 #     - Stack or store the resulting spectrum dataset.
 # - Finally proceed with model fitting on the dataset as usual.
-# 
+#
 # Here, we will use the RX J1713-3945 observations from the H.E.S.S. first public test data release. The tutorial is implemented with the intermediate level API.
-# 
-# ## Setup 
-# 
+#
+# ## Setup
+#
 # As usual, we'll start with some general imports...
 
 # In[ ]:
@@ -56,18 +56,18 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 from regions import CircleSkyRegion
 from gammapy.maps import Map, MapAxis, WcsGeom
-from gammapy.modeling import Fit, Datasets
+from gammapy.modeling import Fit
 from gammapy.data import DataStore
 from gammapy.modeling.models import (
     PowerLawSpectralModel,
     SkyModel,
 )
-from gammapy.cube import SafeMaskMaker, MapDataset, MapDatasetMaker
-from gammapy.spectrum import ReflectedRegionsBackgroundMaker
+from gammapy.datasets import  Datasets, MapDataset
+from gammapy.makers import SafeMaskMaker, MapDatasetMaker, ReflectedRegionsBackgroundMaker
 
 
 # ## Select the data
-# 
+#
 # We first set the datastore and retrieve a few observations from our source.
 
 # In[ ]:
@@ -84,7 +84,7 @@ observations = datastore.get_observations(obs_ids)
 # ## Prepare the datasets creation
 
 # ### Select the ON region
-# 
+#
 # Here we take a simple 1 degree circular region because it fits well with the morphology of RX J1713-3945. More complex regions could be used e.g. `~regions.EllipseSkyRegion` or `~regions.RectangleSkyRegion`.
 
 # In[ ]:
@@ -96,8 +96,8 @@ on_region = CircleSkyRegion(target_position, radius)
 
 
 # ### Define the geometries
-# 
-# This part is especially important. 
+#
+# This part is especially important.
 # - We have to define first energy axes. They define the axes of the resulting `~gammapy.SpectrumDatasetOnOff`. In particular, we have to be careful to the true energy axis: it has to cover a larger range than the reconstructed energy one.
 # - Then we define the geometry itself. It does not need to be very finely binned and should enclose all the ON region. To limit CPU and memory usage, one should avoid using a much larger region.
 
@@ -108,7 +108,7 @@ on_region = CircleSkyRegion(target_position, radius)
 energy_axis = MapAxis.from_energy_bounds(0.3, 40.0, 10, unit="TeV")
 
 # Reduced IRFs are defined in true energy (i.e. not measured energy).
-energy_axis_true = MapAxis.from_energy_bounds(0.05, 100, 30, unit="TeV")
+energy_axis_true = MapAxis.from_energy_bounds(0.05, 100, 30, unit="TeV", name="energy_true")
 
 # Here we use 1.5 degree which is slightly larger than needed.
 geom = WcsGeom.create(
@@ -122,8 +122,8 @@ geom = WcsGeom.create(
 
 
 # ### Create the makers
-# 
-# First we instantiate the target `~gammapy.cube.MapDataset`.  
+#
+# First we instantiate the target `~gammapy.cube.MapDataset`.
 
 # In[ ]:
 
@@ -153,7 +153,7 @@ safe_mask_maker = SafeMaskMaker(
 
 
 # ## Perform the data reduction loop.
-# 
+#
 # We can now run over selected observations. For each of them, we:
 # - create the map dataset and stack it on our target dataset.
 # - squeeze the map dataset to a spectral dataset in the ON region
@@ -188,8 +188,8 @@ datasets[0].peek()
 
 
 # ### Cumulative excess and signficance
-# 
-# Finally, we can look at cumulative significance and number of excesses. This is done with the `info_table` method of `~gammapy.modeling.Datasets`. 
+#
+# Finally, we can look at cumulative significance and number of excesses. This is done with the `info_table` method of `~gammapy.modeling.Datasets`.
 
 # In[ ]:
 
@@ -223,9 +223,9 @@ plt.ylabel("Significance");
 
 
 # ## Perform spectral model fitting
-# 
-# Here we perform a joint fit. 
-# 
+#
+# Here we perform a joint fit.
+#
 # We first create the model, here a simple powerlaw, and assign it to every dataset in the `~gammapy.modeling.Datasets`.
 
 # In[ ]:
@@ -251,7 +251,7 @@ print(result_joint)
 
 
 # ### Explore the fit results
-# 
+#
 # First the fitted parameters values and their errors.
 
 # In[ ]:
