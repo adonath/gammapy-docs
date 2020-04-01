@@ -4,14 +4,14 @@
 # # Estimation of the CTA point source sensitivity
 
 # ## Introduction
-#
-# This notebook explains how to estimate the CTA sensitivity for a point-like IRF at a fixed zenith angle and fixed offset using the full containement IRFs distributed for the CTA 1DC. The significativity is computed for a 1D analysis (On-OFF regions) and the LiMa formula.
-#
-# We use here an approximate approach with an energy dependent integration radius to take into account the variation of the PSF. We will first determine the 1D IRFs including a containment correction.
-#
+# 
+# This notebook explains how to estimate the CTA sensitivity for a point-like IRF at a fixed zenith angle and fixed offset using the full containement IRFs distributed for the CTA 1DC. The significativity is computed for a 1D analysis (On-OFF regions) and the LiMa formula. 
+# 
+# We use here an approximate approach with an energy dependent integration radius to take into account the variation of the PSF. We will first determine the 1D IRFs including a containment correction. 
+# 
 # We will be using the following Gammapy class:
-#
-# * `~gammapy.spectrum.SensitivityEstimator`
+# 
+# * `~gammapy.estimators.SensitivityEstimator`
 
 # ## Setup
 # As usual, we'll start with some setup ...
@@ -34,13 +34,13 @@ from regions import CircleSkyRegion
 from gammapy.irf import load_cta_irfs
 from gammapy.makers import SpectrumDatasetMaker
 from gammapy.data import Observation
-from gammapy.spectrum import SensitivityEstimator
+from gammapy.estimators import SensitivityEstimator
 from gammapy.datasets import SpectrumDataset, SpectrumDatasetOnOff
 from gammapy.maps import MapAxis
 
 
 # ## Define analysis region and energy binning
-#
+# 
 # Here we assume a source at 0.5 degree from pointing position. We perform a simple energy independent extraction for now with a radius of 0.1 degree.
 
 # In[ ]:
@@ -58,8 +58,8 @@ empty_dataset = SpectrumDataset.create(
 
 
 # ## Load IRFs and prepare dataset
-#
-# We extract the 1D IRFs from the full 3D IRFs provided by CTA.
+# 
+# We extract the 1D IRFs from the full 3D IRFs provided by CTA. 
 
 # In[ ]:
 
@@ -96,7 +96,7 @@ on_radii = obs.psf.containment_radius(
     energy=e_reco.center, theta=0.5 * u.deg, fraction=containment
 )[0]
 factor = (1 - np.cos(on_radii)) / (1 - np.cos(region.radius))
-dataset.background.data *= factor.value
+dataset.background.data *= factor.value.reshape((-1, 1, 1))
 
 
 # And finally define a `SpectrumDatasetOnOff` with an alpha of `0.2`. The off counts are created from the background model:
@@ -110,7 +110,7 @@ dataset_on_off = SpectrumDatasetOnOff.from_spectrum_dataset(
 
 
 # ## Compute sensitivity
-#
+# 
 # We impose a minimal number of expected signal counts of 5 per bin and a minimal significance of 3 per bin. We assume an alpha of 0.2 (ratio between ON and OFF area).
 # We then run the sensitivity estimator.
 
@@ -122,7 +122,7 @@ sensitivity_table = sensitivity_estimator.run(dataset_on_off)
 
 
 # ## Results
-#
+# 
 # The results are given as an Astropy table. A column criterion allows to distinguish bins where the significance is limited by the signal statistical significance from bins where the sensitivity is limited by the number of signal counts.
 # This is visible in the plot below.
 
@@ -190,6 +190,6 @@ ax2.set_ylim(0.01, 0.5)
 
 
 # ## Exercises
-#
+# 
 # * Also compute the sensitivity for a 20 hour observation
 # * Compare how the sensitivity differs between 5 and 20 hours by plotting the ratio as a function of energy.

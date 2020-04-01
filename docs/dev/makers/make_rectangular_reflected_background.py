@@ -5,9 +5,10 @@ from astropy.coordinates import SkyCoord
 from regions import RectangleSkyRegion
 import matplotlib.pyplot as plt
 from gammapy.data import DataStore
-from gammapy.maps import Map
+from gammapy.datasets import SpectrumDataset
 from gammapy.makers import ReflectedRegionsBackgroundMaker, SpectrumDatasetMaker
-from gammapy.datasets import SpectrumDataset, plot_spectrum_datasets_off_regions
+from gammapy.maps import Map
+from gammapy.visualization import plot_spectrum_datasets_off_regions
 
 data_store = DataStore.from_dir("$GAMMAPY_DATA/hess-dl3-dr1/")
 mask = data_store.obs_table["TARGET_NAME"] == "Crab"
@@ -32,7 +33,8 @@ dataset_empty = SpectrumDataset.create(
 datasets = []
 
 for obs in observations:
-    dataset = dataset_maker.run(dataset_empty, obs)
+
+    dataset = dataset_maker.run(dataset_empty.copy(name=f"obs-{obs.obs_id}"), obs)
     dataset_on_off = bkg_maker.run(observation=obs, dataset=dataset)
     datasets.append(dataset_on_off)
 

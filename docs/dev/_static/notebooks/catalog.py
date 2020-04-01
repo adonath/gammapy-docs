@@ -2,11 +2,11 @@
 # coding: utf-8
 
 # # Source catalogs
-#
+# 
 # `~gammapy.catalog` provides convenient access to common gamma-ray source catalogs. E.g. creating a spectral model and spectral points for a given Fermi-LAT catalog and source from the FITS table is tedious, `~gammapy.catalog` has this implemented and makes it easy.
-#
+# 
 # In this tutorial you will learn how to:
-#
+# 
 # - List available catalogs
 # - Load a catalog
 # - Select a source
@@ -15,16 +15,16 @@
 # - Get flux points (if available)
 # - Get lightcurves (if available)
 # - Access the source catalog table data
-#
+# 
 # In this tutorial we will show examples using the following catalogs:
-#
+# 
 # - `~gammapy.catalog.SourceCatalogHGPS`
 # - `~gammapy.catalog.SourceCatalogGammaCat`
 # - `~gammapy.catalog.SourceCatalog3FHL`
 # - `~gammapy.catalog.SourceCatalog4FGL`
-#
+# 
 # All catalog and source classes work the same, as long as some information is available. E.g. trying to access a lightcurve from a catalog and source that doesn't have that information will return ``None``.
-#
+# 
 # Further information is available at `~gammapy.catalog`.
 
 # In[ ]:
@@ -42,8 +42,8 @@ from gammapy.catalog import SOURCE_CATALOGS
 
 
 # ## List available catalogs
-#
-# `~gammapy.catalog` contains a Python dictionary ``SOURCE_CATALOGS``, which maps catalog names (e.g. "3fhl") to catalog classes (e.g. ``SourceCatalog3FHL``).
+# 
+# `~gammapy.catalog` contains a Python dictionary ``SOURCE_CATALOGS``, which maps catalog names (e.g. "3fhl") to catalog classes (e.g. ``SourceCatalog3FHL``). 
 
 # In[ ]:
 
@@ -58,13 +58,13 @@ list(SOURCE_CATALOGS)
 
 
 # ## Load catalogs
-#
+# 
 # If you have run `gammapy download datasets` or `gammapy download tutorials`,
 # you have a copy of the catalogs as FITS files in `$GAMMAPY_DATA/catalogs`,
 # and that is the default location where `~gammapy.catalog` loads from.
-#
+# 
 # You can load a catalog by name via `SOURCE_CATALOG[name]()` (not the `()` to instantiate a catalog object from the catalog class - only this will load the catalog and be useful), or by importing the catalog class (e.g. `SourceCatalog3FGL`) directly. The two ways are equivalent, the result will be the same.
-#
+# 
 # Note that `$GAMMAPY_DATA/catalogs` is just the default, you could pass a different `filename` when creating the catalog.
 
 # In[ ]:
@@ -77,7 +77,7 @@ get_ipython().system('ls -1 $GAMMAPY_DATA/catalogs')
 
 
 # Catalog object - FITS file is loaded
-catalog = SOURCE_CATALOGS["3fgl"]()
+catalog = SOURCE_CATALOGS.get_cls("3fgl")()
 catalog
 
 
@@ -94,14 +94,14 @@ catalog
 
 
 # Let's load the source catalogs we will use throughout this tutorial
-catalog_gammacat = SOURCE_CATALOGS["gamma-cat"]
-catalog_3fhl = SOURCE_CATALOGS["3fhl"]()
-catalog_4fgl = SOURCE_CATALOGS["4fgl"]()
-catalog_hgps = SOURCE_CATALOGS["hgps"]()
+catalog_gammacat = SOURCE_CATALOGS.get_cls("gamma-cat")()
+catalog_3fhl = SOURCE_CATALOGS.get_cls("3fhl")()
+catalog_4fgl = SOURCE_CATALOGS.get_cls("4fgl")()
+catalog_hgps = SOURCE_CATALOGS.get_cls("hgps")()
 
 
 # ## Select a source
-#
+# 
 # To create a source object, index into the catalog using `[]`, passing a catalog table row index (zero-based, first row is `[0]`), or a source name. If passing a name, catalog table columns with source names and association names ("ASSOC1" in the example below) are searched top to bottom. There is no name resolution web query.
 
 # In[ ]:
@@ -144,7 +144,7 @@ source.row_index, source.name
 
 
 # ## Pretty-print source information
-#
+# 
 # A source object has a nice string representation that you can print.
 # You can also call `source.info()` instead and pass an option what information to print.
 
@@ -162,15 +162,15 @@ print(source.info("associations"))
 
 
 # ## Source models
-#
+# 
 # The `~gammapy.catalog.SourceCatalogObject` classes have a `sky_model()` model
 # which creates a `gammapy.modeling.models.SkyModel` object, with model parameter
 # values and parameter errors from the catalog filled in.
-#
+# 
 # In most cases, the `spectral_model()` method provides the `gammapy.modeling.models.SpectralModel`
 # part of the sky model, and the `spatial_model()` method the `gammapy.modeling.models.SpatialModel`
 # part individually.
-#
+# 
 # We use the `gammapy.catalog.SourceCatalog3FHL` for the examples in this section.
 
 # In[ ]:
@@ -214,7 +214,7 @@ model.spectral_model.plot_error(energy_range, **opts)
 
 
 # ## Flux points
-#
+# 
 # The flux points are available via the `flux_points` property as a `gammapy.spectrum.FluxPoints` object.
 
 # In[ ]:
@@ -243,7 +243,7 @@ flux_points.plot()
 
 
 # ## Lightcurves
-#
+# 
 # The Fermi catalogs contain lightcurves for each source. It is available via the `source.lightcurve` property as a `~gammapy.time.LightCurve` object.
 
 # In[ ]:
@@ -271,16 +271,16 @@ lightcurve.plot()
 
 
 # ## Catalog table and source dictionary
-#
+# 
 # Source catalogs are given as `FITS` files that contain one or multiple tables.
 # Above we showed how to get spectra, light curves and other information as Gammapy objects.
-#
+# 
 # However, you can also access the underlying `~astropy.table.Table` for a catalog,
 # and the row data as a Python `dict`. This can be useful if you want to do something
 # that is not pre-scripted by the `~gammapy.catalog` classes, such as e.g. selecting
 # sources by sky position or association class, or accessing special source information
 # (like e.g. `Npred` in the example below).
-#
+# 
 # Note that you can also do a `for source in catalog` loop, to find or process
 # sources of interest.
 
@@ -341,7 +341,7 @@ for source in catalog_3fhl:
 
 
 # ## Exercises
-#
+# 
 # - How many sources are in the 4FGL catalog? (try `len(catalog.table)`
 # - What is the name of the source with row index 42?
 # - What is the row index of the source with name "4FGL J0536.1-1205"?
@@ -355,11 +355,11 @@ for source in catalog_3fhl:
 
 
 # ## Next steps
-#
+# 
 # `~gammapy.catalog` is mostly independent from the rest of Gammapy.
 # Typically you use it to compare new analyses against catalog results, e.g. overplot the spectral model, or compare the source position.
-#
+# 
 # You can also use `~gammapy.catalog` in your scripts to create initial source models for your analyses.
 # This is very common for Fermi-LAT, to start with a catalog model.
 # For TeV analysis, especially in crowded Galactic regions, using the HGPS, gamma-cat or 2HWC catalog in this way can also be useful.
-#
+# 

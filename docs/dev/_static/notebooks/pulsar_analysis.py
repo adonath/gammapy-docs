@@ -5,8 +5,8 @@
 
 # ## Introduction
 
-# This notebook shows how to do a pulsar analysis with Gammapy. It's based on a Vela simulation file from the CTA DC1, which already contains a column of phases. We will produce a phasogram, a phase-resolved map and a phase-resolved spectrum of the Vela pulsar using the class PhaseBackgroundEstimator.
-#
+# This notebook shows how to do a pulsar analysis with Gammapy. It's based on a Vela simulation file from the CTA DC1, which already contains a column of phases. We will produce a phasogram, a phase-resolved map and a phase-resolved spectrum of the Vela pulsar using the class PhaseBackgroundEstimator. 
+# 
 # The phasing in itself is not done here, and it requires specific packages like Tempo2 or [PINT](https://nanograv-pint.readthedocs.io).
 
 # ## Opening the data
@@ -28,13 +28,17 @@ from gammapy.utils.regions import SphericalCircleSkyRegion
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 
-from gammapy.makers import SafeMaskMaker, PhaseBackgroundMaker, SpectrumDatasetMaker
+from gammapy.makers import (
+    SafeMaskMaker,
+    PhaseBackgroundMaker,
+    SpectrumDatasetMaker,
+)
 from gammapy.maps import Map, WcsGeom
 from gammapy.data import DataStore
 from gammapy.datasets import Datasets, SpectrumDataset, FluxPointsDataset
 from gammapy.modeling.models import PowerLawSpectralModel, SkyModel
 from gammapy.modeling import Fit
-from gammapy.spectrum import FluxPointsEstimator
+from gammapy.estimators import FluxPointsEstimator
 
 
 # Load the data store (which is a subset of CTA-DC1 data):
@@ -288,12 +292,13 @@ emin_fit, emax_fit = (0.04 * u.TeV, 0.4 * u.TeV)
 
 for dataset in datasets:
     dataset.models = model
-    dataset.mask_fit = dataset.counts.energy_mask(emin=emin_fit, emax=emax_fit)
+    dataset.mask_fit = dataset.counts.geom.energy_mask(
+        emin=emin_fit, emax=emax_fit
+    )
 
 joint_fit = Fit(datasets)
 joint_result = joint_fit.run()
 
-model.spectral_model.parameters.covariance = joint_result.parameters.covariance
 print(joint_result)
 
 
@@ -307,11 +312,11 @@ e_edges = np.logspace(np.log10(0.04), np.log10(0.4), 7) * u.TeV
 
 dataset = Datasets(datasets).stack_reduce()
 
-dataset.model = model
+dataset.models = model
 
-fpe = FluxPointsEstimator(datasets=[dataset], e_edges=e_edges, source="vela psr")
+fpe = FluxPointsEstimator(e_edges=e_edges, source="vela psr")
 
-flux_points = fpe.run()
+flux_points = fpe.run(datasets=[dataset])
 flux_points.table["is_ul"] = flux_points.table["ts"] < 1
 
 amplitude_ref = 0.57 * 19.4e-14 * u.Unit("1 / (cm2 s MeV)")

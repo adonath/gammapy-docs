@@ -2,26 +2,26 @@
 # coding: utf-8
 
 # # Gammapy Models
-#
-#
-# This is an introduction and overview on how to work with models in Gammapy.
-#
+# 
+# 
+# This is an introduction and overview on how to work with models in Gammapy. 
+# 
 # The sub-package `~gammapy.modeling` contains all the functionality related to modeling and fitting
 # data. This includes spectral, spatial and temporal model classes, as well as the fit
 # and parameter API. We will cover the follwing topics in order:
-#
+# 
 # 1. [Spectral Models](#Spectral-Models)
 # 1. [Spatial Models](#Spatial-Models)
 # 1. [SkyModel and SkyDiffuseCube](#SkyModel-and-SkyDiffuseCube)
 # 1. [Model Lists and Serialisation](#Model-Lists-and-Serialisation)
 # 1. [Implementing as Custom Model](#Implementing-a-Custom-Model)
-#
+# 
 # The models follow a naming scheme which contains the category as a suffix to the class name. An overview of all the available models can be found in the :ref:`model-gallery`.
-#
+# 
 # Note that there is a separate tutorial [modeling](modeling.ipynb) that explains about `~gammapy.modeling`,
 # the Gammapy modeling and fitting framework. You have to read that to learn how to work with models in order to analyse data.
-#
-#
+# 
+# 
 
 # # Setup
 
@@ -41,7 +41,7 @@ from gammapy.maps import Map
 
 
 # # Spectral Models
-#
+# 
 # All models are imported from the `gammapy.modeling.models` namespace. Let's start with a `PowerLawSpectralModel`:
 
 # In[ ]:
@@ -97,8 +97,8 @@ dnde = pwl(energy)
 print(dnde)
 
 
-# The returned quantity is a differential photon flux.
-#
+# The returned quantity is a differential photon flux. 
+# 
 # For spectral models you can computed in addition the integrated and energy flux
 # in a given energy range:
 
@@ -178,7 +178,7 @@ gauss = GaussianSpatialModel(
 )
 
 
-# You can specify any valid `~astropy.coordinates` frame. The center position of the model can be retrieved as a `~astropy.coordinates.SkyCoord` object using `SpatialModel.position`:
+# You can specify any valid `~astropy.coordinates` frame. The center position of the model can be retrieved as a `~astropy.coordinates.SkyCoord` object using `SpatialModel.position`: 
 
 # In[ ]:
 
@@ -316,8 +316,8 @@ print(model_spectrum)
 
 
 # Additionally the `gammapy.modeling.models.SkyDiffuseCube` can be used to represent source models based on templates, where the spatial and energy axes are correlated. It can be created e.g. from an existing FITS file:
-#
-#
+# 
+# 
 
 # In[ ]:
 
@@ -335,7 +335,7 @@ print(diffuse)
 
 
 # # Model Lists and Serialisation
-#
+# 
 # In a typical analysis scenario a model consists of mutiple model components, or a "catalog" or "source library". To handle this list of multiple model components, Gammapy has a `Models` class:
 
 # In[ ]:
@@ -360,7 +360,7 @@ print(models["my-source"])
 
 
 # **Note:**To make the access by name unambiguous, models are required to have a unique name, otherwise an error will be thrown.
-#
+# 
 # To see which models are available you can use the `.names` attribute:
 
 # In[ ]:
@@ -370,7 +370,7 @@ print(models.names)
 
 
 # Note that a `SkyModel` object can be evaluated for a given longitude, latitude, and energy, but the `Models` object cannot. This `Models` container object will be assigned to `Dataset` or `Datasets` together with the data to be fitted as explained in other analysis tutorials (see for example the [modeling](modeling.ipynb) notebook).
-#
+# 
 # The `Models` class also has in place `.append()` and `.extend()` methods:
 
 # In[ ]:
@@ -380,7 +380,7 @@ model_copy = model.copy(name="my-source-copy")
 models.append(model_copy)
 
 
-# This list of models can be also serialised toa custom YAML based format:
+# This list of models can be also serialised toa custom YAML based format: 
 
 # In[ ]:
 
@@ -390,9 +390,9 @@ print(models_yaml)
 
 
 # The structure of the yaml files follows the structure of the python objects.
-# The `components` listed correspond to the `SkyModel` and `SkyDiffuseCube` components of the `Models`.
+# The `components` listed correspond to the `SkyModel` and `SkyDiffuseCube` components of the `Models`. 
 # For each `SkyModel` we have  informations about its `name`, `type` (corresponding to the tag attribute) and sub-mobels (i.e `spectral` model and eventually `spatial` model). Then the spatial and spectral models are defiend by their type and parameters. The `parameters` keys name/value/unit are mandatory, while the keys min/max/frozen are optionnals (so you can prepare shorter files).
-#
+# 
 # If you want to write this list of models to disk and read it back later you can use:
 
 # In[ ]:
@@ -410,14 +410,14 @@ models_read = Models.read("models.yaml")
 # Additionally the models can exported and imported togeter with the data using the `Datasets.read()` and `Datasets.write()` methods as shown in the [analysis_mwl](analysis_mwl.ipynb) notebook.
 
 # # Implementing a Custom Model
-#
+# 
 # In order to add a user defined spectral model you have to create a SpectralModel subclass.
 # This new model class should include:
-#
+# 
 # - a tag used for serialization (it can be the same as the class name)
 # - an instantiation of each Parameter with their unit, default values and frozen status
 # - the evaluate function where the mathematical expression for the model is defined.
-#
+# 
 # As an example we will use a PowerLawSpectralModel plus a Gaussian (with fixed width).
 # First we define the new custom model class that we name `MyCustomSpectralModel`:
 
@@ -429,7 +429,7 @@ from gammapy.modeling.models import SpectralModel, Parameter
 
 class MyCustomSpectralModel(SpectralModel):
     """My custom spectral model, parametrising a power law plus a Gaussian spectral line.
-
+    
     Parameters
     ----------
     amplitude : `~astropy.units.Quantity`
@@ -442,7 +442,7 @@ class MyCustomSpectralModel(SpectralModel):
         Mean value of the Gaussian.
     width : `~astropy.units.Quantity`
         Sigma width of the Gaussian line.
-
+    
     """
 
     tag = "MyCustomSpectralModel"
@@ -465,9 +465,9 @@ class MyCustomSpectralModel(SpectralModel):
 
 
 # It is good practice to also implement a docstring for the model, defining the parameters and also definig a `tag`, which specifies the name of the model for serialisation. Also note that gammapy assumes that all SpectralModel evaluate functions return a flux in unit of `"cm-2 s-1 TeV-1"` (or equivalent dimensions).
-#
-#
-#
+# 
+# 
+# 
 # This model can now be used as any other spectral model in Gammapy:
 
 # In[ ]:

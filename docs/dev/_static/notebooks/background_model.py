@@ -2,24 +2,24 @@
 # coding: utf-8
 
 # # Make template background model
-#
-# ## Introduction
-#
+# 
+# ## Introduction 
+# 
 # In this tutorial, we will create a template background model from scratch. Often, background models are pre-computed and provided for analysis, but it's educational to see how the sausage is made.
-#
+# 
 # We will use the "off observations", i.e. those without significant gamma-ray emission sources in the field of view from the [H.E.S.S. first public test data release](https://www.mpi-hd.mpg.de/hfm/HESS/pages/dl3-dr1/). This model could then be used in the analysis of sources from that dataset (not done here).
-#
+# 
 # We will make a background model that is radially symmetric in the field of view, i.e. only depends on field of view offset angle and energy. At the end, we will save the model in the `BKG_2D` as defined in the [spec](https://gamma-astro-data-formats.readthedocs.io/en/latest/irfs/full_enclosure/bkg/index.html).
-#
+# 
 # Note that this is just a quick and dirty example. Actual background model production is done with more sophistication usually using 100s or 1000s of off runs, e.g. concerning non-radial symmetries, binning and smoothing of the distributions, and treating other dependencies such as zenith angle, telescope configuration or optical efficiency. Another aspect not shown here is how to use AGN observations to make background models, by cutting out the part of the field of view that contains gamma-rays from the AGN.
-#
+# 
 # We will mainly be using the following classes:
-#
+#         
 # * `~gammapy.data.DataStore` to load the runs to use to build the bkg model.
 # * `~gammapy.irf.Background2D` to represent and write the background model.
 
 # ## Setup
-#
+# 
 # As always, we start the notebook with some setup and imports.
 
 # In[ ]:
@@ -49,9 +49,9 @@ from gammapy.irf import Background2D
 
 
 # ## Select off data
-#
+# 
 # We start by selecting the observations used to estimate the background model.
-#
+# 
 # In this case, we just take all "off runs" as defined in the observation table.
 
 # In[ ]:
@@ -66,13 +66,13 @@ print("Number of observations:", len(observations))
 
 
 # ## Background model
-#
+# 
 # The background model we will estimate is a differential background rate model in unit `s-1 MeV-1 sr-1` as a function of reconstructed energy and field of fiew offset.
-#
+# 
 # We estimate it by histogramming off data events and then smoothing a bit (not using a good method) to get a less noisy estimate. To get the differential rate, we divide by observation time and also take bin sizes into account to get the rate per energy and solid angle. So overall we fill two arrays called `counts` and `exposure` with `exposure` filled so that `background_rate = counts / exposure` will give the final background rate we're interested in.
-#
+# 
 # The processing can be done either one observation at a time, or first for counts and then for exposure. Either way is fine. Here we do one observation at a time, starting with empty histograms and then accumulating counts and exposure. Since this is a multi-step algorithm, we put the code to do this computation in a `BackgroundModelEstimator` class.
-#
+# 
 # This functionality was already in Gammapy previously, and will be added back again soon, after `~gammapy.irf` has been restructured and improved.
 
 # In[ ]:
@@ -150,9 +150,9 @@ estimator.background_rate.plot()
 
 
 # ## Zenith dependence
-#
+# 
 # The background models used in H.E.S.S. usually depend on the zenith angle of the observation. That kinda makes sense because the energy threshold increases with zenith angle, and since the background is related to (but not given by) the charged cosmic ray spectrum that is a power-law and falls steeply, we also expect the background rate to change.
-#
+# 
 # Let's have a look at the dependence we get for this configuration used here (Hillas reconstruction, standard cuts, see H.E.S.S. release notes for more information).
 
 # In[ ]:
@@ -177,11 +177,11 @@ plt.ylim(0, 10);
 
 
 # The energy threshold increases, as expected. It's a bit surprising that the total background rate doesn't decreases with increasing zenith angle. That's a bit of luck for this configuration, and because we're looking at the rate of background events in the whole field of view. As shown below, the energy threshold increases (reducing the total rate), but the rate at a given energy increases with zenith angle (increasing the total rate). Overall the background does change with zenith angle and that dependency should be taken into account.
-#
+# 
 # The remaining scatter you see in the plots above (in energy threshold and rate) is due to dependence on telescope optical efficiency, atmospheric changes from run to run and other effects. If you're interested in this, [2014APh....54...25H](https://ui.adsabs.harvard.edu/abs/2014APh....54...25H) has some infos. We'll not consider this futher.
-#
+# 
 # When faced with the question whether and how to model the zenith angle dependence, we're faced with a complex optimisation problem: the closer we require off runs to be in zenith angle, the fewer off runs and thus event statistic we have available, which will lead do noise in the background model. The choice of zenith angle binning or "on-off observation mathching" strategy isn't the only thing that needs to be optimised, there's also energy and offset binnings and smoothing scales. And of course good settings will depend on the way you plan to use the background model, i.e. the science measurement you plan to do. Some say background modeling is the hardest part of IACT data analysis.
-#
+# 
 # Here we'll just code up something simple: make three background models, one from the off runs with zenith angle 0 to 20 deg, one from 20 to 40 deg, and one from 40 to 90 deg.
 
 # In[ ]:
@@ -246,9 +246,9 @@ plt.legend();
 
 
 # ## Index tables
-#
+# 
 # So now we have radially symmetric background models for three zenith angle bins. To be able to use it from the high-level Gammapy classes like e.g. the MapMaker though, we also have to create a [HDU index table](https://gamma-astro-data-formats.readthedocs.io/en/latest/data_storage/hdu_index/index.html) that declares which background model to use for each observation.
-#
+# 
 # It sounds harder than it actually is. Basically you have to some code to make a new `astropy.table.Table`. The most tricky part is that before you can make the HDU index table, you have to decide where to store the data, because the HDU index table is a reference to the data location. Let's decide in this example that we want to re-use all existing files in `$GAMMAPY_DATA/hess-dl3-dr1` and put all the new HDUs (for background models and new index files) bundled in a single FITS file called `hess-dl3-dr3-with-background.fits.gz`, which we will put  in `$GAMMAPY_DATA/hess-dl3-dr1`.
 
 # In[ ]:
@@ -334,7 +334,7 @@ obs.bkg.plot()
 
 
 # ## Exercises
-#
+# 
 # - Play with the parameters here (energy binning, offset binning, zenith binning)
 # - Try to figure out why there are outliers on the zenith vs energy threshold curve.
 # - Does azimuth angle or optical efficiency have an effect on background rate?

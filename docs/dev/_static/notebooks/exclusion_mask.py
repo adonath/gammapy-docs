@@ -2,30 +2,30 @@
 # coding: utf-8
 
 # # Creating exclusion masks
-#
+# 
 # ## Introduction
-#
+# 
 # ### Prerequisites
-#
+# 
 # - Understanding of basic analyses in 1D or 3D.
-# - Usage of `~regions` and catalogs, see the [catalog notebook](catalog.ipynb).
-#
+# - Usage of `~regions` and catalogs, see the [catalog notebook](catalog.ipynb). 
+# 
 # ### Context
-#
+# 
 # Background templates stored in the DL3 IRF are often not reliable enough to be used without some corrections. A set of common techniques to perform background or normalisation from the data is implemented in gammapy: reflected regions for 1D spectrum analysis, field-of-view (FoV) background or ring background for 2D and 3D analyses.
-#
-# To avoid contamination of the background estimate from gamma-ray bright regions these methods require to exclude those regions from the data used for the estimation. To do so, we use exclusion masks. They are maps containing boolean values where excluded pixels are stored as False.
-#
+# 
+# To avoid contamination of the background estimate from gamma-ray bright regions these methods require to exclude those regions from the data used for the estimation. To do so, we use exclusion masks. They are maps containing boolean values where excluded pixels are stored as False.  
+# 
 # **Objective: Build an exclusion mask around the Crab nebula excluding gamma-ray sources in the region.**
-#
+# 
 # ### Proposed approach
-#
+# 
 # Here we have to build a `Map` object, we must first define its geometry and then we can determine which pixels to exclude.
-#
-# We can rely on known sources positions and properties to build a list of regions (here `~regions.SkyRegions`) enclosing most of the signal that our detector would see from these objects. We show below how to build this list manually or from an existing catalog.
-#
-# Finally, we show how to build the mask from a `MapDataset`, finding pixels which contain statistically significant signal. To do so, we use the `LiMaMapEstimator`
-#
+# 
+# We can rely on known sources positions and properties to build a list of regions (here `~regions.SkyRegions`) enclosing most of the signal that our detector would see from these objects. We show below how to build this list manually or from an existing catalog. 
+# 
+# Finally, we show how to build the mask from a `MapDataset`, finding pixels which contain statistically significant signal. To do so, we use the `ExcessMapEstimator`
+#  
 
 # ## Setup
 
@@ -46,15 +46,15 @@ from gammapy.maps import Map, WcsGeom
 from gammapy.utils.regions import make_region
 from gammapy.catalog import SOURCE_CATALOGS
 from gammapy.datasets import Datasets
-from gammapy.detect import LiMaMapEstimator
+from gammapy.estimators import ExcessMapEstimator
 
 
 # ## Create the mask from a list of regions
-#
+# 
 # One can build an exclusion mask from regions. We show here how to proceed.
 
 # ### Define the geometry
-#
+# 
 # Exclusions masks are stored in `Map` objects. One has therefore to define the geometry to use. Here we consider a region at the Galactic anticentre around the crab nebula.
 
 # In[ ]:
@@ -67,9 +67,9 @@ geom = WcsGeom.create(
 
 
 # ### Create the list of regions
-#
-# A useful function to create region objects is `~gammapy.utils.regions.make_region`. It can take strings defining regions following the "ds9" format and convert them to `regions`.
-#
+# 
+# A useful function to create region objects is `~gammapy.utils.regions.make_region`. It can take strings defining regions following the "ds9" format and convert them to `regions`. 
+# 
 # Here we use a region enclosing the Crab nebula with 0.3 degrees. The actual region size should depend on the expected PSF of the data used. We also add another region with a different shape as en example.
 
 # In[ ]:
@@ -81,7 +81,7 @@ regions = [some_region, crab_region]
 print(regions)
 
 
-# Equivalently the regions can be read from a ds9 file, this time using `regions.read_ds9`.
+# Equivalently the regions can be read from a ds9 file, this time using `regions.read_ds9`. 
 
 # In[ ]:
 
@@ -89,8 +89,8 @@ print(regions)
 # regions = read_ds9('ds9.reg')
 
 
-# ### Create the mask map
-#
+# ### Create the mask map 
+# 
 # We can now create the map. We use the `WcsGeom.region_mask` method putting all pixels inside the regions to False.
 
 # In[ ]:
@@ -107,13 +107,13 @@ mask_map.plot()
 
 
 # ## Create the mask from a catalog of sources
-#
+# 
 # We can also build our list of regions from a list of catalog sources. Here we use the Fermi 4FGL catalog which we read using `~gammapy.catalog.SourceCatalog`.
 
 # In[ ]:
 
 
-fgl = SOURCE_CATALOGS["4fgl"]()
+fgl = SOURCE_CATALOGS.get_cls("4fgl")()
 
 
 # We now select sources that are contained in the region we are interested in.
@@ -150,7 +150,7 @@ mask_map_catalog.plot()
 
 
 # ### Combining masks
-#
+# 
 # If two masks share the same geometry it is easy to combine them with `Map` arithmetics.
 
 # In[ ]:
@@ -161,10 +161,10 @@ mask_map.plot()
 
 
 # ## Create the mask from statistically significant pixels in a dataset
-#
+# 
 # Here we want to determine an exclusion from the data directly. We will estimate the significance of the data and exclude all pixels above a given threshold.
-#
-# Here we use a dataset taken from Fermi data used in the 3FHL catalog. The dataset is already in the form of a `Datasets` object. We read it from disk.
+# 
+# Here we use a dataset taken from Fermi data used in the 3FHL catalog. The dataset is already in the form of a `Datasets` object. We read it from disk. 
 
 # In[ ]:
 
@@ -175,7 +175,7 @@ datasets = Datasets.read(
 )
 
 
-# We want to compute the significance per pixels for the data integrated over energy. We reduce the dataset to a simple image.
+# We want to compute the significance per pixels for the data integrated over energy. We reduce the dataset to a simple image. 
 
 # In[ ]:
 
@@ -183,13 +183,13 @@ datasets = Datasets.read(
 dataset = datasets[0].to_image()
 
 
-# We now apply a significance estimation. We integrate the counts using a correlation radius of 0.4 degree and apply regular significance estimate.
+# We now apply a significance estimation. We integrate the counts using a correlation radius of 0.4 degree and apply regular significance estimate. 
 
 # In[ ]:
 
 
-estimator = LiMaMapEstimator("0.4 deg")
-result = estimator.run(dataset)
+estimator = ExcessMapEstimator("0.4 deg")
+result = estimator.run(dataset, steps="ts")
 
 
 # Finally, we copy the significance map for our mask and apply a threshold of 5 sigma to remove pixels.
@@ -207,12 +207,12 @@ mask_map_significance.data = mask_map_significance.data < 5.0
 mask_map_significance.sum_over_axes().plot()
 
 
-# This method frequently yields isolated pixels or weakly significant features if one places the threshold too low.
-#
-# To overcome this issue, one can use `~skimage.filters.apply_hysteresis_threshold` . This filter allows to define two thresholds and mask only the pixels between the low and high thresholds if they are not continuously connected to a pixel above the high threshold. This allows to better preserve the structure of the excesses.
-#
+# This method frequently yields isolated pixels or weakly significant features if one places the threshold too low. 
+# 
+# To overcome this issue, one can use `~skimage.filters.apply_hysteresis_threshold` . This filter allows to define two thresholds and mask only the pixels between the low and high thresholds if they are not continuously connected to a pixel above the high threshold. This allows to better preserve the structure of the excesses. 
+# 
 # Note that scikit-image is not a required dependency of gammapy, you might need to install it.
-#
+# 
 
 # In[ ]:
 

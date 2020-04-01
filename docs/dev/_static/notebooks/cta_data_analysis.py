@@ -2,16 +2,16 @@
 # coding: utf-8
 
 # # CTA data analysis with Gammapy
-#
+# 
 # ## Introduction
-#
+# 
 # **This notebook shows an example how to make a sky image and spectrum for simulated CTA data with Gammapy.**
-#
+# 
 # The dataset we will use is three observation runs on the Galactic center. This is a tiny (and thus quick to process and play with and learn) subset of the simulated CTA dataset that was produced for the first data challenge in August 2017.
-#
+# 
 
 # ## Setup
-#
+# 
 # As usual, we'll start with some setup ...
 
 # In[ ]:
@@ -37,12 +37,27 @@ from astropy.convolution import Gaussian2DKernel
 from regions import CircleSkyRegion
 from gammapy.modeling import Fit
 from gammapy.data import DataStore
-from gammapy.datasets import Datasets, FluxPointsDataset, SpectrumDataset, plot_spectrum_datasets_off_regions, MapDataset
-from gammapy.modeling.models import PowerLawSpectralModel, SkyModel
-from gammapy.spectrum import FluxPointsEstimator
+from gammapy.datasets import (
+    Datasets,
+    FluxPointsDataset,
+    SpectrumDataset,
+    MapDataset,
+)
+from gammapy.modeling.models import (
+    PowerLawSpectralModel,
+    SkyModel,
+    GaussianSpatialModel,
+)
 from gammapy.maps import MapAxis, WcsNDMap, WcsGeom
-from gammapy.makers import MapDatasetMaker, SafeMaskMaker, SpectrumDatasetMaker, ReflectedRegionsBackgroundMaker
-from gammapy.detect import TSMapEstimator, find_peaks
+from gammapy.makers import (
+    MapDatasetMaker,
+    SafeMaskMaker,
+    SpectrumDatasetMaker,
+    ReflectedRegionsBackgroundMaker,
+)
+from gammapy.estimators import TSMapEstimator, FluxPointsEstimator
+from gammapy.estimators.utils import find_peaks
+from gammapy.visualization import plot_spectrum_datasets_off_regions
 
 
 # In[ ]:
@@ -58,9 +73,9 @@ log.setLevel(logging.ERROR)
 
 
 # ## Select observations
-#
+# 
 # A Gammapy analysis usually starts by creating a `~gammapy.data.DataStore` and selecting observations.
-#
+# 
 # This is shown in detail in the other notebook, here we just pick three observations near the galactic center.
 
 # In[ ]:
@@ -98,9 +113,9 @@ data_store.obs_table.select_obs_id(obs_id)[obs_cols]
 
 
 # ## Make sky images
-#
+# 
 # ### Define map geometry
-#
+# 
 # Select the target position and define an ON region for the spectral analysis
 
 # In[ ]:
@@ -116,7 +131,7 @@ geom
 
 
 # ### Compute images
-#
+# 
 # Exclusion mask currently unused. Remove here or move to later in the tutorial?
 
 # In[ ]:
@@ -138,7 +153,7 @@ exclusion_mask.plot();
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'stacked = MapDataset.create(geom=geom)\nmaker = MapDatasetMaker(selection=["counts", "background", "exposure"])\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=2.5 * u.deg)\n\nfor obs in observations:\n    cutout = stacked.cutout(obs.pointing_radec, width="5 deg")\n    dataset = maker.run(cutout, obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n    stacked.stack(dataset)')
+get_ipython().run_cell_magic('time', '', 'stacked = MapDataset.create(geom=geom)\nmaker = MapDatasetMaker(selection=["counts", "background", "exposure", "psf"])\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=2.5 * u.deg)\n\nfor obs in observations:\n    cutout = stacked.cutout(obs.pointing_radec, width="5 deg")\n    dataset = maker.run(cutout, obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n    stacked.stack(dataset)')
 
 
 # In[ ]:
@@ -158,7 +173,7 @@ images["excess"] = images["counts"] - images["background"]
 
 
 # ### Show images
-#
+# 
 # Let's have a quick look at the images we computed ...
 
 # In[ ]:
@@ -180,26 +195,27 @@ images["excess"].smooth(3).plot(vmax=2);
 
 
 # ## Source Detection
-#
-# Use the class `~gammapy.detect.TSMapEstimator` and `~gammapy.detect.find_peaks` to detect sources on the images:
+# 
+# Use the class `~gammapy.estimators.TSMapEstimator` and `~gammapy.estimators.utils.find_peaks` to detect sources on the images. We search for 0.1 deg sigma gaussian sources in the dataset.
 
 # In[ ]:
 
 
-kernel = Gaussian2DKernel(1, mode="oversample").array
-plt.imshow(kernel);
-
-
-# In[ ]:
-
-
-get_ipython().run_cell_magic('time', '', 'ts_image_estimator = TSMapEstimator()\nimages_ts = ts_image_estimator.run(dataset_image, kernel)\nprint(images_ts.keys())')
+spatial_model = GaussianSpatialModel(sigma="0.1 deg")
+spectral_model = PowerLawSpectralModel(index=2)
+model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
 
 
 # In[ ]:
 
 
-sources = find_peaks(images_ts["sqrt_ts"], threshold=8)
+get_ipython().run_cell_magic('time', '', 'ts_image_estimator = TSMapEstimator(model)\nimages_ts = ts_image_estimator.run(dataset_image)\nprint(images_ts.keys())')
+
+
+# In[ ]:
+
+
+sources = find_peaks(images_ts["sqrt_ts"], threshold=6)
 sources
 
 
@@ -229,11 +245,11 @@ plt.gca().scatter(
 
 
 # ## Spatial analysis
-#
+# 
 # See other notebooks for how to run a 3D cube or 2D image based analysis.
 
 # ## Spectrum
-#
+# 
 # We'll run a spectral analysis using the classical reflected regions background estimation method,
 # and using the on-off (often called WSTAT) likelihood function.
 
@@ -261,7 +277,7 @@ safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'datasets = []\n\nfor observation in observations:\n    dataset = dataset_maker.run(dataset_empty.copy(name=f"obs-{observation.obs_id}"), observation)\n    dataset_on_off = bkg_maker.run(dataset, observation)\n    dataset_on_off = safe_mask_masker.run(dataset_on_off, observation)\n    datasets.append(dataset_on_off)')
+get_ipython().run_cell_magic('time', '', 'datasets = []\n\nfor observation in observations:\n    dataset = dataset_maker.run(\n        dataset_empty.copy(name=f"obs-{observation.obs_id}"), observation\n    )\n    dataset_on_off = bkg_maker.run(dataset, observation)\n    dataset_on_off = safe_mask_masker.run(dataset_on_off, observation)\n    datasets.append(dataset_on_off)')
 
 
 # In[ ]:
@@ -275,7 +291,7 @@ plot_spectrum_datasets_off_regions(datasets, ax=ax)
 
 
 # ### Model fit
-#
+# 
 # The next step is to fit a spectral model, using all data (i.e. a "global" fit, using all energies).
 
 # In[ ]:
@@ -285,7 +301,7 @@ get_ipython().run_cell_magic('time', '', 'spectral_model = PowerLawSpectralModel
 
 
 # ### Spectral points
-#
+# 
 # Finally, let's compute spectral points. The method used is to first choose an energy binning, and then to do a 1-dim likelihood fit / profile to compute the flux and flux error.
 
 # In[ ]:
@@ -304,20 +320,18 @@ e_edges = MapAxis.from_energy_bounds("1 TeV", "30 TeV", nbin=5).edges
 
 stacked_dataset.models = model
 
-fpe = FluxPointsEstimator(datasets=[stacked_dataset], e_edges=e_edges, source="source-gc")
-flux_points = fpe.run()
+fpe = FluxPointsEstimator(e_edges=e_edges, source="source-gc")
+flux_points = fpe.run(datasets=[stacked_dataset])
 flux_points.table_formatted
 
 
 # ### Plot
-#
-# Let's plot the spectral model and points. You could do it directly, but there is a helper class.
-# Note that a spectral uncertainty band, a "butterfly" is drawn, but it is very thin, i.e. barely visible.
+# 
+# Let's plot the spectral model and points. You could do it directly, but for convenience we bundle the model and the flux points in a `FluxPointDataset`:
 
 # In[ ]:
 
 
-model.spectral_model.parameters.covariance = result.parameters.covariance
 flux_points_dataset = FluxPointsDataset(data=flux_points, models=model)
 
 
@@ -329,7 +343,7 @@ flux_points_dataset.peek();
 
 
 # ## Exercises
-#
+# 
 # * Re-run the analysis above, varying some analysis parameters, e.g.
 #     * Select a few other observations
 #     * Change the energy band for the map
@@ -346,6 +360,6 @@ flux_points_dataset.peek();
 
 
 # ## What next?
-#
+# 
 # * This notebook showed an example of a first CTA analysis with Gammapy, using simulated 1DC data.
 # * Let us know if you have any question or issues!

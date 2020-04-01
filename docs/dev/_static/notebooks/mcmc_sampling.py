@@ -2,41 +2,41 @@
 # coding: utf-8
 
 # # Fitting and error estimation with MCMC
-#
+# 
 # ## Introduction
-#
+# 
 # The goal of Markov Chain Monte Carlo (MCMC) algorithms is to approximate the posterior distribution of your model parameters by random sampling in a probabilistic space. For most readers this sentence was probably not very helpful so here we'll start straight with and example but you should read the more detailed mathematical approaches of the method [here](https://www.pas.rochester.edu/~sybenzvi/courses/phy403/2015s/p403_17_mcmc.pdf) and [here](https://github.com/jakevdp/BayesianAstronomy/blob/master/03-Bayesian-Modeling-With-MCMC.ipynb).
-#
+# 
 # ### How does it work ?
-#
+# 
 # The idea is that we use a number of walkers that will sample the posterior distribution (i.e. sample the Likelihood profile).
-#
+# 
 # The goal is to produce a "chain", i.e. a list of $\theta$ values, where each $\theta$ is a vector of parameters for your model.<br>
 # If you start far away from the truth value, the chain will take some time to converge until it reaches a stationary state. Once it has reached this stage, each successive elements of the chain are samples of the target posterior distribution.<br>
 # This means that, once we have obtained the chain of samples, we have everything we need. We can compute the  distribution of each parameter by simply approximating it with the histogram of the samples projected into the parameter space. This will provide the errors and correlations between parameters.
-#
-#
+# 
+# 
 # Now let's try to put a picture on the ideas described above. With this notebook, we have simulated and carried out a MCMC analysis for a source with the following parameters:<br>
 # $Index=2.0$, $Norm=5\times10^{-12}$ cm$^{-2}$ s$^{-1}$ TeV$^{-1}$, $Lambda =(1/Ecut) = 0.02$ TeV$^{-1}$ (50 TeV) for 20 hours.
-#
+# 
 # The results that you can get from a MCMC analysis will look like this :
-#
+# 
 # <img src="images/gammapy_mcmc.png" width="800">
-#
+# 
 # On the first two top panels, we show the pseudo-random walk of one walker from an offset starting value to see it evolve to a better solution.
 # In the bottom right panel, we show the trace of each 16 walkers for 500 runs (the chain described previsouly). For the first 100 runs, the parameter evolve towards a solution (can be viewed as a fitting step). Then they explore the local minimum for 400 runs which will be used to estimate the parameters correlations and errors.
 # The choice of the Nburn value (when walkers have reached a stationary stage) can be done by eye but you can also look at the autocorrelation time.
-#
+# 
 # ### Why should I use it ?
-#
-# When it comes to evaluate errors and investigate parameter correlation, one typically estimate the Likelihood in a gridded search (2D Likelihood profiles). Each point of the grid implies a new model fitting. If we use 10 steps for each parameters, we will need to carry out 100 fitting procedures.
-#
-# Now let's say that I have a model with $N$ parameters, we need to carry out that gridded analysis $N*(N-1)$ times.
-# So for 5 free parameters you need 20 gridded search, resulting in 2000 individual fit.
+# 
+# When it comes to evaluate errors and investigate parameter correlation, one typically estimate the Likelihood in a gridded search (2D Likelihood profiles). Each point of the grid implies a new model fitting. If we use 10 steps for each parameters, we will need to carry out 100 fitting procedures. 
+# 
+# Now let's say that I have a model with $N$ parameters, we need to carry out that gridded analysis $N*(N-1)$ times. 
+# So for 5 free parameters you need 20 gridded search, resulting in 2000 individual fit. 
 # Clearly this strategy doesn't scale well to high-dimensional models.
-#
-# Just for fun: if each fit procedure takes 10s, we're talking about 5h of computing time to estimate the correlation plots.
-#
+# 
+# Just for fun: if each fit procedure takes 10s, we're talking about 5h of computing time to estimate the correlation plots. 
+# 
 # There are many MCMC packages in the python ecosystem but here we will focus on [emcee](https://emcee.readthedocs.io), a lightweight Python package. A description is provided here : [Foreman-Mackey, Hogg, Lang & Goodman (2012)](https://arxiv.org/abs/1202.3665).
 
 # In[ ]:
@@ -79,7 +79,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 # ## Simulate an observation
-#
+# 
 # Here we will start by simulating an observation using the `simulate_dataset` method.
 
 # In[ ]:
@@ -151,19 +151,19 @@ dataset.counts.sum_over_axes().plot(add_cbar=True);
 
 
 # ## Estimate parameter correlations with MCMC
-#
+# 
 # Now let's analyse the simulated data.
 # Here we just fit it again with the same model we had before as a starting point.
-# The data that would be needed are the following:
+# The data that would be needed are the following: 
 # - counts cube, psf cube, exposure cube and background model
-#
+# 
 # Luckily all those maps are already in the Dataset object.
-#
+# 
 # We will need to define a Likelihood function and define priors on parameters.<br>
 # Here we will assume a uniform prior reading the min, max parameters from the sky model.
 
 # ### Define priors
-#
+# 
 # This steps is a bit manual for the moment until we find a better API to define priors.<br>
 # Note the you **need** to define priors for each parameter otherwise your walkers can explore uncharted territories (e.g. negative norms).
 
@@ -198,12 +198,8 @@ parameters["index"].max = 5
 parameters["lambda_"].min = 1e-3
 parameters["lambda_"].max = 1
 
-parameters["amplitude"].min = (
-    0.01 * parameters["amplitude"].value
-)
-parameters["amplitude"].max = (
-    100 * parameters["amplitude"].value
-)
+parameters["amplitude"].min = 0.01 * parameters["amplitude"].value
+parameters["amplitude"].max = 100 * parameters["amplitude"].value
 
 parameters["sigma"].min = 0.05
 parameters["sigma"].max = 1
@@ -225,11 +221,11 @@ get_ipython().run_cell_magic('time', '', "# Now let's define a function to init 
 
 
 # ## Plot the results
-#
+# 
 # The MCMC will return a sampler object containing the trace of all walkers.<br>
 # The most important part is the chain attribute which is an array of shape:<br>
 # _(nwalkers, nrun, nfreeparam)_
-#
+# 
 # The chain is then used to plot the trace of the walkers and estimate the burnin period (the time for the walkers to reach a stationary stage).
 
 # In[ ]:
@@ -245,7 +241,7 @@ plot_corner(sampler, dataset, nburn=50)
 
 
 # ## Plot the model dispersion
-#
+# 
 # Using the samples from the chain after the burn period, we can plot the different models compared to the truth model. To do this we need to the spectral models for each parameter state in the sample.
 
 # In[ ]:
@@ -279,7 +275,7 @@ sky_model_simu.spectral_model.plot(
 
 
 # ## Fun Zone
-#
+# 
 # Now that you have the sampler chain, you have in your hands the entire history of each walkers in the N-Dimensional parameter space. <br>
 # You can for example trace the steps of each walker in any parameter space.
 
@@ -303,9 +299,9 @@ plt.ylabel("Amplitude");
 
 
 # ## PeVatrons in CTA ?
-#
+# 
 # Now it's your turn to play with this MCMC notebook. For example to test the CTA performance to measure a cutoff at very high energies (100 TeV ?).
-#
+# 
 # After defining your Skymodel it can be as simple as this :
 
 # In[ ]:

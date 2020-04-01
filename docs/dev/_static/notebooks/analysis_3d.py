@@ -2,9 +2,9 @@
 # coding: utf-8
 
 # # 3D analysis
-#
+# 
 # This tutorial does a 3D map based analsis on the galactic center, using simulated observations from the CTA-1DC. We will use the high level interface for the data reduction, and then do a detailed modelling. This will be done in two different ways:
-#
+# 
 # - stacking all the maps together and fitting the stacked maps
 # - handling all the observations separately and doing a joint fitting on all the maps
 
@@ -83,8 +83,8 @@ print(config)
 
 
 # ## Configuration for stacked and joint analysis
-#
-# This is done just by specfiying the flag on `config.datasets.stack`. Since the internal machinery will work differently for the two cases, we will write it as two config files and save it to disc in YAML format for future reference.
+# 
+# This is done just by specfiying the flag on `config.datasets.stack`. Since the internal machinery will work differently for the two cases, we will write it as two config files and save it to disc in YAML format for future reference. 
 
 # In[ ]:
 
@@ -107,11 +107,11 @@ config_stack.write(path=path / "config_stack.yaml", overwrite=True)
 
 
 # ## Stacked analysis
-#
+# 
 # ### Data reduction
-#
+# 
 # We first show the steps for the stacked analysis and then repeat the same for the joint analysis later
-#
+# 
 
 # In[ ]:
 
@@ -166,11 +166,11 @@ excess.smooth("0.06 deg").plot(stretch="sqrt", add_cbar=True);
 
 
 # ### Modeling and fitting
-#
+# 
 # Now comes the interesting part of the analysis - choosing appropriate models for our source and fitting them.
-#
+# 
 # We choose a point source model with an exponential cutoff power-law spectrum.
-#
+# 
 # To select a certain energy range for the fit we can create a fit mask:
 
 # In[ ]:
@@ -219,7 +219,7 @@ result.parameters.to_table()
 
 
 # ### Check model fit
-#
+# 
 # We check the model fit by computing and plotting a residual image:
 
 # In[ ]:
@@ -231,9 +231,9 @@ dataset_stacked.plot_residuals(method="diff/sqrt(model)", vmin=-1, vmax=1)
 # We can also plot the best fit spectrum. For that need to extract the covariance of the spectral parameters.
 
 # ## Joint analysis
-#
-# In this section, we perform a joint analysis of the same data. Of course, joint fitting is considerably heavier than stacked one, and should always be handled with care. For brevity, we only show the analysis for a point source fitting without re-adding a diffuse component again.
-#
+# 
+# In this section, we perform a joint analysis of the same data. Of course, joint fitting is considerably heavier than stacked one, and should always be handled with care. For brevity, we only show the analysis for a point source fitting without re-adding a diffuse component again. 
+# 
 # ### Data reduction
 
 # In[ ]:
@@ -294,7 +294,7 @@ for dataset in analysis_joint.datasets:
 
 
 # ### Residuals
-#
+# 
 # Since we have multiple datasets, we can either look at a stacked residual map, or the residuals for each dataset. Each `gammapy.cube.MapDataset` object is equipped with a method called `gammapy.cube.MapDataset.plot_residuals()`, which displays the spatial and spectral residuals (computed as *counts-model*) for the dataset. Optionally, these can be normalized as *(counts-model)/model* or *(counts-model)/sqrt(model)*, by passing the parameter `norm='model` or `norm=sqrt_model`.
 
 # In[ ]:
@@ -333,28 +333,25 @@ residuals_stacked.sum_over_axes().smooth("0.08 deg").plot(
 # In[ ]:
 
 
-def plot_spectrum(model, result, label):
+def plot_spectrum(model, result, label, color):
     spec = model.spectral_model
-
-    # set covariance on the spectral model
-    covar = result.parameters.get_subcovariance(spec.parameters)
-    spec.parameters.covariance = covar
-
     energy_range = [0.3, 10] * u.TeV
-    spec.plot(energy_range=energy_range, energy_power=2, label=label)
-    spec.plot_error(energy_range=energy_range, energy_power=2)
+    spec.plot(
+        energy_range=energy_range, energy_power=2, label=label, color=color
+    )
+    spec.plot_error(energy_range=energy_range, energy_power=2, color=color)
 
 
 # In[ ]:
 
 
-plot_spectrum(model, result, label="stacked")
-plot_spectrum(model_joint, result_joint, label="joint")
+plot_spectrum(model, result, label="stacked", color="tab:blue")
+plot_spectrum(model_joint, result_joint, label="joint", color="tab:orange")
 plt.legend()
 
 
 # ## Summary
-#
+# 
 # Note that this notebook aims to show you the procedure of a 3D analysis using just a few observations. Results get much better for a more complete analysis considering the GPS dataset from the CTA First Data Challenge (DC-1) and also the CTA model for the Galactic diffuse emission, as shown in the next image:
 
 # ![](images/DC1_3d.png)
@@ -362,6 +359,6 @@ plt.legend()
 # The complete tutorial notebook of this analysis is available to be downloaded in [GAMMAPY-EXTRA](https://github.com/gammapy/gammapy-extra) repository at https://github.com/gammapy/gammapy-extra/blob/master/analyses/cta_1dc_gc_3d.ipynb).
 
 # ## Exercises
-#
+# 
 # * Analyse the second source in the field of view: G0.9+0.1 and add it to the combined model.
 # * Perform modeling in more details - Add diffuse component, get flux points.

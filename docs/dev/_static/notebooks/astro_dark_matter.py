@@ -2,15 +2,15 @@
 # coding: utf-8
 
 # # Dark matter utilities
-#
-# ## Introduction
-#
-# Gammapy has some convenience methods for dark matter analyses in `~gammapy.astro.darkmatter`. These include J-Factor computation and calculation the expected gamma flux for a number of annihilation channels. They are presented in this notebook.
-#
+# 
+# ## Introduction 
+# 
+# Gammapy has some convenience methods for dark matter analyses in `~gammapy.astro.darkmatter`. These include J-Factor computation and calculation the expected gamma flux for a number of annihilation channels. They are presented in this notebook. 
+# 
 # The basic concepts of indirect dark matter searches, however, are not explained. So this is aimed at people who already know what the want to do. A good introduction to indirect dark matter searches is given for example in https://arxiv.org/pdf/1012.4515.pdf (Chapter 1 and 5)
 
 # ## Setup
-#
+# 
 # As always, we start with some setup for the notebook, and with imports.
 
 # In[ ]:
@@ -39,7 +39,7 @@ import matplotlib.pyplot as plt
 
 
 # ## Profiles
-#
+# 
 # The following dark matter profiles are currently implemented. Each model can be scaled to a given density at a certain distance. These parameters are controlled by ``profiles.DMProfile.LOCAL_DENSITY`` and ``profiles.DMProfile.DISTANCE_GC``
 
 # In[ ]:
@@ -66,7 +66,7 @@ print("DISTANCE_GC:", profiles.DMProfile.DISTANCE_GC)
 
 
 # ## J Factors
-#
+# 
 # There are utilies to compute J-Factor maps can can serve as a basis to compute J-Factors for certain regions. In the following we compute a J-Factor map for the Galactic Centre region
 
 # In[ ]:
@@ -119,7 +119,7 @@ print(
 
 
 # ## Gamma-ray spectra at production
-#
+# 
 # The gamma-ray spectrum per annihilation is a further ingredient for a dark matter analysis. The following annihilation channels are supported. For more info see https://arxiv.org/pdf/1012.4515.pdf
 
 # In[ ]:
@@ -155,7 +155,7 @@ plt.subplots_adjust(hspace=0.5)
 
 
 # ## Flux maps
-#
+# 
 # Finally flux maps can be produced like this:
 
 # In[ ]:
