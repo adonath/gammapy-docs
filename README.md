@@ -35,7 +35,7 @@ Below we assume that the gammapy and the gammapy-docs are installed in the same 
 cd gammapy
 git clean -fdx
 git pull
-python setup.py develop
+pip install -e .
 time make docs-all
 cd ../gammapy-docs
 rm -r docs/dev
@@ -54,12 +54,13 @@ cd 0.10
 git clone https://github.com/gammapy/gammapy.git
 cd gammapy
 git checkout v0.10
-python setup.py develop
+pip install -e .
 time make docs-all release=v0.10
 cd ../../..
 cp -r build/0.10/gammapy/docs/_build/html docs/0.10
 git add docs/0.10
 git commit -m 'Add docs/0.10'
+git push
 ```
 
 Then update `stable/index.html` to point to the new stable version.
