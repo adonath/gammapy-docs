@@ -50,10 +50,12 @@ center = SkyCoord("0 deg", "0.5 deg")
 region = CircleSkyRegion(center=center, radius=0.1 * u.deg)
 
 e_reco = MapAxis.from_energy_bounds("0.03 TeV", "30 TeV", nbin=20)
-e_true = MapAxis.from_energy_bounds("0.01 TeV", "100 TeV", nbin=100)
+e_true = MapAxis.from_energy_bounds(
+    "0.01 TeV", "100 TeV", nbin=100, name="energy_true"
+)
 
 empty_dataset = SpectrumDataset.create(
-    e_reco=e_reco.edges, e_true=e_true.edges, region=region
+    e_reco=e_reco, e_true=e_true, region=region
 )
 
 

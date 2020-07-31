@@ -196,7 +196,7 @@ images["excess"].smooth(3).plot(vmax=2);
 
 # ## Source Detection
 # 
-# Use the class `~gammapy.estimators.TSMapEstimator` and `~gammapy.estimators.utils.find_peaks` to detect sources on the images. We search for 0.1 deg sigma gaussian sources in the dataset.
+# Use the class `~gammapy.estimators.TSMapEstimator` and function `gammapy.estimators.utils.find_peaks` to detect sources on the images. We search for 0.1 deg sigma gaussian sources in the dataset.
 
 # In[ ]:
 
@@ -209,7 +209,7 @@ model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'ts_image_estimator = TSMapEstimator(model)\nimages_ts = ts_image_estimator.run(dataset_image)\nprint(images_ts.keys())')
+get_ipython().run_cell_magic('time', '', 'ts_image_estimator = TSMapEstimator(model, kernel_width="0.5 deg")\nimages_ts = ts_image_estimator.run(dataset_image)\nprint(images_ts.keys())')
 
 
 # In[ ]:
@@ -256,8 +256,10 @@ plt.gca().scatter(
 # In[ ]:
 
 
-e_reco = np.logspace(-1, np.log10(40), 40) * u.TeV
-e_true = np.logspace(np.log10(0.05), 2, 200) * u.TeV
+e_reco = MapAxis.from_energy_bounds(0.1, 40, 40, unit="TeV", name="energy")
+e_true = MapAxis.from_energy_bounds(
+    0.05, 100, 200, unit="TeV", name="energy_true"
+)
 
 dataset_empty = SpectrumDataset.create(
     e_reco=e_reco, e_true=e_true, region=on_region

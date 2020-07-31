@@ -58,10 +58,7 @@ from regions import CircleSkyRegion
 from gammapy.maps import Map, MapAxis, WcsGeom
 from gammapy.modeling import Fit
 from gammapy.data import DataStore
-from gammapy.modeling.models import (
-    PowerLawSpectralModel,
-    SkyModel,
-)
+from gammapy.modeling.models import PowerLawSpectralModel, SkyModel
 from gammapy.datasets import Datasets, MapDataset
 from gammapy.makers import (
     SafeMaskMaker,
@@ -215,10 +212,7 @@ info_table
 fig = plt.figure(figsize=(10, 6))
 ax = fig.add_subplot(121)
 ax.plot(
-    info_table["livetime"].to("h"),
-    info_table["excess"],
-    marker="o",
-    ls="none",
+    info_table["livetime"].to("h"), info_table["excess"], marker="o", ls="none"
 )
 plt.xlabel("Livetime [h]")
 plt.ylabel("Excess events")

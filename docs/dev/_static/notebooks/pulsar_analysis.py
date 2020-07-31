@@ -33,7 +33,7 @@ from gammapy.makers import (
     PhaseBackgroundMaker,
     SpectrumDatasetMaker,
 )
-from gammapy.maps import Map, WcsGeom
+from gammapy.maps import Map, WcsGeom, MapAxis
 from gammapy.data import DataStore
 from gammapy.datasets import Datasets, SpectrumDataset, FluxPointsDataset
 from gammapy.modeling.models import PowerLawSpectralModel, SkyModel
@@ -248,8 +248,10 @@ excess_map.smooth(kernel="gauss", width=0.2 * u.deg).plot(add_cbar=True);
 # In[ ]:
 
 
-e_true = np.logspace(-2.5, 1, 100) * u.TeV
-e_reco = np.logspace(-2, 1, 30) * u.TeV
+e_true = MapAxis.from_energy_bounds(
+    0.003, 10, 100, unit="TeV", name="energy_true"
+)
+e_reco = MapAxis.from_energy_bounds(0.01, 10, 30, unit="TeV", name="energy")
 
 dataset_empty = SpectrumDataset.create(
     e_reco=e_reco, e_true=e_true, region=on_region

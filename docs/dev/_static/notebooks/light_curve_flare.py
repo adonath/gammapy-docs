@@ -99,7 +99,7 @@ print(f"Number of selected observations : {len(observations)}")
 
 
 # ## Define time intervals
-# We create the list of time intervals. Each time interval is an `~astropy.time.Time` object, containing a start and stop time.
+# We create the list of time intervals. Each time interval is an `astropy.time.Time` object, containing a start and stop time.
 
 # In[ ]:
 
@@ -151,8 +151,8 @@ print(short_observations[1].gti)
 
 
 # Target definition
-e_reco = MapAxis.from_energy_bounds(0.4, 20, 10, "TeV").edges
-e_true = MapAxis.from_energy_bounds(0.1, 40, 20, "TeV").edges
+e_reco = MapAxis.from_energy_bounds(0.4, 20, 10, "TeV")
+e_true = MapAxis.from_energy_bounds(0.1, 40, 20, "TeV", name="energy_true")
 
 on_region_radius = Angle("0.11 deg")
 on_region = CircleSkyRegion(center=target_position, radius=on_region_radius)
@@ -192,9 +192,7 @@ get_ipython().run_cell_magic('time', '', 'datasets = []\n\ndataset_empty = Spect
 
 
 spectral_model = PowerLawSpectralModel(
-    index=3.4,
-    amplitude=2e-11 * u.Unit("1 / (cm2 s TeV)"),
-    reference=1 * u.TeV,
+    index=3.4, amplitude=2e-11 * u.Unit("1 / (cm2 s TeV)"), reference=1 * u.TeV
 )
 spectral_model.parameters["index"].frozen = False
 

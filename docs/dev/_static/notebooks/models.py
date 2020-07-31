@@ -16,7 +16,7 @@
 # 1. [Model Lists and Serialisation](#Model-Lists-and-Serialisation)
 # 1. [Implementing as Custom Model](#Implementing-a-Custom-Model)
 # 
-# The models follow a naming scheme which contains the category as a suffix to the class name. An overview of all the available models can be found in the :ref:`model-gallery`.
+# The models follow a naming scheme which contains the category as a suffix to the class name. An overview of all the available models can be found in the [model gallery](https://docs.gammapy.org/dev/modeling/gallery/index.html#spectral-models).
 # 
 # Note that there is a separate tutorial [modeling](modeling.ipynb) that explains about `~gammapy.modeling`,
 # the Gammapy modeling and fitting framework. You have to read that to learn how to work with models in order to analyse data.
@@ -42,7 +42,7 @@ from gammapy.maps import Map
 
 # # Spectral Models
 # 
-# All models are imported from the `gammapy.modeling.models` namespace. Let's start with a `PowerLawSpectralModel`:
+# All models are imported from the `~gammapy.modeling.models` namespace. Let's start with a `PowerLawSpectralModel`:
 
 # In[ ]:
 
@@ -57,19 +57,19 @@ pwl = PowerLawSpectralModel()
 print(pwl)
 
 
-# To get a list of all available spectral models you can import and print the spectral model registry or take a look at the [model gallery](https://docs.gammapy.org/stable/modeling/gallery/index.html#spectral-models):
+# To get a list of all available spectral models you can import and print the spectral model registry or take a look at the [model gallery](https://docs.gammapy.org/dev/modeling/gallery/index.html#spectral-models):
 
 # In[ ]:
 
 
-from gammapy.modeling.models import SPECTRAL_MODELS
+from gammapy.modeling.models import SPECTRAL_MODEL_REGISTRY
 
-print(SPECTRAL_MODELS)
+print(SPECTRAL_MODEL_REGISTRY)
 
 
 # Spectral models all come with default parameters. Different parameter
 # values can be passed on creation of the model, either as a string defining
-# the value and unit or as an `~astropy.units.Quantity` object directly:
+# the value and unit or as an `astropy.units.Quantity` object directly:
 
 # In[ ]:
 
@@ -142,7 +142,7 @@ pwl.plot(energy_range=[1, 100] * u.TeV)
 
 # # Spatial Models
 
-# Spatial models are imported from the same `gammapy.modeling.models` namespace, let's start with a `GaussianSpatialModel`:
+# Spatial models are imported from the same `~gammapy.modeling.models` namespace, let's start with a `GaussianSpatialModel`:
 
 # In[ ]:
 
@@ -157,14 +157,14 @@ gauss = GaussianSpatialModel(lon_0="0 deg", lat_0="0 deg", sigma="0.2 deg")
 print(gauss)
 
 
-# Again you can check the `SPATIAL_MODELS` registry to see which models are available or take a look at the [model gallery](https://docs.gammapy.org/stable/modeling/gallery/index.html#spatial-models).
+# Again you can check the `SPATIAL_MODELS` registry to see which models are available or take a look at the [model gallery](https://docs.gammapy.org/dev/modeling/gallery/index.html#spatial-models).
 
 # In[ ]:
 
 
-from gammapy.modeling.models import SPATIAL_MODELS
+from gammapy.modeling.models import SPATIAL_MODEL_REGISTRY
 
-print(SPATIAL_MODELS)
+print(SPATIAL_MODEL_REGISTRY)
 
 
 # The default coordinate frame for all spatial models is ``"icrs"``, but the frame can be modified using the
@@ -178,7 +178,7 @@ gauss = GaussianSpatialModel(
 )
 
 
-# You can specify any valid `~astropy.coordinates` frame. The center position of the model can be retrieved as a `~astropy.coordinates.SkyCoord` object using `SpatialModel.position`: 
+# You can specify any valid `astropy.coordinates` frame. The center position of the model can be retrieved as a `astropy.coordinates.SkyCoord` object using `SpatialModel.position`: 
 
 # In[ ]:
 
@@ -199,7 +199,7 @@ print(flux_per_omega)
 
 
 # The returned quantity corresponds to a surface brightness. Spatial model
-# can be also evaluated using `gammapy.maps.Map` and `gammapy.maps.Geom` objects:
+# can be also evaluated using `~gammapy.maps.Map` and `~gammapy.maps.Geom` objects:
 
 # In[ ]:
 
@@ -217,7 +217,7 @@ m.plot(add_cbar=True);
 gauss.plot(add_cbar=True);
 
 
-# All spatial models have an associated sky region to it e.g. to illustrate the extend of the model on a sky image. The returned object is an `~regions.SkyRegion` object:
+# All spatial models have an associated sky region to it e.g. to illustrate the extend of the model on a sky image. The returned object is an `regions.SkyRegion` object:
 
 # In[ ]:
 
@@ -315,7 +315,7 @@ model_spectrum = SkyModel(spectral_model=pwl, name="source-spectrum")
 print(model_spectrum)
 
 
-# Additionally the `gammapy.modeling.models.SkyDiffuseCube` can be used to represent source models based on templates, where the spatial and energy axes are correlated. It can be created e.g. from an existing FITS file:
+# Additionally the `~gammapy.modeling.models.SkyDiffuseCube` can be used to represent source models based on templates, where the spatial and energy axes are correlated. It can be created e.g. from an existing FITS file:
 # 
 # 
 
@@ -432,15 +432,15 @@ class MyCustomSpectralModel(SpectralModel):
     
     Parameters
     ----------
-    amplitude : `~astropy.units.Quantity`
+    amplitude : `astropy.units.Quantity`
         Amplitude of the spectra model.
-    index : `~astropy.units.Quantity`
+    index : `astropy.units.Quantity`
         Spectral index of the model.
-    reference : `~astropy.units.Quantity`
+    reference : `astropy.units.Quantity`
         Reference energy of the power law.
-    mean : `~astropy.units.Quantity`
+    mean : `astropy.units.Quantity`
         Mean value of the Gaussian.
-    width : `~astropy.units.Quantity`
+    width : `astropy.units.Quantity`
         Sigma width of the Gaussian line.
     
     """
@@ -494,7 +494,7 @@ my_custom_model.plot(energy_range=[1, 10] * u.TeV)
 # In[ ]:
 
 
-SPECTRAL_MODELS.append(MyCustomSpectralModel)
+SPECTRAL_MODEL_REGISTRY.append(MyCustomSpectralModel)
 
 
 # In[ ]:

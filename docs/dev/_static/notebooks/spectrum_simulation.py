@@ -72,7 +72,7 @@ energy_axis = MapAxis.from_edges(
     np.logspace(-0.5, 1.0, 10), unit="TeV", name="energy", interp="log"
 )
 energy_axis_true = MapAxis.from_edges(
-    np.logspace(-1.2, 2.0, 31), unit="TeV", name="energy", interp="log"
+    np.logspace(-1.2, 2.0, 31), unit="TeV", name="energy_true", interp="log"
 )
 
 on_region_radius = Angle("0.11 deg")
@@ -115,10 +115,7 @@ print(obs)
 
 # Make the SpectrumDataset
 dataset_empty = SpectrumDataset.create(
-    e_reco=energy_axis.edges,
-    e_true=energy_axis_true.edges,
-    region=on_region,
-    name="obs-0",
+    e_reco=energy_axis, e_true=energy_axis_true, region=on_region, name="obs-0"
 )
 maker = SpectrumDatasetMaker(selection=["aeff", "edisp", "background"])
 dataset = maker.run(dataset_empty, obs)
@@ -154,7 +151,7 @@ print(dataset_onoff)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '\nn_obs = 100\ndatasets = Datasets()\n\nfor idx in range(n_obs):\n    dataset_onoff.fake(\n        random_state=idx, background_model=dataset.background,\n    )\n    datasets.append(dataset_onoff.copy(name=f"obs-{idx}"))')
+get_ipython().run_cell_magic('time', '', '\nn_obs = 100\ndatasets = Datasets()\n\nfor idx in range(n_obs):\n    dataset_onoff.fake(random_state=idx, background_model=dataset.background)\n    datasets.append(dataset_onoff.copy(name=f"obs-{idx}"))')
 
 
 # In[ ]:
@@ -173,7 +170,7 @@ table = datasets.info_table()
 fix, axes = plt.subplots(1, 3, figsize=(12, 4))
 axes[0].hist(table["n_on"])
 axes[0].set_xlabel("n_on")
-axes[1].hist(table["n_on"])
+axes[1].hist(table["n_off"])
 axes[1].set_xlabel("n_off")
 axes[2].hist(table["excess"])
 axes[2].set_xlabel("excess");
@@ -187,7 +184,7 @@ axes[2].set_xlabel("excess");
 get_ipython().run_cell_magic('time', '', 'results = []\nfor dataset in datasets:\n    dataset.models = model.copy()\n    fit = Fit([dataset])\n    result = fit.optimize()\n    results.append(\n        {\n            "index": result.parameters["index"].value,\n            "amplitude": result.parameters["amplitude"].value,\n        }\n    )')
 
 
-# We take a look at the distribution of the fitted indices. This matches very well with the spectrum that we initially injected, index=2.1
+# We take a look at the distribution of the fitted indices. This matches very well with the spectrum that we initially injected.
 
 # In[ ]:
 

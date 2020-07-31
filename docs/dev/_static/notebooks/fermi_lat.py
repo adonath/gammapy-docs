@@ -432,7 +432,7 @@ source = SkyModel(
 models = Models([source, diffuse_gal, diffuse_iso])
 
 dataset = MapDataset(
-    models=models, counts=counts, exposure=exposure, psf=psf, edisp=edisp,
+    models=models, counts=counts, exposure=exposure, psf=psf, edisp=edisp
 )
 
 

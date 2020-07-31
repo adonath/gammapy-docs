@@ -1,6 +1,20 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# 
+# <div class="alert alert-info">
+# 
+# **This is a fixed-text formatted version of a Jupyter notebook**
+# 
+# - Try online [![Binder](https://static.mybinder.org/badge.svg)](https://mybinder.org/v2/gh/gammapy/gammapy-webpage/master?urlpath=lab/tree/analysis_3d.ipynb)
+# - You can contribute with your own notebooks in this
+# [GitHub repository](https://github.com/gammapy/gammapy/tree/master/docs/tutorials).
+# - **Source files:**
+# [analysis_3d.ipynb](../_static/notebooks/analysis_3d.ipynb) |
+# [analysis_3d.py](../_static/notebooks/analysis_3d.py)
+# </div>
+# 
+
 # # 3D analysis
 # 
 # This tutorial does a 3D map based analsis on the galactic center, using simulated observations from the CTA-1DC. We will use the high level interface for the data reduction, and then do a detailed modelling. This will be done in two different ways:
@@ -13,9 +27,11 @@
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
+import numpy as np
 import astropy.units as u
 from pathlib import Path
 from regions import CircleSkyRegion
+from scipy.stats import norm
 from gammapy.analysis import Analysis, AnalysisConfig
 from gammapy.modeling.models import (
     SkyModel,
@@ -24,6 +40,8 @@ from gammapy.modeling.models import (
 )
 from gammapy.modeling import Fit
 from gammapy.maps import Map
+from gammapy.estimators import ExcessMapEstimator
+from gammapy.datasets import MapDataset
 
 
 # ## Analysis configuration
@@ -212,15 +230,25 @@ dataset_stacked.background_model.norm.value = 1.3
 get_ipython().run_cell_magic('time', '', 'fit = Fit([dataset_stacked])\nresult = fit.run(optimize_opts={"print_level": 1})')
 
 
+# ### Fit quality assesment and model residuals for a `MapDataset`
+
+# We can access the results dictionary to see if the fit converged:
+
+# In[ ]:
+
+
+print(result)
+
+
+# Check best-fit parameters and error estimates:
+
 # In[ ]:
 
 
 result.parameters.to_table()
 
 
-# ### Check model fit
-# 
-# We check the model fit by computing and plotting a residual image:
+# A quick way to inspect the model residuals is using the function `~MapDataset.plot_residuals()`. This function computes and plots a residual image (by default, the smoothing radius is `0.1 deg` and `method=diff`, which corresponds to a simple `data - model` plot):
 
 # In[ ]:
 
@@ -228,7 +256,67 @@ result.parameters.to_table()
 dataset_stacked.plot_residuals(method="diff/sqrt(model)", vmin=-1, vmax=1)
 
 
-# We can also plot the best fit spectrum. For that need to extract the covariance of the spectral parameters.
+# The same function can also extract and display spectral residuals, in case a region (used for the spectral extraction) is passed:
+
+# In[ ]:
+
+
+region = CircleSkyRegion(spatial_model.position, radius=0.15 * u.deg)
+
+dataset_stacked.plot_residuals(
+    method="diff/sqrt(model)", vmin=-1, vmax=1, region=region
+)
+
+
+# This way of accessing residuals is quick and handy, but comes with limitations. For example:
+# - In case a fitting energy range was defined using a `MapDataset.mask_fit`, it won't be taken into account. Residuals will be summed up over the whole reconstructed energy range
+# - In order to make a proper statistic treatment, instead of simple residuals a proper residuals significance map should be computed
+# 
+# A more accurate way to inspect spatial residuals is the following:
+
+# In[ ]:
+
+
+# TODO: clean this up
+estimator = ExcessMapEstimator(correlation_radius="0.1 deg")
+dataset_image = dataset_stacked.to_image()
+estimator_dict = estimator.run(dataset_image, steps="ts")
+
+residuals_significance = estimator_dict["significance"]
+residuals_significance.sum_over_axes().plot(cmap="coolwarm", add_cbar=True)
+
+
+# Distribution of residuals significance in the full map geometry:
+
+# In[ ]:
+
+
+# TODO: clean this up
+significance_data = residuals_significance.data
+
+# #Remove bins that are inside an exclusion region, that would create an artificial peak at significance=0.
+# #For now these lines are useless, because to_image() drops the mask fit
+# mask_data = dataset_image.mask_fit.sum_over_axes().data
+# excluded = mask_data == 0
+# significance_data = significance_data[~excluded]
+significance_data = significance_data.flatten()
+
+plt.hist(significance_data, density=True, alpha=0.9, color="red", bins=30)
+mu, std = norm.fit(significance_data)
+x = np.linspace(
+    np.min(significance_data) - 1, np.max(significance_data) + 1, 50
+)
+p = norm.pdf(x, mu, std)
+plt.plot(
+    x,
+    p,
+    lw=2,
+    color="black",
+    label=r"$\mu$ = {:.2f}, $\sigma$ = {:.2f}".format(mu, std),
+)
+plt.legend(fontsize=17)
+plt.xlim(-6, 10)
+
 
 # ## Joint analysis
 # 
@@ -256,6 +344,15 @@ print(analysis_joint.datasets)
 print(analysis_joint.datasets[0])
 
 
+# After the data reduction stage, it is nice to get a quick summary info on the datasets. 
+# Here, we look at the statistics in the center of Map, by passing an appropriate `region`. To get info on the entire spatial map, omit the region argument.
+
+# In[ ]:
+
+
+analysis_joint.datasets.info_table()
+
+
 # In[ ]:
 
 
@@ -272,19 +369,25 @@ for dataset in analysis_joint.datasets:
 get_ipython().run_cell_magic('time', '', 'fit_joint = Fit(analysis_joint.datasets)\nresult_joint = fit_joint.run()')
 
 
-# In[ ]:
+# ### Fit quality assessment and model residuals for a joint `Datasets` 
 
-
-print(result)
-
+# We can access the results dictionary to see if the fit converged:
 
 # In[ ]:
 
 
-fit_joint.datasets.parameters.to_table()
+print(result_joint)
 
 
-# The information which parameter belongs to which dataset is not listed explicitly in the table (yet), but the order of parameters is conserved. You can always access the underlying object tree as well to get specific parameter values:
+# Check best-fit parameters and error estimates:
+
+# In[ ]:
+
+
+result_joint.parameters.to_table()
+
+
+# The information on which parameter belongs to which dataset is not listed explicitly in the table (yet), but the order of parameters is conserved. You can always access the underlying object tree as well to get specific parameter values:
 
 # In[ ]:
 
@@ -293,42 +396,33 @@ for dataset in analysis_joint.datasets:
     print(dataset.background_model.norm.value)
 
 
-# ### Residuals
-# 
-# Since we have multiple datasets, we can either look at a stacked residual map, or the residuals for each dataset. Each `gammapy.cube.MapDataset` object is equipped with a method called `gammapy.cube.MapDataset.plot_residuals()`, which displays the spatial and spectral residuals (computed as *counts-model*) for the dataset. Optionally, these can be normalized as *(counts-model)/model* or *(counts-model)/sqrt(model)*, by passing the parameter `norm='model` or `norm=sqrt_model`.
+# Since the joint dataset is made of multiple datasets, we can either:
+# - Look at the residuals for each dataset separately. In this case, we can directly refer to the section `Fit quality and model residuals for a MapDataset` in this notebook
+# - Look at a stacked residual map. 
+
+# In the latter case, we need to properly stack the joint dataset before computing the residuals:
 
 # In[ ]:
 
 
-# To see the spectral residuals, we have to define a region for the spectral extraction
-region = CircleSkyRegion(spatial_model.position, radius=0.15 * u.deg)
-
-
-# In[ ]:
-
-
-for dataset in analysis_joint.datasets:
-    ax_image, ax_spec = dataset.plot_residuals(
-        region=region, vmin=-0.5, vmax=0.5, method="diff"
-    )
-
-
-# In[ ]:
-
+# TODO: clean this up
 
 # We need to stack on the full geometry, so we use to geom from the stacked counts map.
-residuals_stacked = Map.from_geom(analysis_stacked.datasets[0].counts.geom)
+stacked = MapDataset.from_geoms(
+    geom=dataset_stacked.counts.geom,
+    geom_exposure=dataset_stacked.exposure.geom,
+    geom_edisp=dataset_stacked.edisp.edisp_map.geom,
+    geom_psf=dataset_stacked.psf.psf_map.geom,
+)
 
 for dataset in analysis_joint.datasets:
-    residuals = dataset.residuals()
-    residuals_stacked.stack(residuals)
-
-residuals_stacked.sum_over_axes().smooth("0.08 deg").plot(
-    vmin=-1, vmax=1, cmap="coolwarm", add_cbar=True, stretch="linear"
-);
+    # TODO: Apply mask_fit before stacking
+    stacked.stack(dataset)
 
 
-# Finally let us compare the spectral results from the stacked and joint fit:
+# Then, we can access the stacked model residuals as previously shown in the section `Fit quality and model residuals for a MapDataset` in this notebook.
+
+# Finally, let us compare the spectral results from the stacked and joint fit:
 
 # In[ ]:
 

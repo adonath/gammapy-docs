@@ -176,7 +176,7 @@ maker_fov = FoVBackgroundMaker(method="fit", exclusion_mask=exclusion_mask)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '\nfor obs in observations:\n    # First a cutout of the target map is produced\n    cutout = stacked.cutout(\n        obs.pointing_radec, width=2 * offset_max, name=f"obs-{obs.obs_id}"\n    )\n    # A MapDataset is filled in this cutout geometry\n    dataset = maker.run(cutout, obs)\n    # fit background model\n    dataset = maker_fov.run(dataset)\n    print(\n        f"Background norm obs {obs.obs_id}: {dataset.background_model.norm.value:.2f}"\n    )\n    # The data quality cut is applied\n    dataset = maker_safe_mask.run(dataset, obs)\n    # The resulting dataset cutout is stacked onto the final one\n    stacked.stack(dataset)')
+get_ipython().run_cell_magic('time', '', '\nfor obs in observations:\n    # First a cutout of the target map is produced\n    cutout = stacked.cutout(\n        obs.pointing_radec, width=2 * offset_max, name=f"obs-{obs.obs_id}"\n    )\n    # A MapDataset is filled in this cutout geometry\n    dataset = maker.run(cutout, obs)\n    # The data quality cut is applied\n    dataset = maker_safe_mask.run(dataset, obs)\n    # fit background model\n    dataset = maker_fov.run(dataset)\n    print(\n        f"Background norm obs {obs.obs_id}: {dataset.background_model.norm.value:.2f}"\n    )\n    # The resulting dataset cutout is stacked onto the final one\n    stacked.stack(dataset)')
 
 
 # In[ ]:

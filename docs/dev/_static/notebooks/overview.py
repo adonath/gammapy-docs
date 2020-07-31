@@ -97,7 +97,7 @@ from gammapy.maps import Map
 gc_3fhl = Map.read("$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-counts.fits.gz")
 
 
-# The image is a `~gammapy.maps.WCSNDMap` object:
+# The image is a `~gammapy.maps.WcsNDMap` object:
 
 # In[ ]:
 

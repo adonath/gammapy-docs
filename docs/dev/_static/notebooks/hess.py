@@ -25,12 +25,18 @@
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
+from astropy.coordinates import SkyCoord
+import numpy as np
+import astropy.units as u
 
 
 # In[ ]:
 
 
 from gammapy.data import DataStore
+from gammapy.maps import MapAxis
+from gammapy.makers.utils import make_theta_squared_table
+from gammapy.visualization import plot_theta_squared_table
 
 
 # In[ ]:
@@ -54,7 +60,7 @@ data_store.obs_table[:2][["OBS_ID", "DATE-OBS", "RA_PNT", "DEC_PNT", "OBJECT"]]
 # In[ ]:
 
 
-obs = data_store.obs(20136)
+obs = data_store.obs(23523)
 
 
 # In[ ]:
@@ -81,10 +87,34 @@ obs.psf.peek()
 obs.bkg.to_2d().plot()
 
 
+# ## Theta sqared event distribution
+# As a quick look plot it can be helpful to plot the quadratic offset (theta squared) distribution of the events. 
+
+# In[ ]:
+
+
+position = SkyCoord(ra=83.63, dec=22.01, unit="deg", frame="icrs")
+theta2_axis = MapAxis.from_bounds(0, 0.2, nbin=20, interp="lin", unit="deg2")
+
+observations = data_store.get_observations([23523, 23526])
+theta2_table = make_theta_squared_table(
+    observations=observations,
+    position=position,
+    theta_squared_axis=theta2_axis,
+)
+
+
+# In[ ]:
+
+
+plt.figure(figsize=(10, 5))
+plot_theta_squared_table(theta2_table)
+
+
 # ## Exercises
 # 
 # - Find the `OBS_ID` for the runs of the Crab nebula
-# - Compute the expected number of background events in the whole FOV for `OBS_ID=20136` in the 1 TeV to 3 TeV energy band, from the background IRF.
+# - Compute the expected number of background events in the whole FOV for `OBS_ID=23523` in the 1 TeV to 3 TeV energy band, from the background IRF.
 
 # ## Next steps
 # 

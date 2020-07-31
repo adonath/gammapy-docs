@@ -1,6 +1,20 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# 
+# <div class="alert alert-info">
+# 
+# **This is a fixed-text formatted version of a Jupyter notebook**
+# 
+# - Try online [![Binder](https://static.mybinder.org/badge.svg)](https://mybinder.org/v2/gh/gammapy/gammapy-webpage/master?urlpath=lab/tree/spectrum_analysis.ipynb)
+# - You can contribute with your own notebooks in this
+# [GitHub repository](https://github.com/gammapy/gammapy/tree/master/docs/tutorials).
+# - **Source files:**
+# [spectrum_analysis.ipynb](../_static/notebooks/spectrum_analysis.ipynb) |
+# [spectrum_analysis.py](../_static/notebooks/spectrum_analysis.py)
+# </div>
+# 
+
 # # Modeling and fitting
 # 
 # 
@@ -51,6 +65,8 @@ crab_spectrum = LogParabolaSpectralModel(
     beta=0.2,
 )
 
+crab_spectrum.alpha.max = 3
+crab_spectrum.alpha.min = 1
 crab_model = SkyModel(spectral_model=crab_spectrum, name="crab")
 
 
@@ -98,17 +114,17 @@ fit = Fit([dataset_hess])
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'scipy_opts = {"method": "L-BFGS-B", "options": {"ftol": 1e-4, "gtol": 1e-05}}\nresult_scipy = fit.run(backend="scipy", optimize_opts=scipy_opts)\nprint(result_scipy)')
+get_ipython().run_cell_magic('time', '', 'scipy_opts = {"method": "L-BFGS-B", "options": {"ftol": 1e-4, "gtol": 1e-05}}\nresult_scipy = fit.run(backend="scipy", optimize_opts=scipy_opts)')
 
 
-# For the "sherpa" backend you can from the options method = {"simplex",  "levmar", "moncar", "gridsearch"}.  
+# For the "sherpa" backend you can choose the optimization algorithm between method = {"simplex",  "levmar", "moncar", "gridsearch"}.  
 # Those methods are described and compared in detail on http://cxc.cfa.harvard.edu/sherpa/methods/index.html.  
 # The available options of the optimization methods are described on the following page https://cxc.cfa.harvard.edu/sherpa/methods/opt_methods.html
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'sherpa_opts = {"method": "simplex", "ftol": 1e-3, "maxfev": int(1e4)}\nresults_simplex = fit.run(backend="sherpa", optimize_opts=sherpa_opts)\nprint(results_simplex)')
+get_ipython().run_cell_magic('time', '', 'sherpa_opts = {"method": "simplex", "ftol": 1e-3, "maxfev": int(1e4)}\nresults_simplex = fit.run(backend="sherpa", optimize_opts=sherpa_opts)')
 
 
 # For the "minuit" backend see https://iminuit.readthedocs.io/en/latest/reference.html for a detailed description of the available options. If there is an entry ‘migrad_opts’, those options will be passed to [iminuit.Minuit.migrad](https://iminuit.readthedocs.io/en/latest/reference.html#iminuit.Minuit.migrad). Additionnaly you can set the fit tolerance using the [tol](https://iminuit.readthedocs.io/en/latest/reference.html#iminuit.Minuit.tol
@@ -118,8 +134,60 @@ get_ipython().run_cell_magic('time', '', 'sherpa_opts = {"method": "simplex", "f
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'minuit_opts = {"tol": 0.001, "strategy": 1}\nresult_minuit = fit.run(backend="minuit", optimize_opts=minuit_opts)\nprint(result_minuit)\nresult_minuit.parameters.to_table()')
+get_ipython().run_cell_magic('time', '', 'minuit_opts = {"tol": 0.001, "strategy": 1}\nresult_minuit = fit.run(backend="minuit", optimize_opts=minuit_opts)')
 
+
+# ## Fit quality assessment
+# 
+# There are various ways to check the convergence and quality of a fit. Among them:
+# 
+# - Refer to the automatically-generated results dictionary
+
+# In[ ]:
+
+
+print(result_scipy)
+
+
+# In[ ]:
+
+
+print(results_simplex)
+
+
+# In[ ]:
+
+
+print(result_minuit)
+
+
+# - Check that the fitted values and errors for all parameters are reasonable, and no fitted parameter value is "too close" - or even outside - its allowed min-max range
+
+# In[ ]:
+
+
+result_minuit.parameters.to_table()
+
+
+# - Plot fit statistic profiles for all fitted prameters, using `~gammapy.modeling.Fit.stat_profile()`. For a good fit and error estimate each profile should be parabolic
+
+# In[ ]:
+
+
+total_stat = result_minuit.total_stat
+
+for par in dataset_hess.models.parameters:
+    if par.frozen is False:
+        profile = fit.stat_profile(parameter=par)
+        plt.plot(profile["values"], profile["stat"] - total_stat)
+        plt.xlabel(f"{par.unit}")
+        plt.ylabel("Delta TS")
+        plt.title(f"{par.name}: {par.value} +- {par.error}")
+        plt.show()
+        plt.close()
+
+
+# - Inspect model residuals. Those can always be accessed using `~Dataset.residuals()`, that will return an array in case a the fitted `Dataset` is a `SpectrumDataset` and a full cube in case of a `MapDataset`. For more details, we refer here to the dedicated fitting tutorials: [analysis_3d.ipynb](analysis_3d.ipynb) (for `MapDataset` fitting) and [spectrum_analysis.ipynb](spectrum_analysis.ipynb) (for `SpectrumDataset` fitting).
 
 # ## Covariance and parameters errors
 # 
@@ -131,7 +199,7 @@ get_ipython().run_cell_magic('time', '', 'minuit_opts = {"tol": 0.001, "strategy
 crab_model.spectral_model.alpha.error
 
 
-# As an exampke this step is needed to produce a butterfly plot showing the enveloppe of the model taking into account parameter uncertainties.
+# As an example, this step is needed to produce a butterfly plot showing the envelope of the model taking into account parameter uncertainties.
 
 # In[ ]:
 
@@ -139,28 +207,6 @@ crab_model.spectral_model.alpha.error
 energy_range = [1, 10] * u.TeV
 crab_spectrum.plot(energy_range=energy_range, energy_power=2)
 ax = crab_spectrum.plot_error(energy_range=energy_range, energy_power=2)
-
-
-# ## Inspecting fit statistic profiles
-# 
-# To check the quality of the fit it is also useful to plot fit statistic profiles for specific parameters.
-# For this we use `~gammapy.modeling.Fit.stat_profile()`.
-
-# In[ ]:
-
-
-profile = fit.stat_profile(parameter="alpha")
-
-
-# For a good fit and error estimate the profile should be parabolic, if we plot it:
-
-# In[ ]:
-
-
-total_stat = result_minuit.total_stat
-plt.plot(profile["values"], profile["stat"] - total_stat)
-plt.xlabel(r"$\Gamma$")
-plt.ylabel("Delta TS");
 
 
 # ## Confidence contours

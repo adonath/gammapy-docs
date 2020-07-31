@@ -57,7 +57,7 @@ from gammapy.modeling.models import (
 )
 from gammapy.estimators import FluxPoints
 from gammapy.datasets import FluxPointsDataset
-from gammapy.catalog import SOURCE_CATALOGS
+from gammapy.catalog import CATALOG_REGISTRY
 from gammapy.modeling import Fit
 
 
@@ -68,9 +68,9 @@ from gammapy.modeling import Fit
 # In[ ]:
 
 
-catalog_3fgl = SOURCE_CATALOGS.get_cls("3fgl")()
-catalog_3fhl = SOURCE_CATALOGS.get_cls("3fhl")()
-catalog_gammacat = SOURCE_CATALOGS.get_cls("gamma-cat")()
+catalog_3fgl = CATALOG_REGISTRY.get_cls("3fgl")()
+catalog_3fhl = CATALOG_REGISTRY.get_cls("3fhl")()
+catalog_gammacat = CATALOG_REGISTRY.get_cls("gamma-cat")()
 
 
 # In[ ]:

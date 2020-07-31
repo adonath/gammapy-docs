@@ -1,6 +1,20 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# 
+# <div class="alert alert-info">
+# 
+# **This is a fixed-text formatted version of a Jupyter notebook**
+# 
+# - Try online [![Binder](https://static.mybinder.org/badge.svg)](https://mybinder.org/v2/gh/gammapy/gammapy-webpage/master?urlpath=lab/tree/spectrum_analysis.ipynb)
+# - You can contribute with your own notebooks in this
+# [GitHub repository](https://github.com/gammapy/gammapy/tree/master/docs/tutorials).
+# - **Source files:**
+# [spectrum_analysis.ipynb](../_static/notebooks/spectrum_analysis.ipynb) |
+# [spectrum_analysis.py](../_static/notebooks/spectrum_analysis.py)
+# </div>
+# 
+
 # # Spectral analysis with Gammapy
 
 # ## Prerequisites 
@@ -81,7 +95,7 @@ from pathlib import Path
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 from regions import CircleSkyRegion
-from gammapy.maps import Map
+from gammapy.maps import Map, MapAxis
 from gammapy.modeling import Fit
 from gammapy.data import DataStore
 from gammapy.datasets import (
@@ -162,8 +176,10 @@ exclusion_mask.plot();
 # In[ ]:
 
 
-e_reco = np.logspace(-1, np.log10(40), 40) * u.TeV
-e_true = np.logspace(np.log10(0.05), 2, 200) * u.TeV
+e_reco = MapAxis.from_energy_bounds(0.1, 40, 40, unit="TeV", name="energy")
+e_true = MapAxis.from_energy_bounds(
+    0.05, 100, 200, unit="TeV", name="energy_true"
+)
 dataset_empty = SpectrumDataset.create(
     e_reco=e_reco, e_true=e_true, region=on_region
 )
@@ -284,11 +300,17 @@ result_joint = fit_joint.run()
 model_best_joint = model.copy()
 
 
+# ## Fit quality and model residuals
+
+# We can access the results dictionary to see if the fit converged:
+
 # In[ ]:
 
 
 print(result_joint)
 
+
+# A simple way to inspect the model residuals is using the function `~SpectrumDataset.plot_fit()`
 
 # In[ ]:
 
@@ -297,6 +319,8 @@ plt.figure(figsize=(8, 6))
 ax_spectrum, ax_residual = datasets[0].plot_fit()
 ax_spectrum.set_ylim(0.1, 40)
 
+
+# For more ways of assessing fit quality, please refer to the dedicated [modeling and fitting tutorial](modeling.ipynb).
 
 # ## Compute Flux Points
 # 

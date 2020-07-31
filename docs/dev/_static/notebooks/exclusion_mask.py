@@ -41,10 +41,10 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 from astropy.coordinates import SkyCoord, Angle
-from regions import read_ds9, CircleSkyRegion
+from regions import CircleSkyRegion
 from gammapy.maps import Map, WcsGeom
 from gammapy.utils.regions import make_region
-from gammapy.catalog import SOURCE_CATALOGS
+from gammapy.catalog import CATALOG_REGISTRY
 from gammapy.datasets import Datasets
 from gammapy.estimators import ExcessMapEstimator
 
@@ -113,7 +113,7 @@ mask_map.plot()
 # In[ ]:
 
 
-fgl = SOURCE_CATALOGS.get_cls("4fgl")()
+fgl = CATALOG_REGISTRY.get_cls("4fgl")()
 
 
 # We now select sources that are contained in the region we are interested in.
@@ -170,8 +170,9 @@ mask_map.plot()
 
 
 datasets = Datasets.read(
-    "$GAMMAPY_DATA/fermi-3fhl-crab/Fermi-LAT-3FHL_datasets.yaml",
-    "$GAMMAPY_DATA/fermi-3fhl-crab/Fermi-LAT-3FHL_models.yaml",
+    "$GAMMAPY_DATA/fermi-3fhl-crab/",
+    "Fermi-LAT-3FHL_datasets.yaml",
+    "Fermi-LAT-3FHL_models.yaml",
 )
 
 
@@ -192,13 +193,12 @@ estimator = ExcessMapEstimator("0.4 deg")
 result = estimator.run(dataset, steps="ts")
 
 
-# Finally, we copy the significance map for our mask and apply a threshold of 5 sigma to remove pixels.
+# Finally, we create the mask map by applying a threshold of 5 sigma to remove pixels.
 
 # In[ ]:
 
 
-mask_map_significance = result["significance"].copy()
-mask_map_significance.data = mask_map_significance.data < 5.0
+mask_map_significance = result["significance"] < 5.0
 
 
 # In[ ]:
@@ -214,8 +214,23 @@ mask_map_significance.sum_over_axes().plot()
 # Note that scikit-image is not a required dependency of gammapy, you might need to install it.
 # 
 
+# ## Reading and writing exclusion masks
+# 
+# `gammapy.maps` cannot directly read/write maps with boolean content. Thus, for serialisation of exclusion masks, it is necessary to do an explicit type casting between boolean and int, as we show here.
+
 # In[ ]:
 
 
+# To save masks to disk
+mask_map_int = mask_map.copy()
+mask_map_int.data = mask_map_int.data.astype(int)
+mask_map_int.write("exclusion_mask.fits", overwrite="True")
 
+
+# In[ ]:
+
+
+# To read maps from disk
+mask_map = Map.read("exclusion_mask.fits")
+mask_map.data = mask_map.data.astype(bool)
 

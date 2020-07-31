@@ -33,10 +33,7 @@ from astropy import units as u
 import matplotlib.pyplot as plt
 from gammapy.modeling import Fit
 from gammapy.datasets import Datasets, FluxPointsDataset, SpectrumDatasetOnOff
-from gammapy.estimators import (
-    FluxPoints,
-    FluxPointsEstimator,
-)
+from gammapy.estimators import FluxPoints, FluxPointsEstimator
 from gammapy.maps import MapAxis
 from pathlib import Path
 
@@ -143,10 +140,10 @@ from pathlib import Path
 # In[ ]:
 
 
-path = "$GAMMAPY_DATA/fermi-3fhl-crab/Fermi-LAT-3FHL"
-filedata = Path(path + "_datasets.yaml")
-filemodel = Path(path + "_models.yaml")
-datasets = Datasets.read(filedata=filedata, filemodel=filemodel)
+path = Path("$GAMMAPY_DATA/fermi-3fhl-crab")
+filedata = "Fermi-LAT-3FHL_datasets.yaml"
+filemodel = "Fermi-LAT-3FHL_models.yaml"
+datasets = Datasets.read(path, filedata=filedata, filemodel=filemodel)
 dataset_fermi = datasets[0]
 
 
@@ -214,9 +211,9 @@ path = Path("crab-3datasets")
 path.mkdir(exist_ok=True)
 
 datasets.write(path=path, prefix="crab_10GeV_100TeV", overwrite=True)
-filedata = path / "crab_10GeV_100TeV_datasets.yaml"
-filemodel = path / "crab_10GeV_100TeV_models.yaml"
-datasets = Datasets.read(filedata=filedata, filemodel=filemodel)
+filedata = "crab_10GeV_100TeV_datasets.yaml"
+filemodel = "crab_10GeV_100TeV_models.yaml"
+datasets = Datasets.read(path, filedata=filedata, filemodel=filemodel)
 
 
 # In[ ]:

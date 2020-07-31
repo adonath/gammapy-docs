@@ -26,7 +26,7 @@
 
 # ## Proposed approach
 # 
-# In this section, we will show how to define a `gammapy.data.Observations` and to create a `~gammapy.datasets.Dataset` object (for more info on `~gammapy.datasets.Dataset` objects, please visit this [link](https://docs.gammapy.org/dev/notebooks/analysis_2.html#Preparing-reduced-datasets-geometry)). These are both necessary for the event sampling. 
+# In this section, we will show how to define a `gammapy.data.Observations` and to create a `~gammapy.datasets.Dataset` object (for more info on `~gammapy.datasets.Dataset` objects, please visit this [link](analysis_2.ipynb#Preparing-reduced-datasets-geometry)). These are both necessary for the event sampling. 
 # Then, we will define the Sky model from which we sample events. 
 # 
 # In this tutorial, we propose two examples for sampling events: one chosing a point-like source and one using a template map. 
@@ -139,7 +139,7 @@ get_ipython().run_cell_magic('time', '', 'empty = MapDataset.create(\n    WCS_GE
 
 # ### Define the Sky model: a point-like source
 # 
-# Now let's define a Sky model (see how to create it [here](https://docs.gammapy.org/dev/notebooks/models.html)) for a point-like source centered 0.5 deg far from the Galactic Center and with a power-law spectrum. We then save the model into a yaml file.
+# Now let's define a Sky model (see how to create it [here](models.ipynb)) for a point-like source centered 0.5 deg far from the Galactic Center and with a power-law spectrum. We then save the model into a yaml file.
 
 # In[ ]:
 
@@ -232,7 +232,7 @@ counts.plot(add_cbar=True);
 
 
 # #### Fit the simulated data
-# We can now check the sake of the event sampling by fitting the data (a tutorial of source fitting is [here](https://docs.gammapy.org/dev/notebooks/analysis_2.html#Fit-the-model) and [here](https://docs.gammapy.org/dev/notebooks/simulate_3d)). We make use of the same `~gammapy.modeling.models.Models` adopted for the simulation. 
+# We can now check the sake of the event sampling by fitting the data (a tutorial of source fitting is [here](analysis_2.ipynb#Fit-the-model) and [here](simulate_3d.ipynb). We make use of the same `~gammapy.modeling.models.Models` adopted for the simulation. 
 # Hence, we firstly read the `~gammapy.datasets.Dataset` and the model file, and we fill the `~gammapy.datasets.Dataset` with the sampled events.
 
 # In[ ]:

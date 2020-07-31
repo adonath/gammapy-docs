@@ -183,12 +183,6 @@ print(dataset_fit.models)
 # In[ ]:
 
 
-dataset_fit.models["dataset-simu-bkg"].datasets_names = ["dataset-fit"]
-
-
-# In[ ]:
-
-
 # Define sky model to fit the data
 spatial_model1 = GaussianSpatialModel(
     lon_0="0.1 deg", lat_0="0.1 deg", sigma="0.5 deg", frame="galactic"

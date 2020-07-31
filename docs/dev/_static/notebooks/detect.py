@@ -28,7 +28,7 @@
 # * `~gammapy.maps.WcsNDMap`
 # * `~gammapy.estimators.ASmoothEstimator`
 # * `~gammapy.estimators.TSMapEstimator`
-# * `~gammapy.estimators.utils.find_peaks`
+# * `gammapy.estimators.utils.find_peaks`
 
 # ## Setup
 # 
@@ -41,13 +41,9 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from gammapy.maps import Map
-from gammapy.estimators import (
-    ASmoothMapEstimator,
-    TSMapEstimator,
-)
+from gammapy.estimators import ASmoothMapEstimator, TSMapEstimator
 from gammapy.estimators.utils import find_peaks
 from gammapy.datasets import MapDataset
-from gammapy.catalog import SOURCE_CATALOGS
 from gammapy.modeling.models import (
     BackgroundModel,
     SkyModel,
@@ -129,7 +125,7 @@ model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'estimator = TSMapEstimator(model)\nimages = estimator.run(dataset)')
+get_ipython().run_cell_magic('time', '', 'estimator = TSMapEstimator(model, kernel_width="0.4 deg")\nimages = estimator.run(dataset)')
 
 
 # ### Plot resulting images

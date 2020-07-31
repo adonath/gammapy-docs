@@ -90,7 +90,7 @@ energy_axis = MapAxis.from_edges(
     np.logspace(-0.5, 1.0, 10), unit="TeV", name="energy", interp="log"
 )
 energy_axis_true = MapAxis.from_edges(
-    np.logspace(-1.2, 2.0, 31), unit="TeV", name="energy", interp="log"
+    np.logspace(-1.2, 2.0, 31), unit="TeV", name="energy_true", interp="log"
 )
 
 on_region_radius = Angle("0.11 deg")
@@ -148,10 +148,7 @@ lvtm = [55, 25, 26, 40, 40, 50, 40, 52, 43, 47] * u.min
 datasets = Datasets()
 
 empty = SpectrumDataset.create(
-    e_reco=energy_axis.edges,
-    e_true=energy_axis_true.edges,
-    region=on_region,
-    name="empty",
+    e_reco=energy_axis, e_true=energy_axis_true, region=on_region, name="empty"
 )
 
 for i in range(n_obs):
@@ -189,7 +186,7 @@ datasets.info_table()
 spectral_model = PowerLawSpectralModel(
     index=3, amplitude="1e-11 cm-2 s-1 TeV-1", reference="1 TeV"
 )
-model_fit = SkyModel(spectral_model=spectral_model, name="model-fit",)
+model_fit = SkyModel(spectral_model=spectral_model, name="model-fit")
 
 
 # In[ ]:
