@@ -209,10 +209,10 @@ ax1 = plt.subplot(221, projection=significance_map.geom.wcs)
 ax2 = plt.subplot(222, projection=excess_map.geom.wcs)
 
 ax1.set_title("Significance map")
-significance_map.get_image_by_idx((0,)).plot(ax=ax1, add_cbar=True)
+significance_map.plot(ax=ax1, add_cbar=True)
 
 ax2.set_title("Excess map")
-excess_map.get_image_by_idx((0,)).plot(ax=ax2, add_cbar=True)
+excess_map.plot(ax=ax2, add_cbar=True)
 
 
 # It is often important to look at the signficance distribution outside the exclusion region to check that the background estimation is not contaminated by gamma-ray events. This can be the case when exclusion regions are not large enough.

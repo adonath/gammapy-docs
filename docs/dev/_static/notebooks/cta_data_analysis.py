@@ -164,9 +164,9 @@ get_ipython().run_cell_magic('time', '', 'stacked = MapDataset.create(geom=geom)
 dataset_image = stacked.to_image()
 
 images = {
-    "counts": dataset_image.counts.get_image_by_idx((0,)),
-    "exposure": dataset_image.exposure.get_image_by_idx((0,)),
-    "background": dataset_image.background_model.map.get_image_by_idx((0,)),
+    "counts": dataset_image.counts,
+    "exposure": dataset_image.exposure,
+    "background": dataset_image.background_model.map,
 }
 
 images["excess"] = images["counts"] - images["background"]
