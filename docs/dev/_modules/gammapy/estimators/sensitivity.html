@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.estimators.sensitivity &mdash; gammapy v0.18.dev392+g8257b1b93</title>
+  <title>gammapy.estimators.sensitivity &mdash; gammapy v0.18.dev432+gc0e58f48f</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev392+g8257b1b93
+                0.18.dev432+gc0e58f48f
               </div>
             
           
@@ -1062,6 +1062,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-016.html">PIG 16 - Gammapy package structure</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-018.html">PIG 18 - Documentation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-019.html">PIG 19 - Gammapy package structure follow up</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-021.html">PIG 21 - Models Improvements</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../development/dataformats.html">Data Formats</a></li>
@@ -1147,7 +1148,7 @@
 
 <span class="sd">    This class allows to determine for each reconstructed energy bin the flux</span>
 <span class="sd">    associated to the number of gamma-ray events for which the significance is</span>
-<span class="sd">    ``sigma``, and being larger than ``gamma_min`` and ``bkg_sys`` percent</span>
+<span class="sd">    ``n_sigma``, and being larger than ``gamma_min`` and ``bkg_sys`` percent</span>
 <span class="sd">    larger than the number of background events in the ON region.</span>
 
 
@@ -1155,10 +1156,10 @@
 <span class="sd">    ----------</span>
 <span class="sd">    spectrum : `SpectralModel`</span>
 <span class="sd">        Spectral model assumption</span>
-<span class="sd">    sigma : float, optional</span>
-<span class="sd">        Minimum significance</span>
+<span class="sd">    n_sigma : float, optional</span>
+<span class="sd">        Minimum significance. Default is 5.</span>
 <span class="sd">    gamma_min : float, optional</span>
-<span class="sd">        Minimum number of gamma-rays</span>
+<span class="sd">        Minimum number of gamma-rays. Default is 10.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
@@ -1168,14 +1169,14 @@
     <span class="n">tag</span> <span class="o">=</span> <span class="s2">&quot;SensitivityEstimator&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">spectrum</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">gamma_min</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">spectrum</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">n_sigma</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">gamma_min</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
     <span class="p">):</span>
 
         <span class="k">if</span> <span class="n">spectrum</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">spectrum</span> <span class="o">=</span> <span class="n">PowerLawSpectralModel</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="s2">&quot;1 cm-2 s-1 TeV-1&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span> <span class="o">=</span> <span class="n">spectrum</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sigma</span> <span class="o">=</span> <span class="n">sigma</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span> <span class="o">=</span> <span class="n">n_sigma</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">gamma_min</span> <span class="o">=</span> <span class="n">gamma_min</span>
 
 <div class="viewcode-block" id="SensitivityEstimator.estimate_min_excess"><a class="viewcode-back" href="../../../api/gammapy.estimators.SensitivityEstimator.html#gammapy.estimators.SensitivityEstimator.estimate_min_excess">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_min_excess</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
@@ -1196,7 +1197,7 @@
         <span class="n">stat</span> <span class="o">=</span> <span class="n">WStatCountsStatistic</span><span class="p">(</span>
             <span class="n">n_on</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">n_off</span><span class="p">),</span> <span class="n">n_off</span><span class="o">=</span><span class="n">n_off</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">alpha</span><span class="o">.</span><span class="n">data</span>
         <span class="p">)</span>
-        <span class="n">excess_counts</span> <span class="o">=</span> <span class="n">stat</span><span class="o">.</span><span class="n">excess_matching_significance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma</span><span class="p">)</span>
+        <span class="n">excess_counts</span> <span class="o">=</span> <span class="n">stat</span><span class="o">.</span><span class="n">excess_matching_significance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span><span class="p">)</span>
         <span class="n">is_gamma_limited</span> <span class="o">=</span> <span class="n">excess_counts</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_min</span>
         <span class="n">excess_counts</span><span class="p">[</span><span class="n">is_gamma_limited</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gamma_min</span>
         <span class="n">excess</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">background</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -1302,7 +1303,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 01 Aug 2020.
+        Last updated on 04 Aug 2020.
       </span>
 
     </p>

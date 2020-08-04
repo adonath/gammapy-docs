@@ -119,7 +119,7 @@ dataset_on_off = SpectrumDatasetOnOff.from_spectrum_dataset(
 # In[ ]:
 
 
-sensitivity_estimator = SensitivityEstimator(gamma_min=5, sigma=3)
+sensitivity_estimator = SensitivityEstimator(gamma_min=5, n_sigma=3)
 sensitivity_table = sensitivity_estimator.run(dataset_on_off)
 
 

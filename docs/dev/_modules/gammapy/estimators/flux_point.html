@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.estimators.flux_point &mdash; gammapy v0.18.dev392+g8257b1b93</title>
+  <title>gammapy.estimators.flux_point &mdash; gammapy v0.18.dev432+gc0e58f48f</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev392+g8257b1b93
+                0.18.dev432+gc0e58f48f
               </div>
             
           
@@ -1062,6 +1062,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-016.html">PIG 16 - Gammapy package structure</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-018.html">PIG 18 - Documentation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-019.html">PIG 19 - Gammapy package structure follow up</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-021.html">PIG 21 - Models Improvements</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../development/dataformats.html">Data Formats</a></li>
@@ -1913,10 +1914,10 @@
 <span class="sd">        Number of norm values used for the fit statistic profile.</span>
 <span class="sd">    norm_values : `numpy.ndarray`</span>
 <span class="sd">        Array of norm values to be used for the fit statistic profile.</span>
-<span class="sd">    sigma : int</span>
-<span class="sd">        Sigma to use for asymmetric error computation.</span>
-<span class="sd">    sigma_ul : int</span>
-<span class="sd">        Sigma to use for upper limit computation.</span>
+<span class="sd">    n_sigma : int</span>
+<span class="sd">        Number of sigma to use for asymmetric error computation. Default is 1.</span>
+<span class="sd">    n_sigma_ul : int</span>
+<span class="sd">        Number of sigma to use for upper limit computation. Default is 2.</span>
 <span class="sd">    reoptimize : bool</span>
 <span class="sd">        Re-optimize other free model parameters.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1930,8 +1931,8 @@
         <span class="n">norm_max</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
         <span class="n">norm_n_values</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span>
         <span class="n">norm_values</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">sigma</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-        <span class="n">sigma_ul</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">n_sigma</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">n_sigma_ul</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
         <span class="n">reoptimize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">e_edges</span> <span class="o">=</span> <span class="n">e_edges</span>
@@ -1942,8 +1943,8 @@
             <span class="n">norm_max</span><span class="p">,</span>
             <span class="n">norm_n_values</span><span class="p">,</span>
             <span class="n">norm_values</span><span class="p">,</span>
-            <span class="n">sigma</span><span class="p">,</span>
-            <span class="n">sigma_ul</span><span class="p">,</span>
+            <span class="n">n_sigma</span><span class="p">,</span>
+            <span class="n">n_sigma_ul</span><span class="p">,</span>
             <span class="n">reoptimize</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_contribute_to_stat</span> <span class="o">=</span> <span class="kc">False</span>
@@ -1955,13 +1956,6 @@
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">MapDataset</span><span class="p">)</span> <span class="ow">and</span> <span class="n">counts</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">background_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">dataset</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">freeze_all</span><span class="p">()</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">e_groups</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Energy grouping table `~astropy.table.Table`&quot;&quot;&quot;</span>
-        <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">group_table</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_edges</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">s</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">:</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -1986,37 +1980,39 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">datasets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_datasets</span><span class="p">(</span><span class="n">datasets</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">datasets</span><span class="o">.</span><span class="n">is_all_same_type</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">datasets</span><span class="o">.</span><span class="n">is_all_same_energy_shape</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">datasets</span><span class="o">.</span><span class="n">is_all_same_type</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">datasets</span><span class="o">.</span><span class="n">energy_axes_are_aligned</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Flux point estimation requires a list of datasets&quot;</span>
-                <span class="s2">&quot; of the same type and data shape.&quot;</span>
+               <span class="s2">&quot;Flux point estimation requires a list of datasets&quot;</span>
+               <span class="s2">&quot; of the same type and data shape.&quot;</span>
             <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
         <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">e_group</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_groups</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">e_group</span><span class="p">[</span><span class="s2">&quot;bin_type&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;normal&quot;</span><span class="p">:</span>
-                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Skipping under-/ overflow bin in flux point estimation.&quot;</span><span class="p">)</span>
-                <span class="k">continue</span>
-
-            <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_estimate_flux_point</span><span class="p">(</span><span class="n">e_group</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="n">steps</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e_edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_estimate_flux_point</span><span class="p">(</span><span class="n">e_min</span><span class="o">=</span><span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span><span class="o">=</span><span class="n">e_max</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="n">steps</span><span class="p">)</span>
             <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
 
         <span class="n">table</span> <span class="o">=</span> <span class="n">table_from_row_data</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">rows</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;SED_TYPE&quot;</span><span class="p">:</span> <span class="s2">&quot;likelihood&quot;</span><span class="p">})</span>
         <span class="k">return</span> <span class="n">FluxPoints</span><span class="p">(</span><span class="n">table</span><span class="p">)</span><span class="o">.</span><span class="n">to_sed_type</span><span class="p">(</span><span class="s2">&quot;dnde&quot;</span><span class="p">)</span></div>
 
-    <span class="k">def</span> <span class="nf">_energy_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">e_group</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
-        <span class="n">energy_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">data_shape</span><span class="p">)</span>
-        <span class="n">energy_mask</span><span class="p">[</span><span class="n">e_group</span><span class="p">[</span><span class="s2">&quot;idx_min&quot;</span><span class="p">]:</span> <span class="n">e_group</span><span class="p">[</span><span class="s2">&quot;idx_max&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="k">return</span> <span class="n">energy_mask</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_energy_range</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Round e_min and e_max to grid&quot;&quot;&quot;</span>
+        <span class="c1"># TODO: remove this special handling and just rely on Geom.energy_mask?</span>
+        <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
+        <span class="n">edges_pix</span> <span class="o">=</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">coord_to_pix</span><span class="p">([</span><span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span><span class="p">])</span>
+        <span class="n">edges_pix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">edges_pix</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">nbin</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span>
+        <span class="n">edges_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">edges_pix</span> <span class="o">+</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span>
+        <span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span> <span class="o">=</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">pix_to_coord</span><span class="p">(</span><span class="n">edges_idx</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span>
 
-    <span class="k">def</span> <span class="nf">_estimate_flux_point</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">e_group</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_estimate_flux_point</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Estimate flux point for a single energy group.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        e_group : `~astropy.table.Row`</span>
-<span class="sd">            Energy group to compute the flux point for.</span>
+<span class="sd">        e_min, e_max : `~astropy.units.Quantity`</span>
+<span class="sd">            Energy bounds to compute the flux point for.</span>
 <span class="sd">        steps : list of str</span>
 <span class="sd">            Which steps to execute. Available options are:</span>
 
@@ -2033,30 +2029,25 @@
 <span class="sd">        result : dict</span>
 <span class="sd">            Dict with results for the flux point.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span> <span class="o">=</span> <span class="n">e_group</span><span class="p">[</span><span class="s2">&quot;energy_min&quot;</span><span class="p">],</span> <span class="n">e_group</span><span class="p">[</span><span class="s2">&quot;energy_max&quot;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">energy_range</span> <span class="o">=</span> <span class="p">[</span><span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span><span class="p">]</span>
-
         <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span><span class="p">:</span>
-            <span class="n">dataset</span><span class="o">.</span><span class="n">mask_fit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_energy_mask</span><span class="p">(</span><span class="n">e_group</span><span class="o">=</span><span class="n">e_group</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">)</span>
-            <span class="n">mask</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">mask_fit</span>
+            <span class="n">e_min_new</span><span class="p">,</span> <span class="n">e_max_new</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_energy_range</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span><span class="p">)</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">mask_fit</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">energy_mask</span><span class="p">(</span>
+                    <span class="n">emin</span><span class="o">=</span><span class="n">e_min_new</span><span class="p">,</span> <span class="n">emax</span><span class="o">=</span><span class="n">e_max_new</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">mask</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">energy_range</span> <span class="o">=</span> <span class="p">[</span><span class="n">e_min_new</span><span class="p">,</span> <span class="n">e_max_new</span><span class="p">]</span>
 
-            <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">mask</span> <span class="o">&amp;=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">mask_safe</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">_contribute_to_stat</span> <span class="o">|=</span> <span class="n">mask</span><span class="o">.</span><span class="n">any</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_contribute_to_stat</span> <span class="o">|=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">mask</span><span class="o">.</span><span class="n">any</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contribute_to_stat</span><span class="p">:</span>
             <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">]</span><span class="o">.</span><span class="n">spectral_model</span>
             <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_return_nan_result</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="n">steps</span><span class="p">)</span>
-            <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_estimate_counts</span><span class="p">())</span>
-            <span class="k">return</span> <span class="n">result</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">restore_values</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_freeze_empty_background</span><span class="p">()</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">datasets</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="n">steps</span><span class="p">)</span>
 
-        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">restore_values</span><span class="p">:</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">_freeze_empty_background</span><span class="p">()</span>
-
-            <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">datasets</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="n">steps</span><span class="p">)</span>
-            <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_estimate_counts</span><span class="p">())</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_estimate_counts</span><span class="p">())</span>
         <span class="k">return</span> <span class="n">result</span>
 
     <span class="k">def</span> <span class="nf">_estimate_counts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -2067,15 +2058,9 @@
 <span class="sd">        result : dict</span>
 <span class="sd">            Dict with an array with one entry per dataset with counts for the flux point.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contribute_to_stat</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;counts&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">datasets</span><span class="p">))}</span>
-
         <span class="n">counts</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span><span class="p">:</span>
-            <span class="n">mask</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">mask_fit</span>
-            <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">mask</span> <span class="o">&amp;=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">mask_safe</span>
-
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">mask</span>
             <span class="n">counts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
 
         <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;counts&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)}</span></div>
@@ -2094,7 +2079,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 01 Aug 2020.
+        Last updated on 04 Aug 2020.
       </span>
 
     </p>

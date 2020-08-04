@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.estimators.excess_map &mdash; gammapy v0.18.dev392+g8257b1b93</title>
+  <title>gammapy.estimators.excess_map &mdash; gammapy v0.18.dev432+gc0e58f48f</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev392+g8257b1b93
+                0.18.dev432+gc0e58f48f
               </div>
             
           
@@ -1062,6 +1062,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-016.html">PIG 16 - Gammapy package structure</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-018.html">PIG 18 - Documentation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-019.html">PIG 19 - Gammapy package structure follow up</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-021.html">PIG 21 - Models Improvements</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../development/dataformats.html">Data Formats</a></li>
@@ -1191,10 +1192,10 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">tag</span> <span class="o">=</span> <span class="s2">&quot;ExcessMapEstimator&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">correlation_radius</span><span class="o">=</span><span class="s2">&quot;0.1 deg&quot;</span><span class="p">,</span> <span class="n">nsigma</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">nsigma_ul</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">correlation_radius</span><span class="o">=</span><span class="s2">&quot;0.1 deg&quot;</span><span class="p">,</span> <span class="n">n_sigma</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_sigma_ul</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">correlation_radius</span> <span class="o">=</span> <span class="n">correlation_radius</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">nsigma</span> <span class="o">=</span> <span class="n">nsigma</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">nsigma_ul</span> <span class="o">=</span> <span class="n">nsigma_ul</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span> <span class="o">=</span> <span class="n">n_sigma</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_ul</span> <span class="o">=</span> <span class="n">n_sigma_ul</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">correlation_radius</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1247,11 +1248,11 @@
 
         <span class="n">geom</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">counts_stat</span> <span class="o">=</span> <span class="n">convolved_map_dataset_counts_statistics</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">kernel</span><span class="p">)</span>
+        <span class="n">counts_stat</span> <span class="o">=</span> <span class="n">convolved_map_dataset_counts_statistics</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">kernel</span><span class="p">)</span>
 
-        <span class="n">n_on</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">n_on</span><span class="p">)</span>
-        <span class="n">bkg</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">n_on</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">excess</span><span class="p">)</span>
-        <span class="n">excess</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">excess</span><span class="p">)</span>
+        <span class="n">n_on</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">n_on</span><span class="p">)</span>
+        <span class="n">bkg</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">n_on</span> <span class="o">-</span> <span class="n">counts_stat</span><span class="o">.</span><span class="n">excess</span><span class="p">)</span>
+        <span class="n">excess</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">excess</span><span class="p">)</span>
 
         <span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;counts&quot;</span><span class="p">:</span> <span class="n">n_on</span><span class="p">,</span> <span class="s2">&quot;background&quot;</span><span class="p">:</span> <span class="n">bkg</span><span class="p">,</span> <span class="s2">&quot;excess&quot;</span><span class="p">:</span> <span class="n">excess</span><span class="p">}</span>
 
@@ -1259,22 +1260,22 @@
             <span class="n">steps</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ts&quot;</span><span class="p">,</span> <span class="s2">&quot;err&quot;</span><span class="p">,</span> <span class="s2">&quot;errn-errp&quot;</span><span class="p">,</span> <span class="s2">&quot;ul&quot;</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="s2">&quot;ts&quot;</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
-            <span class="n">tsmap</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">delta_ts</span><span class="p">)</span>
-            <span class="n">significance</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">significance</span><span class="p">)</span>
+            <span class="n">tsmap</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">delta_ts</span><span class="p">)</span>
+            <span class="n">significance</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">significance</span><span class="p">)</span>
             <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;ts&quot;</span><span class="p">:</span> <span class="n">tsmap</span><span class="p">,</span> <span class="s2">&quot;significance&quot;</span><span class="p">:</span> <span class="n">significance</span><span class="p">})</span>
 
         <span class="k">if</span> <span class="s2">&quot;err&quot;</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
-            <span class="n">err</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">error</span><span class="p">)</span>
+            <span class="n">err</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">error</span><span class="p">)</span>
             <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;err&quot;</span><span class="p">:</span> <span class="n">err</span><span class="p">})</span>
 
         <span class="k">if</span> <span class="s2">&quot;errn-errp&quot;</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
-            <span class="n">errn</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">compute_errn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nsigma</span><span class="p">))</span>
-            <span class="n">errp</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">compute_errp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nsigma</span><span class="p">))</span>
+            <span class="n">errn</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">compute_errn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span><span class="p">))</span>
+            <span class="n">errp</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">compute_errp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span><span class="p">))</span>
             <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;errn&quot;</span><span class="p">:</span> <span class="n">errn</span><span class="p">,</span> <span class="s2">&quot;errp&quot;</span><span class="p">:</span> <span class="n">errp</span><span class="p">})</span>
 
         <span class="k">if</span> <span class="s2">&quot;ul&quot;</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
             <span class="n">ul</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span>
-                <span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">compute_upper_limit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nsigma_ul</span><span class="p">)</span>
+                <span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">compute_upper_limit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_ul</span><span class="p">)</span>
             <span class="p">)</span>
             <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;ul&quot;</span><span class="p">:</span> <span class="n">ul</span><span class="p">})</span>
         <span class="k">return</span> <span class="n">result</span></div></div>
@@ -1293,7 +1294,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 01 Aug 2020.
+        Last updated on 04 Aug 2020.
       </span>
 
     </p>
