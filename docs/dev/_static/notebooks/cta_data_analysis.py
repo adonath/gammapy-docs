@@ -209,13 +209,29 @@ model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'ts_image_estimator = TSMapEstimator(model, kernel_width="0.5 deg")\nimages_ts = ts_image_estimator.run(dataset_image)\nprint(images_ts.keys())')
+ts_image_estimator = TSMapEstimator(
+    model,
+    kernel_width="0.5 deg",
+    selection_optional=[],
+    downsampling_factor=2,
+    sum_over_energy_groups=False,
+)
 
 
 # In[ ]:
 
 
-sources = find_peaks(images_ts["sqrt_ts"], threshold=6)
+get_ipython().run_cell_magic('time', '', 'images_ts = ts_image_estimator.run(stacked)')
+
+
+# In[ ]:
+
+
+sources = find_peaks(
+    images_ts["sqrt_ts"].get_image_by_idx((0,)),
+    threshold=5,
+    min_distance="0.2 deg",
+)
 sources
 
 

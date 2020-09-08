@@ -50,7 +50,7 @@ from gammapy.modeling.models import (
     PowerLawSpectralModel,
     PointSpatialModel,
 )
-from gammapy.irf import PSFMap, EnergyDependentTablePSF
+from gammapy.irf import PSFMap, EnergyDependentTablePSF, EDispKernelMap
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 import numpy as np
@@ -76,23 +76,25 @@ exposure = Map.read(
 )
 # unit is not properly stored on the file. We add it manually
 exposure.unit = "cm2s"
-mask_safe = counts.copy(data=np.ones_like(counts.data).astype("bool"))
 
 psf = EnergyDependentTablePSF.read(
     "$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-psf-cube.fits.gz"
 )
 psfmap = PSFMap.from_energy_dependent_table_psf(psf)
 
+edisp = EDispKernelMap.from_diagonal_response(
+    energy_axis=counts.geom.get_axis_by_name("energy"),
+    energy_axis_true=exposure.geom.get_axis_by_name("energy_true"),
+)
+
 dataset = MapDataset(
     counts=counts,
     models=[background],
     exposure=exposure,
     psf=psfmap,
-    mask_safe=mask_safe,
     name="fermi-3fhl-gc",
+    edisp=edisp,
 )
-
-dataset = dataset.to_image()
 
 
 # ## Adaptive smoothing
@@ -104,7 +106,14 @@ dataset = dataset.to_image()
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'scales = u.Quantity(np.arange(0.05, 1, 0.05), unit="deg")\nsmooth = ASmoothMapEstimator(threshold=3, scales=scales)\nimages = smooth.run(dataset)\n\nplt.figure(figsize=(15, 5))\nimages["counts"].plot(add_cbar=True, vmax=10)')
+get_ipython().run_cell_magic('time', '', 'scales = u.Quantity(np.arange(0.05, 1, 0.05), unit="deg")\nsmooth = ASmoothMapEstimator(\n    threshold=3, scales=scales, e_edges=[10, 500] * u.GeV\n)\nimages = smooth.run(dataset)')
+
+
+# In[ ]:
+
+
+plt.figure(figsize=(15, 5))
+images["flux"].plot(add_cbar=True, stretch="asinh");
 
 
 # ## TS map estimation
@@ -125,7 +134,7 @@ model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'estimator = TSMapEstimator(model, kernel_width="0.4 deg")\nimages = estimator.run(dataset)')
+get_ipython().run_cell_magic('time', '', 'estimator = TSMapEstimator(\n    model,\n    kernel_width="1 deg",\n    selection_optional=[],\n    e_edges=[10, 500] * u.GeV,\n)\nmaps = estimator.run(dataset)')
 
 
 # ### Plot resulting images
@@ -134,21 +143,21 @@ get_ipython().run_cell_magic('time', '', 'estimator = TSMapEstimator(model, kern
 
 
 plt.figure(figsize=(15, 5))
-images["sqrt_ts"].plot(add_cbar=True);
+maps["sqrt_ts"].plot(add_cbar=True);
 
 
 # In[ ]:
 
 
 plt.figure(figsize=(15, 5))
-images["flux"].plot(add_cbar=True, stretch="sqrt", vmin=0);
+maps["flux"].plot(add_cbar=True, stretch="sqrt", vmin=0);
 
 
 # In[ ]:
 
 
 plt.figure(figsize=(15, 5))
-images["niter"].plot(add_cbar=True);
+maps["niter"].plot(add_cbar=True);
 
 
 # ## Source candidates
@@ -159,7 +168,8 @@ images["niter"].plot(add_cbar=True);
 # In[ ]:
 
 
-sources = find_peaks(images["sqrt_ts"], threshold=8, min_distance=1)
+sqrt_ts_image = maps["sqrt_ts"].get_image_by_idx((0,))
+sources = find_peaks(sqrt_ts_image, threshold=5, min_distance="0.25 deg")
 nsou = len(sources)
 sources
 
@@ -170,7 +180,7 @@ sources
 # Plot sources on top of significance sky image
 plt.figure(figsize=(15, 5))
 
-_, ax, _ = images["sqrt_ts"].plot(add_cbar=True)
+_, ax, _ = maps["sqrt_ts"].plot(add_cbar=True)
 
 ax.scatter(
     sources["ra"],

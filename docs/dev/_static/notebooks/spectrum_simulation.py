@@ -142,7 +142,7 @@ print(dataset)
 dataset_onoff = SpectrumDatasetOnOff.from_spectrum_dataset(
     dataset=dataset, acceptance=1, acceptance_off=5
 )
-dataset_onoff.fake(background_model=dataset.background)
+dataset_onoff.fake(background_model=dataset.background_model)
 print(dataset_onoff)
 
 
@@ -151,7 +151,7 @@ print(dataset_onoff)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '\nn_obs = 100\ndatasets = Datasets()\n\nfor idx in range(n_obs):\n    dataset_onoff.fake(random_state=idx, background_model=dataset.background)\n    datasets.append(dataset_onoff.copy(name=f"obs-{idx}"))')
+get_ipython().run_cell_magic('time', '', '\nn_obs = 100\ndatasets = Datasets()\n\nfor idx in range(n_obs):\n    dataset_onoff.fake(\n        random_state=idx, background_model=dataset.background_model\n    )\n    datasets.append(dataset_onoff.copy(name=f"obs-{idx}"))')
 
 
 # In[ ]:

@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Source detection with Gammapy &mdash; gammapy v0.18.dev432+gc0e58f48f</title>
+  <title>Source detection with Gammapy &mdash; gammapy v0.18.dev639+g8d1e908b4</title>
   
 
   
@@ -76,7 +76,7 @@
             
             
               <div class="version">
-                0.18.dev432+gc0e58f48f
+                0.18.dev639+g8d1e908b4
               </div>
             
           
@@ -1447,7 +1447,7 @@ div.rendered_html tbody tr:hover {
     <span class="n">PowerLawSpectralModel</span><span class="p">,</span>
     <span class="n">PointSpatialModel</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">gammapy.irf</span> <span class="kn">import</span> <span class="n">PSFMap</span><span class="p">,</span> <span class="n">EnergyDependentTablePSF</span>
+<span class="kn">from</span> <span class="nn">gammapy.irf</span> <span class="kn">import</span> <span class="n">PSFMap</span><span class="p">,</span> <span class="n">EnergyDependentTablePSF</span><span class="p">,</span> <span class="n">EDispKernelMap</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">SkyCoord</span>
 <span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -1476,23 +1476,25 @@ div.rendered_html tbody tr:hover {
 <span class="p">)</span>
 <span class="c1"># unit is not properly stored on the file. We add it manually</span>
 <span class="n">exposure</span><span class="o">.</span><span class="n">unit</span> <span class="o">=</span> <span class="s2">&quot;cm2s&quot;</span>
-<span class="n">mask_safe</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;bool&quot;</span><span class="p">))</span>
 
 <span class="n">psf</span> <span class="o">=</span> <span class="n">EnergyDependentTablePSF</span><span class="o">.</span><span class="n">read</span><span class="p">(</span>
     <span class="s2">&quot;$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-psf-cube.fits.gz&quot;</span>
 <span class="p">)</span>
 <span class="n">psfmap</span> <span class="o">=</span> <span class="n">PSFMap</span><span class="o">.</span><span class="n">from_energy_dependent_table_psf</span><span class="p">(</span><span class="n">psf</span><span class="p">)</span>
 
+<span class="n">edisp</span> <span class="o">=</span> <span class="n">EDispKernelMap</span><span class="o">.</span><span class="n">from_diagonal_response</span><span class="p">(</span>
+    <span class="n">energy_axis</span><span class="o">=</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">),</span>
+    <span class="n">energy_axis_true</span><span class="o">=</span><span class="n">exposure</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="s2">&quot;energy_true&quot;</span><span class="p">),</span>
+<span class="p">)</span>
+
 <span class="n">dataset</span> <span class="o">=</span> <span class="n">MapDataset</span><span class="p">(</span>
     <span class="n">counts</span><span class="o">=</span><span class="n">counts</span><span class="p">,</span>
     <span class="n">models</span><span class="o">=</span><span class="p">[</span><span class="n">background</span><span class="p">],</span>
     <span class="n">exposure</span><span class="o">=</span><span class="n">exposure</span><span class="p">,</span>
     <span class="n">psf</span><span class="o">=</span><span class="n">psfmap</span><span class="p">,</span>
-    <span class="n">mask_safe</span><span class="o">=</span><span class="n">mask_safe</span><span class="p">,</span>
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;fermi-3fhl-gc&quot;</span><span class="p">,</span>
+    <span class="n">edisp</span><span class="o">=</span><span class="n">edisp</span><span class="p">,</span>
 <span class="p">)</span>
-
-<span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -1521,48 +1523,37 @@ Set MJD-END to 57236.967546 from DATE-END&#39;. [astropy.wcs.wcs]
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="o">%%time</span>
 <span class="n">scales</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">),</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;deg&quot;</span><span class="p">)</span>
-<span class="n">smooth</span> <span class="o">=</span> <span class="n">ASmoothMapEstimator</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">scales</span><span class="o">=</span><span class="n">scales</span><span class="p">)</span>
+<span class="n">smooth</span> <span class="o">=</span> <span class="n">ASmoothMapEstimator</span><span class="p">(</span>
+    <span class="n">threshold</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">scales</span><span class="o">=</span><span class="n">scales</span><span class="p">,</span> <span class="n">e_edges</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">500</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">GeV</span>
+<span class="p">)</span>
 <span class="n">images</span> <span class="o">=</span> <span class="n">smooth</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
-
-<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
-<span class="n">images</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">add_cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 </pre></div>
 </div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-CPU times: user 1.11 s, sys: 314 ms, total: 1.43 s
-Wall time: 1.43 s
-</pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-/usr/share/miniconda/envs/gammapy-dev/lib/python3.7/site-packages/astropy/visualization/wcsaxes/core.py:211: MatplotlibDeprecationWarning: Passing parameters norm and vmin/vmax simultaneously is deprecated since 3.3 and will become an error two minor releases later. Please pass vmin/vmax directly to the norm when creating it.
-  return super().imshow(X, *args, origin=origin, **kwargs)
-</pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-(&lt;Figure size 1080x360 with 2 Axes&gt;,
- &lt;WCSAxesSubplot:xlabel=&#39;Galactic Longitude&#39;, ylabel=&#39;Galactic Latitude&#39;&gt;,
- &lt;matplotlib.colorbar.Colorbar at 0x7f38a356e9b0&gt;)
-</pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/tutorials_detect_7_3.png" src="../_images/tutorials_detect_7_3.png" />
+<div class="highlight"><pre>
+CPU times: user 1.06 s, sys: 360 ms, total: 1.42 s
+Wall time: 1.42 s
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+<span class="n">images</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">add_cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">stretch</span><span class="o">=</span><span class="s2">&quot;asinh&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/tutorials_detect_8_0.png" src="../_images/tutorials_detect_8_0.png" />
 </div>
 </div>
 </div>
@@ -1572,7 +1563,7 @@ Wall time: 1.43 s
 use <a class="reference external" href="https://en.wikipedia.org/wiki/Brent%27s_method">Brent’s method</a>).</p>
 <p>We first need to define the model that will be used to test for the existence of a source. Here, we use a point source.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1583,13 +1574,18 @@ use <a class="reference external" href="https://en.wikipedia.org/wiki/Brent%27s_
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="o">%%time</span>
-<span class="n">estimator</span> <span class="o">=</span> <span class="n">TSMapEstimator</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">kernel_width</span><span class="o">=</span><span class="s2">&quot;0.4 deg&quot;</span><span class="p">)</span>
-<span class="n">images</span> <span class="o">=</span> <span class="n">estimator</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+<span class="n">estimator</span> <span class="o">=</span> <span class="n">TSMapEstimator</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span>
+    <span class="n">kernel_width</span><span class="o">=</span><span class="s2">&quot;1 deg&quot;</span><span class="p">,</span>
+    <span class="n">selection_optional</span><span class="o">=</span><span class="p">[],</span>
+    <span class="n">e_edges</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">500</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">GeV</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">maps</span> <span class="o">=</span> <span class="n">estimator</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1598,19 +1594,19 @@ use <a class="reference external" href="https://en.wikipedia.org/wiki/Brent%27s_
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-CPU times: user 7.91 s, sys: 149 ms, total: 8.06 s
-Wall time: 7.81 s
+CPU times: user 12.3 s, sys: 57.1 ms, total: 12.4 s
+Wall time: 12.4 s
 </pre></div></div>
 </div>
 <div class="section" id="Plot-resulting-images">
 <h3>Plot resulting images<a class="headerlink" href="#Plot-resulting-images" title="Permalink to this headline">¶</a></h3>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
-<span class="n">images</span><span class="p">[</span><span class="s2">&quot;sqrt_ts&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">add_cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
+<span class="n">maps</span><span class="p">[</span><span class="s2">&quot;sqrt_ts&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">add_cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -1618,16 +1614,16 @@ Wall time: 7.81 s
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/tutorials_detect_12_0.png" src="../_images/tutorials_detect_12_0.png" />
+<img alt="../_images/tutorials_detect_13_0.png" src="../_images/tutorials_detect_13_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
-<span class="n">images</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">add_cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">stretch</span><span class="o">=</span><span class="s2">&quot;sqrt&quot;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">);</span>
+<span class="n">maps</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">add_cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">stretch</span><span class="o">=</span><span class="s2">&quot;sqrt&quot;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="mi">0</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -1644,16 +1640,16 @@ Wall time: 7.81 s
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/tutorials_detect_13_1.png" src="../_images/tutorials_detect_13_1.png" />
+<img alt="../_images/tutorials_detect_14_1.png" src="../_images/tutorials_detect_14_1.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
-<span class="n">images</span><span class="p">[</span><span class="s2">&quot;niter&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">add_cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
+<span class="n">maps</span><span class="p">[</span><span class="s2">&quot;niter&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">add_cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -1661,7 +1657,7 @@ Wall time: 7.81 s
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/tutorials_detect_14_0.png" src="../_images/tutorials_detect_14_0.png" />
+<img alt="../_images/tutorials_detect_15_0.png" src="../_images/tutorials_detect_15_0.png" />
 </div>
 </div>
 </div>
@@ -1670,46 +1666,56 @@ Wall time: 7.81 s
 <h2>Source candidates<a class="headerlink" href="#Source-candidates" title="Permalink to this headline">¶</a></h2>
 <p>Let’s run a peak finder on the <code class="docutils literal notranslate"><span class="pre">sqrt_ts</span></code> image to get a list of point-sources candidates (positions and peak <code class="docutils literal notranslate"><span class="pre">sqrt_ts</span></code> values). The <code class="docutils literal notranslate"><span class="pre">find_peaks</span></code> function performs a local maximun search in a sliding window, the argument <code class="docutils literal notranslate"><span class="pre">min_distance</span></code> is the minimum pixel distance between peaks (smallest possible value and default is 1 pixel).</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">sources</span> <span class="o">=</span> <span class="n">find_peaks</span><span class="p">(</span><span class="n">images</span><span class="p">[</span><span class="s2">&quot;sqrt_ts&quot;</span><span class="p">],</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">min_distance</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span></span><span class="n">sqrt_ts_image</span> <span class="o">=</span> <span class="n">maps</span><span class="p">[</span><span class="s2">&quot;sqrt_ts&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get_image_by_idx</span><span class="p">((</span><span class="mi">0</span><span class="p">,))</span>
+<span class="n">sources</span> <span class="o">=</span> <span class="n">find_peaks</span><span class="p">(</span><span class="n">sqrt_ts_image</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">min_distance</span><span class="o">=</span><span class="s2">&quot;0.25 deg&quot;</span><span class="p">)</span>
 <span class="n">nsou</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sources</span><span class="p">)</span>
 <span class="n">sources</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
-<i>Table length=9</i>
-<table id="table139881232725384" class="table-striped table-bordered table-condensed">
+<i>Table length=18</i>
+<table id="table140626852359584" class="table-striped table-bordered table-condensed">
 <thead><tr><th>value</th><th>x</th><th>y</th><th>ra</th><th>dec</th></tr></thead>
 <thead><tr><th></th><th></th><th></th><th>deg</th><th>deg</th></tr></thead>
 <thead><tr><th>float64</th><th>int64</th><th>int64</th><th>float64</th><th>float64</th></tr></thead>
-<tr><td>31.713</td><td>200</td><td>99</td><td>266.41449</td><td>-28.97054</td></tr>
-<tr><td>27.669</td><td>52</td><td>60</td><td>272.43197</td><td>-23.54282</td></tr>
-<tr><td>13.771</td><td>32</td><td>99</td><td>271.11366</td><td>-21.72027</td></tr>
-<tr><td>12.912</td><td>69</td><td>93</td><td>270.40919</td><td>-23.47797</td></tr>
-<tr><td>12.688</td><td>80</td><td>92</td><td>270.15899</td><td>-23.98049</td></tr>
-<tr><td>12.598</td><td>31</td><td>95</td><td>271.32773</td><td>-21.77469</td></tr>
-<tr><td>12.275</td><td>36</td><td>103</td><td>270.82028</td><td>-21.79615</td></tr>
-<tr><td>9.7788</td><td>273</td><td>119</td><td>263.18257</td><td>-31.52587</td></tr>
-<tr><td>8.6894</td><td>124</td><td>102</td><td>268.46711</td><td>-25.63326</td></tr>
+<tr><td>32.242</td><td>200</td><td>99</td><td>266.41449</td><td>-28.97054</td></tr>
+<tr><td>27.846</td><td>52</td><td>60</td><td>272.43197</td><td>-23.54282</td></tr>
+<tr><td>15.213</td><td>32</td><td>98</td><td>271.16056</td><td>-21.74479</td></tr>
+<tr><td>14.176</td><td>69</td><td>93</td><td>270.40919</td><td>-23.47797</td></tr>
+<tr><td>13.923</td><td>80</td><td>92</td><td>270.15899</td><td>-23.98049</td></tr>
+<tr><td>9.7645</td><td>273</td><td>119</td><td>263.18257</td><td>-31.52587</td></tr>
+<tr><td>8.7988</td><td>124</td><td>102</td><td>268.46711</td><td>-25.63326</td></tr>
+<tr><td>7.3528</td><td>123</td><td>134</td><td>266.97596</td><td>-24.77174</td></tr>
+<tr><td>6.8117</td><td>193</td><td>19</td><td>270.59696</td><td>-30.69138</td></tr>
+<tr><td>6.2469</td><td>152</td><td>148</td><td>265.48068</td><td>-25.64323</td></tr>
+<tr><td>5.8947</td><td>230</td><td>86</td><td>266.15140</td><td>-30.58926</td></tr>
+<tr><td>5.6621</td><td>127</td><td>12</td><td>272.77351</td><td>-27.97934</td></tr>
+<tr><td>5.6566</td><td>251</td><td>139</td><td>262.90685</td><td>-30.05853</td></tr>
+<tr><td>5.478</td><td>181</td><td>95</td><td>267.17020</td><td>-28.26173</td></tr>
+<tr><td>5.4309</td><td>214</td><td>83</td><td>266.78188</td><td>-29.98429</td></tr>
+<tr><td>5.1818</td><td>57</td><td>49</td><td>272.82739</td><td>-24.02653</td></tr>
+<tr><td>5.0702</td><td>156</td><td>132</td><td>266.12148</td><td>-26.23306</td></tr>
+<tr><td>5.0545</td><td>93</td><td>80</td><td>270.37773</td><td>-24.84233</td></tr>
 </table></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># Plot sources on top of significance sky image</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
 
-<span class="n">_</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">images</span><span class="p">[</span><span class="s2">&quot;sqrt_ts&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">add_cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">_</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">maps</span><span class="p">[</span><span class="s2">&quot;sqrt_ts&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">add_cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
     <span class="n">sources</span><span class="p">[</span><span class="s2">&quot;ra&quot;</span><span class="p">],</span>
@@ -1728,7 +1734,7 @@ Wall time: 7.81 s
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/tutorials_detect_17_0.png" src="../_images/tutorials_detect_17_0.png" />
+<img alt="../_images/tutorials_detect_18_0.png" src="../_images/tutorials_detect_18_0.png" />
 </div>
 </div>
 <p>Note that we used the instrument point-spread-function (PSF) as kernel, so the hypothesis we test is the presence of a point source. In order to test for extended sources we would have to use as kernel an extended template convolved by the PSF. Alternatively, we can compute the significance of an extended excess using the Li &amp; Ma formalism, which is faster as no fitting is involve.</p>
@@ -1778,7 +1784,7 @@ Wall time: 7.81 s
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 04 Aug 2020.
+        Last updated on 08 Sep 2020.
       </span>
 
     </p>

@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.estimators.ts_map &mdash; gammapy v0.18.dev432+gc0e58f48f</title>
+  <title>gammapy.estimators.ts_map &mdash; gammapy v0.18.dev639+g8d1e908b4</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev432+gc0e58f48f
+                0.18.dev639+g8d1e908b4
               </div>
             
           
@@ -1138,28 +1138,32 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">contextlib</span>
+<span class="kn">from</span> <span class="nn">multiprocessing</span> <span class="kn">import</span> <span class="n">Pool</span>
 <span class="kn">import</span> <span class="nn">scipy.optimize</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">Angle</span>
+<span class="kn">from</span> <span class="nn">astropy.utils</span> <span class="kn">import</span> <span class="n">lazyproperty</span>
+<span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
+<span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">Map</span><span class="p">,</span> <span class="n">WcsGeom</span><span class="p">,</span> <span class="n">MapAxis</span>
 <span class="kn">from</span> <span class="nn">gammapy.datasets.map</span> <span class="kn">import</span> <span class="n">MapEvaluator</span>
-<span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">Map</span><span class="p">,</span> <span class="n">WcsGeom</span>
-<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">PointSpatialModel</span><span class="p">,</span> <span class="n">PowerLawSpectralModel</span><span class="p">,</span> <span class="n">SkyModel</span>
+<span class="kn">from</span> <span class="nn">gammapy.datasets</span> <span class="kn">import</span> <span class="n">Datasets</span>
+<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">PointSpatialModel</span><span class="p">,</span>
+    <span class="n">PowerLawSpectralModel</span><span class="p">,</span>
+    <span class="n">SkyModel</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">amplitude_bounds_cython</span><span class="p">,</span>
-    <span class="n">cash</span><span class="p">,</span>
+    <span class="n">norm_bounds_cython</span><span class="p">,</span>
     <span class="n">cash_sum_cython</span><span class="p">,</span>
     <span class="n">f_cash_root_cython</span><span class="p">,</span>
-    <span class="n">x_best_leastsq</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.array</span> <span class="kn">import</span> <span class="n">shape_2N</span><span class="p">,</span> <span class="n">symmetric_crop_pad_width</span>
 <span class="kn">from</span> <span class="nn">.core</span> <span class="kn">import</span> <span class="n">Estimator</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">estimate_exposure_reco_energy</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TSMapEstimator&quot;</span><span class="p">]</span>
 
 <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
-
-<span class="n">FLUX_FACTOR</span> <span class="o">=</span> <span class="mf">1e-12</span>
-<span class="n">MAX_NITER</span> <span class="o">=</span> <span class="mi">20</span>
-<span class="n">RTOL</span> <span class="o">=</span> <span class="mf">1e-3</span>
 
 
 <span class="k">def</span> <span class="nf">round_up_to_odd</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
@@ -1182,38 +1186,19 @@
 <span class="sd">        The position of the small array&#39;s center with respect to the</span>
 <span class="sd">        large array.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">x_width</span> <span class="o">=</span> <span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span>
-    <span class="n">y_width</span> <span class="o">=</span> <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span>
+    <span class="n">x_width</span> <span class="o">=</span> <span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span>
+    <span class="n">y_width</span> <span class="o">=</span> <span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span>
     <span class="n">y_lo</span> <span class="o">=</span> <span class="n">position</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">y_width</span>
     <span class="n">y_hi</span> <span class="o">=</span> <span class="n">position</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">y_width</span> <span class="o">+</span> <span class="mi">1</span>
     <span class="n">x_lo</span> <span class="o">=</span> <span class="n">position</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x_width</span>
     <span class="n">x_hi</span> <span class="o">=</span> <span class="n">position</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">x_width</span> <span class="o">+</span> <span class="mi">1</span>
-    <span class="k">return</span> <span class="n">array</span><span class="p">[</span><span class="n">y_lo</span><span class="p">:</span><span class="n">y_hi</span><span class="p">,</span> <span class="n">x_lo</span><span class="p">:</span><span class="n">x_hi</span><span class="p">]</span>
-
-
-<span class="k">def</span> <span class="nf">f_cash</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Wrapper for cash statistics, that defines the model function.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    x : float</span>
-<span class="sd">        Model amplitude.</span>
-<span class="sd">    counts : `~numpy.ndarray`</span>
-<span class="sd">        Count image slice, where model is defined.</span>
-<span class="sd">    background : `~numpy.ndarray`</span>
-<span class="sd">        Background image slice, where model is defined.</span>
-<span class="sd">    model : `~numpy.ndarray`</span>
-<span class="sd">        Source template (multiplied with exposure).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">cash_sum_cython</span><span class="p">(</span>
-        <span class="n">counts</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="p">(</span><span class="n">background</span> <span class="o">+</span> <span class="n">x</span> <span class="o">*</span> <span class="n">FLUX_FACTOR</span> <span class="o">*</span> <span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
-    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">array</span><span class="p">[:,</span> <span class="n">y_lo</span><span class="p">:</span><span class="n">y_hi</span><span class="p">,</span> <span class="n">x_lo</span><span class="p">:</span><span class="n">x_hi</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="TSMapEstimator"><a class="viewcode-back" href="../../../api/gammapy.estimators.TSMapEstimator.html#gammapy.estimators.TSMapEstimator">[docs]</a><span class="k">class</span> <span class="nc">TSMapEstimator</span><span class="p">(</span><span class="n">Estimator</span><span class="p">):</span>
     <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute TS map from a MapDataset using different optimization methods.</span>
 
-<span class="sd">    The map is computed fitting by a single parameter amplitude fit. The fit is</span>
+<span class="sd">    The map is computed fitting by a single parameter norm fit. The fit is</span>
 <span class="sd">    simplified by finding roots of the the derivative of the fit statistics using</span>
 <span class="sd">    various root finding algorithms. The approach is described in Appendix A</span>
 <span class="sd">    in Stewart (2009).</span>
@@ -1221,39 +1206,40 @@
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    model : `~gammapy.modeling.model.SkyModel`</span>
-<span class="sd">        Source model kernel. If set to None, assume point source model, PointSpatialModel.</span>
+<span class="sd">        Source model kernel. If set to None,</span>
+<span class="sd">        assume spatail model: point source model, PointSpatialModel.</span>
+<span class="sd">        spectral model: PowerLawSpectral Model of index 2</span>
 <span class="sd">    kernel_width : `~astropy.coordinates.Angle`</span>
 <span class="sd">        Width of the kernel to use: the kernel will be truncated at this size</span>
 <span class="sd">    n_sigma : int</span>
 <span class="sd">        Number of sigma for flux error. Default is 1.</span>
-<span class="sd">    ul_method : [&#39;covar&#39;, &#39;conf&#39;]</span>
-<span class="sd">        Upper limit estimation method.</span>
 <span class="sd">    n_sigma_ul : int</span>
 <span class="sd">        Number of sigma for flux upper limits. Default is 2.</span>
 <span class="sd">    downsampling_factor : int</span>
 <span class="sd">        Sample down the input maps to speed up the computation. Only integer</span>
 <span class="sd">        values that are a multiple of 2 are allowed. Note that the kernel is</span>
 <span class="sd">        not sampled down, but must be provided with the downsampled bin size.</span>
-<span class="sd">    method : str (&#39;root&#39;)</span>
-<span class="sd">        The following options are available:</span>
-
-<span class="sd">        * ``&#39;root brentq&#39;`` (default)</span>
-<span class="sd">            Fit amplitude by finding the roots of the the derivative of the fit</span>
-<span class="sd">            statistics using the brentq method.</span>
-<span class="sd">        * ``&#39;root newton&#39;``</span>
-<span class="sd">            Fit amplitude by finding the roots of the the derivative of the fit</span>
-<span class="sd">            statistics using Newton&#39;s method.</span>
-<span class="sd">        * ``&#39;leastsq iter&#39;``</span>
-<span class="sd">            Fit the amplitude by an iterative least square fit, that can be solved</span>
-<span class="sd">            analytically.</span>
-<span class="sd">    error_method : [&#39;covar&#39;, &#39;conf&#39;]</span>
-<span class="sd">        Error estimation method.</span>
 <span class="sd">    threshold : float (None)</span>
 <span class="sd">        If the TS value corresponding to the initial flux estimate is not above</span>
 <span class="sd">        this threshold, the optimizing step is omitted to save computing time.</span>
 <span class="sd">    rtol : float (0.001)</span>
 <span class="sd">        Relative precision of the flux estimate. Used as a stopping criterion for</span>
-<span class="sd">        the amplitude fit.</span>
+<span class="sd">        the norm fit.</span>
+<span class="sd">    selection_optional : list of str or &#39;all&#39;</span>
+<span class="sd">        Which maps to compute besides delta TS, significance, flux and symmetric error on flux.</span>
+<span class="sd">        Available options are:</span>
+
+<span class="sd">            * &quot;errn-errp&quot;: estimate assymmetric error on flux.</span>
+<span class="sd">            * &quot;ul&quot;: estimate upper limits on flux.</span>
+
+<span class="sd">        By default all steps are executed.</span>
+<span class="sd">    e_edges : `~astropy.units.Quantity`</span>
+<span class="sd">        Energy edges of the maps bins.</span>
+<span class="sd">    sum_over_energy_groups : bool</span>
+<span class="sd">        Whether to sum over the energy groups or fit the norm on the full energy</span>
+<span class="sd">        cube.</span>
+<span class="sd">    n_jobs : int</span>
+<span class="sd">        Number of processes used in parallel for the computation.</span>
 
 <span class="sd">    Notes</span>
 <span class="sd">    -----</span>
@@ -1267,59 +1253,85 @@
 <span class="sd">                 \end{array}</span>
 <span class="sd">               \right.</span>
 
-<span class="sd">    Where :math:`F` is the fitted flux amplitude.</span>
+<span class="sd">    Where :math:`F` is the fitted flux norm.</span>
 
 <span class="sd">    References</span>
 <span class="sd">    ----------</span>
 <span class="sd">    [Stewart2009]_</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">tag</span> <span class="o">=</span> <span class="s2">&quot;TSMapEstimator&quot;</span>
+    <span class="n">_available_selection_optional</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;errn-errp&quot;</span><span class="p">,</span> <span class="s2">&quot;ul&quot;</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">kernel_width</span><span class="o">=</span><span class="s2">&quot;0.2 deg&quot;</span><span class="p">,</span>
         <span class="n">downsampling_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">method</span><span class="o">=</span><span class="s2">&quot;root brentq&quot;</span><span class="p">,</span>
-        <span class="n">error_method</span><span class="o">=</span><span class="s2">&quot;covar&quot;</span><span class="p">,</span>
         <span class="n">n_sigma</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-        <span class="n">ul_method</span><span class="o">=</span><span class="s2">&quot;covar&quot;</span><span class="p">,</span>
         <span class="n">n_sigma_ul</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
         <span class="n">threshold</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">rtol</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
+        <span class="n">rtol</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+        <span class="n">selection_optional</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span>
+        <span class="n">e_edges</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">sum_over_energy_groups</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">n_jobs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="k">if</span> <span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;root brentq&quot;</span><span class="p">,</span> <span class="s2">&quot;root newton&quot;</span><span class="p">,</span> <span class="s2">&quot;leastsq iter&quot;</span><span class="p">]:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not a valid method: &#39;</span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">error_method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;covar&quot;</span><span class="p">,</span> <span class="s2">&quot;conf&quot;</span><span class="p">]:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not a valid error method &#39;</span><span class="si">{</span><span class="n">error_method</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">kernel_width</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">kernel_width</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">model</span> <span class="o">=</span> <span class="n">SkyModel</span><span class="p">(</span>
                 <span class="n">spectral_model</span><span class="o">=</span><span class="n">PowerLawSpectralModel</span><span class="p">(),</span>
                 <span class="n">spatial_model</span><span class="o">=</span><span class="n">PointSpatialModel</span><span class="p">(),</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">&quot;ts-kernel&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">downsampling_factor</span> <span class="o">=</span> <span class="n">downsampling_factor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span> <span class="o">=</span> <span class="n">n_sigma</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_ul</span> <span class="o">=</span> <span class="n">n_sigma_ul</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rtol</span> <span class="o">=</span> <span class="n">rtol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_jobs</span> <span class="o">=</span> <span class="n">n_jobs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sum_over_energy_groups</span> <span class="o">=</span> <span class="n">sum_over_energy_groups</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="n">method</span><span class="p">,</span>
-            <span class="s2">&quot;error_method&quot;</span><span class="p">:</span> <span class="n">error_method</span><span class="p">,</span>
-            <span class="s2">&quot;n_sigma&quot;</span><span class="p">:</span> <span class="n">n_sigma</span><span class="p">,</span>
-            <span class="s2">&quot;ul_method&quot;</span><span class="p">:</span> <span class="n">ul_method</span><span class="p">,</span>
-            <span class="s2">&quot;n_sigma_ul&quot;</span><span class="p">:</span> <span class="n">n_sigma_ul</span><span class="p">,</span>
-            <span class="s2">&quot;threshold&quot;</span><span class="p">:</span> <span class="n">threshold</span><span class="p">,</span>
-            <span class="s2">&quot;rtol&quot;</span><span class="p">:</span> <span class="n">rtol</span><span class="p">,</span>
-        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selection_optional</span> <span class="o">=</span> <span class="n">selection_optional</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">e_edges</span> <span class="o">=</span> <span class="n">e_edges</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_flux_estimator</span> <span class="o">=</span> <span class="n">BrentqFluxEstimator</span><span class="p">(</span>
+            <span class="n">rtol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rtol</span><span class="p">,</span>
+            <span class="n">n_sigma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span><span class="p">,</span>
+            <span class="n">n_sigma_ul</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_ul</span><span class="p">,</span>
+            <span class="n">selection_optional</span><span class="o">=</span><span class="n">selection_optional</span><span class="p">,</span>
+            <span class="n">ts_threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">,</span>
+        <span class="p">)</span>
 
-<div class="viewcode-block" id="TSMapEstimator.get_kernel"><a class="viewcode-back" href="../../../api/gammapy.estimators.TSMapEstimator.html#gammapy.estimators.TSMapEstimator.get_kernel">[docs]</a>    <span class="k">def</span> <span class="nf">get_kernel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Set the convolution kernel for the input dataset.</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">selection_all</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Which quantities are computed&quot;&quot;&quot;</span>
+        <span class="n">selection</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ts&quot;</span><span class="p">,</span> <span class="s2">&quot;flux&quot;</span><span class="p">,</span> <span class="s2">&quot;niter&quot;</span><span class="p">,</span> <span class="s2">&quot;flux_err&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="s2">&quot;errn-errp&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection_optional</span><span class="p">:</span>
+            <span class="n">selection</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;flux_errp&quot;</span><span class="p">,</span> <span class="s2">&quot;flux_errn&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="s2">&quot;ul&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection_optional</span><span class="p">:</span>
+            <span class="n">selection</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;flux_ul&quot;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">selection</span>
+
+<div class="viewcode-block" id="TSMapEstimator.estimate_kernel"><a class="viewcode-back" href="../../../api/gammapy.estimators.TSMapEstimator.html#gammapy.estimators.TSMapEstimator.estimate_kernel">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_kernel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the convolution kernel for the input dataset.</span>
 
 <span class="sd">        Convolves the model with the PSFKernel at the center of the dataset.</span>
-<span class="sd">        If no PSFMap or PSFKernel is found the dataset, the model is used without convolution.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dataset : `~gammapy.datasets.MapDataset`</span>
+<span class="sd">            Input dataset.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        kernel : `Map`</span>
+<span class="sd">            Kernel map</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># TODO: further simplify the code below</span>
         <span class="n">geom</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span>
@@ -1334,59 +1346,59 @@
 
         <span class="n">axis</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="s2">&quot;energy_true&quot;</span><span class="p">)</span>
 
-        <span class="n">geom</span> <span class="o">=</span> <span class="n">WcsGeom</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+        <span class="n">geom_kernel</span> <span class="o">=</span> <span class="n">WcsGeom</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
             <span class="n">skydir</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="n">proj</span><span class="o">=</span><span class="s2">&quot;TAN&quot;</span><span class="p">,</span> <span class="n">npix</span><span class="o">=</span><span class="n">npix</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">axis</span><span class="p">],</span> <span class="n">binsz</span><span class="o">=</span><span class="n">binsz</span>
         <span class="p">)</span>
 
-        <span class="n">exposure</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;cm2 s1&quot;</span><span class="p">)</span>
+        <span class="n">exposure</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom_kernel</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;cm2 s1&quot;</span><span class="p">)</span>
         <span class="n">exposure</span><span class="o">.</span><span class="n">data</span> <span class="o">+=</span> <span class="mf">1.0</span>
 
         <span class="c1"># We use global evaluation mode to not modify the geometry</span>
         <span class="n">evaluator</span> <span class="o">=</span> <span class="n">MapEvaluator</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">evaluation_mode</span><span class="o">=</span><span class="s2">&quot;global&quot;</span><span class="p">)</span>
         <span class="n">evaluator</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">exposure</span><span class="p">,</span> <span class="n">dataset</span><span class="o">.</span><span class="n">psf</span><span class="p">,</span> <span class="n">dataset</span><span class="o">.</span><span class="n">edisp</span><span class="p">,</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
 
-        <span class="n">kernel</span> <span class="o">=</span> <span class="n">evaluator</span><span class="o">.</span><span class="n">compute_npred</span><span class="p">()</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">()</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">evaluator</span><span class="o">.</span><span class="n">compute_npred</span><span class="p">()</span>
         <span class="n">kernel</span><span class="o">.</span><span class="n">data</span> <span class="o">/=</span> <span class="n">kernel</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
 
-        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel_width</span> <span class="o">&gt;</span> <span class="n">geom</span><span class="o">.</span><span class="n">width</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kernel_width</span> <span class="o">+</span> <span class="n">binsz</span> <span class="o">&gt;=</span> <span class="n">geom</span><span class="o">.</span><span class="n">width</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="s2">&quot;Kernel shape larger than map shape, please adjust&quot;</span>
                 <span class="s2">&quot; size of the kernel&quot;</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">kernel</span></div>
 
-<div class="viewcode-block" id="TSMapEstimator.flux_default"><a class="viewcode-back" href="../../../api/gammapy.estimators.TSMapEstimator.html#gammapy.estimators.TSMapEstimator.flux_default">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">flux_default</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">kernel</span><span class="p">):</span>
+<div class="viewcode-block" id="TSMapEstimator.estimate_flux_default"><a class="viewcode-back" href="../../../api/gammapy.estimators.TSMapEstimator.html#gammapy.estimators.TSMapEstimator.estimate_flux_default">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_flux_default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Estimate default flux map using a given kernel.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        dataset : `~gammapy.cube.MapDataset`</span>
+<span class="sd">        dataset : `~gammapy.datasets.MapDataset`</span>
 <span class="sd">            Input dataset.</span>
 <span class="sd">        kernel : `~numpy.ndarray`</span>
 <span class="sd">            Source model kernel.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        flux_approx : `~gammapy.maps.WcsNDMap`</span>
-<span class="sd">            Approximate flux map (2D).</span>
+<span class="sd">        flux : `~gammapy.maps.WcsNDMap`</span>
+<span class="sd">            Approximate flux map.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">flux</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span> <span class="o">-</span> <span class="n">dataset</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span>
-        <span class="n">flux</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">(</span><span class="n">keepdims</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">flux</span> <span class="o">/=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">(</span><span class="n">keepdims</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">flux</span> <span class="o">/=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">kernel</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">flux</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span></div>
+        <span class="k">if</span> <span class="n">exposure</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">exposure</span> <span class="o">=</span> <span class="n">estimate_exposure_reco_energy</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">spectral_model</span><span class="p">)</span>
 
-<div class="viewcode-block" id="TSMapEstimator.mask_default"><a class="viewcode-back" href="../../../api/gammapy.estimators.TSMapEstimator.html#gammapy.estimators.TSMapEstimator.mask_default">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">mask_default</span><span class="p">(</span><span class="n">exposure</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">kernel</span><span class="p">):</span>
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">kernel</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">kernel</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">flux</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">counts</span> <span class="o">-</span> <span class="n">dataset</span><span class="o">.</span><span class="n">npred</span><span class="p">())</span> <span class="o">/</span> <span class="n">exposure</span>
+        <span class="n">flux</span><span class="o">.</span><span class="n">quantity</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">quantity</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s)&quot;</span><span class="p">)</span>
+        <span class="n">flux</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">flux</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="TSMapEstimator.estimate_mask_default"><a class="viewcode-back" href="../../../api/gammapy.estimators.TSMapEstimator.html#gammapy.estimators.TSMapEstimator.estimate_mask_default">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">estimate_mask_default</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">kernel</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compute default mask where to estimate TS values.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        exposure : `~gammapy.maps.Map`</span>
-<span class="sd">            Input exposure map.</span>
-<span class="sd">        background : `~gammapy.maps.Map`</span>
-<span class="sd">            Input background map.</span>
+<span class="sd">        dataset : `~gammapy.datasets.MapDataset`</span>
+<span class="sd">            Input dataset.</span>
 <span class="sd">        kernel : `~numpy.ndarray`</span>
 <span class="sd">            Source model kernel.</span>
 
@@ -1395,25 +1407,26 @@
 <span class="sd">        mask : `gammapy.maps.WcsNDMap`</span>
 <span class="sd">            Mask map.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+        <span class="n">geom</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span>
 
         <span class="c1"># mask boundary</span>
-        <span class="n">slice_x</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="n">slice_y</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">data_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">slice_x</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">slice_y</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
         <span class="n">mask</span><span class="p">[</span><span class="n">slice_y</span><span class="p">,</span> <span class="n">slice_x</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
 
-        <span class="c1"># positions where exposure == 0 are not processed</span>
-        <span class="n">mask</span> <span class="o">&amp;=</span> <span class="n">exposure</span><span class="o">.</span><span class="n">data</span> <span class="o">&gt;</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">&amp;=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">mask</span><span class="o">.</span><span class="n">reduce_over_axes</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
         <span class="c1"># in some image there are pixels, which have exposure, but zero</span>
         <span class="c1"># background, which doesn&#39;t make sense and causes the TS computation</span>
         <span class="c1"># to fail, this is a temporary fix</span>
-        <span class="n">mask</span><span class="p">[</span><span class="n">background</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">background</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">(</span><span class="n">keepdims</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">mask</span><span class="p">[</span><span class="n">background</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="n">geom</span><span class="p">)</span></div>
 
-        <span class="k">return</span> <span class="n">exposure</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">mask</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;int&quot;</span><span class="p">),</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="TSMapEstimator.sqrt_ts"><a class="viewcode-back" href="../../../api/gammapy.estimators.TSMapEstimator.html#gammapy.estimators.TSMapEstimator.sqrt_ts">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">sqrt_ts</span><span class="p">(</span><span class="n">map_ts</span><span class="p">):</span>
+<div class="viewcode-block" id="TSMapEstimator.estimate_sqrt_ts"><a class="viewcode-back" href="../../../api/gammapy.estimators.TSMapEstimator.html#gammapy.estimators.TSMapEstimator.estimate_sqrt_ts">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">estimate_sqrt_ts</span><span class="p">(</span><span class="n">map_ts</span><span class="p">):</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute sqrt(TS) map.</span>
 
 <span class="sd">        Compute sqrt(TS) as defined by:</span>
@@ -1441,7 +1454,72 @@
             <span class="n">sqrt_ts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ts</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">ts</span><span class="p">),</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="o">-</span><span class="n">ts</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">map_ts</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">sqrt_ts</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="TSMapEstimator.run"><a class="viewcode-back" href="../../../api/gammapy.estimators.TSMapEstimator.html#gammapy.estimators.TSMapEstimator.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="TSMapEstimator.estimate_flux_map"><a class="viewcode-back" href="../../../api/gammapy.estimators.TSMapEstimator.html#gammapy.estimators.TSMapEstimator.estimate_flux_map">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_flux_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Estimate flux and ts maps for single dataset</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dataset : `MapDataset`</span>
+<span class="sd">            Map dataset</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># First create 2D map arrays</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span>
+        <span class="n">background</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span>
+
+        <span class="n">exposure</span> <span class="o">=</span> <span class="n">estimate_exposure_reco_energy</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">spectral_model</span><span class="p">)</span>
+
+        <span class="n">kernel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimate_kernel</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+
+        <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimate_mask_default</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">kernel</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="n">flux</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimate_flux_default</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">kernel</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="n">exposure</span><span class="p">)</span>
+
+        <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
+        <span class="n">flux_ref</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">spectral_model</span><span class="o">.</span><span class="n">integral</span><span class="p">(</span>
+            <span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">exposure_npred</span> <span class="o">=</span> <span class="p">(</span><span class="n">exposure</span> <span class="o">*</span> <span class="n">flux_ref</span><span class="p">)</span><span class="o">.</span><span class="n">quantity</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="n">wrap</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span>
+            <span class="n">_ts_value</span><span class="p">,</span>
+            <span class="n">counts</span><span class="o">=</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span>
+            <span class="n">exposure</span><span class="o">=</span><span class="n">exposure_npred</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span>
+            <span class="n">background</span><span class="o">=</span><span class="n">background</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">),</span>
+            <span class="n">kernel</span><span class="o">=</span><span class="n">kernel</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">norm</span><span class="o">=</span><span class="p">(</span><span class="n">flux</span><span class="o">.</span><span class="n">quantity</span> <span class="o">/</span> <span class="n">flux_ref</span><span class="p">)</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">),</span>
+            <span class="n">flux_estimator</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_flux_estimator</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">mask</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+        <span class="n">positions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_jobs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">results</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">wrap</span><span class="p">,</span> <span class="n">positions</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">closing</span><span class="p">(</span><span class="n">Pool</span><span class="p">(</span><span class="n">processes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_jobs</span><span class="p">))</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Using </span><span class="si">{}</span><span class="s2"> jobs to compute TS map.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_jobs</span><span class="p">))</span>
+                <span class="n">results</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">wrap</span><span class="p">,</span> <span class="n">positions</span><span class="p">)</span>
+
+            <span class="n">pool</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="n">j</span><span class="p">,</span> <span class="n">i</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">positions</span><span class="p">)</span>
+
+        <span class="n">geom</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">squash</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection_all</span><span class="p">:</span>
+            <span class="n">unit</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">exposure</span><span class="o">.</span><span class="n">unit</span> <span class="k">if</span> <span class="s2">&quot;flux&quot;</span> <span class="ow">in</span> <span class="n">name</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="o">=</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
+            <span class="n">m</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">_</span><span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;flux&quot;</span><span class="p">,</span> <span class="s2">&quot;norm&quot;</span><span class="p">)]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s2">&quot;flux&quot;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+                <span class="n">m</span><span class="o">.</span><span class="n">data</span> <span class="o">*=</span> <span class="n">flux_ref</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
+                <span class="n">m</span><span class="o">.</span><span class="n">quantity</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">quantity</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s)&quot;</span><span class="p">)</span>
+            <span class="n">result</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span>
+
+        <span class="k">return</span> <span class="n">result</span></div>
+
+<div class="viewcode-block" id="TSMapEstimator.run"><a class="viewcode-back" href="../../../api/gammapy.estimators.TSMapEstimator.html#gammapy.estimators.TSMapEstimator.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Run TS map estimation.</span>
 
@@ -1452,14 +1530,6 @@
 <span class="sd">        ----------</span>
 <span class="sd">        dataset : `~gammapy.datasets.MapDataset`</span>
 <span class="sd">            Input MapDataset.</span>
-<span class="sd">        steps : list of str or &#39;all&#39;</span>
-<span class="sd">            Which maps to compute. Available options are:</span>
-
-<span class="sd">                * &quot;ts&quot;: estimate delta TS and significance (sqrt_ts)</span>
-<span class="sd">                * &quot;flux-err&quot;: estimate symmetric error on flux.</span>
-<span class="sd">                * &quot;flux-ul&quot;: estimate upper limits on flux.</span>
-
-<span class="sd">            By default all steps are executed.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1473,132 +1543,259 @@
 <span class="sd">                * flux_ul : upper limit map</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
-
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">downsampling_factor</span><span class="p">:</span>
             <span class="n">shape</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span><span class="o">.</span><span class="n">data_shape</span>
             <span class="n">pad_width</span> <span class="o">=</span> <span class="n">symmetric_crop_pad_width</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">shape_2N</span><span class="p">(</span><span class="n">shape</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">pad_width</span><span class="p">)</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">downsampling_factor</span><span class="p">)</span>
 
-        <span class="c1"># First create 2D map arrays</span>
-        <span class="n">counts</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">(</span><span class="n">keepdims</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">background</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">(</span><span class="n">keepdims</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">exposure</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">(</span><span class="n">keepdims</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="c1"># TODO: add support for joint likelihood fitting to TSMapEstimator</span>
+        <span class="n">datasets</span> <span class="o">=</span> <span class="n">Datasets</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
 
-        <span class="n">kernel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_kernel</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">mask</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;int&quot;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_edges</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
+            <span class="n">e_edges</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">([</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">mask</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;int&quot;</span><span class="p">))</span>
+            <span class="n">e_edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_edges</span>
 
-        <span class="n">mask</span><span class="o">.</span><span class="n">data</span> <span class="o">&amp;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_default</span><span class="p">(</span><span class="n">exposure</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">kernel</span><span class="o">.</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
 
-        <span class="k">if</span> <span class="n">steps</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
-            <span class="n">steps</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ts&quot;</span><span class="p">,</span> <span class="s2">&quot;sqrt_ts&quot;</span><span class="p">,</span> <span class="s2">&quot;flux&quot;</span><span class="p">,</span> <span class="s2">&quot;flux_err&quot;</span><span class="p">,</span> <span class="s2">&quot;flux_ul&quot;</span><span class="p">,</span> <span class="s2">&quot;niter&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">e_edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">e_edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+            <span class="n">dataset</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">slice_energy</span><span class="p">(</span><span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
-        <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-            <span class="n">result</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sum_over_energy_groups</span><span class="p">:</span>
+                <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span>
 
-        <span class="n">flux_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">flux_default</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">kernel</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimate_flux_map</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;threshold&quot;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;root newton&quot;</span><span class="p">:</span>
-            <span class="n">flux</span> <span class="o">=</span> <span class="n">flux_map</span><span class="o">.</span><span class="n">data</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">flux</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">result_all</span> <span class="o">=</span> <span class="p">{}</span>
 
-        <span class="c1"># prepare dtype for cython methods</span>
-        <span class="n">counts_array</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
-        <span class="n">background_array</span> <span class="o">=</span> <span class="n">background</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
-        <span class="n">exposure_array</span> <span class="o">=</span> <span class="n">exposure</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection_all</span><span class="p">:</span>
+            <span class="n">map_all</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_images</span><span class="p">(</span><span class="n">images</span><span class="o">=</span><span class="p">[</span><span class="n">_</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">results</span><span class="p">])</span>
 
-        <span class="c1"># Compute null statistics per pixel for the whole image</span>
-        <span class="n">c_0</span> <span class="o">=</span> <span class="n">cash</span><span class="p">(</span><span class="n">counts_array</span><span class="p">,</span> <span class="n">background_array</span><span class="p">)</span>
-
-        <span class="n">error_method</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;error_method&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;flux_err&quot;</span> <span class="ow">in</span> <span class="n">steps</span> <span class="k">else</span> <span class="s2">&quot;none&quot;</span>
-        <span class="n">ul_method</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;ul_method&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;flux_ul&quot;</span> <span class="ow">in</span> <span class="n">steps</span> <span class="k">else</span> <span class="s2">&quot;none&quot;</span>
-
-        <span class="n">wrap</span> <span class="o">=</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span>
-            <span class="n">_ts_value</span><span class="p">,</span>
-            <span class="n">counts</span><span class="o">=</span><span class="n">counts_array</span><span class="p">,</span>
-            <span class="n">exposure</span><span class="o">=</span><span class="n">exposure_array</span><span class="p">,</span>
-            <span class="n">background</span><span class="o">=</span><span class="n">background_array</span><span class="p">,</span>
-            <span class="n">c_0</span><span class="o">=</span><span class="n">c_0</span><span class="p">,</span>
-            <span class="n">kernel</span><span class="o">=</span><span class="n">kernel</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-            <span class="n">flux</span><span class="o">=</span><span class="n">flux</span><span class="p">,</span>
-            <span class="n">method</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">],</span>
-            <span class="n">error_method</span><span class="o">=</span><span class="n">error_method</span><span class="p">,</span>
-            <span class="n">threshold</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;threshold&quot;</span><span class="p">],</span>
-            <span class="n">error_sigma</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;n_sigma&quot;</span><span class="p">],</span>
-            <span class="n">ul_method</span><span class="o">=</span><span class="n">ul_method</span><span class="p">,</span>
-            <span class="n">ul_sigma</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;n_sigma_ul&quot;</span><span class="p">],</span>
-            <span class="n">rtol</span><span class="o">=</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;rtol&quot;</span><span class="p">],</span>
-        <span class="p">)</span>
-
-        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">mask</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
-        <span class="n">positions</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">))</span>
-        <span class="n">results</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">wrap</span><span class="p">,</span> <span class="n">positions</span><span class="p">))</span>
-
-        <span class="c1"># Set TS values at given positions</span>
-        <span class="n">j</span><span class="p">,</span> <span class="n">i</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">positions</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ts&quot;</span><span class="p">,</span> <span class="s2">&quot;flux&quot;</span><span class="p">,</span> <span class="s2">&quot;niter&quot;</span><span class="p">]:</span>
-            <span class="n">result</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">_</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
-
-        <span class="k">if</span> <span class="s2">&quot;flux_err&quot;</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
-            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flux_err&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">_</span><span class="p">[</span><span class="s2">&quot;flux_err&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
-
-        <span class="k">if</span> <span class="s2">&quot;flux_ul&quot;</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
-            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flux_ul&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">_</span><span class="p">[</span><span class="s2">&quot;flux_ul&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
-
-        <span class="c1"># Compute sqrt(TS) values</span>
-        <span class="k">if</span> <span class="s2">&quot;sqrt_ts&quot;</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
-            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;sqrt_ts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sqrt_ts</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;ts&quot;</span><span class="p">])</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">downsampling_factor</span><span class="p">:</span>
-            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">downsampling_factor</span><span class="p">:</span>
                 <span class="n">order</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;niter&quot;</span> <span class="k">else</span> <span class="mi">1</span>
-                <span class="n">result</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">upsample</span><span class="p">(</span>
+                <span class="n">map_all</span> <span class="o">=</span> <span class="n">map_all</span><span class="o">.</span><span class="n">upsample</span><span class="p">(</span>
                     <span class="n">factor</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">downsampling_factor</span><span class="p">,</span> <span class="n">preserve_counts</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span>
                 <span class="p">)</span>
-                <span class="n">result</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">crop</span><span class="p">(</span><span class="n">crop_width</span><span class="o">=</span><span class="n">pad_width</span><span class="p">)</span>
+                <span class="n">map_all</span> <span class="o">=</span> <span class="n">map_all</span><span class="o">.</span><span class="n">crop</span><span class="p">(</span><span class="n">crop_width</span><span class="o">=</span><span class="n">pad_width</span><span class="p">)</span>
 
-        <span class="c1"># Set correct units</span>
-        <span class="k">if</span> <span class="s2">&quot;flux&quot;</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
-            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span> <span class="o">=</span> <span class="n">flux_map</span><span class="o">.</span><span class="n">unit</span>
-        <span class="k">if</span> <span class="s2">&quot;flux_err&quot;</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
-            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flux_err&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span> <span class="o">=</span> <span class="n">flux_map</span><span class="o">.</span><span class="n">unit</span>
-        <span class="k">if</span> <span class="s2">&quot;flux_ul&quot;</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
-            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flux_ul&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span> <span class="o">=</span> <span class="n">flux_map</span><span class="o">.</span><span class="n">unit</span>
+            <span class="n">result_all</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">map_all</span>
 
-        <span class="k">return</span> <span class="n">result</span></div>
-
-    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
-        <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
-        <span class="n">info</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">Parameters:</span><span class="se">\n\n</span><span class="s2">&quot;</span>
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">p</span><span class="p">:</span>
-            <span class="n">info</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="si">{</span><span class="n">key</span><span class="si">:</span><span class="s2">13s</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">p</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="k">return</span> <span class="n">info</span></div>
+        <span class="n">result_all</span><span class="p">[</span><span class="s2">&quot;sqrt_ts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimate_sqrt_ts</span><span class="p">(</span><span class="n">result_all</span><span class="p">[</span><span class="s2">&quot;ts&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">result_all</span></div></div>
 
 
-<span class="k">def</span> <span class="nf">_ts_value</span><span class="p">(</span>
-    <span class="n">position</span><span class="p">,</span>
-    <span class="n">counts</span><span class="p">,</span>
-    <span class="n">exposure</span><span class="p">,</span>
-    <span class="n">background</span><span class="p">,</span>
-    <span class="n">c_0</span><span class="p">,</span>
-    <span class="n">kernel</span><span class="p">,</span>
-    <span class="n">flux</span><span class="p">,</span>
-    <span class="n">method</span><span class="p">,</span>
-    <span class="n">error_method</span><span class="p">,</span>
-    <span class="n">error_sigma</span><span class="p">,</span>
-    <span class="n">ul_method</span><span class="p">,</span>
-    <span class="n">ul_sigma</span><span class="p">,</span>
-    <span class="n">threshold</span><span class="p">,</span>
-    <span class="n">rtol</span><span class="p">,</span>
-<span class="p">):</span>
+<span class="c1"># TODO: merge with MapDataset?</span>
+<span class="k">class</span> <span class="nc">SimpleMapDataset</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Simple map dataset</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    counts : `~numpy.ndarray`</span>
+<span class="sd">        Counts array</span>
+<span class="sd">    background : `~numpy.ndarray`</span>
+<span class="sd">        Background array</span>
+<span class="sd">    model : `~numpy.ndarray`</span>
+<span class="sd">        Kernel array</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">norm_guess</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">=</span> <span class="n">counts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">background</span> <span class="o">=</span> <span class="n">background</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm_guess</span> <span class="o">=</span> <span class="n">norm_guess</span>
+
+    <span class="nd">@lazyproperty</span>
+    <span class="k">def</span> <span class="nf">norm_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Bounds for x&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">norm_bounds_cython</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">npred</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">norm</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Predicted number of counts&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span> <span class="o">+</span> <span class="n">norm</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
+
+    <span class="k">def</span> <span class="nf">stat_sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">norm</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Stat sum&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">cash_sum_cython</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">npred</span><span class="p">(</span><span class="n">norm</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">stat_derivative</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">norm</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Stat derivative&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">f_cash_root_cython</span><span class="p">(</span>
+            <span class="n">norm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">stat_2nd_derivative</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">norm</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Stat 2nd derivative&quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">**</span> <span class="mi">2</span>
+                <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span>
+                <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">background</span> <span class="o">+</span> <span class="n">norm</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_arrays</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">exposure</span><span class="p">,</span> <span class="n">norm</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">kernel</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
+        <span class="n">counts_cutout</span> <span class="o">=</span> <span class="n">_extract_array</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">position</span><span class="p">)</span>
+        <span class="n">background_cutout</span> <span class="o">=</span> <span class="n">_extract_array</span><span class="p">(</span><span class="n">background</span><span class="p">,</span> <span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">position</span><span class="p">)</span>
+        <span class="n">exposure_cutout</span> <span class="o">=</span> <span class="n">_extract_array</span><span class="p">(</span><span class="n">exposure</span><span class="p">,</span> <span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">position</span><span class="p">)</span>
+        <span class="n">norm_guess</span> <span class="o">=</span> <span class="n">norm</span><span class="p">[</span><span class="n">position</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">counts</span><span class="o">=</span><span class="n">counts_cutout</span><span class="p">,</span>
+            <span class="n">background</span><span class="o">=</span><span class="n">background_cutout</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">kernel</span> <span class="o">*</span> <span class="n">exposure_cutout</span><span class="p">,</span>
+            <span class="n">norm_guess</span><span class="o">=</span><span class="n">norm_guess</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="c1"># TODO: merge with `FluxEstimator`?</span>
+<span class="k">class</span> <span class="nc">BrentqFluxEstimator</span><span class="p">(</span><span class="n">Estimator</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Single parameter flux estimator&quot;&quot;&quot;</span>
+
+    <span class="n">_available_selection_optional</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;errn-errp&quot;</span><span class="p">,</span> <span class="s2">&quot;ul&quot;</span><span class="p">]</span>
+    <span class="n">tag</span> <span class="o">=</span> <span class="s2">&quot;BrentqFluxEstimator&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">rtol</span><span class="p">,</span>
+        <span class="n">n_sigma</span><span class="p">,</span>
+        <span class="n">n_sigma_ul</span><span class="p">,</span>
+        <span class="n">selection_optional</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_niter</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+        <span class="n">ts_threshold</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rtol</span> <span class="o">=</span> <span class="n">rtol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span> <span class="o">=</span> <span class="n">n_sigma</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_ul</span> <span class="o">=</span> <span class="n">n_sigma_ul</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selection_optional</span> <span class="o">=</span> <span class="n">selection_optional</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_niter</span> <span class="o">=</span> <span class="n">max_niter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ts_threshold</span> <span class="o">=</span> <span class="n">ts_threshold</span>
+
+    <span class="k">def</span> <span class="nf">estimate_best_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Optimize for a single parameter&quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># Compute norm bounds and assert counts &gt; 0</span>
+        <span class="n">norm_min</span><span class="p">,</span> <span class="n">norm_max</span><span class="p">,</span> <span class="n">norm_min_total</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">norm_bounds</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">norm</span><span class="p">,</span> <span class="n">niter</span> <span class="o">=</span> <span class="n">norm_min_total</span><span class="p">,</span> <span class="mi">0</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">result_fit</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">brentq</span><span class="p">(</span>
+                        <span class="n">f</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">stat_derivative</span><span class="p">,</span>
+                        <span class="n">a</span><span class="o">=</span><span class="n">norm_min</span><span class="p">,</span>
+                        <span class="n">b</span><span class="o">=</span><span class="n">norm_max</span><span class="p">,</span>
+                        <span class="n">maxiter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_niter</span><span class="p">,</span>
+                        <span class="n">full_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">rtol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rtol</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">norm</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">result_fit</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">norm_min_total</span><span class="p">)</span>
+                    <span class="n">niter</span> <span class="o">=</span> <span class="n">result_fit</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">iterations</span>
+                <span class="k">except</span> <span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+                    <span class="c1"># Where the root finding fails NaN is set as norm</span>
+                    <span class="n">norm</span><span class="p">,</span> <span class="n">niter</span> <span class="o">=</span> <span class="n">norm_min_total</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_niter</span>
+
+        <span class="n">stat</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">stat_sum</span><span class="p">(</span><span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">)</span>
+        <span class="n">stat_null</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">stat_sum</span><span class="p">(</span><span class="n">norm</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;ts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">stat_null</span> <span class="o">-</span> <span class="n">stat</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">norm</span><span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;norm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">norm</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;niter&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">niter</span>
+
+        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
+            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;norm_err&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">dataset</span><span class="o">.</span><span class="n">stat_2nd_derivative</span><span class="p">(</span><span class="n">norm</span><span class="p">))</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span>
+            <span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;stat&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stat</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span> <span class="nf">_confidence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">n_sigma</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">positive</span><span class="p">):</span>
+
+        <span class="n">stat_best</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;stat&quot;</span><span class="p">]</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;norm&quot;</span><span class="p">]</span>
+        <span class="n">norm_err</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;norm_err&quot;</span><span class="p">]</span>
+
+        <span class="k">def</span> <span class="nf">ts_diff</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">stat_best</span> <span class="o">+</span> <span class="n">n_sigma</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">dataset</span><span class="o">.</span><span class="n">stat_sum</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">positive</span><span class="p">:</span>
+            <span class="n">min_norm</span> <span class="o">=</span> <span class="n">norm</span>
+            <span class="n">max_norm</span> <span class="o">=</span> <span class="n">norm</span> <span class="o">+</span> <span class="mf">1e2</span> <span class="o">*</span> <span class="n">norm_err</span>
+            <span class="n">factor</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">min_norm</span> <span class="o">=</span> <span class="n">norm</span> <span class="o">-</span> <span class="mf">1e2</span> <span class="o">*</span> <span class="n">norm_err</span>
+            <span class="n">max_norm</span> <span class="o">=</span> <span class="n">norm</span>
+            <span class="n">factor</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">result_fit</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">brentq</span><span class="p">(</span>
+                    <span class="n">ts_diff</span><span class="p">,</span> <span class="n">min_norm</span><span class="p">,</span> <span class="n">max_norm</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_niter</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rtol</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="p">(</span><span class="n">result_fit</span> <span class="o">-</span> <span class="n">norm</span><span class="p">)</span> <span class="o">*</span> <span class="n">factor</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+                <span class="c1"># Where the root finding fails NaN is set as norm</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+
+    <span class="k">def</span> <span class="nf">estimate_ul</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
+
+        <span class="n">flux_ul</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_confidence</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span> <span class="n">n_sigma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_ul</span><span class="p">,</span> <span class="n">result</span><span class="o">=</span><span class="n">result</span><span class="p">,</span> <span class="n">positive</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;norm_ul&quot;</span><span class="p">:</span> <span class="n">flux_ul</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">estimate_errn_errp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute norm errors using likelihood profile method.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">flux_errn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_confidence</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span> <span class="n">result</span><span class="o">=</span><span class="n">result</span><span class="p">,</span> <span class="n">n_sigma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span><span class="p">,</span> <span class="n">positive</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+        <span class="n">flux_errp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_confidence</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span> <span class="n">result</span><span class="o">=</span><span class="n">result</span><span class="p">,</span> <span class="n">n_sigma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span><span class="p">,</span> <span class="n">positive</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;norm_errn&quot;</span><span class="p">:</span> <span class="n">flux_errn</span><span class="p">,</span> <span class="s2">&quot;norm_errp&quot;</span><span class="p">:</span> <span class="n">flux_errp</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">estimate_default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">norm_guess</span>
+        <span class="n">stat</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">stat_sum</span><span class="p">(</span><span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">)</span>
+        <span class="n">stat_null</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">stat_sum</span><span class="p">(</span><span class="n">norm</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">ts</span> <span class="o">=</span> <span class="p">(</span><span class="n">stat_null</span> <span class="o">-</span> <span class="n">stat</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">norm</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
+            <span class="n">norm_err</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">dataset</span><span class="o">.</span><span class="n">stat_2nd_derivative</span><span class="p">(</span><span class="n">norm</span><span class="p">))</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;norm&quot;</span><span class="p">:</span> <span class="n">norm</span><span class="p">,</span> <span class="s2">&quot;ts&quot;</span><span class="p">:</span> <span class="n">ts</span><span class="p">,</span> <span class="s2">&quot;norm_err&quot;</span><span class="p">:</span> <span class="n">norm_err</span><span class="p">,</span> <span class="s2">&quot;stat&quot;</span><span class="p">:</span> <span class="n">stat</span><span class="p">,</span> <span class="s2">&quot;niter&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ts_threshold</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimate_default</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;ts&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">ts_threshold</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimate_best_fit</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimate_best_fit</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;ul&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection_optional</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimate_ul</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">result</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="s2">&quot;errn-errp&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection_optional</span><span class="p">:</span>
+            <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimate_errn_errp</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">result</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">result</span>
+
+
+<span class="k">def</span> <span class="nf">_ts_value</span><span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="n">counts</span><span class="p">,</span> <span class="n">exposure</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">norm</span><span class="p">,</span> <span class="n">flux_estimator</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Compute TS value at a given pixel position.</span>
 
 <span class="sd">    Uses approach described in Stewart (2009).</span>
@@ -1615,8 +1812,8 @@
 <span class="sd">        Exposure image</span>
 <span class="sd">    kernel : `astropy.convolution.Kernel2D`</span>
 <span class="sd">        Source model kernel</span>
-<span class="sd">    flux : `~numpy.ndarray`</span>
-<span class="sd">        Flux image. The flux value at the given pixel position is used as</span>
+<span class="sd">    norm : `~numpy.ndarray`</span>
+<span class="sd">        Norm image. The flux value at the given pixel position is used as</span>
 <span class="sd">        starting value for the minimization.</span>
 
 <span class="sd">    Returns</span>
@@ -1624,234 +1821,15 @@
 <span class="sd">    TS : float</span>
 <span class="sd">        TS value at the given pixel position.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Get data slices</span>
-    <span class="n">counts_</span> <span class="o">=</span> <span class="n">_extract_array</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">position</span><span class="p">)</span>
-    <span class="n">background_</span> <span class="o">=</span> <span class="n">_extract_array</span><span class="p">(</span><span class="n">background</span><span class="p">,</span> <span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">position</span><span class="p">)</span>
-    <span class="n">exposure_</span> <span class="o">=</span> <span class="n">_extract_array</span><span class="p">(</span><span class="n">exposure</span><span class="p">,</span> <span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">position</span><span class="p">)</span>
-    <span class="n">c_0_</span> <span class="o">=</span> <span class="n">_extract_array</span><span class="p">(</span><span class="n">c_0</span><span class="p">,</span> <span class="n">kernel</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">position</span><span class="p">)</span>
-
-    <span class="n">model</span> <span class="o">=</span> <span class="n">exposure_</span> <span class="o">*</span> <span class="n">kernel</span>
-
-    <span class="n">c_0</span> <span class="o">=</span> <span class="n">c_0_</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="n">threshold</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
-            <span class="n">amplitude</span> <span class="o">=</span> <span class="n">flux</span><span class="p">[</span><span class="n">position</span><span class="p">]</span>
-            <span class="n">c_1</span> <span class="o">=</span> <span class="n">f_cash</span><span class="p">(</span><span class="n">amplitude</span> <span class="o">/</span> <span class="n">FLUX_FACTOR</span><span class="p">,</span> <span class="n">counts_</span><span class="p">,</span> <span class="n">background_</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
-        <span class="c1"># Don&#39;t fit if pixel significance is low</span>
-        <span class="k">if</span> <span class="n">c_0</span> <span class="o">-</span> <span class="n">c_1</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">:</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;ts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">c_0</span> <span class="o">-</span> <span class="n">c_1</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">amplitude</span><span class="p">)</span>
-            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">amplitude</span>
-            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;niter&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flux_err&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
-            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flux_ul&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
-            <span class="k">return</span> <span class="n">result</span>
-
-    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;root brentq&quot;</span><span class="p">:</span>
-        <span class="n">amplitude</span><span class="p">,</span> <span class="n">niter</span> <span class="o">=</span> <span class="n">_root_amplitude_brentq</span><span class="p">(</span>
-            <span class="n">counts_</span><span class="p">,</span> <span class="n">background_</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span>
-        <span class="p">)</span>
-    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;root newton&quot;</span><span class="p">:</span>
-        <span class="n">amplitude</span><span class="p">,</span> <span class="n">niter</span> <span class="o">=</span> <span class="n">_root_amplitude</span><span class="p">(</span>
-            <span class="n">counts_</span><span class="p">,</span> <span class="n">background_</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">flux</span><span class="p">[</span><span class="n">position</span><span class="p">],</span> <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span>
-        <span class="p">)</span>
-    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;leastsq iter&quot;</span><span class="p">:</span>
-        <span class="n">amplitude</span><span class="p">,</span> <span class="n">niter</span> <span class="o">=</span> <span class="n">_leastsq_iter_amplitude</span><span class="p">(</span>
-            <span class="n">counts_</span><span class="p">,</span> <span class="n">background_</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span>
-        <span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid method: </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
-        <span class="n">c_1</span> <span class="o">=</span> <span class="n">f_cash</span><span class="p">(</span><span class="n">amplitude</span><span class="p">,</span> <span class="n">counts_</span><span class="p">,</span> <span class="n">background_</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
-
-    <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;ts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">c_0</span> <span class="o">-</span> <span class="n">c_1</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">amplitude</span><span class="p">)</span>
-    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">amplitude</span> <span class="o">*</span> <span class="n">FLUX_FACTOR</span>
-    <span class="n">result</span><span class="p">[</span><span class="s2">&quot;niter&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">niter</span>
-
-    <span class="k">if</span> <span class="n">error_method</span> <span class="o">==</span> <span class="s2">&quot;covar&quot;</span><span class="p">:</span>
-        <span class="n">flux_err</span> <span class="o">=</span> <span class="n">_compute_flux_err_covar</span><span class="p">(</span><span class="n">amplitude</span><span class="p">,</span> <span class="n">counts_</span><span class="p">,</span> <span class="n">background_</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
-        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flux_err&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">flux_err</span> <span class="o">*</span> <span class="n">error_sigma</span>
-    <span class="k">elif</span> <span class="n">error_method</span> <span class="o">==</span> <span class="s2">&quot;conf&quot;</span><span class="p">:</span>
-        <span class="n">flux_err</span> <span class="o">=</span> <span class="n">_compute_flux_err_conf</span><span class="p">(</span>
-            <span class="n">amplitude</span><span class="p">,</span> <span class="n">counts_</span><span class="p">,</span> <span class="n">background_</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">c_1</span><span class="p">,</span> <span class="n">error_sigma</span>
-        <span class="p">)</span>
-        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flux_err&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">FLUX_FACTOR</span> <span class="o">*</span> <span class="n">flux_err</span>
-
-    <span class="k">if</span> <span class="n">ul_method</span> <span class="o">==</span> <span class="s2">&quot;covar&quot;</span><span class="p">:</span>
-        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flux_ul&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">ul_sigma</span> <span class="o">*</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flux_err&quot;</span><span class="p">]</span>
-    <span class="k">elif</span> <span class="n">ul_method</span> <span class="o">==</span> <span class="s2">&quot;conf&quot;</span><span class="p">:</span>
-        <span class="n">flux_ul</span> <span class="o">=</span> <span class="n">_compute_flux_err_conf</span><span class="p">(</span>
-            <span class="n">amplitude</span><span class="p">,</span> <span class="n">counts_</span><span class="p">,</span> <span class="n">background_</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">c_1</span><span class="p">,</span> <span class="n">ul_sigma</span>
-        <span class="p">)</span>
-        <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flux_ul&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">FLUX_FACTOR</span> <span class="o">*</span> <span class="n">flux_ul</span> <span class="o">+</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">result</span>
-
-
-<span class="k">def</span> <span class="nf">_leastsq_iter_amplitude</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="n">MAX_NITER</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="n">RTOL</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Fit amplitude using an iterative least squares algorithm.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    counts : `~numpy.ndarray`</span>
-<span class="sd">        Slice of counts image</span>
-<span class="sd">    background : `~numpy.ndarray`</span>
-<span class="sd">        Slice of background image</span>
-<span class="sd">    model : `~numpy.ndarray`</span>
-<span class="sd">        Model template to fit.</span>
-<span class="sd">    maxiter : int</span>
-<span class="sd">        Maximum number of iterations.</span>
-<span class="sd">    rtol : float</span>
-<span class="sd">        Relative flux error.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    amplitude : float</span>
-<span class="sd">        Fitted flux amplitude.</span>
-<span class="sd">    niter : int</span>
-<span class="sd">        Number of function evaluations needed for the fit.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">bounds</span> <span class="o">=</span> <span class="n">amplitude_bounds_cython</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
-    <span class="n">amplitude_min</span><span class="p">,</span> <span class="n">amplitude_max</span><span class="p">,</span> <span class="n">amplitude_min_total</span> <span class="o">=</span> <span class="n">bounds</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">counts</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">amplitude_min_total</span><span class="p">,</span> <span class="mi">0</span>
-
-    <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-
-    <span class="n">x_old</span> <span class="o">=</span> <span class="mi">0</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">maxiter</span><span class="p">):</span>
-        <span class="n">x</span> <span class="o">=</span> <span class="n">x_best_leastsq</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">weights</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">abs</span><span class="p">((</span><span class="n">x</span> <span class="o">-</span> <span class="n">x_old</span><span class="p">)</span> <span class="o">/</span> <span class="n">x</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">rtol</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">x</span> <span class="o">/</span> <span class="n">FLUX_FACTOR</span><span class="p">,</span> <span class="n">amplitude_min_total</span><span class="p">),</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">weights</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="n">model</span> <span class="o">+</span> <span class="n">background</span>
-            <span class="n">x_old</span> <span class="o">=</span> <span class="n">x</span>
-    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">x</span> <span class="o">/</span> <span class="n">FLUX_FACTOR</span><span class="p">,</span> <span class="n">amplitude_min_total</span><span class="p">),</span> <span class="n">MAX_NITER</span>
-
-
-<span class="k">def</span> <span class="nf">_root_amplitude</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="n">RTOL</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Fit amplitude by finding roots using newton algorithm.</span>
-
-<span class="sd">    See Appendix A Stewart (2009).</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    counts : `~numpy.ndarray`</span>
-<span class="sd">        Slice of count image</span>
-<span class="sd">    background : `~numpy.ndarray`</span>
-<span class="sd">        Slice of background image</span>
-<span class="sd">    model : `~numpy.ndarray`</span>
-<span class="sd">        Model template to fit.</span>
-<span class="sd">    flux : float</span>
-<span class="sd">        Starting value for the fit.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    amplitude : float</span>
-<span class="sd">        Fitted flux amplitude.</span>
-<span class="sd">    niter : int</span>
-<span class="sd">        Number of function evaluations needed for the fit.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
-        <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">(</span>
-                <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">newton</span><span class="p">(</span>
-                    <span class="n">f_cash_root_cython</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="n">MAX_NITER</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="n">rtol</span>
-                <span class="p">),</span>
-                <span class="mi">0</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
-            <span class="c1"># Where the root finding fails NaN is set as amplitude</span>
-            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">MAX_NITER</span>
-
-
-<span class="k">def</span> <span class="nf">_root_amplitude_brentq</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="n">RTOL</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Fit amplitude by finding roots using Brent algorithm.</span>
-
-<span class="sd">    See Appendix A Stewart (2009).</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    counts : `~numpy.ndarray`</span>
-<span class="sd">        Slice of count image</span>
-<span class="sd">    background : `~numpy.ndarray`</span>
-<span class="sd">        Slice of background image</span>
-<span class="sd">    model : `~numpy.ndarray`</span>
-<span class="sd">        Model template to fit.</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    amplitude : float</span>
-<span class="sd">        Fitted flux amplitude.</span>
-<span class="sd">    niter : int</span>
-<span class="sd">        Number of function evaluations needed for the fit.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># Compute amplitude bounds and assert counts &gt; 0</span>
-    <span class="n">bounds</span> <span class="o">=</span> <span class="n">amplitude_bounds_cython</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
-    <span class="n">amplitude_min</span><span class="p">,</span> <span class="n">amplitude_max</span><span class="p">,</span> <span class="n">amplitude_min_total</span> <span class="o">=</span> <span class="n">bounds</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">counts</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">amplitude_min_total</span><span class="p">,</span> <span class="mi">0</span>
-
-    <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
-    <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
-        <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">brentq</span><span class="p">(</span>
-                <span class="n">f_cash_root_cython</span><span class="p">,</span>
-                <span class="n">amplitude_min</span><span class="p">,</span>
-                <span class="n">amplitude_max</span><span class="p">,</span>
-                <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">,</span>
-                <span class="n">maxiter</span><span class="o">=</span><span class="n">MAX_NITER</span><span class="p">,</span>
-                <span class="n">full_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">amplitude_min_total</span><span class="p">),</span> <span class="n">result</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">iterations</span>
-        <span class="k">except</span> <span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
-            <span class="c1"># Where the root finding fails NaN is set as amplitude</span>
-            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">MAX_NITER</span>
-
-
-<span class="k">def</span> <span class="nf">_compute_flux_err_covar</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Compute amplitude errors using inverse 2nd derivative method.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
-        <span class="n">stat</span> <span class="o">=</span> <span class="p">(</span><span class="n">model</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">counts</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">background</span> <span class="o">+</span> <span class="n">x</span> <span class="o">*</span> <span class="n">FLUX_FACTOR</span> <span class="o">*</span> <span class="n">model</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">stat</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
-
-
-<span class="k">def</span> <span class="nf">_compute_flux_err_conf</span><span class="p">(</span><span class="n">amplitude</span><span class="p">,</span> <span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">c_1</span><span class="p">,</span> <span class="n">error_sigma</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Compute amplitude errors using likelihood profile method.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="nf">ts_diff</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
-        <span class="k">return</span> <span class="p">(</span><span class="n">c_1</span> <span class="o">+</span> <span class="n">error_sigma</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">f_cash</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
-
-    <span class="n">args</span> <span class="o">=</span> <span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
-
-    <span class="n">amplitude_max</span> <span class="o">=</span> <span class="n">amplitude</span> <span class="o">+</span> <span class="mf">1e4</span>
-    <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
-        <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="n">scipy</span><span class="o">.</span><span class="n">optimize</span><span class="o">.</span><span class="n">brentq</span><span class="p">(</span>
-                <span class="n">ts_diff</span><span class="p">,</span>
-                <span class="n">amplitude</span><span class="p">,</span>
-                <span class="n">amplitude_max</span><span class="p">,</span>
-                <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">,</span>
-                <span class="n">maxiter</span><span class="o">=</span><span class="n">MAX_NITER</span><span class="p">,</span>
-                <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="k">return</span> <span class="n">result</span> <span class="o">-</span> <span class="n">amplitude</span>
-        <span class="k">except</span> <span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
-            <span class="c1"># Where the root finding fails NaN is set as amplitude</span>
-            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">SimpleMapDataset</span><span class="o">.</span><span class="n">from_arrays</span><span class="p">(</span>
+        <span class="n">counts</span><span class="o">=</span><span class="n">counts</span><span class="p">,</span>
+        <span class="n">background</span><span class="o">=</span><span class="n">background</span><span class="p">,</span>
+        <span class="n">exposure</span><span class="o">=</span><span class="n">exposure</span><span class="p">,</span>
+        <span class="n">kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">,</span>
+        <span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="p">,</span>
+        <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">flux_estimator</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
 </pre></div>
 
            </div>
@@ -1867,7 +1845,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 04 Aug 2020.
+        Last updated on 08 Sep 2020.
       </span>
 
     </p>

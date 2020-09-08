@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.estimators.asmooth_map &mdash; gammapy v0.18.dev432+gc0e58f48f</title>
+  <title>gammapy.estimators.asmooth_map &mdash; gammapy v0.18.dev639+g8d1e908b4</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev432+gc0e58f48f
+                0.18.dev639+g8d1e908b4
               </div>
             
           
@@ -1135,18 +1135,21 @@
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
 <span class="sd">&quot;&quot;&quot;Implementation of adaptive smoothing algorithms.&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
 <span class="kn">from</span> <span class="nn">astropy.convolution</span> <span class="kn">import</span> <span class="n">Gaussian2DKernel</span><span class="p">,</span> <span class="n">Tophat2DKernel</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">Angle</span>
-<span class="kn">from</span> <span class="nn">gammapy.datasets</span> <span class="kn">import</span> <span class="n">MapDatasetOnOff</span>
-<span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">WcsNDMap</span>
+<span class="kn">from</span> <span class="nn">gammapy.datasets</span> <span class="kn">import</span> <span class="n">MapDatasetOnOff</span><span class="p">,</span> <span class="n">Datasets</span>
+<span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">WcsNDMap</span><span class="p">,</span> <span class="n">Map</span>
 <span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="kn">import</span> <span class="n">CashCountsStatistic</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.array</span> <span class="kn">import</span> <span class="n">scale_cube</span>
+<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">PowerLawSpectralModel</span>
 <span class="kn">from</span> <span class="nn">.core</span> <span class="kn">import</span> <span class="n">Estimator</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">estimate_exposure_reco_energy</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ASmoothMapEstimator&quot;</span><span class="p">]</span>
 
 
-<span class="k">def</span> <span class="nf">_significance_asmooth</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">_sqrt_ts_asmooth</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Significance according to formula (5) in asmooth paper.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">counts</span> <span class="o">-</span> <span class="n">background</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">counts</span> <span class="o">+</span> <span class="n">background</span><span class="p">)</span>
 
@@ -1154,12 +1157,12 @@
 <div class="viewcode-block" id="ASmoothMapEstimator"><a class="viewcode-back" href="../../../api/gammapy.estimators.ASmoothMapEstimator.html#gammapy.estimators.ASmoothMapEstimator">[docs]</a><span class="k">class</span> <span class="nc">ASmoothMapEstimator</span><span class="p">(</span><span class="n">Estimator</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Adaptively smooth counts image.</span>
 
-<span class="sd">    Achieves a roughly constant significance of features across the whole image.</span>
+<span class="sd">    Achieves a roughly constant sqrt_ts of features across the whole image.</span>
 
 <span class="sd">    Algorithm based on https://ui.adsabs.harvard.edu/abs/2006MNRAS.368...65E</span>
 
 <span class="sd">    The algorithm was slightly adapted to also allow Li &amp; Ma  to estimate the</span>
-<span class="sd">    significance of a feature in the image.</span>
+<span class="sd">    sqrt_ts of a feature in the image.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1167,24 +1170,68 @@
 <span class="sd">        Smoothing scales.</span>
 <span class="sd">    kernel : `astropy.convolution.Kernel`</span>
 <span class="sd">        Smoothing kernel.</span>
+<span class="sd">    spectrum : `SpectralModel`</span>
+<span class="sd">        Spectral model assumption</span>
 <span class="sd">    method : {&#39;asmooth&#39;, &#39;lima&#39;}</span>
 <span class="sd">        Significance estimation method.</span>
 <span class="sd">    threshold : float</span>
 <span class="sd">        Significance threshold.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">tag</span> <span class="o">=</span> <span class="s2">&quot;ASmoothMapEstimator&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scales</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="n">Gaussian2DKernel</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;lima&quot;</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;kernel&quot;</span><span class="p">:</span> <span class="n">kernel</span><span class="p">,</span>
-            <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="n">method</span><span class="p">,</span>
-            <span class="s2">&quot;threshold&quot;</span><span class="p">:</span> <span class="n">threshold</span><span class="p">,</span>
-            <span class="s2">&quot;scales&quot;</span><span class="p">:</span> <span class="n">scales</span><span class="p">,</span>
-        <span class="p">}</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">scales</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">kernel</span><span class="o">=</span><span class="n">Gaussian2DKernel</span><span class="p">,</span>
+        <span class="n">spectrum</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">method</span><span class="o">=</span><span class="s2">&quot;lima&quot;</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+        <span class="n">e_edges</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">spectrum</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">spectrum</span> <span class="o">=</span> <span class="n">PowerLawSpectralModel</span><span class="p">()</span>
 
-<div class="viewcode-block" id="ASmoothMapEstimator.kernels"><a class="viewcode-back" href="../../../api/gammapy.estimators.ASmoothMapEstimator.html#gammapy.estimators.ASmoothMapEstimator.kernels">[docs]</a>    <span class="k">def</span> <span class="nf">kernels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pixel_scale</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Ring kernels according to the specified method.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span> <span class="o">=</span> <span class="n">spectrum</span>
+
+        <span class="k">if</span> <span class="n">scales</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">scales</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_scales</span><span class="p">(</span><span class="n">n_scales</span><span class="o">=</span><span class="mi">9</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="n">kernel</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">scales</span> <span class="o">=</span> <span class="n">scales</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kernel</span> <span class="o">=</span> <span class="n">kernel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">e_edges</span> <span class="o">=</span> <span class="n">e_edges</span>
+
+<div class="viewcode-block" id="ASmoothMapEstimator.selection_all"><a class="viewcode-back" href="../../../api/gammapy.estimators.ASmoothMapEstimator.html#gammapy.estimators.ASmoothMapEstimator.selection_all">[docs]</a>    <span class="k">def</span> <span class="nf">selection_all</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Which quantities are computed&quot;&quot;&quot;</span>
+        <span class="k">return</span></div>
+
+<div class="viewcode-block" id="ASmoothMapEstimator.get_scales"><a class="viewcode-back" href="../../../api/gammapy.estimators.ASmoothMapEstimator.html#gammapy.estimators.ASmoothMapEstimator.get_scales">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_scales</span><span class="p">(</span><span class="n">n_scales</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">kernel</span><span class="o">=</span><span class="n">Gaussian2DKernel</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create list of Gaussian widths.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n_scales : int</span>
+<span class="sd">            Number of scales</span>
+<span class="sd">        factor : float</span>
+<span class="sd">            Incremental factor</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        scales : `~numpy.ndarray`</span>
+<span class="sd">            Scale array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">kernel</span> <span class="o">==</span> <span class="n">Gaussian2DKernel</span><span class="p">:</span>
+            <span class="n">sigma_0</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">9</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">kernel</span> <span class="o">==</span> <span class="n">Tophat2DKernel</span><span class="p">:</span>
+            <span class="n">sigma_0</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">sigma_0</span> <span class="o">*</span> <span class="n">factor</span> <span class="o">**</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_scales</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ASmoothMapEstimator.get_kernels"><a class="viewcode-back" href="../../../api/gammapy.estimators.ASmoothMapEstimator.html#gammapy.estimators.ASmoothMapEstimator.get_kernels">[docs]</a>    <span class="k">def</span> <span class="nf">get_kernels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pixel_scale</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get kernels according to the specified method.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1196,12 +1243,11 @@
 <span class="sd">        kernels : list</span>
 <span class="sd">            List of `~astropy.convolution.Kernel`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
-        <span class="n">scales</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;scales&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s2">&quot;deg&quot;</span><span class="p">)</span> <span class="o">/</span> <span class="n">Angle</span><span class="p">(</span><span class="n">pixel_scale</span><span class="p">)</span><span class="o">.</span><span class="n">deg</span>
+        <span class="n">scales</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scales</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s2">&quot;deg&quot;</span><span class="p">)</span> <span class="o">/</span> <span class="n">Angle</span><span class="p">(</span><span class="n">pixel_scale</span><span class="p">)</span><span class="o">.</span><span class="n">deg</span>
 
         <span class="n">kernels</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">scale</span> <span class="ow">in</span> <span class="n">scales</span><span class="p">:</span>  <span class="c1"># .value:</span>
-            <span class="n">kernel</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;kernel&quot;</span><span class="p">](</span><span class="n">scale</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;oversample&quot;</span><span class="p">)</span>
+            <span class="n">kernel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kernel</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;oversample&quot;</span><span class="p">)</span>
             <span class="c1"># TODO: check if normalizing here makes sense</span>
             <span class="n">kernel</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s2">&quot;peak&quot;</span><span class="p">)</span>
             <span class="n">kernels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
@@ -1209,26 +1255,24 @@
         <span class="k">return</span> <span class="n">kernels</span></div>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_significance_cube</span><span class="p">(</span><span class="n">cubes</span><span class="p">,</span> <span class="n">method</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_sqrt_ts_cube</span><span class="p">(</span><span class="n">cubes</span><span class="p">,</span> <span class="n">method</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;lima&quot;</span><span class="p">}:</span>
             <span class="n">scube</span> <span class="o">=</span> <span class="n">CashCountsStatistic</span><span class="p">(</span>
                 <span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">],</span> <span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">]</span>
             <span class="p">)</span><span class="o">.</span><span class="n">significance</span>
         <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;asmooth&quot;</span><span class="p">:</span>
-            <span class="n">scube</span> <span class="o">=</span> <span class="n">_significance_asmooth</span><span class="p">(</span><span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">],</span> <span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">])</span>
+            <span class="n">scube</span> <span class="o">=</span> <span class="n">_sqrt_ts_asmooth</span><span class="p">(</span><span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">],</span> <span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">])</span>
         <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;ts&quot;</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="s2">&quot;Not a valid significance estimation method.&quot;</span>
+                <span class="s2">&quot;Not a valid sqrt_ts estimation method.&quot;</span>
                 <span class="s2">&quot; Choose one of the following: &#39;lima&#39; or &#39;asmooth&#39;&quot;</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">scube</span>
 
 <div class="viewcode-block" id="ASmoothMapEstimator.run"><a class="viewcode-back" href="../../../api/gammapy.estimators.ASmoothMapEstimator.html#gammapy.estimators.ASmoothMapEstimator.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Run adaptive smoothing on input MapDataset.</span>
-<span class="sd">        The latter should have</span>
+        <span class="sd">&quot;&quot;&quot;Run adaptive smoothing on input MapDataset.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1243,41 +1287,39 @@
 <span class="sd">                * &#39;background&#39;</span>
 <span class="sd">                * &#39;flux&#39; (optional)</span>
 <span class="sd">                * &#39;scales&#39;</span>
-<span class="sd">                * &#39;significance&#39;.</span>
+<span class="sd">                * &#39;sqrt_ts&#39;.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Check dimensionality</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">data_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">data_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;ASmoothMapEstimator.run() requires a dataset with 1 energy bin at most.&quot;</span>
-                <span class="p">)</span>
+        <span class="n">datasets</span> <span class="o">=</span> <span class="n">Datasets</span><span class="p">([</span><span class="n">dataset</span><span class="p">])</span>
 
-        <span class="n">counts</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">(</span><span class="n">keepdims</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-        <span class="n">background</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">MapDatasetOnOff</span><span class="p">):</span>
-            <span class="n">background</span> <span class="o">+=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">background</span>
-        <span class="n">background</span> <span class="o">=</span> <span class="n">background</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">(</span><span class="n">keepdims</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">exposure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">exposure</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">(</span><span class="n">keepdims</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_edges</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
+            <span class="n">e_edges</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">([</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">exposure</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">e_edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_edges</span>
 
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimate_maps</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">exposure</span><span class="p">)</span></div>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
 
-<div class="viewcode-block" id="ASmoothMapEstimator.estimate_maps"><a class="viewcode-back" href="../../../api/gammapy.estimators.ASmoothMapEstimator.html#gammapy.estimators.ASmoothMapEstimator.estimate_maps">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_maps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">counts</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">e_edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">e_edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+            <span class="n">dataset</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">slice_energy</span><span class="p">(</span><span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimate_maps</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+        <span class="n">result_all</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">map_all</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_images</span><span class="p">(</span><span class="n">images</span><span class="o">=</span><span class="p">[</span><span class="n">_</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">results</span><span class="p">])</span>
+            <span class="n">result_all</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">map_all</span>
+
+        <span class="k">return</span> <span class="n">result_all</span></div>
+
+<div class="viewcode-block" id="ASmoothMapEstimator.estimate_maps"><a class="viewcode-back" href="../../../api/gammapy.estimators.ASmoothMapEstimator.html#gammapy.estimators.ASmoothMapEstimator.estimate_maps">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_maps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Run adaptive smoothing on input Maps.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        counts : `~gammapy.maps.Map`</span>
-<span class="sd">            counts map</span>
-<span class="sd">        background : `~gammapy.maps.Map`</span>
-<span class="sd">            estimated background counts map</span>
-<span class="sd">        exposure : `~gammapy.maps.Map`</span>
-<span class="sd">            exposure map. If set, it will produce a flux smoothed map.</span>
+<span class="sd">        dataset : `MapDataset`</span>
+<span class="sd">            Dataset</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1287,49 +1329,57 @@
 <span class="sd">                * &#39;background&#39;</span>
 <span class="sd">                * &#39;flux&#39; (optional)</span>
 <span class="sd">                * &#39;scales&#39;</span>
-<span class="sd">                * &#39;significance&#39;.</span>
+<span class="sd">                * &#39;sqrt_ts&#39;.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span>
 
-        <span class="n">pixel_scale</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">pixel_scales</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
-        <span class="n">kernels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kernels</span><span class="p">(</span><span class="n">pixel_scale</span><span class="p">)</span>
+        <span class="c1"># extract 2d arrays</span>
+        <span class="n">counts</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">background</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># TODO: remove once MapDatasetOnOff.npred() returns the correct thing</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">MapDatasetOnOff</span><span class="p">):</span>
+            <span class="n">background</span> <span class="o">+=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">background</span>
+
+        <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">exposure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">exposure</span> <span class="o">=</span> <span class="n">estimate_exposure_reco_energy</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectrum</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">exposure</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">pixel_scale</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">pixel_scales</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="n">kernels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_kernels</span><span class="p">(</span><span class="n">pixel_scale</span><span class="p">)</span>
 
         <span class="n">cubes</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scale_cube</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">kernels</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">background</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scale_cube</span><span class="p">(</span><span class="n">background</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">kernels</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># TODO: Estimate background with asmooth method</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Background estimation required.&quot;</span><span class="p">)</span>
+        <span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scale_cube</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">kernels</span><span class="p">)</span>
+        <span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scale_cube</span><span class="p">(</span><span class="n">background</span><span class="p">,</span> <span class="n">kernels</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">exposure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">flux</span> <span class="o">=</span> <span class="p">(</span><span class="n">counts</span> <span class="o">-</span> <span class="n">background</span><span class="p">)</span> <span class="o">/</span> <span class="n">exposure</span>
-            <span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scale_cube</span><span class="p">(</span><span class="n">flux</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">kernels</span><span class="p">)</span>
+            <span class="n">flux</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">counts</span> <span class="o">-</span> <span class="n">background</span><span class="p">)</span> <span class="o">/</span> <span class="n">exposure</span>
+            <span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scale_cube</span><span class="p">(</span><span class="n">flux</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">kernels</span><span class="p">)</span>
 
-        <span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;significance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_significance_cube</span><span class="p">(</span>
-            <span class="n">cubes</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">]</span>
-        <span class="p">)</span>
+        <span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;sqrt_ts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sqrt_ts_cube</span><span class="p">(</span><span class="n">cubes</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">)</span>
 
         <span class="n">smoothed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reduce_cubes</span><span class="p">(</span><span class="n">cubes</span><span class="p">,</span> <span class="n">kernels</span><span class="p">)</span>
 
         <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
 
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">,</span> <span class="s2">&quot;background&quot;</span><span class="p">,</span> <span class="s2">&quot;scale&quot;</span><span class="p">,</span> <span class="s2">&quot;significance&quot;</span><span class="p">]:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">smoothed</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="n">geom</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span>
 
-            <span class="c1"># set remaining pixels with significance &lt; threshold to mean value</span>
-            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">,</span> <span class="s2">&quot;background&quot;</span><span class="p">]:</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">smoothed</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1"># set remaining pixels with sqrt_ts &lt; threshold to mean value</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">,</span> <span class="s2">&quot;background&quot;</span><span class="p">]:</span>
                 <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-                <span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="nb">locals</span><span class="p">()[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span>
-                <span class="n">result</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">counts</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
+                <span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="nb">locals</span><span class="p">()[</span><span class="n">name</span><span class="p">][</span><span class="n">mask</span><span class="p">])</span>
+                <span class="n">result</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">result</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;deg&quot;</span><span class="p">)</span>
+                <span class="n">unit</span> <span class="o">=</span> <span class="s2">&quot;deg&quot;</span> <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;scale&quot;</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+                <span class="n">result</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">exposure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">smoothed</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">]</span>
             <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-            <span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">flux</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span>
-            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">flux</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">flux</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">mask</span><span class="p">])</span>
+            <span class="n">result</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">flux</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">result</span></div>
 
@@ -1342,42 +1392,35 @@
 <span class="sd">        cubes : dict</span>
 <span class="sd">            Data cubes</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span>
         <span class="n">shape</span> <span class="o">=</span> <span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
         <span class="n">smoothed</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="c1"># Init smoothed data arrays</span>
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">,</span> <span class="s2">&quot;background&quot;</span><span class="p">,</span> <span class="s2">&quot;scale&quot;</span><span class="p">,</span> <span class="s2">&quot;significance&quot;</span><span class="p">,</span> <span class="s2">&quot;flux&quot;</span><span class="p">]:</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">,</span> <span class="s2">&quot;background&quot;</span><span class="p">,</span> <span class="s2">&quot;scale&quot;</span><span class="p">,</span> <span class="s2">&quot;sqrt_ts&quot;</span><span class="p">]:</span>
             <span class="n">smoothed</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">scale</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;scales&quot;</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="s2">&quot;flux&quot;</span> <span class="ow">in</span> <span class="n">cubes</span><span class="p">:</span>
+            <span class="n">smoothed</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">scale</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scales</span><span class="p">):</span>
             <span class="c1"># slice out 2D image at index idx out of cube</span>
             <span class="n">slice_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">s_</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">idx</span><span class="p">]</span>
 
             <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">smoothed</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">])</span>
-            <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;significance&quot;</span><span class="p">][</span><span class="n">slice_</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;threshold&quot;</span><span class="p">])</span> <span class="o">&amp;</span> <span class="n">mask</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;sqrt_ts&quot;</span><span class="p">][</span><span class="n">slice_</span><span class="p">]</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">threshold</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">mask</span>
 
             <span class="n">smoothed</span><span class="p">[</span><span class="s2">&quot;scale&quot;</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">scale</span>
-            <span class="n">smoothed</span><span class="p">[</span><span class="s2">&quot;significance&quot;</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;significance&quot;</span><span class="p">][</span><span class="n">slice_</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span>
+            <span class="n">smoothed</span><span class="p">[</span><span class="s2">&quot;sqrt_ts&quot;</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;sqrt_ts&quot;</span><span class="p">][</span><span class="n">slice_</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span>
 
             <span class="c1"># renormalize smoothed data arrays</span>
             <span class="n">norm</span> <span class="o">=</span> <span class="n">kernels</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">array</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">,</span> <span class="s2">&quot;background&quot;</span><span class="p">]:</span>
                 <span class="n">smoothed</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">cubes</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">slice_</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span> <span class="o">/</span> <span class="n">norm</span>
+
             <span class="k">if</span> <span class="s2">&quot;flux&quot;</span> <span class="ow">in</span> <span class="n">cubes</span><span class="p">:</span>
                 <span class="n">smoothed</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">cubes</span><span class="p">[</span><span class="s2">&quot;flux&quot;</span><span class="p">][</span><span class="n">slice_</span><span class="p">][</span><span class="n">mask</span><span class="p">]</span> <span class="o">/</span> <span class="n">norm</span>
 
-        <span class="k">return</span> <span class="n">smoothed</span>
-
-<div class="viewcode-block" id="ASmoothMapEstimator.get_scales"><a class="viewcode-back" href="../../../api/gammapy.estimators.ASmoothMapEstimator.html#gammapy.estimators.ASmoothMapEstimator.get_scales">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">get_scales</span><span class="p">(</span><span class="n">n_scales</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">kernel</span><span class="o">=</span><span class="n">Gaussian2DKernel</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Create list of Gaussian widths.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">kernel</span> <span class="o">==</span> <span class="n">Gaussian2DKernel</span><span class="p">:</span>
-            <span class="n">sigma_0</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">9</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">kernel</span> <span class="o">==</span> <span class="n">Tophat2DKernel</span><span class="p">:</span>
-            <span class="n">sigma_0</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">sigma_0</span> <span class="o">*</span> <span class="n">factor</span> <span class="o">**</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_scales</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="n">smoothed</span></div>
 </pre></div>
 
            </div>
@@ -1393,7 +1436,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 04 Aug 2020.
+        Last updated on 08 Sep 2020.
       </span>
 
     </p>

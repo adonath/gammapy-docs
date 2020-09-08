@@ -189,8 +189,8 @@ dataset = datasets[0].to_image()
 # In[ ]:
 
 
-estimator = ExcessMapEstimator("0.4 deg")
-result = estimator.run(dataset, steps="ts")
+estimator = ExcessMapEstimator("0.4 deg", selection_optional=[])
+result = estimator.run(dataset)
 
 
 # Finally, we create the mask map by applying a threshold of 5 sigma to remove pixels.

@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.datasets.spectrum &mdash; gammapy v0.18.dev432+gc0e58f48f</title>
+  <title>gammapy.datasets.spectrum &mdash; gammapy v0.18.dev639+g8d1e908b4</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev432+gc0e58f48f
+                0.18.dev639+g8d1e908b4
               </div>
             
           
@@ -1135,6 +1135,7 @@
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="kn">import</span> <span class="n">fits</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span>
@@ -1146,9 +1147,13 @@
 <span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="kn">import</span> <span class="n">CashCountsStatistic</span><span class="p">,</span> <span class="n">WStatCountsStatistic</span><span class="p">,</span> <span class="n">cash</span><span class="p">,</span> <span class="n">wstat</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.random</span> <span class="kn">import</span> <span class="n">get_random_state</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.scripts</span> <span class="kn">import</span> <span class="n">make_name</span><span class="p">,</span> <span class="n">make_path</span>
+<span class="kn">from</span> <span class="nn">gammapy.utils.table</span> <span class="kn">import</span> <span class="n">hstack_columns</span>
+<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">BackgroundModel</span>
 <span class="kn">from</span> <span class="nn">.map</span> <span class="kn">import</span> <span class="n">MapEvaluator</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;SpectrumDatasetOnOff&quot;</span><span class="p">,</span> <span class="s2">&quot;SpectrumDataset&quot;</span><span class="p">]</span>
+
+<span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="SpectrumDataset"><a class="viewcode-back" href="../../../api/gammapy.datasets.SpectrumDataset.html#gammapy.datasets.SpectrumDataset">[docs]</a><span class="k">class</span> <span class="nc">SpectrumDataset</span><span class="p">(</span><span class="n">Dataset</span><span class="p">):</span>
@@ -1166,12 +1171,10 @@
 <span class="sd">        Counts spectrum</span>
 <span class="sd">    livetime : `~astropy.units.Quantity`</span>
 <span class="sd">        Livetime</span>
-<span class="sd">    aeff : `~gammapy.irf.EffectiveAreaTable`</span>
+<span class="sd">    aeff : `~gammapy.maps.RegionNDMap`</span>
 <span class="sd">        Effective area</span>
 <span class="sd">    edisp : `~gammapy.irf.EDispKernelMap`</span>
 <span class="sd">        Energy dispersion kernel.</span>
-<span class="sd">    background : `~gammapy.maps.RegionNDMap`</span>
-<span class="sd">        Background to use for the fit.</span>
 <span class="sd">    mask_safe : `~gammapy.maps.RegionNDMap`</span>
 <span class="sd">        Mask defining the safe data range.</span>
 <span class="sd">    mask_fit : `~gammapy.maps.RegionNDMap`</span>
@@ -1186,7 +1189,7 @@
 
 <span class="sd">    See Also</span>
 <span class="sd">    --------</span>
-<span class="sd">    SpectrumDatasetOnOff, FluxPointsDataset, gammapy.cube.MapDataset</span>
+<span class="sd">    SpectrumDatasetOnOff, FluxPointsDataset, MapDataset</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">stat_type</span> <span class="o">=</span> <span class="s2">&quot;cash&quot;</span>
@@ -1199,7 +1202,6 @@
         <span class="n">livetime</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">aeff</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">edisp</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">background</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">mask_safe</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">mask_fit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -1219,7 +1221,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">mask_fit</span> <span class="o">=</span> <span class="n">mask_fit</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">aeff</span> <span class="o">=</span> <span class="n">aeff</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span> <span class="o">=</span> <span class="n">edisp</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">background</span> <span class="o">=</span> <span class="n">background</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_background_model</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="o">=</span> <span class="n">mask_safe</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">gti</span> <span class="o">=</span> <span class="n">gti</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">meta_table</span> <span class="o">=</span> <span class="n">meta_table</span>
@@ -1259,20 +1261,18 @@
             <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: </span><span class="si">{:.2f}</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Total off counts&quot;</span><span class="p">,</span> <span class="n">counts_off</span><span class="p">)</span>
 
         <span class="n">background</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
-        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;background&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">background</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">background</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-            <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: </span><span class="si">{:.2f}</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Total background counts&quot;</span><span class="p">,</span> <span class="n">background</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">background</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: </span><span class="si">{:.2f}</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Total background counts&quot;</span><span class="p">,</span> <span class="n">background</span><span class="p">)</span>
 
         <span class="n">aeff_min</span><span class="p">,</span> <span class="n">aeff_max</span><span class="p">,</span> <span class="n">aeff_unit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="s2">&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">aeff</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">aeff_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">value</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]</span>
-                <span class="p">)</span>
+                <span class="n">aeff_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">data</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">])</span>
             <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
                 <span class="n">aeff_min</span> <span class="o">=</span> <span class="mi">0</span>
-            <span class="n">aeff_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-            <span class="n">aeff_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">unit</span>
+            <span class="n">aeff_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">aeff_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">unit</span>
 
         <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: </span><span class="si">{:.2e}</span><span class="s2"> </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Effective area min&quot;</span><span class="p">,</span> <span class="n">aeff_min</span><span class="p">,</span> <span class="n">aeff_unit</span><span class="p">)</span>
         <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: </span><span class="si">{:.2e}</span><span class="s2"> </span><span class="si">{}</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -1328,10 +1328,7 @@
 
                 <span class="k">if</span> <span class="n">evaluator</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">evaluator</span> <span class="o">=</span> <span class="n">MapEvaluator</span><span class="p">(</span>
-                        <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
-                        <span class="n">exposure</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">,</span>
-                        <span class="n">edisp</span><span class="o">=</span><span class="n">edisp</span><span class="p">,</span>
-                        <span class="n">gti</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gti</span><span class="p">,</span>
+                        <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">,</span> <span class="n">edisp</span><span class="o">=</span><span class="n">edisp</span><span class="p">,</span> <span class="n">gti</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gti</span><span class="p">,</span>
                     <span class="p">)</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_evaluators</span><span class="p">[</span><span class="n">model</span><span class="p">]</span> <span class="o">=</span> <span class="n">evaluator</span>
 
@@ -1347,13 +1344,26 @@
         <span class="sd">&quot;&quot;&quot;Models (`gammapy.modeling.models.Models`).&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">ProperModels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">background_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_background_model</span>
+
     <span class="nd">@models</span><span class="o">.</span><span class="n">setter</span>
     <span class="k">def</span> <span class="nf">models</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">models</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">models</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_models</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_models</span> <span class="o">=</span> <span class="n">Models</span><span class="p">(</span><span class="n">models</span><span class="p">)</span>
-        <span class="c1"># reset evaluators</span>
+
+        <span class="c1"># TODO: clean this up (probably by removing)</span>
+        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">BackgroundModel</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">datasets_names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">datasets_names</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_background_model</span> <span class="o">=</span> <span class="n">model</span>
+                        <span class="k">break</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No background model defined for dataset </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_evaluators</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="nd">@property</span>
@@ -1387,10 +1397,12 @@
         <span class="sd">&quot;&quot;&quot;Main analysis geometry&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">map</span><span class="o">.</span><span class="n">geom</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span><span class="o">.</span><span class="n">geom</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Either &#39;counts&#39;, &#39;background&#39; must be defined.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Either &#39;counts&#39;, &#39;background_model&#39; must be defined.&quot;</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">data_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1403,24 +1415,15 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">get_edisp_kernel</span><span class="p">()</span>
 
-<div class="viewcode-block" id="SpectrumDataset.npred_sig"><a class="viewcode-back" href="../../../api/gammapy.datasets.SpectrumDataset.html#gammapy.datasets.SpectrumDataset.npred_sig">[docs]</a>    <span class="k">def</span> <span class="nf">npred_sig</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Predicted counts from source model (`RegionNDMap`).&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="SpectrumDataset.npred"><a class="viewcode-back" href="../../../api/gammapy.datasets.SpectrumDataset.html#gammapy.datasets.SpectrumDataset.npred">[docs]</a>    <span class="k">def</span> <span class="nf">npred</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Predicted counts from source and background model (`RegionNDMap`).&quot;&quot;&quot;</span>
         <span class="n">npred_total</span> <span class="o">=</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_geom</span><span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluators</span><span class="p">:</span>
-            <span class="n">npred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluators</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">compute_npred</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">evaluator</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluators</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">npred</span> <span class="o">=</span> <span class="n">evaluator</span><span class="o">.</span><span class="n">compute_npred</span><span class="p">()</span>
             <span class="n">npred_total</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">npred</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">npred_total</span></div>
-
-<div class="viewcode-block" id="SpectrumDataset.npred"><a class="viewcode-back" href="../../../api/gammapy.datasets.SpectrumDataset.html#gammapy.datasets.SpectrumDataset.npred">[docs]</a>    <span class="k">def</span> <span class="nf">npred</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Return npred map (model + background)&quot;&quot;&quot;</span>
-        <span class="n">npred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npred_sig</span><span class="p">()</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span><span class="p">:</span>
-            <span class="n">npred</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span>
-
-        <span class="k">return</span> <span class="n">npred</span></div>
 
 <div class="viewcode-block" id="SpectrumDataset.stat_array"><a class="viewcode-back" href="../../../api/gammapy.datasets.SpectrumDataset.html#gammapy.datasets.SpectrumDataset.stat_array">[docs]</a>    <span class="k">def</span> <span class="nf">stat_array</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Likelihood per bin given the current model parameters&quot;&quot;&quot;</span>
@@ -1428,15 +1431,12 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">excess</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Excess (counts - alpha * counts_off)&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">exposure</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Excess (aeff * livetime)&quot;&quot;&quot;</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">livetime</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span>
-        <span class="n">geom</span> <span class="o">=</span> <span class="n">RegionGeom</span><span class="p">(</span><span class="n">region</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">energy</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="o">=</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">aeff</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">livetime</span>
 
 <div class="viewcode-block" id="SpectrumDataset.fake"><a class="viewcode-back" href="../../../api/gammapy.datasets.SpectrumDataset.html#gammapy.datasets.SpectrumDataset.fake">[docs]</a>    <span class="k">def</span> <span class="nf">fake</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="s2">&quot;random-seed&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Simulate fake counts for the current model and reduced irfs.</span>
@@ -1455,6 +1455,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">=</span> <span class="n">npred</span></div>
 
     <span class="nd">@property</span>
+    <span class="c1"># TODO: make this a method to support different methods?</span>
     <span class="k">def</span> <span class="nf">energy_range</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Energy range defined by the safe mask&quot;&quot;&quot;</span>
         <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_energy_axis</span><span class="o">.</span><span class="n">edges</span>
@@ -1520,7 +1521,12 @@
             <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Measured excess&quot;</span><span class="p">,</span>
             <span class="n">yerr</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">excess</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">flatten</span><span class="p">())),</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">npred_sig</span><span class="p">()</span><span class="o">.</span><span class="n">plot_hist</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Predicted excess&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="p">:</span>
+            <span class="n">pred_excess</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span><span class="p">:</span>
+            <span class="n">pred_excess</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span>
+
+        <span class="n">pred_excess</span><span class="o">.</span><span class="n">plot_hist</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;Predicted excess&quot;</span><span class="p">)</span>
 
         <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">numpoints</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
@@ -1623,14 +1629,13 @@
         <span class="k">if</span> <span class="n">region</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">region</span> <span class="o">=</span> <span class="s2">&quot;icrs;circle(0, 0, 1)&quot;</span>
 
+        <span class="n">name</span> <span class="o">=</span> <span class="n">make_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
         <span class="n">counts</span> <span class="o">=</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">e_reco</span><span class="p">])</span>
         <span class="n">background</span> <span class="o">=</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">e_reco</span><span class="p">])</span>
-
-        <span class="n">aeff</span> <span class="o">=</span> <span class="n">EffectiveAreaTable</span><span class="p">(</span>
-            <span class="n">e_true</span><span class="o">.</span><span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
-            <span class="n">e_true</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
-            <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">e_true</span><span class="o">.</span><span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">m</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">models</span> <span class="o">=</span> <span class="n">Models</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">BackgroundModel</span><span class="p">(</span><span class="n">background</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;-bkg&quot;</span><span class="p">,</span> <span class="n">datasets_names</span><span class="o">=</span><span class="p">[</span><span class="n">name</span><span class="p">])]</span>
         <span class="p">)</span>
+        <span class="n">aeff</span> <span class="o">=</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">e_true</span><span class="p">],</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;cm2&quot;</span><span class="p">)</span>
         <span class="n">edisp</span> <span class="o">=</span> <span class="n">EDispKernelMap</span><span class="o">.</span><span class="n">from_diagonal_response</span><span class="p">(</span><span class="n">e_reco</span><span class="p">,</span> <span class="n">e_true</span><span class="p">,</span> <span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
         <span class="n">mask_safe</span> <span class="o">=</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;bool&quot;</span><span class="p">)</span>
         <span class="n">gti</span> <span class="o">=</span> <span class="n">GTI</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">([],</span> <span class="s2">&quot;s&quot;</span><span class="p">),</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">([],</span> <span class="s2">&quot;s&quot;</span><span class="p">),</span> <span class="n">reference_time</span><span class="p">)</span>
@@ -1641,9 +1646,9 @@
             <span class="n">aeff</span><span class="o">=</span><span class="n">aeff</span><span class="p">,</span>
             <span class="n">edisp</span><span class="o">=</span><span class="n">edisp</span><span class="p">,</span>
             <span class="n">mask_safe</span><span class="o">=</span><span class="n">mask_safe</span><span class="p">,</span>
-            <span class="n">background</span><span class="o">=</span><span class="n">background</span><span class="p">,</span>
             <span class="n">livetime</span><span class="o">=</span><span class="n">livetime</span><span class="p">,</span>
             <span class="n">gti</span><span class="o">=</span><span class="n">gti</span><span class="p">,</span>
+            <span class="n">models</span><span class="o">=</span><span class="n">models</span><span class="p">,</span>
             <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -1691,30 +1696,24 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">counts</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_type</span> <span class="o">==</span> <span class="s2">&quot;cash&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">background</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">background</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">background</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_type</span> <span class="o">==</span> <span class="s2">&quot;cash&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">background_model</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_background_model</span><span class="o">.</span><span class="n">map</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_background_model</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">background_model</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="n">Models</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">livetime</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">other</span><span class="o">.</span><span class="n">livetime</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;IRF stacking requires livetime for both datasets.&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">stacked_livetime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">livetime</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">livetime</span>
+            <span class="n">stacked_exposure</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span>
+            <span class="n">stacked_exposure</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">exposure</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">aeff</span> <span class="o">=</span> <span class="n">stacked_exposure</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">livetime</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">livetime</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">exposure</span><span class="p">:</span>
-                <span class="n">stacked_exposure</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span>
-                <span class="n">stacked_exposure</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">exposure</span><span class="p">)</span>
-
-                <span class="n">stacked_aeff</span> <span class="o">=</span> <span class="n">EffectiveAreaTable</span><span class="p">(</span>
-                    <span class="n">stacked_exposure</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
-                    <span class="n">stacked_exposure</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
-                    <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">stacked_exposure</span><span class="o">.</span><span class="n">quantity</span><span class="o">/</span><span class="n">stacked_livetime</span><span class="p">)</span>
-                <span class="p">)</span>
-
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">edisp_map</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">data</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">edisp</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">aeff</span> <span class="o">=</span> <span class="n">stacked_aeff</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">edisp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">edisp_map</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">edisp</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
@@ -1724,7 +1723,12 @@
 
         <span class="c1"># TODO: for the moment, since dead time is not accounted for, livetime cannot be the sum of GTIs</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">livetime</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">livetime</span> <span class="o">+=</span> <span class="n">other</span><span class="o">.</span><span class="n">livetime</span></div>
+            <span class="bp">self</span><span class="o">.</span><span class="n">livetime</span> <span class="o">+=</span> <span class="n">other</span><span class="o">.</span><span class="n">livetime</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta_table</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">meta_table</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">meta_table</span> <span class="o">=</span> <span class="n">hstack_columns</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta_table</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">meta_table</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">other</span><span class="o">.</span><span class="n">meta_table</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">meta_table</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">meta_table</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="SpectrumDataset.peek"><a class="viewcode-back" href="../../../api/gammapy.datasets.SpectrumDataset.html#gammapy.datasets.SpectrumDataset.peek">[docs]</a>    <span class="k">def</span> <span class="nf">peek</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">4</span><span class="p">)):</span>
         <span class="sd">&quot;&quot;&quot;Quick-look summary plots.&quot;&quot;&quot;</span>
@@ -1738,8 +1742,8 @@
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">SpectrumDatasetOnOff</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">background</span><span class="o">.</span><span class="n">plot_hist</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;alpha * N_off&quot;</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">background</span><span class="o">.</span><span class="n">plot_hist</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;background&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span><span class="o">.</span><span class="n">plot_hist</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;background&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">plot_hist</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;n_on&quot;</span><span class="p">)</span>
 
@@ -1749,7 +1753,7 @@
         <span class="n">ax1</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">numpoints</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
         <span class="n">ax2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Effective Area&quot;</span><span class="p">)</span>
-        <span class="n">e_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">unit</span>
+        <span class="n">e_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax2</span><span class="p">)</span>
         <span class="n">ax2</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mf">0.7</span> <span class="o">*</span> <span class="n">e_min</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="n">e_unit</span><span class="p">),</span> <span class="mf">1.3</span> <span class="o">*</span> <span class="n">e_max</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="n">e_unit</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_plot_energy_range</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax2</span><span class="p">)</span>
@@ -1782,15 +1786,67 @@
 
         <span class="n">info</span><span class="p">[</span><span class="s2">&quot;n_on&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
 
-        <span class="n">info</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="p">:</span>
+            <span class="n">background</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span><span class="p">:</span>
+            <span class="n">background</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+        <span class="n">info</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">background</span>
         <span class="n">info</span><span class="p">[</span><span class="s2">&quot;excess&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">excess</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
         <span class="n">info</span><span class="p">[</span><span class="s2">&quot;significance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">CashCountsStatistic</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="n">background</span>
         <span class="p">)</span><span class="o">.</span><span class="n">significance</span>
 
         <span class="n">info</span><span class="p">[</span><span class="s2">&quot;background_rate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;livetime&quot;</span><span class="p">]</span>
         <span class="n">info</span><span class="p">[</span><span class="s2">&quot;gamma_rate&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;excess&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;livetime&quot;</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">info</span></div></div>
+        <span class="k">return</span> <span class="n">info</span></div>
+
+<div class="viewcode-block" id="SpectrumDataset.slice_by_idx"><a class="viewcode-back" href="../../../api/gammapy.datasets.SpectrumDataset.html#gammapy.datasets.SpectrumDataset.slice_by_idx">[docs]</a>    <span class="k">def</span> <span class="nf">slice_by_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slices</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Slice sub dataset.</span>
+
+<span class="sd">        The slicing only applies to the maps that define the corresponding axes.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        slices : dict</span>
+<span class="sd">            Dict of axes names and integers or `slice` object pairs. Contains one</span>
+<span class="sd">            element for each non-spatial dimension. For integer indexing the</span>
+<span class="sd">            corresponding axes is dropped from the map. Axes not specified in the</span>
+<span class="sd">            dict are kept unchanged.</span>
+<span class="sd">        name : str</span>
+<span class="sd">            Name of the sliced dataset.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        map_out : `Map`</span>
+<span class="sd">            Sliced map object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">make_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;gti&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">gti</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">}</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;livetime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">livetime</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">(</span><span class="n">slices</span><span class="o">=</span><span class="n">slices</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;aeff&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">(</span><span class="n">slices</span><span class="o">=</span><span class="n">slices</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">(</span><span class="n">slices</span><span class="o">=</span><span class="n">slices</span><span class="p">)</span>
+            <span class="n">bkg_model</span> <span class="o">=</span> <span class="n">BackgroundModel</span><span class="p">(</span><span class="nb">map</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">datasets_names</span><span class="o">=</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+            <span class="n">bkg_model</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">frozen</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;models&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bkg_model</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;edisp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">(</span><span class="n">slices</span><span class="o">=</span><span class="n">slices</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;mask_safe&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">(</span><span class="n">slices</span><span class="o">=</span><span class="n">slices</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_fit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;mask_fit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_fit</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">(</span><span class="n">slices</span><span class="o">=</span><span class="n">slices</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="SpectrumDatasetOnOff"><a class="viewcode-back" href="../../../api/gammapy.datasets.SpectrumDatasetOnOff.html#gammapy.datasets.SpectrumDatasetOnOff">[docs]</a><span class="k">class</span> <span class="nc">SpectrumDatasetOnOff</span><span class="p">(</span><span class="n">SpectrumDataset</span><span class="p">):</span>
@@ -1811,7 +1867,7 @@
 <span class="sd">        OFF Counts spectrum</span>
 <span class="sd">    livetime : `~astropy.units.Quantity`</span>
 <span class="sd">        Livetime</span>
-<span class="sd">    aeff : `~gammapy.irf.EffectiveAreaTable`</span>
+<span class="sd">    aeff : `~gammapy.maps.RegionNDMap`</span>
 <span class="sd">        Effective area</span>
 <span class="sd">    edisp : `~gammapy.irf.EDispKernelMap`</span>
 <span class="sd">        Energy dispersion kernel</span>
@@ -1885,6 +1941,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">make_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">gti</span> <span class="o">=</span> <span class="n">gti</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="n">models</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_background_model</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="c1"># TODO: this enforces the exposure on the edisp map, maybe better move</span>
         <span class="c1">#  to where the EDispKernelMap is created?</span>
@@ -1903,12 +1960,23 @@
         <span class="n">str_acc</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Acceptance mean:&quot;</span><span class="p">,</span> <span class="n">acceptance</span><span class="p">)</span>
         <span class="n">str_list</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="n">str_acc</span><span class="p">)</span>
         <span class="n">str_</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">str_list</span><span class="p">)</span>
+
+        <span class="n">acceptance_off</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acceptance_off</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">acceptance_off</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acceptance_off</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: </span><span class="si">{:.0f}</span><span class="s2"> </span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Acceptance off&quot;</span><span class="p">,</span> <span class="n">acceptance_off</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">str_</span><span class="o">.</span><span class="n">expandtabs</span><span class="p">(</span><span class="n">tabsize</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">background</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span><span class="o">.</span><span class="n">data</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">excess</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;counts - bkg&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">alpha</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1933,7 +2001,7 @@
 
 <div class="viewcode-block" id="SpectrumDatasetOnOff.stat_array"><a class="viewcode-back" href="../../../api/gammapy.datasets.SpectrumDatasetOnOff.html#gammapy.datasets.SpectrumDatasetOnOff.stat_array">[docs]</a>    <span class="k">def</span> <span class="nf">stat_array</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Likelihood per bin given the current model parameters&quot;&quot;&quot;</span>
-        <span class="n">mu_sig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npred_sig</span><span class="p">()</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">mu_sig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span><span class="o">.</span><span class="n">data</span>
         <span class="n">on_stat_</span> <span class="o">=</span> <span class="n">wstat</span><span class="p">(</span>
             <span class="n">n_on</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
             <span class="n">n_off</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
@@ -1957,15 +2025,15 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">random_state</span> <span class="o">=</span> <span class="n">get_random_state</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
 
-        <span class="n">npred_sig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npred_sig</span><span class="p">()</span>
-        <span class="n">npred_sig</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">random_state</span><span class="o">.</span><span class="n">poisson</span><span class="p">(</span><span class="n">npred_sig</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">npred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span>
+        <span class="n">npred</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">random_state</span><span class="o">.</span><span class="n">poisson</span><span class="p">(</span><span class="n">npred</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
-        <span class="n">npred_bkg</span> <span class="o">=</span> <span class="n">background_model</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">npred_bkg</span> <span class="o">=</span> <span class="n">background_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">npred_bkg</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">random_state</span><span class="o">.</span><span class="n">poisson</span><span class="p">(</span><span class="n">npred_bkg</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">=</span> <span class="n">npred_sig</span> <span class="o">+</span> <span class="n">npred_bkg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">=</span> <span class="n">npred</span> <span class="o">+</span> <span class="n">npred_bkg</span>
 
-        <span class="n">npred_off</span> <span class="o">=</span> <span class="n">background_model</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span>
+        <span class="n">npred_off</span> <span class="o">=</span> <span class="n">background_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span>
         <span class="n">npred_off</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">random_state</span><span class="o">.</span><span class="n">poisson</span><span class="p">(</span><span class="n">npred_off</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span> <span class="o">=</span> <span class="n">npred_off</span></div>
 
@@ -2230,9 +2298,14 @@
             <span class="n">region_hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="p">(</span><span class="n">region_table</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;REGION&quot;</span><span class="p">)</span>
             <span class="n">hdulist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">region_hdu</span><span class="p">)</span>
 
-        <span class="n">hdulist</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">outdir</span> <span class="o">/</span> <span class="n">phafile</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
+        <span class="n">hdulist</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">outdir</span> <span class="o">/</span> <span class="n">phafile</span><span class="p">),</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">outdir</span> <span class="o">/</span> <span class="n">arffile</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">,</span> <span class="n">use_sherpa</span><span class="o">=</span><span class="n">use_sherpa</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+            <span class="n">outdir</span> <span class="o">/</span> <span class="n">arffile</span><span class="p">,</span>
+            <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">,</span>
+            <span class="nb">format</span><span class="o">=</span><span class="n">hdu_format</span><span class="p">,</span>
+            <span class="n">ogip_column</span><span class="o">=</span><span class="s2">&quot;SPECRESP&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">counts_off_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span><span class="o">.</span><span class="n">to_table</span><span class="p">()</span>
@@ -2256,7 +2329,7 @@
                 <span class="n">region_hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="p">(</span><span class="n">region_table</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;REGION&quot;</span><span class="p">)</span>
                 <span class="n">hdulist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">region_hdu</span><span class="p">)</span>
 
-            <span class="n">hdulist</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">outdir</span> <span class="o">/</span> <span class="n">bkgfile</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
+            <span class="n">hdulist</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">outdir</span> <span class="o">/</span> <span class="n">bkgfile</span><span class="p">),</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_edisp_kernel</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
@@ -2306,7 +2379,7 @@
         <span class="n">filename</span> <span class="o">=</span> <span class="n">make_path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
         <span class="n">dirname</span> <span class="o">=</span> <span class="n">filename</span><span class="o">.</span><span class="n">parent</span>
 
-        <span class="k">with</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">memmap</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">hdulist</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">filename</span><span class="p">),</span> <span class="n">memmap</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">hdulist</span><span class="p">:</span>
             <span class="n">counts</span> <span class="o">=</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;ogip&quot;</span><span class="p">)</span>
             <span class="n">acceptance</span> <span class="o">=</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span>
                 <span class="n">hdulist</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;ogip&quot;</span><span class="p">,</span> <span class="n">ogip_column</span><span class="o">=</span><span class="s2">&quot;BACKSCAL&quot;</span>
@@ -2334,7 +2407,7 @@
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">bkgfile</span> <span class="o">=</span> <span class="n">phafile</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;pha&quot;</span><span class="p">,</span> <span class="s2">&quot;bkg&quot;</span><span class="p">)</span>
-            <span class="k">with</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">dirname</span> <span class="o">/</span> <span class="n">bkgfile</span><span class="p">,</span> <span class="n">memmap</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">hdulist</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">dirname</span> <span class="o">/</span> <span class="n">bkgfile</span><span class="p">),</span> <span class="n">memmap</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">hdulist</span><span class="p">:</span>
                 <span class="n">counts_off</span> <span class="o">=</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;ogip&quot;</span><span class="p">)</span>
                 <span class="n">acceptance_off</span> <span class="o">=</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span>
                     <span class="n">hdulist</span><span class="p">,</span> <span class="n">ogip_column</span><span class="o">=</span><span class="s2">&quot;BACKSCAL&quot;</span>
@@ -2344,7 +2417,7 @@
             <span class="n">counts_off</span><span class="p">,</span> <span class="n">acceptance_off</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
 
         <span class="n">arffile</span> <span class="o">=</span> <span class="n">phafile</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;pha&quot;</span><span class="p">,</span> <span class="s2">&quot;arf&quot;</span><span class="p">)</span>
-        <span class="n">aeff</span> <span class="o">=</span> <span class="n">EffectiveAreaTable</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">dirname</span> <span class="o">/</span> <span class="n">arffile</span><span class="p">)</span>
+        <span class="n">aeff</span> <span class="o">=</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">dirname</span> <span class="o">/</span> <span class="n">arffile</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;ogip-arf&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
             <span class="n">counts</span><span class="o">=</span><span class="n">counts</span><span class="p">,</span>
@@ -2465,9 +2538,9 @@
 <span class="sd">            Spectrum dataset on off.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">counts_off</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">dataset</span><span class="o">.</span><span class="n">background</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">counts_off</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">dataset</span><span class="o">.</span><span class="n">background_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">alpha</span> <span class="o">=</span> <span class="n">acceptance</span> <span class="o">/</span> <span class="n">acceptance_off</span>
-            <span class="n">counts_off</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">background</span> <span class="o">/</span> <span class="n">alpha</span>
+            <span class="n">counts_off</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span> <span class="o">/</span> <span class="n">alpha</span>
 
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
             <span class="n">models</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">models</span><span class="p">,</span>
@@ -2482,7 +2555,53 @@
             <span class="n">acceptance_off</span><span class="o">=</span><span class="n">acceptance_off</span><span class="p">,</span>
             <span class="n">gti</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">gti</span><span class="p">,</span>
             <span class="n">name</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-        <span class="p">)</span></div></div>
+            <span class="n">meta_table</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">meta_table</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="SpectrumDatasetOnOff.slice_by_idx"><a class="viewcode-back" href="../../../api/gammapy.datasets.SpectrumDatasetOnOff.html#gammapy.datasets.SpectrumDatasetOnOff.slice_by_idx">[docs]</a>    <span class="k">def</span> <span class="nf">slice_by_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slices</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Slice sub dataset.</span>
+
+<span class="sd">        The slicing only applies to the maps that define the corresponding axes.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        slices : dict</span>
+<span class="sd">            Dict of axes names and integers or `slice` object pairs. Contains one</span>
+<span class="sd">            element for each non-spatial dimension. For integer indexing the</span>
+<span class="sd">            corresponding axes is dropped from the map. Axes not specified in the</span>
+<span class="sd">            dict are kept unchanged.</span>
+<span class="sd">        name : str</span>
+<span class="sd">            Name of the sliced dataset.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        map_out : `Map`</span>
+<span class="sd">            Sliced map object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">make_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;gti&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">gti</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">(</span><span class="n">slices</span><span class="o">=</span><span class="n">slices</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;aeff&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">(</span><span class="n">slices</span><span class="o">=</span><span class="n">slices</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;edisp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">(</span><span class="n">slices</span><span class="o">=</span><span class="n">slices</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;mask_safe&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">(</span><span class="n">slices</span><span class="o">=</span><span class="n">slices</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_fit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;mask_fit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_fit</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">(</span><span class="n">slices</span><span class="o">=</span><span class="n">slices</span><span class="p">)</span>
+
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;acceptance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">acceptance</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">(</span><span class="n">slices</span><span class="o">=</span><span class="n">slices</span><span class="p">)</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;acceptance_off&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">acceptance_off</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">(</span><span class="n">slices</span><span class="o">=</span><span class="n">slices</span><span class="p">)</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;counts_off&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">(</span><span class="n">slices</span><span class="o">=</span><span class="n">slices</span><span class="p">)</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;livetime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">livetime</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
 </pre></div>
 
            </div>
@@ -2498,7 +2617,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 04 Aug 2020.
+        Last updated on 08 Sep 2020.
       </span>
 
     </p>

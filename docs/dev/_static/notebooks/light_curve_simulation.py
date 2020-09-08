@@ -151,16 +151,18 @@ empty = SpectrumDataset.create(
     e_reco=energy_axis, e_true=energy_axis_true, region=on_region, name="empty"
 )
 
-for i in range(n_obs):
+maker = SpectrumDatasetMaker(selection=["aeff", "background", "edisp"])
+
+for idx in range(n_obs):
     obs = Observation.create(
         pointing=pointing,
-        livetime=lvtm[i],
-        tstart=tstart[i],
+        livetime=lvtm[idx],
+        tstart=tstart[idx],
         irfs=irfs,
         reference_time=gti_t0,
+        obs_id=idx,
     )
-    empty_i = empty.copy(name=f"dataset_{i}")
-    maker = SpectrumDatasetMaker(selection=["aeff", "background", "edisp"])
+    empty_i = empty.copy(name=f"dataset-{idx}")
     dataset = maker.run(empty_i, obs)
     dataset.models = model_simu
     dataset.fake()
@@ -200,7 +202,7 @@ for dataset in datasets:
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'lc_maker_1d = LightCurveEstimator(\n    energy_range=[energy_axis.edges[0], energy_axis.edges[-1]],\n    source="model-fit",\n    reoptimize=False,\n)\nlc_1d = lc_maker_1d.run(datasets)')
+get_ipython().run_cell_magic('time', '', 'lc_maker_1d = LightCurveEstimator(\n    e_edges=[energy_axis.edges[0], energy_axis.edges[-1]],\n    source="model-fit",\n    reoptimize=False,\n)\nlc_1d = lc_maker_1d.run(datasets)')
 
 
 # In[ ]:

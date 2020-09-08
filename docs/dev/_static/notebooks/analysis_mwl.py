@@ -219,6 +219,12 @@ datasets = Datasets.read(path, filedata=filedata, filemodel=filemodel)
 # In[ ]:
 
 
+print(datasets)
+
+
+# In[ ]:
+
+
 print(datasets["HESS"].models)
 
 
@@ -247,10 +253,14 @@ print(crab_spec)
 # In[ ]:
 
 
+dataset_fermi.counts.geom.axes[0]
+
+
+# In[ ]:
+
+
 # compute Fermi-LAT and HESS flux points
-e_edges = MapAxis.from_bounds(
-    0.01, 2.0, nbin=6, interp="log", unit="TeV"
-).edges
+e_edges = MapAxis.from_energy_bounds("10 GeV", "2 TeV", nbin=5).edges
 
 flux_points_fermi = FluxPointsEstimator(
     e_edges=e_edges, source="Crab Nebula"

@@ -91,14 +91,14 @@ dataset = spectrum_maker.run(empty_dataset, obs)
 containment = 0.68
 
 # correct effective area
-dataset.aeff.data.data *= containment
+dataset.aeff.data *= containment
 
 # correct background estimation
 on_radii = obs.psf.containment_radius(
     energy=e_reco.center, theta=0.5 * u.deg, fraction=containment
 )[0]
 factor = (1 - np.cos(on_radii)) / (1 - np.cos(region.radius))
-dataset.background.data *= factor.value.reshape((-1, 1, 1))
+dataset.background_model.map *= factor.value.reshape((-1, 1, 1))
 
 
 # And finally define a `SpectrumDatasetOnOff` with an alpha of `0.2`. The off counts are created from the background model:
@@ -195,3 +195,15 @@ ax2.set_ylim(0.01, 0.5)
 # 
 # * Also compute the sensitivity for a 20 hour observation
 # * Compare how the sensitivity differs between 5 and 20 hours by plotting the ratio as a function of energy.
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+

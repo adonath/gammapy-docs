@@ -165,12 +165,16 @@ ring_maker = RingBackgroundMaker(
 
 
 #%%time
-stacked_on_off = MapDatasetOnOff.create(geom=geom_image)
+energy_axis_true = analysis.datasets[0].exposure.geom.get_axis_by_name(
+    "energy_true"
+)
+stacked_on_off = MapDatasetOnOff.create(
+    geom=geom_image, energy_axis_true=energy_axis_true, name="stacked"
+)
+
 for dataset in analysis.datasets:
-    dataset_image = (
-        dataset.to_image()
-    )  # Ring extracting makes sense only for 2D analysis
-    dataset_on_off = ring_maker.run(dataset_image)
+    # Ring extracting makes sense only for 2D analysis
+    dataset_on_off = ring_maker.run(dataset.to_image())
     stacked_on_off.stack(dataset_on_off)
 
 
@@ -189,8 +193,8 @@ print(stacked_on_off)
 
 
 # Using a convolution radius of 0.04 degrees
-estimator = ExcessMapEstimator(0.04 * u.deg)
-lima_maps = estimator.run(stacked_on_off, steps="ts")
+estimator = ExcessMapEstimator(0.04 * u.deg, selection_optional=[])
+lima_maps = estimator.run(stacked_on_off)
 
 
 # In[ ]:

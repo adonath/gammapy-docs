@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.modeling.models.spectral &mdash; gammapy v0.18.dev432+gc0e58f48f</title>
+  <title>gammapy.modeling.models.spectral &mdash; gammapy v0.18.dev639+g8d1e908b4</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev432+gc0e58f48f
+                0.18.dev639+g8d1e908b4
               </div>
             
           
@@ -1144,7 +1144,7 @@
 <span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">MapAxis</span>
 <span class="kn">from</span> <span class="nn">gammapy.maps.utils</span> <span class="kn">import</span> <span class="n">edges_from_lo_hi</span>
 <span class="kn">from</span> <span class="nn">gammapy.modeling</span> <span class="kn">import</span> <span class="n">Covariance</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">Parameters</span>
-<span class="kn">from</span> <span class="nn">gammapy.utils.integrate</span> <span class="kn">import</span> <span class="n">evaluate_integral_pwl</span><span class="p">,</span> <span class="n">trapz_loglog</span>
+<span class="kn">from</span> <span class="nn">gammapy.utils.integrate</span> <span class="kn">import</span> <span class="n">trapz_loglog</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.interpolation</span> <span class="kn">import</span> <span class="n">ScaledRegularGridInterpolator</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.scripts</span> <span class="kn">import</span> <span class="n">make_path</span>
 <span class="kn">from</span> <span class="nn">.core</span> <span class="kn">import</span> <span class="n">Model</span>
@@ -1268,7 +1268,7 @@
         <span class="k">return</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">([</span><span class="n">q</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">f_err</span><span class="p">],</span> <span class="n">unit</span><span class="o">=</span><span class="n">q</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SpectralModel.integral"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.SpectralModel.html#gammapy.astro.darkmatter.SpectralModel.integral">[docs]</a>    <span class="k">def</span> <span class="nf">integral</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Integrate spectral model numerically.</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Integrate spectral model numerically if no analytical solution defined.</span>
 
 <span class="sd">        .. math::</span>
 <span class="sd">            F(E_{min}, E_{max}) = \int_{E_{min}}^{E_{max}} \phi(E) dE</span>
@@ -1283,7 +1283,13 @@
 <span class="sd">        **kwargs : dict</span>
 <span class="sd">            Keyword arguments passed to :func:`~gammapy.utils.integrate.integrate_spectrum`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">integrate_spectrum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;evaluate_integral&quot;</span><span class="p">):</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">par</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">par</span><span class="o">.</span><span class="n">quantity</span> <span class="k">for</span> <span class="n">par</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">}</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_evaluate_unit</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">emin</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate_integral</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">integrate_spectrum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SpectralModel.energy_flux"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.SpectralModel.html#gammapy.astro.darkmatter.SpectralModel.energy_flux">[docs]</a>    <span class="k">def</span> <span class="nf">energy_flux</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute energy flux in given energy range.</span>
@@ -1302,7 +1308,12 @@
         <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="bp">self</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">integrate_spectrum</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;evaluate_energy_flux&quot;</span><span class="p">):</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">par</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">par</span><span class="o">.</span><span class="n">quantity</span> <span class="k">for</span> <span class="n">par</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">}</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_evaluate_unit</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">emin</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate_energy_flux</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">integrate_spectrum</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SpectralModel.plot"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.SpectralModel.html#gammapy.astro.darkmatter.SpectralModel.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1555,7 +1566,7 @@
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
             <span class="sa">f</span><span class="s2">&quot;    Component 1 : </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model1</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
             <span class="sa">f</span><span class="s2">&quot;    Component 2 : </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model2</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;    Operator : </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">operator</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;    Operator : </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">operator</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
         <span class="p">)</span>
 
 <div class="viewcode-block" id="CompoundSpectralModel.__call__"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.CompoundSpectralModel.html#gammapy.astro.darkmatter.CompoundSpectralModel.__call__">[docs]</a>    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">energy</span><span class="p">):</span>
@@ -1565,10 +1576,22 @@
 
 <div class="viewcode-block" id="CompoundSpectralModel.to_dict"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.CompoundSpectralModel.html#gammapy.astro.darkmatter.CompoundSpectralModel.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tag</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
             <span class="s2">&quot;model1&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model1</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
             <span class="s2">&quot;model2&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model2</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
-            <span class="s2">&quot;operator&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">operator</span><span class="p">,</span>
-        <span class="p">}</span></div></div>
+            <span class="s2">&quot;operator&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">operator</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="CompoundSpectralModel.from_dict"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.CompoundSpectralModel.html#gammapy.astro.darkmatter.CompoundSpectralModel.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">SPECTRAL_MODEL_REGISTRY</span>
+
+        <span class="n">model1_cls</span> <span class="o">=</span> <span class="n">SPECTRAL_MODEL_REGISTRY</span><span class="o">.</span><span class="n">get_cls</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;model1&quot;</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">])</span>
+        <span class="n">model1</span> <span class="o">=</span> <span class="n">model1_cls</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;model1&quot;</span><span class="p">])</span>
+        <span class="n">model2_cls</span> <span class="o">=</span> <span class="n">SPECTRAL_MODEL_REGISTRY</span><span class="o">.</span><span class="n">get_cls</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;model2&quot;</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">])</span>
+        <span class="n">model2</span> <span class="o">=</span> <span class="n">model2_cls</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;model1&quot;</span><span class="p">])</span>
+        <span class="n">operator</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">np</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;operator&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">model1</span><span class="p">,</span> <span class="n">model2</span><span class="p">,</span> <span class="n">operator</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="PowerLawSpectralModel"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.PowerLawSpectralModel.html#gammapy.astro.darkmatter.PowerLawSpectralModel">[docs]</a><span class="k">class</span> <span class="nc">PowerLawSpectralModel</span><span class="p">(</span><span class="n">SpectralModel</span><span class="p">):</span>
@@ -1584,22 +1607,64 @@
 <span class="sd">        :math:`\phi_0`</span>
 <span class="sd">    reference : `~astropy.units.Quantity`</span>
 <span class="sd">        :math:`E_0`</span>
+<span class="sd">        </span>
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    PowerLaw2SpectralModel, PowerLawNormSpectralModel</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">tag</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PowerLawSpectralModel&quot;</span><span class="p">,</span> <span class="s2">&quot;pl&quot;</span><span class="p">]</span>
     <span class="n">index</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;index&quot;</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)</span>
     <span class="n">amplitude</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;amplitude&quot;</span><span class="p">,</span> <span class="s2">&quot;1e-12 cm-2 s-1 TeV-1&quot;</span><span class="p">)</span>
     <span class="n">reference</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;reference&quot;</span><span class="p">,</span> <span class="s2">&quot;1 TeV&quot;</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">evaluate_integral</span> <span class="o">=</span> <span class="nb">staticmethod</span><span class="p">(</span><span class="n">evaluate_integral_pwl</span><span class="p">)</span>
 
 <div class="viewcode-block" id="PowerLawSpectralModel.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.PowerLawSpectralModel.html#gammapy.astro.darkmatter.PowerLawSpectralModel.evaluate">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">amplitude</span><span class="p">,</span> <span class="n">reference</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Evaluate the model (static function).&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">amplitude</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">((</span><span class="n">energy</span> <span class="o">/</span> <span class="n">reference</span><span class="p">),</span> <span class="o">-</span><span class="n">index</span><span class="p">)</span></div>
 
+<div class="viewcode-block" id="PowerLawSpectralModel.evaluate_integral"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.PowerLawSpectralModel.html#gammapy.astro.darkmatter.PowerLawSpectralModel.evaluate_integral">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">evaluate_integral</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">amplitude</span><span class="p">,</span> <span class="n">reference</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Integrate power law analytically (static function).</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            F(E_{min}, E_{max}) = \int_{E_{min}}^{E_{max}}\phi(E)dE = \left.</span>
+<span class="sd">            \phi_0 \frac{E_0}{-\Gamma + 1} \left( \frac{E}{E_0} \right)^{-\Gamma + 1}</span>
+<span class="sd">            \right \vert _{E_{min}}^{E_{max}}</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        emin, emax : `~astropy.units.Quantity`</span>
+<span class="sd">            Lower and upper bound of integration range</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="n">prefactor</span> <span class="o">=</span> <span class="n">amplitude</span> <span class="o">*</span> <span class="n">reference</span> <span class="o">/</span> <span class="n">val</span>
+        <span class="n">upper</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">((</span><span class="n">emax</span> <span class="o">/</span> <span class="n">reference</span><span class="p">),</span> <span class="n">val</span><span class="p">)</span>
+        <span class="n">lower</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">((</span><span class="n">emin</span> <span class="o">/</span> <span class="n">reference</span><span class="p">),</span> <span class="n">val</span><span class="p">)</span>
+        <span class="n">integral</span> <span class="o">=</span> <span class="n">prefactor</span> <span class="o">*</span> <span class="p">(</span><span class="n">upper</span> <span class="o">-</span> <span class="n">lower</span><span class="p">)</span>
+
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mask</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">integral</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">amplitude</span> <span class="o">*</span> <span class="n">reference</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">emax</span> <span class="o">/</span> <span class="n">emin</span><span class="p">))[</span><span class="n">mask</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">integral</span></div>
+
 <div class="viewcode-block" id="PowerLawSpectralModel.evaluate_energy_flux"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.PowerLawSpectralModel.html#gammapy.astro.darkmatter.PowerLawSpectralModel.evaluate_energy_flux">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">evaluate_energy_flux</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">amplitude</span><span class="p">,</span> <span class="n">reference</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Evaluate the energy flux (static function)&quot;&quot;&quot;</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute energy flux in given energy range analytically (static function).</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            G(E_{min}, E_{max}) = \int_{E_{min}}^{E_{max}}E \phi(E)dE = \left.</span>
+<span class="sd">            \phi_0 \frac{E_0^2}{-\Gamma + 2} \left( \frac{E}{E_0} \right)^{-\Gamma + 2}</span>
+<span class="sd">            \right \vert _{E_{min}}^{E_{max}}</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        emin, emax : `~astropy.units.Quantity`</span>
+<span class="sd">            Lower and upper bound of integration range.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">val</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">2</span>
 
         <span class="n">prefactor</span> <span class="o">=</span> <span class="n">amplitude</span> <span class="o">*</span> <span class="n">reference</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">val</span>
@@ -1615,40 +1680,6 @@
             <span class="n">energy_flux</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">amplitude</span> <span class="o">*</span> <span class="n">reference</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">emax</span> <span class="o">/</span> <span class="n">emin</span><span class="p">)[</span><span class="n">mask</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="n">energy_flux</span></div>
-
-<div class="viewcode-block" id="PowerLawSpectralModel.integral"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.PowerLawSpectralModel.html#gammapy.astro.darkmatter.PowerLawSpectralModel.integral">[docs]</a>    <span class="k">def</span> <span class="nf">integral</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Integrate power law analytically.</span>
-
-<span class="sd">        .. math::</span>
-<span class="sd">            F(E_{min}, E_{max}) = \int_{E_{min}}^{E_{max}}\phi(E)dE = \left.</span>
-<span class="sd">            \phi_0 \frac{E_0}{-\Gamma + 1} \left( \frac{E}{E_0} \right)^{-\Gamma + 1}</span>
-<span class="sd">            \right \vert _{E_{min}}^{E_{max}}</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        emin, emax : `~astropy.units.Quantity`</span>
-<span class="sd">            Lower and upper bound of integration range</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">par</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">par</span><span class="o">.</span><span class="n">quantity</span> <span class="k">for</span> <span class="n">par</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">}</span>
-        <span class="n">kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_evaluate_unit</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">emin</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate_integral</span><span class="p">(</span><span class="n">emin</span><span class="o">=</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="o">=</span><span class="n">emax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="PowerLawSpectralModel.energy_flux"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.PowerLawSpectralModel.html#gammapy.astro.darkmatter.PowerLawSpectralModel.energy_flux">[docs]</a>    <span class="k">def</span> <span class="nf">energy_flux</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">):</span>
-        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute energy flux in given energy range analytically.</span>
-
-<span class="sd">        .. math::</span>
-<span class="sd">            G(E_{min}, E_{max}) = \int_{E_{min}}^{E_{max}}E \phi(E)dE = \left.</span>
-<span class="sd">            \phi_0 \frac{E_0^2}{-\Gamma + 2} \left( \frac{E}{E_0} \right)^{-\Gamma + 2}</span>
-<span class="sd">            \right \vert _{E_{min}}^{E_{max}}</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        emin, emax : `~astropy.units.Quantity`</span>
-<span class="sd">            Lower and upper bound of integration range.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">par</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">par</span><span class="o">.</span><span class="n">quantity</span> <span class="k">for</span> <span class="n">par</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">}</span>
-        <span class="n">kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_evaluate_unit</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">emin</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate_energy_flux</span><span class="p">(</span><span class="n">emin</span><span class="o">=</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="o">=</span><span class="n">emax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="PowerLawSpectralModel.inverse"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.PowerLawSpectralModel.html#gammapy.astro.darkmatter.PowerLawSpectralModel.inverse">[docs]</a>    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return energy for a given function value of the spectral model.</span>
@@ -1678,6 +1709,97 @@
         <span class="k">return</span> <span class="n">reference</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">cov_index_ampl</span> <span class="o">/</span> <span class="p">(</span><span class="n">amplitude</span> <span class="o">*</span> <span class="n">index_err</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span></div>
 
 
+<div class="viewcode-block" id="PowerLawNormSpectralModel"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.PowerLawNormSpectralModel.html#gammapy.astro.darkmatter.PowerLawNormSpectralModel">[docs]</a><span class="k">class</span> <span class="nc">PowerLawNormSpectralModel</span><span class="p">(</span><span class="n">SpectralModel</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Spectral power-law model with normalized amplitude parameter.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tilt : `~astropy.units.Quantity`</span>
+<span class="sd">        :math:`\Gamma`</span>
+<span class="sd">    norm : `~astropy.units.Quantity`</span>
+<span class="sd">        :math:`\phi_0`</span>
+<span class="sd">    reference : `~astropy.units.Quantity`</span>
+<span class="sd">        :math:`E_0`</span>
+<span class="sd">        </span>
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    PowerLawSpectralModel, PowerLaw2SpectralModel</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">tag</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PowerLawNormSpectralModel&quot;</span><span class="p">,</span> <span class="s2">&quot;pl-norm&quot;</span><span class="p">]</span>
+    <span class="n">tilt</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;tilt&quot;</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;norm&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">reference</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;reference&quot;</span><span class="p">,</span> <span class="s2">&quot;1 TeV&quot;</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PowerLawNormSpectralModel.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.PowerLawNormSpectralModel.html#gammapy.astro.darkmatter.PowerLawNormSpectralModel.evaluate">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">tilt</span><span class="p">,</span> <span class="n">norm</span><span class="p">,</span> <span class="n">reference</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate the model (static function).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">norm</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">((</span><span class="n">energy</span> <span class="o">/</span> <span class="n">reference</span><span class="p">),</span> <span class="o">-</span><span class="n">tilt</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PowerLawNormSpectralModel.evaluate_integral"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.PowerLawNormSpectralModel.html#gammapy.astro.darkmatter.PowerLawNormSpectralModel.evaluate_integral">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">evaluate_integral</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="n">tilt</span><span class="p">,</span> <span class="n">norm</span><span class="p">,</span> <span class="n">reference</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate pwl integral.&quot;&quot;&quot;</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">tilt</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="n">prefactor</span> <span class="o">=</span> <span class="n">norm</span> <span class="o">*</span> <span class="n">reference</span> <span class="o">/</span> <span class="n">val</span>
+        <span class="n">upper</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">((</span><span class="n">emax</span> <span class="o">/</span> <span class="n">reference</span><span class="p">),</span> <span class="n">val</span><span class="p">)</span>
+        <span class="n">lower</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">((</span><span class="n">emin</span> <span class="o">/</span> <span class="n">reference</span><span class="p">),</span> <span class="n">val</span><span class="p">)</span>
+        <span class="n">integral</span> <span class="o">=</span> <span class="n">prefactor</span> <span class="o">*</span> <span class="p">(</span><span class="n">upper</span> <span class="o">-</span> <span class="n">lower</span><span class="p">)</span>
+
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mask</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">integral</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">norm</span> <span class="o">*</span> <span class="n">reference</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">emax</span> <span class="o">/</span> <span class="n">emin</span><span class="p">))[</span><span class="n">mask</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">integral</span></div>
+
+<div class="viewcode-block" id="PowerLawNormSpectralModel.evaluate_energy_flux"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.PowerLawNormSpectralModel.html#gammapy.astro.darkmatter.PowerLawNormSpectralModel.evaluate_energy_flux">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">evaluate_energy_flux</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="n">tilt</span><span class="p">,</span> <span class="n">norm</span><span class="p">,</span> <span class="n">reference</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate the energy flux (static function)&quot;&quot;&quot;</span>
+        <span class="n">val</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">tilt</span> <span class="o">+</span> <span class="mi">2</span>
+
+        <span class="n">prefactor</span> <span class="o">=</span> <span class="n">norm</span> <span class="o">*</span> <span class="n">reference</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">val</span>
+        <span class="n">upper</span> <span class="o">=</span> <span class="p">(</span><span class="n">emax</span> <span class="o">/</span> <span class="n">reference</span><span class="p">)</span> <span class="o">**</span> <span class="n">val</span>
+        <span class="n">lower</span> <span class="o">=</span> <span class="p">(</span><span class="n">emin</span> <span class="o">/</span> <span class="n">reference</span><span class="p">)</span> <span class="o">**</span> <span class="n">val</span>
+        <span class="n">energy_flux</span> <span class="o">=</span> <span class="n">prefactor</span> <span class="o">*</span> <span class="p">(</span><span class="n">upper</span> <span class="o">-</span> <span class="n">lower</span><span class="p">)</span>
+
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mask</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="c1"># see https://www.wolframalpha.com/input/?i=a+*+x+*+(x%2Fb)+%5E+(-2)</span>
+            <span class="c1"># for reference</span>
+            <span class="n">energy_flux</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">norm</span> <span class="o">*</span> <span class="n">reference</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">emax</span> <span class="o">/</span> <span class="n">emin</span><span class="p">)[</span><span class="n">mask</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">energy_flux</span></div>
+
+<div class="viewcode-block" id="PowerLawNormSpectralModel.inverse"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.PowerLawNormSpectralModel.html#gammapy.astro.darkmatter.PowerLawNormSpectralModel.inverse">[docs]</a>    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return energy for a given function value of the spectral model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        value : `~astropy.units.Quantity`</span>
+<span class="sd">            Function value of the spectral model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="n">value</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">quantity</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">reference</span><span class="o">.</span><span class="n">quantity</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">tilt</span><span class="o">.</span><span class="n">value</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">pivot_energy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;The decorrelation energy is defined as:</span>
+
+<span class="sd">        .. math::</span>
+
+<span class="sd">            E_D = E_0 * \exp{cov(\phi_0, \Gamma) / (\phi_0 \Delta \Gamma^2)}</span>
+
+<span class="sd">        Formula (1) in https://arxiv.org/pdf/0910.4881.pdf</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tilt_err</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tilt</span><span class="o">.</span><span class="n">error</span>
+        <span class="n">reference</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reference</span><span class="o">.</span><span class="n">quantity</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">quantity</span>
+        <span class="n">cov_tilt_norm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariance</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">norm</span><span class="o">.</span><span class="n">unit</span>
+        <span class="k">return</span> <span class="n">reference</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">cov_tilt_norm</span> <span class="o">/</span> <span class="p">(</span><span class="n">norm</span> <span class="o">*</span> <span class="n">tilt_err</span> <span class="o">**</span> <span class="mi">2</span><span class="p">))</span></div>
+
+
 <div class="viewcode-block" id="PowerLaw2SpectralModel"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.PowerLaw2SpectralModel.html#gammapy.astro.darkmatter.PowerLaw2SpectralModel">[docs]</a><span class="k">class</span> <span class="nc">PowerLaw2SpectralModel</span><span class="p">(</span><span class="n">SpectralModel</span><span class="p">):</span>
     <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Spectral power-law model with integral as amplitude parameter.</span>
 
@@ -1693,8 +1815,11 @@
 <span class="sd">        Lower energy limit :math:`E_{0, min}`.</span>
 <span class="sd">    emax : `~astropy.units.Quantity`</span>
 <span class="sd">        Upper energy limit :math:`E_{0, max}`.</span>
+<span class="sd">    </span>
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    PowerLawSpectralModel, PowerLawNormSpectralModel</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
     <span class="n">tag</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PowerLaw2SpectralModel&quot;</span><span class="p">,</span> <span class="s2">&quot;pl-2&quot;</span><span class="p">]</span>
 
     <span class="n">amplitude</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;amplitude&quot;</span><span class="p">,</span> <span class="s2">&quot;1e-12 cm-2 s-1&quot;</span><span class="p">)</span>
@@ -1711,7 +1836,8 @@
         <span class="n">bottom</span> <span class="o">=</span> <span class="n">emax</span> <span class="o">-</span> <span class="n">emin</span> <span class="o">*</span> <span class="p">(</span><span class="n">emin</span> <span class="o">/</span> <span class="n">emax</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="n">index</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">amplitude</span> <span class="o">*</span> <span class="p">(</span><span class="n">top</span> <span class="o">/</span> <span class="n">bottom</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">energy</span> <span class="o">/</span> <span class="n">emax</span><span class="p">,</span> <span class="o">-</span><span class="n">index</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PowerLaw2SpectralModel.integral"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.PowerLaw2SpectralModel.html#gammapy.astro.darkmatter.PowerLaw2SpectralModel.integral">[docs]</a>    <span class="k">def</span> <span class="nf">integral</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="PowerLaw2SpectralModel.evaluate_integral"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.PowerLaw2SpectralModel.html#gammapy.astro.darkmatter.PowerLaw2SpectralModel.evaluate_integral">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">evaluate_integral</span><span class="p">(</span><span class="n">emin_lim</span><span class="p">,</span> <span class="n">emax_lim</span><span class="p">,</span> <span class="n">amplitude</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">):</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Integrate power law analytically.</span>
 
 <span class="sd">        .. math::</span>
@@ -1724,15 +1850,15 @@
 <span class="sd">        emin, emax : `~astropy.units.Quantity`</span>
 <span class="sd">            Lower and upper bound of integration range.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">temp1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">emax</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="n">temp2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">temp1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">emax_lim</span><span class="p">,</span> <span class="o">-</span><span class="n">index</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">temp2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">emin_lim</span><span class="p">,</span> <span class="o">-</span><span class="n">index</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
         <span class="n">top</span> <span class="o">=</span> <span class="n">temp1</span> <span class="o">-</span> <span class="n">temp2</span>
 
-        <span class="n">temp1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">emax</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="n">temp2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">emin</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">temp1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">emax</span><span class="p">,</span> <span class="o">-</span><span class="n">index</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">temp2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span> <span class="o">-</span><span class="n">index</span><span class="o">.</span><span class="n">value</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
         <span class="n">bottom</span> <span class="o">=</span> <span class="n">temp1</span> <span class="o">-</span> <span class="n">temp2</span>
 
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">amplitude</span><span class="o">.</span><span class="n">quantity</span> <span class="o">*</span> <span class="n">top</span> <span class="o">/</span> <span class="n">bottom</span></div>
+        <span class="k">return</span> <span class="n">amplitude</span> <span class="o">*</span> <span class="n">top</span> <span class="o">/</span> <span class="n">bottom</span></div>
 
 <div class="viewcode-block" id="PowerLaw2SpectralModel.inverse"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.PowerLaw2SpectralModel.html#gammapy.astro.darkmatter.PowerLaw2SpectralModel.inverse">[docs]</a>    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return energy for a given function value of the spectral model.</span>
@@ -1769,6 +1895,10 @@
 <span class="sd">        :math:`\phi_0`</span>
 <span class="sd">    ebreak : `~astropy.units.Quantity`</span>
 <span class="sd">        :math:`E_{break}`</span>
+<span class="sd">        </span>
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    SmoothBrokenPowerLawSpectralModel</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">tag</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;BrokenPowerLawSpectralModel&quot;</span><span class="p">,</span> <span class="s2">&quot;bpl&quot;</span><span class="p">]</span>
@@ -1807,6 +1937,10 @@
 <span class="sd">        :math:`E_{break}`</span>
 <span class="sd">    beta : `~astropy.units.Quantity`</span>
 <span class="sd">        :math:`\beta`</span>
+<span class="sd">        </span>
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    BrokenPowerLawSpectralModel</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">tag</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;SmoothBrokenPowerLawSpectralModel&quot;</span><span class="p">,</span> <span class="s2">&quot;sbpl&quot;</span><span class="p">]</span>
@@ -1843,6 +1977,10 @@
 <span class="sd">        :math:`\lambda`</span>
 <span class="sd">    alpha : `~astropy.units.Quantity`</span>
 <span class="sd">        :math:`\alpha`</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    ExpCutoffPowerLawNormSpectralModel</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">tag</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ExpCutoffPowerLawSpectralModel&quot;</span><span class="p">,</span> <span class="s2">&quot;ecpl&quot;</span><span class="p">]</span>
@@ -1879,6 +2017,43 @@
             <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="o">*</span> <span class="n">reference</span><span class="o">.</span><span class="n">unit</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">((</span><span class="mi">2</span> <span class="o">-</span> <span class="n">index</span><span class="p">)</span> <span class="o">/</span> <span class="n">alpha</span><span class="p">,</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">/</span> <span class="n">lambda_</span></div>
+
+
+<div class="viewcode-block" id="ExpCutoffPowerLawNormSpectralModel"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.ExpCutoffPowerLawNormSpectralModel.html#gammapy.astro.darkmatter.ExpCutoffPowerLawNormSpectralModel">[docs]</a><span class="k">class</span> <span class="nc">ExpCutoffPowerLawNormSpectralModel</span><span class="p">(</span><span class="n">SpectralModel</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Norm spectral exponential cutoff power-law model.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    index : `~astropy.units.Quantity`</span>
+<span class="sd">        :math:`\Gamma`</span>
+<span class="sd">    norm : `~astropy.units.Quantity`</span>
+<span class="sd">        :math:`\phi_0`</span>
+<span class="sd">    reference : `~astropy.units.Quantity`</span>
+<span class="sd">        :math:`E_0`</span>
+<span class="sd">    lambda_ : `~astropy.units.Quantity`</span>
+<span class="sd">        :math:`\lambda`</span>
+<span class="sd">    alpha : `~astropy.units.Quantity`</span>
+<span class="sd">        :math:`\alpha`</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    ExpCutoffPowerLawSpectralModel</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tag</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ExpCutoffPowerLawNormSpectralModel&quot;</span><span class="p">,</span> <span class="s2">&quot;ecpl-norm&quot;</span><span class="p">]</span>
+
+    <span class="n">index</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;index&quot;</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">)</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;norm&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">reference</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;reference&quot;</span><span class="p">,</span> <span class="s2">&quot;1 TeV&quot;</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">lambda_</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;lambda_&quot;</span><span class="p">,</span> <span class="s2">&quot;0.1 TeV-1&quot;</span><span class="p">)</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;alpha&quot;</span><span class="p">,</span> <span class="s2">&quot;1.0&quot;</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ExpCutoffPowerLawNormSpectralModel.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.ExpCutoffPowerLawNormSpectralModel.html#gammapy.astro.darkmatter.ExpCutoffPowerLawNormSpectralModel.evaluate">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">norm</span><span class="p">,</span> <span class="n">reference</span><span class="p">,</span> <span class="n">lambda_</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate the model (static function).&quot;&quot;&quot;</span>
+        <span class="n">pwl</span> <span class="o">=</span> <span class="n">norm</span> <span class="o">*</span> <span class="p">(</span><span class="n">energy</span> <span class="o">/</span> <span class="n">reference</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="n">index</span><span class="p">)</span>
+        <span class="n">cutoff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">energy</span> <span class="o">*</span> <span class="n">lambda_</span><span class="p">,</span> <span class="n">alpha</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">pwl</span> <span class="o">*</span> <span class="n">cutoff</span></div></div>
 
 
 <div class="viewcode-block" id="ExpCutoffPowerLaw3FGLSpectralModel"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.ExpCutoffPowerLaw3FGLSpectralModel.html#gammapy.astro.darkmatter.ExpCutoffPowerLaw3FGLSpectralModel">[docs]</a><span class="k">class</span> <span class="nc">ExpCutoffPowerLaw3FGLSpectralModel</span><span class="p">(</span><span class="n">SpectralModel</span><span class="p">):</span>
@@ -2006,8 +2181,12 @@
 <span class="sd">        :math:`\alpha`</span>
 <span class="sd">    beta : `~astropy.units.Quantity`</span>
 <span class="sd">        :math:`\beta`</span>
-<span class="sd">    &quot;&quot;&quot;</span>
 
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    LogParabolaNormSpectralModel</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">tag</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;LogParabolaSpectralModel&quot;</span><span class="p">,</span> <span class="s2">&quot;lp&quot;</span><span class="p">]</span>
     <span class="n">amplitude</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;amplitude&quot;</span><span class="p">,</span> <span class="s2">&quot;1e-12 cm-2 s-1 TeV-1&quot;</span><span class="p">)</span>
     <span class="n">reference</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;reference&quot;</span><span class="p">,</span> <span class="s2">&quot;10 TeV&quot;</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -2040,6 +2219,44 @@
         <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="o">.</span><span class="n">quantity</span>
         <span class="n">beta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">beta</span><span class="o">.</span><span class="n">quantity</span>
         <span class="k">return</span> <span class="n">reference</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">((</span><span class="mi">2</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">beta</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="LogParabolaNormSpectralModel"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.LogParabolaNormSpectralModel.html#gammapy.astro.darkmatter.LogParabolaNormSpectralModel">[docs]</a><span class="k">class</span> <span class="nc">LogParabolaNormSpectralModel</span><span class="p">(</span><span class="n">SpectralModel</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Norm spectral log parabola model.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    norm : `~astropy.units.Quantity`</span>
+<span class="sd">        :math:`\phi_0`</span>
+<span class="sd">    reference : `~astropy.units.Quantity`</span>
+<span class="sd">        :math:`E_0`</span>
+<span class="sd">    alpha : `~astropy.units.Quantity`</span>
+<span class="sd">        :math:`\alpha`</span>
+<span class="sd">    beta : `~astropy.units.Quantity`</span>
+<span class="sd">        :math:`\beta`</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    LogParabolaSpectralModel</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tag</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;LogParabolaNormSpectralModel&quot;</span><span class="p">,</span> <span class="s2">&quot;lp-norm&quot;</span><span class="p">]</span>
+    <span class="n">norm</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;norm&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">reference</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;reference&quot;</span><span class="p">,</span> <span class="s2">&quot;10 TeV&quot;</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;alpha&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">beta</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;beta&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<div class="viewcode-block" id="LogParabolaNormSpectralModel.from_log10"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.LogParabolaNormSpectralModel.html#gammapy.astro.darkmatter.LogParabolaNormSpectralModel.from_log10">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_log10</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">norm</span><span class="p">,</span> <span class="n">reference</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Construct from :math:`log_{10}` parametrization.&quot;&quot;&quot;</span>
+        <span class="n">beta_</span> <span class="o">=</span> <span class="n">beta</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span> <span class="n">reference</span><span class="o">=</span><span class="n">reference</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="n">beta_</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LogParabolaNormSpectralModel.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.LogParabolaNormSpectralModel.html#gammapy.astro.darkmatter.LogParabolaNormSpectralModel.evaluate">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">norm</span><span class="p">,</span> <span class="n">reference</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate the model (static function).&quot;&quot;&quot;</span>
+        <span class="n">xx</span> <span class="o">=</span> <span class="n">energy</span> <span class="o">/</span> <span class="n">reference</span>
+        <span class="n">exponent</span> <span class="o">=</span> <span class="o">-</span><span class="n">alpha</span> <span class="o">-</span> <span class="n">beta</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">xx</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">norm</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">xx</span><span class="p">,</span> <span class="n">exponent</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="TemplateSpectralModel"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.TemplateSpectralModel.html#gammapy.astro.darkmatter.TemplateSpectralModel">[docs]</a><span class="k">class</span> <span class="nc">TemplateSpectralModel</span><span class="p">(</span><span class="n">SpectralModel</span><span class="p">):</span>
@@ -2708,7 +2925,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 04 Aug 2020.
+        Last updated on 08 Sep 2020.
       </span>
 
     </p>

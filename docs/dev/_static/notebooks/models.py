@@ -429,7 +429,7 @@ from gammapy.modeling.models import SpectralModel, Parameter
 
 class MyCustomSpectralModel(SpectralModel):
     """My custom spectral model, parametrising a power law plus a Gaussian spectral line.
-    
+
     Parameters
     ----------
     amplitude : `astropy.units.Quantity`
@@ -442,7 +442,7 @@ class MyCustomSpectralModel(SpectralModel):
         Mean value of the Gaussian.
     width : `astropy.units.Quantity`
         Sigma width of the Gaussian line.
-    
+
     """
 
     tag = "MyCustomSpectralModel"

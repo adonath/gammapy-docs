@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.estimators.excess_map &mdash; gammapy v0.18.dev432+gc0e58f48f</title>
+  <title>gammapy.estimators.excess_map &mdash; gammapy v0.18.dev639+g8d1e908b4</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev432+gc0e58f48f
+                0.18.dev639+g8d1e908b4
               </div>
             
           
@@ -1138,10 +1138,12 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">astropy.convolution</span> <span class="kn">import</span> <span class="n">Tophat2DKernel</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">Angle</span>
-<span class="kn">from</span> <span class="nn">gammapy.datasets</span> <span class="kn">import</span> <span class="n">MapDataset</span><span class="p">,</span> <span class="n">MapDatasetOnOff</span>
+<span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
+<span class="kn">from</span> <span class="nn">gammapy.datasets</span> <span class="kn">import</span> <span class="n">MapDataset</span><span class="p">,</span> <span class="n">MapDatasetOnOff</span><span class="p">,</span> <span class="n">Datasets</span>
 <span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">Map</span>
 <span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="kn">import</span> <span class="n">CashCountsStatistic</span><span class="p">,</span> <span class="n">WStatCountsStatistic</span>
 <span class="kn">from</span> <span class="nn">.core</span> <span class="kn">import</span> <span class="n">Estimator</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">estimate_exposure_reco_energy</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">&quot;ExcessMapEstimator&quot;</span><span class="p">,</span>
@@ -1150,29 +1152,43 @@
 <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">convolved_map_dataset_counts_statistics</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">kernel</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">convolved_map_dataset_counts_statistics</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">apply_mask_fit</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return CountsDataset objects containing smoothed maps from the MapDataset&quot;&quot;&quot;</span>
     <span class="c1"># Kernel is modified later make a copy here</span>
     <span class="n">kernel</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
     <span class="n">kernel</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s2">&quot;peak&quot;</span><span class="p">)</span>
 
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">data_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">:</span>
+        <span class="n">mask</span> <span class="o">*=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">mask_safe</span>
+    <span class="k">if</span> <span class="n">apply_mask_fit</span><span class="p">:</span>
+        <span class="n">mask</span> <span class="o">*=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">mask_fit</span>
+
     <span class="c1"># fft convolution adds numerical noise, to ensure integer results we call</span>
     <span class="c1"># np.rint</span>
-    <span class="n">n_on_conv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rint</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">array</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">n_on</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span> <span class="o">*</span> <span class="n">mask</span>
+    <span class="n">n_on</span> <span class="o">=</span> <span class="n">n_on</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">(</span><span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">n_on_conv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rint</span><span class="p">(</span><span class="n">n_on</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">array</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">MapDatasetOnOff</span><span class="p">):</span>
-        <span class="n">background</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">background</span>
+        <span class="n">background</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">background</span> <span class="o">*</span> <span class="n">mask</span>
         <span class="n">background</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">dataset</span><span class="o">.</span><span class="n">acceptance_off</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
-        <span class="n">background_conv</span> <span class="o">=</span> <span class="n">background</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">array</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">n_off</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts_off</span> <span class="o">*</span> <span class="n">mask</span>
 
-        <span class="n">n_off_conv</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts_off</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">array</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">background</span> <span class="o">=</span> <span class="n">background</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">(</span><span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">n_off</span> <span class="o">=</span> <span class="n">n_off</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">(</span><span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="n">background_conv</span> <span class="o">=</span> <span class="n">background</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
+        <span class="n">n_off_conv</span> <span class="o">=</span> <span class="n">n_off</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
 
         <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
             <span class="n">alpha_conv</span> <span class="o">=</span> <span class="n">background_conv</span> <span class="o">/</span> <span class="n">n_off_conv</span>
 
         <span class="k">return</span> <span class="n">WStatCountsStatistic</span><span class="p">(</span><span class="n">n_on_conv</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">n_off_conv</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">alpha_conv</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">background_conv</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">array</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">npred</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span> <span class="o">*</span> <span class="n">mask</span>
+        <span class="n">npred</span> <span class="o">=</span> <span class="n">npred</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">(</span><span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">background_conv</span> <span class="o">=</span> <span class="n">npred</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">CashCountsStatistic</span><span class="p">(</span><span class="n">n_on_conv</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">background_conv</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
 
@@ -1189,13 +1205,41 @@
 <span class="sd">    n_sigma_ul : float</span>
 <span class="sd">        Confidence level for the upper limits expressed in number of sigma.</span>
 <span class="sd">        Default is 3.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">tag</span> <span class="o">=</span> <span class="s2">&quot;ExcessMapEstimator&quot;</span>
+<span class="sd">    selection_optional : list of str</span>
+<span class="sd">        Which additional maps to estimate besides delta TS, significance and symmetric error.</span>
+<span class="sd">        Available options are:</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">correlation_radius</span><span class="o">=</span><span class="s2">&quot;0.1 deg&quot;</span><span class="p">,</span> <span class="n">n_sigma</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">n_sigma_ul</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+<span class="sd">            * &quot;flux&quot;: estimate flux map</span>
+<span class="sd">            * &quot;errn-errp&quot;: estimate asymmetric errors.</span>
+<span class="sd">            * &quot;ul&quot;: estimate upper limits.</span>
+
+<span class="sd">        By default all additional quantities are estimated.</span>
+<span class="sd">    e_edges : `~astropy.units.Quantity`</span>
+<span class="sd">        Energy edges of the target excess maps bins.</span>
+<span class="sd">    apply_mask_fit : Bool</span>
+<span class="sd">        Apply a mask for the computation.</span>
+<span class="sd">        A `~gammapy.datasets.MapDataset.mask_fit` must be present on the input dataset</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">tag</span> <span class="o">=</span> <span class="s2">&quot;ExcessMapEstimator&quot;</span>
+    <span class="n">_available_selection_optional</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;errn-errp&quot;</span><span class="p">,</span> <span class="s2">&quot;ul&quot;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">correlation_radius</span><span class="o">=</span><span class="s2">&quot;0.1 deg&quot;</span><span class="p">,</span>
+        <span class="n">n_sigma</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">n_sigma_ul</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+        <span class="n">selection_optional</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span>
+        <span class="n">e_edges</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">apply_mask_fit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">return_image</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">correlation_radius</span> <span class="o">=</span> <span class="n">correlation_radius</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span> <span class="o">=</span> <span class="n">n_sigma</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_ul</span> <span class="o">=</span> <span class="n">n_sigma_ul</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">apply_mask_fit</span> <span class="o">=</span> <span class="n">apply_mask_fit</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selection_optional</span> <span class="o">=</span> <span class="n">selection_optional</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">e_edges</span> <span class="o">=</span> <span class="n">e_edges</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">correlation_radius</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1206,22 +1250,13 @@
         <span class="sd">&quot;&quot;&quot;Sets radius&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_correlation_radius</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">correlation_radius</span><span class="p">)</span>
 
-<div class="viewcode-block" id="ExcessMapEstimator.run"><a class="viewcode-back" href="../../../api/gammapy.estimators.ExcessMapEstimator.html#gammapy.estimators.ExcessMapEstimator.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="ExcessMapEstimator.run"><a class="viewcode-back" href="../../../api/gammapy.estimators.ExcessMapEstimator.html#gammapy.estimators.ExcessMapEstimator.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compute correlated excess, Li &amp; Ma significance and flux maps</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        dataset : `~gammapy.datasets.MapDataset` or `~gammapy.datasets.MapDatasetOnOff`</span>
-<span class="sd">            input image-like dataset</span>
-<span class="sd">        steps : list of str</span>
-<span class="sd">            Which steps to execute. Available options are:</span>
-
-<span class="sd">                * &quot;ts&quot;: estimate delta TS and significance</span>
-<span class="sd">                * &quot;err&quot;: estimate symmetric error</span>
-<span class="sd">                * &quot;errn-errp&quot;: estimate asymmetric errors.</span>
-<span class="sd">                * &quot;ul&quot;: estimate upper limits.</span>
-
-<span class="sd">            By default all steps are executed.</span>
+<span class="sd">            input dataset</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1234,6 +1269,7 @@
 <span class="sd">                * ts : delta TS map</span>
 <span class="sd">                * significance : sqrt(delta TS), or Li-Ma significance map</span>
 <span class="sd">                * err : symmetric error map (from covariance)</span>
+<span class="sd">                * flux : flux map. An exposure map must be present in the dataset to compute flux map</span>
 <span class="sd">                * errn : negative error map</span>
 <span class="sd">                * errp : positive error map</span>
 <span class="sd">                * ul : upper limit map</span>
@@ -1242,13 +1278,50 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">MapDataset</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unsupported dataset type&quot;</span><span class="p">)</span>
 
+        <span class="c1"># TODO: add support for joint excess estimate to ExcessMapEstimator?</span>
+        <span class="n">datasets</span> <span class="o">=</span> <span class="n">Datasets</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_edges</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
+            <span class="n">e_edges</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">([</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">e_edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_edges</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">e_edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">e_edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+            <span class="n">sliced_dataset</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">slice_energy</span><span class="p">(</span><span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimate_excess_map</span><span class="p">(</span><span class="n">sliced_dataset</span><span class="p">)</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+        <span class="n">results_all</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">map_all</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_images</span><span class="p">(</span><span class="n">images</span><span class="o">=</span><span class="p">[</span><span class="n">_</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">results</span><span class="p">])</span>
+            <span class="n">results_all</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">map_all</span>
+
+        <span class="k">return</span> <span class="n">results_all</span></div>
+
+<div class="viewcode-block" id="ExcessMapEstimator.estimate_excess_map"><a class="viewcode-back" href="../../../api/gammapy.estimators.ExcessMapEstimator.html#gammapy.estimators.ExcessMapEstimator.estimate_excess_map">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_excess_map</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Estimate excess and ts maps for single dataset.</span>
+
+<span class="sd">        If exposure is defined, a flux map is also computed.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dataset : `MapDataset`</span>
+<span class="sd">            Map dataset</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="n">pixel_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">cdelt</span><span class="p">))</span>
         <span class="n">size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">correlation_radius</span><span class="o">.</span><span class="n">deg</span> <span class="o">/</span> <span class="n">pixel_size</span>
         <span class="n">kernel</span> <span class="o">=</span> <span class="n">Tophat2DKernel</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
 
-        <span class="n">geom</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span>
+        <span class="n">counts_stat</span> <span class="o">=</span> <span class="n">convolved_map_dataset_counts_statistics</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_mask_fit</span><span class="p">)</span>
 
-        <span class="n">counts_stat</span> <span class="o">=</span> <span class="n">convolved_map_dataset_counts_statistics</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">kernel</span><span class="p">)</span>
+        <span class="n">geom</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">squash</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
 
         <span class="n">n_on</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">n_on</span><span class="p">)</span>
         <span class="n">bkg</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">n_on</span> <span class="o">-</span> <span class="n">counts_stat</span><span class="o">.</span><span class="n">excess</span><span class="p">)</span>
@@ -1256,28 +1329,35 @@
 
         <span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;counts&quot;</span><span class="p">:</span> <span class="n">n_on</span><span class="p">,</span> <span class="s2">&quot;background&quot;</span><span class="p">:</span> <span class="n">bkg</span><span class="p">,</span> <span class="s2">&quot;excess&quot;</span><span class="p">:</span> <span class="n">excess</span><span class="p">}</span>
 
-        <span class="k">if</span> <span class="n">steps</span> <span class="o">==</span> <span class="s2">&quot;all&quot;</span><span class="p">:</span>
-            <span class="n">steps</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ts&quot;</span><span class="p">,</span> <span class="s2">&quot;err&quot;</span><span class="p">,</span> <span class="s2">&quot;errn-errp&quot;</span><span class="p">,</span> <span class="s2">&quot;ul&quot;</span><span class="p">]</span>
+        <span class="n">tsmap</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">delta_ts</span><span class="p">)</span>
+        <span class="n">significance</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">significance</span><span class="p">)</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;ts&quot;</span><span class="p">:</span> <span class="n">tsmap</span><span class="p">,</span> <span class="s2">&quot;significance&quot;</span><span class="p">:</span> <span class="n">significance</span><span class="p">})</span>
 
-        <span class="k">if</span> <span class="s2">&quot;ts&quot;</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
-            <span class="n">tsmap</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">delta_ts</span><span class="p">)</span>
-            <span class="n">significance</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">significance</span><span class="p">)</span>
-            <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;ts&quot;</span><span class="p">:</span> <span class="n">tsmap</span><span class="p">,</span> <span class="s2">&quot;significance&quot;</span><span class="p">:</span> <span class="n">significance</span><span class="p">})</span>
+        <span class="n">err</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">error</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span><span class="p">)</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;err&quot;</span><span class="p">:</span> <span class="n">err</span><span class="p">})</span>
 
-        <span class="k">if</span> <span class="s2">&quot;err&quot;</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
-            <span class="n">err</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">error</span><span class="p">)</span>
-            <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;err&quot;</span><span class="p">:</span> <span class="n">err</span><span class="p">})</span>
+        <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">exposure</span><span class="p">:</span>
+            <span class="n">reco_exposure</span> <span class="o">=</span> <span class="n">estimate_exposure_reco_energy</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+            <span class="n">reco_exposure</span> <span class="o">=</span> <span class="n">reco_exposure</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">(</span><span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">flux</span> <span class="o">=</span> <span class="n">excess</span> <span class="o">/</span> <span class="n">reco_exposure</span>
+            <span class="n">flux</span><span class="o">.</span><span class="n">quantity</span> <span class="o">=</span> <span class="n">flux</span><span class="o">.</span><span class="n">quantity</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;1 / (cm2 s)&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">flux</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span>
+                <span class="n">geom</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">data_shape</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;flux&quot;</span><span class="p">:</span> <span class="n">flux</span><span class="p">})</span>
 
-        <span class="k">if</span> <span class="s2">&quot;errn-errp&quot;</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">&quot;errn-errp&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection_optional</span><span class="p">:</span>
             <span class="n">errn</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">compute_errn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span><span class="p">))</span>
             <span class="n">errp</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">compute_errp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span><span class="p">))</span>
             <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;errn&quot;</span><span class="p">:</span> <span class="n">errn</span><span class="p">,</span> <span class="s2">&quot;errp&quot;</span><span class="p">:</span> <span class="n">errp</span><span class="p">})</span>
 
-        <span class="k">if</span> <span class="s2">&quot;ul&quot;</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">&quot;ul&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection_optional</span><span class="p">:</span>
             <span class="n">ul</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span>
                 <span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">compute_upper_limit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_ul</span><span class="p">)</span>
             <span class="p">)</span>
             <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;ul&quot;</span><span class="p">:</span> <span class="n">ul</span><span class="p">})</span>
+
         <span class="k">return</span> <span class="n">result</span></div></div>
 </pre></div>
 
@@ -1294,7 +1374,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 04 Aug 2020.
+        Last updated on 08 Sep 2020.
       </span>
 
     </p>

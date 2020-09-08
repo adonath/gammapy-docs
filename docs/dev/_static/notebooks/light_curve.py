@@ -169,7 +169,7 @@ analysis_3d.set_models(models)
 
 
 lc_maker_3d = LightCurveEstimator(
-    energy_range=[1, 10] * u.TeV, source="crab", reoptimize=False
+    e_edges=[1, 10] * u.TeV, source="crab", reoptimize=False
 )
 lc_3d = lc_maker_3d.run(analysis_3d.datasets)
 
@@ -284,7 +284,7 @@ analysis_1d.set_models(models)
 
 
 lc_maker_1d = LightCurveEstimator(
-    energy_range=[1, 10] * u.TeV, source="crab", reoptimize=False
+    e_edges=[1, 10] * u.TeV, source="crab", reoptimize=False
 )
 lc_1d = lc_maker_1d.run(analysis_1d.datasets)
 
@@ -323,7 +323,7 @@ time_intervals = [
 
 
 lc_maker_1d = LightCurveEstimator(
-    energy_range=[1, 10] * u.TeV,
+    e_edges=[1, 10] * u.TeV,
     time_intervals=time_intervals,
     source="crab",
     reoptimize=False,

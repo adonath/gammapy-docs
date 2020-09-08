@@ -278,9 +278,11 @@ dataset_stacked.plot_residuals(
 
 
 # TODO: clean this up
-estimator = ExcessMapEstimator(correlation_radius="0.1 deg")
+estimator = ExcessMapEstimator(
+    correlation_radius="0.1 deg", selection_optional=[]
+)
 dataset_image = dataset_stacked.to_image()
-estimator_dict = estimator.run(dataset_image, steps="ts")
+estimator_dict = estimator.run(dataset_image)
 
 residuals_significance = estimator_dict["significance"]
 residuals_significance.sum_over_axes().plot(cmap="coolwarm", add_cbar=True)

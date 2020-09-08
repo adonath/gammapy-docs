@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.estimators.lightcurve &mdash; gammapy v0.18.dev432+gc0e58f48f</title>
+  <title>gammapy.estimators.lightcurve &mdash; gammapy v0.18.dev639+g8d1e908b4</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev432+gc0e58f48f
+                0.18.dev639+g8d1e908b4
               </div>
             
           
@@ -1138,11 +1138,12 @@
 <span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span>
 <span class="kn">from</span> <span class="nn">astropy.time</span> <span class="kn">import</span> <span class="n">Time</span>
+<span class="kn">from</span> <span class="nn">gammapy.data</span> <span class="kn">import</span> <span class="n">GTI</span>
 <span class="kn">from</span> <span class="nn">gammapy.datasets</span> <span class="kn">import</span> <span class="n">Datasets</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.scripts</span> <span class="kn">import</span> <span class="n">make_path</span>
-<span class="kn">from</span> <span class="nn">gammapy.utils.table</span> <span class="kn">import</span> <span class="n">table_from_row_data</span>
-<span class="kn">from</span> <span class="nn">.flux</span> <span class="kn">import</span> <span class="n">FluxEstimator</span>
-<span class="kn">from</span> <span class="nn">.flux_point</span> <span class="kn">import</span> <span class="n">FluxPoints</span>
+<span class="kn">from</span> <span class="nn">gammapy.utils.table</span> <span class="kn">import</span> <span class="n">table_from_row_data</span><span class="p">,</span> <span class="n">table_row_to_dict</span>
+<span class="kn">from</span> <span class="nn">.core</span> <span class="kn">import</span> <span class="n">Estimator</span>
+<span class="kn">from</span> <span class="nn">.flux_point</span> <span class="kn">import</span> <span class="n">FluxPoints</span><span class="p">,</span> <span class="n">FluxPointsEstimator</span>
 
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;LightCurve&quot;</span><span class="p">,</span> <span class="s2">&quot;LightCurveEstimator&quot;</span><span class="p">]</span>
@@ -1411,70 +1412,17 @@
         <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">xn</span><span class="p">,</span> <span class="n">xp</span><span class="p">)</span></div>
 
 
-<span class="k">def</span> <span class="nf">group_datasets_in_time_interval</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span> <span class="n">time_intervals</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="s2">&quot;1e-6 s&quot;</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Compute the table with the info on the group to which belong each dataset.</span>
+<div class="viewcode-block" id="LightCurveEstimator"><a class="viewcode-back" href="../../../api/gammapy.estimators.LightCurveEstimator.html#gammapy.estimators.LightCurveEstimator">[docs]</a><span class="k">class</span> <span class="nc">LightCurveEstimator</span><span class="p">(</span><span class="n">Estimator</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Estimate light curve.</span>
 
-<span class="sd">    The Tstart and Tstop are stored in MJD from a scale in &quot;utc&quot;.</span>
+<span class="sd">    The estimator will fit the source model component to datasets in each of the</span>
+<span class="sd">    provided time intervals.</span>
 
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    datasets : list of `~gammapy.spectrum.SpectrumDataset` or `~gammapy.cube.MapDataset`</span>
-<span class="sd">        Spectrum or Map datasets.</span>
-<span class="sd">    time_intervals : list of `astropy.time.Time`</span>
-<span class="sd">        Start and stop time for each interval to compute the LC</span>
-<span class="sd">    atol : `~astropy.units.Quantity`</span>
-<span class="sd">        Tolerance value for time comparison with different scale. Default 1e-6 sec.</span>
+<span class="sd">    If no time intervals are provided, the estimator will use the time intervals</span>
+<span class="sd">    defined by the datasets GTIs.</span>
 
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    table_info : `~astropy.table.Table`</span>
-<span class="sd">        Contains the grouping info for each dataset</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">dataset_group_ID_table</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span>
-        <span class="n">names</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;Name&quot;</span><span class="p">,</span> <span class="s2">&quot;Tstart&quot;</span><span class="p">,</span> <span class="s2">&quot;Tstop&quot;</span><span class="p">,</span> <span class="s2">&quot;Bin_type&quot;</span><span class="p">,</span> <span class="s2">&quot;Group_ID&quot;</span><span class="p">),</span>
-        <span class="n">meta</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;first table&quot;</span><span class="p">},</span>
-        <span class="n">dtype</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;S10&quot;</span><span class="p">,</span> <span class="s2">&quot;f8&quot;</span><span class="p">,</span> <span class="s2">&quot;f8&quot;</span><span class="p">,</span> <span class="s2">&quot;S10&quot;</span><span class="p">,</span> <span class="s2">&quot;i8&quot;</span><span class="p">),</span>
-    <span class="p">)</span>
-    <span class="n">time_intervals_lowedges</span> <span class="o">=</span> <span class="n">Time</span><span class="p">(</span>
-        <span class="p">[</span><span class="n">time_interval</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">time_interval</span> <span class="ow">in</span> <span class="n">time_intervals</span><span class="p">]</span>
-    <span class="p">)</span>
-    <span class="n">time_intervals_upedges</span> <span class="o">=</span> <span class="n">Time</span><span class="p">(</span>
-        <span class="p">[</span><span class="n">time_interval</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">time_interval</span> <span class="ow">in</span> <span class="n">time_intervals</span><span class="p">]</span>
-    <span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="n">datasets</span><span class="p">:</span>
-        <span class="n">tstart</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">gti</span><span class="o">.</span><span class="n">time_start</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">tstop</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">gti</span><span class="o">.</span><span class="n">time_stop</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">mask1</span> <span class="o">=</span> <span class="n">tstart</span> <span class="o">&gt;=</span> <span class="n">time_intervals_lowedges</span> <span class="o">-</span> <span class="n">atol</span>
-        <span class="n">mask2</span> <span class="o">=</span> <span class="n">tstop</span> <span class="o">&lt;=</span> <span class="n">time_intervals_upedges</span> <span class="o">+</span> <span class="n">atol</span>
-        <span class="n">mask</span> <span class="o">=</span> <span class="n">mask1</span> <span class="o">&amp;</span> <span class="n">mask2</span>
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">mask</span><span class="p">):</span>
-            <span class="n">group_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">mask</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="n">bin_type</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">group_index</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
-            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">mask1</span><span class="p">):</span>
-                <span class="n">bin_type</span> <span class="o">=</span> <span class="s2">&quot;Overflow&quot;</span>
-            <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">mask2</span><span class="p">):</span>
-                <span class="n">bin_type</span> <span class="o">=</span> <span class="s2">&quot;Underflow&quot;</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">bin_type</span> <span class="o">=</span> <span class="s2">&quot;Outflow&quot;</span>
-        <span class="n">dataset_group_ID_table</span><span class="o">.</span><span class="n">add_row</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">dataset</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">tstart</span><span class="o">.</span><span class="n">utc</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">tstop</span><span class="o">.</span><span class="n">utc</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">bin_type</span><span class="p">,</span> <span class="n">group_index</span><span class="p">]</span>
-        <span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">dataset_group_ID_table</span>
-
-
-<div class="viewcode-block" id="LightCurveEstimator"><a class="viewcode-back" href="../../../api/gammapy.estimators.LightCurveEstimator.html#gammapy.estimators.LightCurveEstimator">[docs]</a><span class="k">class</span> <span class="nc">LightCurveEstimator</span><span class="p">(</span><span class="n">FluxEstimator</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Compute light curve.</span>
-
-<span class="sd">    The estimator will fit the source model component to datasets in each of the time intervals</span>
-<span class="sd">    provided.</span>
-
-<span class="sd">    If no time intervals are provided, the estimator will use the time intervals defined by the datasets GTIs.</span>
-
-<span class="sd">    To be included in the estimation, the dataset must have their GTI fully overlapping a time interval.</span>
+<span class="sd">    To be included in the estimation, the dataset must have their GTI fully</span>
+<span class="sd">    overlapping a time interval.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1482,8 +1430,8 @@
 <span class="sd">        Start and stop time for each interval to compute the LC</span>
 <span class="sd">    source : str</span>
 <span class="sd">        For which source in the model to compute the flux points. Default is 0</span>
-<span class="sd">    energy_range : tuple of `~astropy.units.Quantity`</span>
-<span class="sd">        Energy range on which to compute the flux. Default is 1-10 TeV</span>
+<span class="sd">    e_edges : `~astropy.units.Quantity`</span>
+<span class="sd">        Energy edges of the light curve.</span>
 <span class="sd">    atol : `~astropy.units.Quantity`</span>
 <span class="sd">        Tolerance value for time comparison with different scale. Default 1e-6 sec.</span>
 <span class="sd">    norm_min : float</span>
@@ -1500,14 +1448,24 @@
 <span class="sd">        Number of sigma to use for upper limit computation. Default is 2.</span>
 <span class="sd">    reoptimize : bool</span>
 <span class="sd">        reoptimize other parameters during fit statistic scan?</span>
+<span class="sd">    selection_optional : list of str</span>
+<span class="sd">        Which steps to execute. Available options are:</span>
+
+<span class="sd">            * &quot;errn-errp&quot;: estimate asymmetric errors.</span>
+<span class="sd">            * &quot;ul&quot;: estimate upper limits.</span>
+<span class="sd">            * &quot;scan&quot;: estimate fit statistic profiles.</span>
+
+<span class="sd">        By default all steps are executed.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">tag</span> <span class="o">=</span> <span class="s2">&quot;LightCurveEstimator&quot;</span>
+    <span class="n">_available_selection_optional</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;errn-errp&quot;</span><span class="p">,</span> <span class="s2">&quot;ul&quot;</span><span class="p">,</span> <span class="s2">&quot;scan&quot;</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">time_intervals</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">source</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-        <span class="n">energy_range</span><span class="o">=</span><span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">TeV</span><span class="p">,</span>
+        <span class="n">e_edges</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">atol</span><span class="o">=</span><span class="s2">&quot;1e-6 s&quot;</span><span class="p">,</span>
         <span class="n">norm_min</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
         <span class="n">norm_max</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
@@ -1516,49 +1474,29 @@
         <span class="n">n_sigma</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
         <span class="n">n_sigma_ul</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
         <span class="n">reoptimize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">selection_optional</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span>
     <span class="p">):</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">input_time_intervals</span> <span class="o">=</span> <span class="n">time_intervals</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">source</span> <span class="o">=</span> <span class="n">source</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time_intervals</span> <span class="o">=</span> <span class="n">time_intervals</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">group_table_info</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">atol</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">atol</span><span class="p">)</span>
 
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
-            <span class="n">source</span><span class="p">,</span>
-            <span class="n">energy_range</span><span class="p">,</span>
-            <span class="n">norm_min</span><span class="p">,</span>
-            <span class="n">norm_max</span><span class="p">,</span>
-            <span class="n">norm_n_values</span><span class="p">,</span>
-            <span class="n">norm_values</span><span class="p">,</span>
-            <span class="n">n_sigma</span><span class="p">,</span>
-            <span class="n">n_sigma_ul</span><span class="p">,</span>
-            <span class="n">reoptimize</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">e_edges</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">e_edges</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;So far the LightCurveEstimator only support a single energy bin.&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_check_and_sort_time_intervals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_intervals</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Sort the time_intervals by increasing time if not already ordered correctly.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">e_edges</span> <span class="o">=</span> <span class="n">e_edges</span>
 
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        time_intervals : list of `astropy.time.Time`</span>
-<span class="sd">            Start and stop time for each interval to compute the LC</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">time_start</span> <span class="o">=</span> <span class="n">Time</span><span class="p">([</span><span class="n">interval</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">interval</span> <span class="ow">in</span> <span class="n">time_intervals</span><span class="p">])</span>
-        <span class="n">time_stop</span> <span class="o">=</span> <span class="n">Time</span><span class="p">([</span><span class="n">interval</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">interval</span> <span class="ow">in</span> <span class="n">time_intervals</span><span class="p">])</span>
-        <span class="n">sorted_indices</span> <span class="o">=</span> <span class="n">time_start</span><span class="o">.</span><span class="n">argsort</span><span class="p">()</span>
-        <span class="n">time_start_sorted</span> <span class="o">=</span> <span class="n">time_start</span><span class="p">[</span><span class="n">sorted_indices</span><span class="p">]</span>
-        <span class="n">time_stop_sorted</span> <span class="o">=</span> <span class="n">time_stop</span><span class="p">[</span><span class="n">sorted_indices</span><span class="p">]</span>
-        <span class="n">diff_time_stop</span> <span class="o">=</span> <span class="n">time_stop_sorted</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">time_stop_sorted</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">diff_time_interval_edges</span> <span class="o">=</span> <span class="n">time_start_sorted</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">time_stop_sorted</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">diff_time_stop</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">diff_time_interval_edges</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;LightCurveEstimator requires non-overlapping time bins.&quot;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">[</span>
-                <span class="n">Time</span><span class="p">([</span><span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span><span class="p">])</span>
-                <span class="k">for</span> <span class="n">tstart</span><span class="p">,</span> <span class="n">tstop</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">time_start_sorted</span><span class="p">,</span> <span class="n">time_stop_sorted</span><span class="p">)</span>
-            <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm_min</span> <span class="o">=</span> <span class="n">norm_min</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm_max</span> <span class="o">=</span> <span class="n">norm_max</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm_n_values</span> <span class="o">=</span> <span class="n">norm_n_values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">norm_values</span> <span class="o">=</span> <span class="n">norm_values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span> <span class="o">=</span> <span class="n">n_sigma</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_ul</span> <span class="o">=</span> <span class="n">n_sigma_ul</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reoptimize</span> <span class="o">=</span> <span class="n">reoptimize</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selection_optional</span> <span class="o">=</span> <span class="n">selection_optional</span>
 
-<div class="viewcode-block" id="LightCurveEstimator.run"><a class="viewcode-back" href="../../../api/gammapy.estimators.LightCurveEstimator.html#gammapy.estimators.LightCurveEstimator.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datasets</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="LightCurveEstimator.run"><a class="viewcode-back" href="../../../api/gammapy.estimators.LightCurveEstimator.html#gammapy.estimators.LightCurveEstimator.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datasets</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Run light curve extraction.</span>
 
 <span class="sd">        Normalize integral and energy flux between emin and emax.</span>
@@ -1567,109 +1505,77 @@
 <span class="sd">        ----------</span>
 <span class="sd">        datasets : list of `~gammapy.spectrum.SpectrumDataset` or `~gammapy.cube.MapDataset`</span>
 <span class="sd">            Spectrum or Map datasets.</span>
-<span class="sd">        steps : list of str</span>
-<span class="sd">            Which steps to execute. Available options are:</span>
-
-<span class="sd">                * &quot;err&quot;: estimate symmetric error.</span>
-<span class="sd">                * &quot;errn-errp&quot;: estimate asymmetric errors.</span>
-<span class="sd">                * &quot;ul&quot;: estimate upper limits.</span>
-<span class="sd">                * &quot;ts&quot;: estimate ts and sqrt(ts) values.</span>
-<span class="sd">                * &quot;norm-scan&quot;: estimate fit statistic profiles.</span>
-
-<span class="sd">            By default all steps are executed.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        lightcurve : `~gammapy.time.LightCurve`</span>
 <span class="sd">            the Light Curve object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_time_intervals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">time_intervals</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">Time</span><span class="p">([</span><span class="n">d</span><span class="o">.</span><span class="n">gti</span><span class="o">.</span><span class="n">time_start</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">d</span><span class="o">.</span><span class="n">gti</span><span class="o">.</span><span class="n">time_stop</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">datasets</span>
-            <span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">time_intervals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_time_intervals</span>
+        <span class="n">datasets</span> <span class="o">=</span> <span class="n">Datasets</span><span class="p">(</span><span class="n">datasets</span><span class="p">)</span>
 
-        <span class="n">time_intervals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_and_sort_time_intervals</span><span class="p">(</span><span class="n">time_intervals</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">time_intervals</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">gti</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">gti</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gti</span> <span class="o">=</span> <span class="n">GTI</span><span class="o">.</span><span class="n">from_time_intervals</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_intervals</span><span class="p">)</span>
+
+        <span class="n">gti</span> <span class="o">=</span> <span class="n">gti</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">overlap_ok</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">merge_equal</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
         <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">group_table_info</span> <span class="o">=</span> <span class="n">group_datasets_in_time_interval</span><span class="p">(</span>
-            <span class="n">datasets</span><span class="o">=</span><span class="n">datasets</span><span class="p">,</span> <span class="n">time_intervals</span><span class="o">=</span><span class="n">time_intervals</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">atol</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group_table_info</span><span class="p">[</span><span class="s2">&quot;Group_ID&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;LightCurveEstimator: No datasets in time intervals&quot;</span><span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">igroup</span><span class="p">,</span> <span class="n">time_interval</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">time_intervals</span><span class="p">):</span>
-            <span class="n">index_dataset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">group_table_info</span><span class="p">[</span><span class="s2">&quot;Group_ID&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">igroup</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">index_dataset</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;No Dataset for the time interval &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">igroup</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">t_min</span><span class="p">,</span> <span class="n">t_max</span> <span class="ow">in</span> <span class="n">gti</span><span class="o">.</span><span class="n">time_intervals</span><span class="p">:</span>
+            <span class="n">datasets_to_fit</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">select_time</span><span class="p">(</span>
+                <span class="n">t_min</span><span class="o">=</span><span class="n">t_min</span><span class="p">,</span> <span class="n">t_max</span><span class="o">=</span><span class="n">t_max</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">atol</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">datasets_to_fit</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No Dataset for the time interval </span><span class="si">{</span><span class="n">t_min</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">t_max</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
                 <span class="k">continue</span>
 
-            <span class="n">row</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;time_min&quot;</span><span class="p">:</span> <span class="n">time_interval</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="s2">&quot;time_max&quot;</span><span class="p">:</span> <span class="n">time_interval</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">mjd</span><span class="p">}</span>
-            <span class="n">interval_list_dataset</span> <span class="o">=</span> <span class="n">Datasets</span><span class="p">([</span><span class="n">datasets</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">_</span><span class="p">)]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">index_dataset</span><span class="p">])</span>
-            <span class="n">row</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">estimate_time_bin_flux</span><span class="p">(</span><span class="n">interval_list_dataset</span><span class="p">,</span> <span class="n">time_interval</span><span class="p">,</span> <span class="n">steps</span><span class="p">)</span>
-            <span class="p">)</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;time_min&quot;</span><span class="p">:</span> <span class="n">t_min</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="s2">&quot;time_max&quot;</span><span class="p">:</span> <span class="n">t_max</span><span class="o">.</span><span class="n">mjd</span><span class="p">}</span>
+            <span class="n">row</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimate_time_bin_flux</span><span class="p">(</span><span class="n">datasets_to_fit</span><span class="p">))</span>
             <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;LightCurveEstimator: No datasets in time intervals&quot;</span><span class="p">)</span>
+
         <span class="n">table</span> <span class="o">=</span> <span class="n">table_from_row_data</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">rows</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;SED_TYPE&quot;</span><span class="p">:</span> <span class="s2">&quot;likelihood&quot;</span><span class="p">})</span>
         <span class="n">table</span> <span class="o">=</span> <span class="n">FluxPoints</span><span class="p">(</span><span class="n">table</span><span class="p">)</span><span class="o">.</span><span class="n">to_sed_type</span><span class="p">(</span><span class="s2">&quot;flux&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">table</span>
         <span class="k">return</span> <span class="n">LightCurve</span><span class="p">(</span><span class="n">table</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="LightCurveEstimator.estimate_time_bin_flux"><a class="viewcode-back" href="../../../api/gammapy.estimators.LightCurveEstimator.html#gammapy.estimators.LightCurveEstimator.estimate_time_bin_flux">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_time_bin_flux</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datasets</span><span class="p">,</span> <span class="n">time_interval</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="LightCurveEstimator.estimate_time_bin_flux"><a class="viewcode-back" href="../../../api/gammapy.estimators.LightCurveEstimator.html#gammapy.estimators.LightCurveEstimator.estimate_time_bin_flux">[docs]</a>    <span class="k">def</span> <span class="nf">estimate_time_bin_flux</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datasets</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Estimate flux point for a single energy group.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        datasets : `~gammapy.modeling.Datasets`</span>
 <span class="sd">            the list of dataset object</span>
-<span class="sd">        time_interval : astropy.time.Time`</span>
-<span class="sd">            Start and stop time for each interval</span>
-<span class="sd">        steps : list of str</span>
-<span class="sd">            Which steps to execute. Available options are:</span>
-
-<span class="sd">                * &quot;err&quot;: estimate symmetric error.</span>
-<span class="sd">                * &quot;errn-errp&quot;: estimate asymmetric errors.</span>
-<span class="sd">                * &quot;ul&quot;: estimate upper limits.</span>
-<span class="sd">                * &quot;ts&quot;: estimate ts and sqrt(ts) values.</span>
-<span class="sd">                * &quot;norm-scan&quot;: estimate likelihood profiles.</span>
-
-<span class="sd">            By default all steps are executed.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        result : dict</span>
 <span class="sd">            Dict with results for the flux point.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="n">steps</span><span class="p">)</span>
-        <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_estimate_counts</span><span class="p">(</span><span class="n">datasets</span><span class="p">))</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="s2">&quot;Fit failed for time bin between </span><span class="si">{t_min}</span><span class="s2"> and </span><span class="si">{t_max}</span><span class="s2">,&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">t_min</span><span class="o">=</span><span class="n">time_interval</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mjd</span><span class="p">,</span> <span class="n">t_max</span><span class="o">=</span><span class="n">time_interval</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">mjd</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="n">result</span></div>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_edges</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">e_mins</span><span class="p">,</span> <span class="n">e_maxs</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">energy_ranges</span>
+            <span class="n">e_edges</span> <span class="o">=</span> <span class="n">e_mins</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">e_maxs</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">e_edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">e_edges</span>
 
-    <span class="k">def</span> <span class="nf">_estimate_counts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datasets</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Estimate counts for the flux point.</span>
+        <span class="n">fe</span> <span class="o">=</span> <span class="n">FluxPointsEstimator</span><span class="p">(</span>
+            <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+            <span class="n">e_edges</span><span class="o">=</span><span class="n">e_edges</span><span class="p">,</span>
+            <span class="n">norm_min</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_min</span><span class="p">,</span>
+            <span class="n">norm_max</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_max</span><span class="p">,</span>
+            <span class="n">norm_n_values</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_n_values</span><span class="p">,</span>
+            <span class="n">norm_values</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">norm_values</span><span class="p">,</span>
+            <span class="n">n_sigma</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span><span class="p">,</span>
+            <span class="n">n_sigma_ul</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_sigma_ul</span><span class="p">,</span>
+            <span class="n">reoptimize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">reoptimize</span><span class="p">,</span>
+            <span class="n">selection_optional</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">selection_optional</span><span class="p">,</span>
 
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        datasets : `~gammapy.modeling.Datasets`</span>
-<span class="sd">            the list of dataset object</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        result : dict</span>
-<span class="sd">            Dict with an array with one entry per dataset with counts for the flux point.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="n">counts</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="n">datasets</span><span class="p">:</span>
-            <span class="n">mask</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">mask</span>
-            <span class="n">counts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
-
-        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;counts&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()}</span></div>
+        <span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">fe</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">datasets</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">table_row_to_dict</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">table</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span></div></div>
 </pre></div>
 
            </div>
@@ -1685,7 +1591,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 04 Aug 2020.
+        Last updated on 08 Sep 2020.
       </span>
 
     </p>
