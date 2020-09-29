@@ -429,7 +429,7 @@ print(m_cube)
 # In[ ]:
 
 
-m_cube.write("example_cube_fgst.fits", conv="fgst-template", overwrite=True)
+m_cube.write("example_cube_fgst.fits", format="fgst-template", overwrite=True)
 
 
 # To understand a little bit better the generic `gadf` convention we use `Map.to_hdulist()` to generate a list of FITS HDUs first:   
@@ -437,7 +437,7 @@ m_cube.write("example_cube_fgst.fits", conv="fgst-template", overwrite=True)
 # In[ ]:
 
 
-hdulist = m_4d.to_hdulist(conv="gadf")
+hdulist = m_4d.to_hdulist(format="gadf")
 hdulist.info()
 
 

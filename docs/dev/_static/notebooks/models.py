@@ -261,7 +261,7 @@ write_ds9(regions, filename, coordsys="galactic", fmt=".4f", radunit="deg")
 get_ipython().system('cat regions.reg')
 
 
-# # SkyModel and SkyDiffuseCube
+# # SkyModel
 
 # The `~gammapy.modeling.models.SkyModel` class combines a spectral and a spatial model. It can be created
 # from existing spatial and spectral model components:
@@ -315,24 +315,28 @@ model_spectrum = SkyModel(spectral_model=pwl, name="source-spectrum")
 print(model_spectrum)
 
 
-# Additionally the `~gammapy.modeling.models.SkyDiffuseCube` can be used to represent source models based on templates, where the spatial and energy axes are correlated. It can be created e.g. from an existing FITS file:
+# Additionally the spatial model of `~gammapy.modeling.models.SkyModel` can be used to represent source models based on templates, where the spatial and energy axes are correlated. It can be created e.g. from an existing FITS file:
 # 
 # 
 
 # In[ ]:
 
 
-from gammapy.modeling.models import SkyDiffuseCube
+from gammapy.modeling.models import TemplateSpatialModel
+from gammapy.modeling.models import PowerLawNormSpectralModel
 
 
 # In[ ]:
 
 
-diffuse = SkyDiffuseCube.read(
-    "$GAMMAPY_DATA/fermi-3fhl-gc/gll_iem_v06_gc.fits.gz"
+diffuse_cube = TemplateSpatialModel.read(
+    "$GAMMAPY_DATA/fermi-3fhl-gc/gll_iem_v06_gc.fits.gz", normalize=False
 )
+diffuse = SkyModel(PowerLawNormSpectralModel(), diffuse_cube)
 print(diffuse)
 
+
+# Note that if the spatial model is not normalized over the sky it has to be combined with a normalized spectral model, for example `~gammapy.modeling.models.PowerLawNormSpectralModel`. This is the only case in `gammapy.models.SkyModel` where the unit is fully attached to the spatial model.
 
 # # Model Lists and Serialisation
 # 

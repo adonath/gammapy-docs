@@ -47,6 +47,12 @@ from gammapy.makers import RingBackgroundMaker
 from gammapy.estimators import ExcessMapEstimator
 from gammapy.maps import Map
 from gammapy.datasets import MapDatasetOnOff
+from gammapy.modeling.models import (
+    GaussianSpatialModel,
+    PowerLaw2SpectralModel,
+    SkyModel,
+)
+from gammapy.modeling import Fit
 
 
 # ## Creating the config file
@@ -187,7 +193,7 @@ print(stacked_on_off)
 
 
 # ## Compute correlated significance and correlated excess maps
-# We need to convolve our maps with an apprpriate smoothing kernel. The significance is computed according to the Li & Ma expression for ON and OFF Poisson measurements, see [here](https://ui.adsabs.harvard.edu/abs/1983ApJ...272..317L/abstract). Since astropy convolution kernels only accept integers, we first convert our required size in degrees to int depending on our pixel size.
+# We need to convolve our maps with an apprpriate smoothing kernel. The significance is computed according to the Li & Ma expression for ON and OFF Poisson measurements, see [here](https://ui.adsabs.harvard.edu/abs/1983ApJ...272..317L/abstract). 
 
 # In[ ]:
 
@@ -263,6 +269,85 @@ xmin, xmax = np.min(significance_all), np.max(significance_all)
 plt.xlim(xmin, xmax)
 
 print(f"Fit results: mu = {mu:.2f}, std = {std:.2f}")
+
+
+# ## Modeling and fitting
+# 
+# Once we have a good choice of exclusion regions, we are often interested in a morphological modelling of the emission region. At this stage, you can convert the `On-Off` dataset to a `MapDataset` and fit it using cash statistics by calling `stacked_on_off.to_map_dataset()`. A background model will be generated as `counts_off * alpha`. 
+# 
+# Alternatively, we show here a very basic example of modeling and fitting `On-off` datasets - using a background measurement (OFF measurement), here obtained with a ring background technique) - here, the `wstat` statistics is internally used.
+# 
+# Note that MSH 15-52 has a complex morphology, a detailed study of which has been the subject of several dedicated papers. In this section, we show a very simple example using a Gaussian Spatial model. For more details of spatial modeling withing gammapy, see  [modeling 2D notebook](modeling_2D.ipynb)
+
+# In[ ]:
+
+
+# Define the sky model to fit to the data
+sp = PowerLaw2SpectralModel()
+gs = GaussianSpatialModel(frame="icrs")
+sk = SkyModel(spectral_model=sp, spatial_model=gs, name="sky_model")
+
+
+# In[ ]:
+
+
+# Define the initial parameters for the model
+sk.spatial_model.parameters["lon_0"].value = source_pos.icrs.ra.value
+sk.spatial_model.parameters["lat_0"].value = source_pos.icrs.dec.value
+sk.spatial_model.parameters["sigma"].value = 0.2
+sk.spectral_model.parameters["amplitude"].value = 1e-11
+sk.spectral_model.parameters["amplitude"].min = 0.0
+
+sk.spatial_model.parameters["lon_0"].frozen = False
+sk.spatial_model.parameters["lat_0"].frozen = False
+sk.spectral_model.parameters["index"].frozen = True
+
+
+# In[ ]:
+
+
+# Add the sky model to the dataset
+stacked_on_off.models.append(sk)
+
+
+# In[ ]:
+
+
+# Now fit
+fit = Fit([stacked_on_off])
+result = fit.run()
+print(result)
+
+
+# The fit converged successfully. To see the fitted parameters and errors from the covariance matrix, we print the parameters. Recomputing the significance and residual maps, we see that they are now rather flat
+
+# In[ ]:
+
+
+print(result.parameters.to_table())
+
+
+# In[ ]:
+
+
+lima_maps1 = estimator.run(stacked_on_off)
+
+
+# In[ ]:
+
+
+significance_map1 = lima_maps1["significance"]
+excess_map1 = lima_maps1["excess"]
+
+plt.figure(figsize=(10, 10))
+ax1 = plt.subplot(221, projection=significance_map1.geom.wcs)
+ax2 = plt.subplot(222, projection=excess_map1.geom.wcs)
+
+ax1.set_title("Significance map")
+significance_map1.plot(ax=ax1, add_cbar=True)
+
+ax2.set_title("Excess map")
+excess_map1.plot(ax=ax2, add_cbar=True)
 
 
 # In[ ]:

@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.modeling.models.spectral &mdash; gammapy v0.18.dev690+gede9fe4b8</title>
+  <title>gammapy.modeling.models.spectral &mdash; gammapy v0.18.dev807+gd14a35666</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev690+gede9fe4b8
+                0.18.dev807+gd14a35666
               </div>
             
           
@@ -342,6 +342,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../../tutorials/ring_background.html#Getting-the-reduced-dataset">Getting the reduced dataset</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../tutorials/ring_background.html#Extracting-the-ring-background">Extracting the ring background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../tutorials/ring_background.html#Compute-correlated-significance-and-correlated-excess-maps">Compute correlated significance and correlated excess maps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../tutorials/ring_background.html#Modeling-and-fitting">Modeling and fitting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../tutorials/event_sampling.html">Event Sampling</a><ul>
@@ -421,6 +422,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../../tutorials/ring_background.html#Getting-the-reduced-dataset">Getting the reduced dataset</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../tutorials/ring_background.html#Extracting-the-ring-background">Extracting the ring background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../../tutorials/ring_background.html#Compute-correlated-significance-and-correlated-excess-maps">Compute correlated significance and correlated excess maps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../tutorials/ring_background.html#Modeling-and-fitting">Modeling and fitting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../tutorials/exclusion_mask.html">Creating exclusion masks</a><ul>
@@ -467,7 +469,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../../tutorials/models.html#Setup">Setup</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../tutorials/models.html#Spectral-Models">Spectral Models</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../tutorials/models.html#Spatial-Models">Spatial Models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../../tutorials/models.html#SkyModel-and-SkyDiffuseCube">SkyModel and SkyDiffuseCube</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../tutorials/models.html#SkyModel">SkyModel</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../tutorials/models.html#Model-Lists-and-Serialisation">Model Lists and Serialisation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../tutorials/models.html#Implementing-a-Custom-Model">Implementing a Custom Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../tutorials/catalog.html">Source catalogs</a><ul>
@@ -1211,6 +1213,12 @@
             <span class="n">model</span> <span class="o">=</span> <span class="n">ConstantSpectralModel</span><span class="p">(</span><span class="n">const</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">CompoundSpectralModel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">operator</span><span class="o">.</span><span class="n">add</span><span class="p">)</span>
 
+    <span class="k">def</span> <span class="fm">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">SpectralModel</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">CompoundSpectralModel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">operator</span><span class="o">.</span><span class="n">mul</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Multiplication invalid for type </span><span class="si">{</span><span class="n">other</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+
     <span class="k">def</span> <span class="fm">__radd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__add__</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
@@ -1589,9 +1597,9 @@
         <span class="n">model1_cls</span> <span class="o">=</span> <span class="n">SPECTRAL_MODEL_REGISTRY</span><span class="o">.</span><span class="n">get_cls</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;model1&quot;</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">])</span>
         <span class="n">model1</span> <span class="o">=</span> <span class="n">model1_cls</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;model1&quot;</span><span class="p">])</span>
         <span class="n">model2_cls</span> <span class="o">=</span> <span class="n">SPECTRAL_MODEL_REGISTRY</span><span class="o">.</span><span class="n">get_cls</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;model2&quot;</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">])</span>
-        <span class="n">model2</span> <span class="o">=</span> <span class="n">model2_cls</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;model1&quot;</span><span class="p">])</span>
-        <span class="n">operator</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">np</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;operator&quot;</span><span class="p">])</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">model1</span><span class="p">,</span> <span class="n">model2</span><span class="p">,</span> <span class="n">operator</span><span class="p">)</span></div></div>
+        <span class="n">model2</span> <span class="o">=</span> <span class="n">model2_cls</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;model2&quot;</span><span class="p">])</span>
+        <span class="n">op</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">operator</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;operator&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">model1</span><span class="p">,</span> <span class="n">model2</span><span class="p">,</span> <span class="n">op</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="PowerLawSpectralModel"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.PowerLawSpectralModel.html#gammapy.astro.darkmatter.PowerLawSpectralModel">[docs]</a><span class="k">class</span> <span class="nc">PowerLawSpectralModel</span><span class="p">(</span><span class="n">SpectralModel</span><span class="p">):</span>
@@ -1727,8 +1735,8 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">tag</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PowerLawNormSpectralModel&quot;</span><span class="p">,</span> <span class="s2">&quot;pl-norm&quot;</span><span class="p">]</span>
-    <span class="n">tilt</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;tilt&quot;</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">)</span>
     <span class="n">norm</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;norm&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">tilt</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;tilt&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
     <span class="n">reference</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;reference&quot;</span><span class="p">,</span> <span class="s2">&quot;1 TeV&quot;</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <div class="viewcode-block" id="PowerLawNormSpectralModel.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.PowerLawNormSpectralModel.html#gammapy.astro.darkmatter.PowerLawNormSpectralModel.evaluate">[docs]</a>    <span class="nd">@staticmethod</span>
@@ -2270,8 +2278,6 @@
 <span class="sd">        Array of energies at which the model values are given</span>
 <span class="sd">    values : array</span>
 <span class="sd">        Array with the values of the model at energies ``energy``.</span>
-<span class="sd">    norm : float</span>
-<span class="sd">        Model scale that is multiplied to the supplied arrays. Defaults to 1.</span>
 <span class="sd">    interp_kwargs : dict</span>
 <span class="sd">        Interpolation keyword arguments pass to `scipy.interpolate.interp1d`.</span>
 <span class="sd">        By default all values outside the interpolation range are set to zero.</span>
@@ -2283,19 +2289,9 @@
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">tag</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TemplateSpectralModel&quot;</span><span class="p">,</span> <span class="s2">&quot;template&quot;</span><span class="p">]</span>
-    <span class="n">norm</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;norm&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
-    <span class="n">tilt</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;tilt&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">reference</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="s2">&quot;reference&quot;</span><span class="p">,</span> <span class="s2">&quot;1 TeV&quot;</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">energy</span><span class="p">,</span>
-        <span class="n">values</span><span class="p">,</span>
-        <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span>
-        <span class="n">tilt</span><span class="o">=</span><span class="n">tilt</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span>
-        <span class="n">reference</span><span class="o">=</span><span class="n">reference</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span>
-        <span class="n">interp_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">interp_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">energy</span> <span class="o">=</span> <span class="n">energy</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -2308,7 +2304,7 @@
             <span class="n">points</span><span class="o">=</span><span class="p">(</span><span class="n">energy</span><span class="p">,),</span> <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span> <span class="o">**</span><span class="n">interp_kwargs</span>
         <span class="p">)</span>
 
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span> <span class="n">tilt</span><span class="o">=</span><span class="n">tilt</span><span class="p">,</span> <span class="n">reference</span><span class="o">=</span><span class="n">reference</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
 <div class="viewcode-block" id="TemplateSpectralModel.read_xspec_model"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.TemplateSpectralModel.html#gammapy.astro.darkmatter.TemplateSpectralModel.read_xspec_model">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">read_xspec_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -2360,16 +2356,13 @@
         <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;interp_kwargs&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;values_scale&quot;</span><span class="p">:</span> <span class="s2">&quot;lin&quot;</span><span class="p">})</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">energy</span><span class="o">=</span><span class="n">energy</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="TemplateSpectralModel.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.TemplateSpectralModel.html#gammapy.astro.darkmatter.TemplateSpectralModel.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">norm</span><span class="p">,</span> <span class="n">tilt</span><span class="p">,</span> <span class="n">reference</span><span class="p">):</span>
+<div class="viewcode-block" id="TemplateSpectralModel.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.TemplateSpectralModel.html#gammapy.astro.darkmatter.TemplateSpectralModel.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">energy</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Evaluate the model (static function).&quot;&quot;&quot;</span>
-        <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_evaluate</span><span class="p">((</span><span class="n">energy</span><span class="p">,),</span> <span class="n">clip</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">tilt_factor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">energy</span> <span class="o">/</span> <span class="n">reference</span><span class="p">,</span> <span class="o">-</span><span class="n">tilt</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">norm</span> <span class="o">*</span> <span class="n">values</span> <span class="o">*</span> <span class="n">tilt_factor</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_evaluate</span><span class="p">((</span><span class="n">energy</span><span class="p">,),</span> <span class="n">clip</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TemplateSpectralModel.to_dict"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.TemplateSpectralModel.html#gammapy.astro.darkmatter.TemplateSpectralModel.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tag</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-            <span class="s2">&quot;parameters&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
             <span class="s2">&quot;energy&quot;</span><span class="p">:</span> <span class="p">{</span>
                 <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
                 <span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">unit</span><span class="p">),</span>
@@ -2382,10 +2375,9 @@
 
 <div class="viewcode-block" id="TemplateSpectralModel.from_dict"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.TemplateSpectralModel.html#gammapy.astro.darkmatter.TemplateSpectralModel.from_dict">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
-        <span class="n">parameters</span> <span class="o">=</span> <span class="n">Parameters</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">])</span>
         <span class="n">energy</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">][</span><span class="s2">&quot;data&quot;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">][</span><span class="s2">&quot;unit&quot;</span><span class="p">])</span>
         <span class="n">values</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;values&quot;</span><span class="p">][</span><span class="s2">&quot;data&quot;</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;values&quot;</span><span class="p">][</span><span class="s2">&quot;unit&quot;</span><span class="p">])</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_parameters</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">energy</span><span class="o">=</span><span class="n">energy</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">energy</span><span class="o">=</span><span class="n">energy</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="ScaleSpectralModel"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.ScaleSpectralModel.html#gammapy.astro.darkmatter.ScaleSpectralModel">[docs]</a><span class="k">class</span> <span class="nc">ScaleSpectralModel</span><span class="p">(</span><span class="n">SpectralModel</span><span class="p">):</span>
@@ -2438,18 +2430,19 @@
     <span class="n">tag</span> <span class="o">=</span> <span class="s2">&quot;Absorption&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">param</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span>
         <span class="c1"># set values log centers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">param</span> <span class="o">=</span> <span class="n">param</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">energy</span> <span class="o">=</span> <span class="n">energy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">energy</span> <span class="o">=</span> <span class="n">energy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
         <span class="n">interp_kwargs</span> <span class="o">=</span> <span class="n">interp_kwargs</span> <span class="ow">or</span> <span class="p">{}</span>
         <span class="n">interp_kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;points_scale&quot;</span><span class="p">,</span> <span class="p">(</span><span class="s2">&quot;log&quot;</span><span class="p">,</span> <span class="s2">&quot;lin&quot;</span><span class="p">))</span>
         <span class="n">interp_kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;extrapolate&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_evaluate</span> <span class="o">=</span> <span class="n">ScaledRegularGridInterpolator</span><span class="p">(</span>
-            <span class="n">points</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="p">),</span> <span class="n">values</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">interp_kwargs</span>
+            <span class="n">points</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">param</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy</span><span class="p">),</span> <span class="n">values</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">interp_kwargs</span>
         <span class="p">)</span>
 
 <div class="viewcode-block" id="Absorption.to_dict"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.Absorption.html#gammapy.astro.darkmatter.Absorption.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -2925,7 +2918,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 16 Sep 2020.
+        Last updated on 29 Sep 2020.
       </span>
 
     </p>

@@ -52,7 +52,8 @@ from gammapy.modeling.models import (
     PowerLawSpectralModel,
     PointSpatialModel,
     SkyModel,
-    SkyDiffuseCube,
+    TemplateSpatialModel,
+    PowerLawNormSpectralModel,
     Models,
     create_fermi_isotropic_diffuse_model,
     BackgroundModel,
@@ -163,8 +164,6 @@ counts.sum_over_axes().smooth(2).plot(stretch="sqrt", vmax=30);
 exposure_hpx = Map.read(
     "$GAMMAPY_DATA/fermi_3fhl/fermi_3fhl_exposure_cube_hpx.fits.gz"
 )
-# Unit is not stored in the file, set it manually
-exposure_hpx.unit = "cm2 s"
 print(exposure_hpx.geom)
 print(exposure_hpx.geom.axes[0])
 
@@ -185,14 +184,12 @@ axis = MapAxis.from_nodes(
 )
 geom = WcsGeom(wcs=counts.geom.wcs, npix=counts.geom.npix, axes=[axis])
 
-coord = geom.get_coord()
-data = exposure_hpx.interp_by_coord(coord)
+exposure = exposure_hpx.interp_to_geom(geom)
 
 
 # In[ ]:
 
 
-exposure = WcsNDMap(geom, data, unit=exposure_hpx.unit, dtype=float)
 print(exposure.geom)
 print(exposure.geom.axes[0])
 
@@ -223,7 +220,7 @@ exposure.get_by_coord({"skycoord": gc_pos, "energy_true": energy})
 
 
 diffuse_galactic_fermi = Map.read(
-    "$GAMMAPY_DATA/fermi_3fhl/gll_iem_v06_cutout.fits"
+    "$GAMMAPY_DATA/fermi-3fhl-gc/gll_iem_v06_gc.fits.gz"
 )
 
 # Unit is not stored in the file, set it manually
@@ -239,15 +236,15 @@ print(diffuse_galactic_fermi.geom.axes[0])
 # Interpolate the diffuse emission model onto the counts geometry
 # The resolution of `diffuse_galactic_fermi` is low: bin size = 0.5 deg
 # We use ``interp=3`` which means cubic spline interpolation
-coord = counts.geom.get_coord()
+coord = exposure.geom.get_coord()
 
 data = diffuse_galactic_fermi.interp_by_coord(
-    {"skycoord": coord.skycoord, "energy": coord["energy"]}, interp=3
+    {"skycoord": coord.skycoord, "energy_true": coord["energy_true"]}, interp=3
 )
 diffuse_galactic = WcsNDMap(
     exposure.geom, data, unit=diffuse_galactic_fermi.unit
 )
-
+diffuse_gal = TemplateSpatialModel(diffuse_galactic, normalize=False)
 print(diffuse_galactic.geom)
 print(diffuse_galactic.geom.axes[0])
 
@@ -255,7 +252,9 @@ print(diffuse_galactic.geom.axes[0])
 # In[ ]:
 
 
-diffuse_gal = SkyDiffuseCube(diffuse_galactic, name="diffuse-gal")
+diffuse_iem = SkyModel(
+    PowerLawNormSpectralModel(), diffuse_gal, name="diffuse-iem"
+)
 
 
 # Let's look at the map of first energy band of the cube:
@@ -399,15 +398,13 @@ edisp = EDispMap.from_diagonal_response(energy_axis_true=e_true)
 # pre-compute iso model
 evaluator = MapEvaluator(diffuse_iso)
 evaluator.update(exposure=exposure, psf=psf, edisp=edisp, geom=counts.geom)
-diffuse_iso = BackgroundModel(
-    evaluator.compute_npred(), name="bkg-iso", norm=3.3
-)
-
+diffuse_iso = BackgroundModel(evaluator.compute_npred(), name="bkg-iso")
+diffuse_iso.spectral_model.norm.value = 3.3
 # pre-compute diffuse model
-evaluator = MapEvaluator(diffuse_gal)
+evaluator = MapEvaluator(diffuse_iem)
 evaluator.update(exposure=exposure, psf=psf, edisp=edisp, geom=counts.geom)
 
-diffuse_gal = BackgroundModel(evaluator.compute_npred(), name="bkg-iem")
+diffuse_iem = BackgroundModel(evaluator.compute_npred(), name="bkg-iem")
 
 
 # ## Fit
@@ -429,7 +426,7 @@ source = SkyModel(
     name="source-gc",
 )
 
-models = Models([source, diffuse_gal, diffuse_iso])
+models = Models([source, diffuse_iem, diffuse_iso])
 
 dataset = MapDataset(
     models=models, counts=counts, exposure=exposure, psf=psf, edisp=edisp

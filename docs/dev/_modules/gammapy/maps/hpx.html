@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.maps.hpx &mdash; gammapy v0.18.dev690+gede9fe4b8</title>
+  <title>gammapy.maps.hpx &mdash; gammapy v0.18.dev807+gd14a35666</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev690+gede9fe4b8
+                0.18.dev807+gd14a35666
               </div>
             
           
@@ -342,6 +342,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Getting-the-reduced-dataset">Getting the reduced dataset</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Extracting-the-ring-background">Extracting the ring background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Compute-correlated-significance-and-correlated-excess-maps">Compute correlated significance and correlated excess maps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Modeling-and-fitting">Modeling and fitting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/event_sampling.html">Event Sampling</a><ul>
@@ -421,6 +422,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Getting-the-reduced-dataset">Getting the reduced dataset</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Extracting-the-ring-background">Extracting the ring background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Compute-correlated-significance-and-correlated-excess-maps">Compute correlated significance and correlated excess maps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Modeling-and-fitting">Modeling and fitting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/exclusion_mask.html">Creating exclusion masks</a><ul>
@@ -467,7 +469,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/models.html#Setup">Setup</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/models.html#Spectral-Models">Spectral Models</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/models.html#Spatial-Models">Spatial Models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/models.html#SkyModel-and-SkyDiffuseCube">SkyModel and SkyDiffuseCube</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/models.html#SkyModel">SkyModel</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/models.html#Model-Lists-and-Serialisation">Model Lists and Serialisation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/models.html#Implementing-a-Custom-Model">Implementing a Custom Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/catalog.html">Source catalogs</a><ul>
@@ -1181,6 +1183,45 @@
     <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">convname</span><span class="o">=</span><span class="s2">&quot;gadf&quot;</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">HPX_FITS_CONVENTIONS</span><span class="p">[</span><span class="n">convname</span><span class="p">])</span>
 
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">identify_hpx_format</span><span class="p">(</span><span class="n">header</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Identify the convention used to write this file.&quot;&quot;&quot;</span>
+        <span class="c1"># Hopefully the file contains the HPX_CONV keyword specifying</span>
+        <span class="c1"># the convention used</span>
+        <span class="k">if</span> <span class="s2">&quot;HPX_CONV&quot;</span> <span class="ow">in</span> <span class="n">header</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">header</span><span class="p">[</span><span class="s2">&quot;HPX_CONV&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="c1"># Try based on the EXTNAME keyword</span>
+        <span class="n">hduname</span> <span class="o">=</span> <span class="n">header</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;EXTNAME&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">hduname</span> <span class="o">==</span> <span class="s2">&quot;HPXEXPOSURES&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;fgst-bexpcube&quot;</span>
+        <span class="k">elif</span> <span class="n">hduname</span> <span class="o">==</span> <span class="s2">&quot;SKYMAP2&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;COORDTYPE&quot;</span> <span class="ow">in</span> <span class="n">header</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">return</span> <span class="s2">&quot;galprop&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;galprop2&quot;</span>
+
+        <span class="c1"># Check the name of the first column</span>
+        <span class="n">colname</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="s2">&quot;TTYPE1&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">colname</span> <span class="o">==</span> <span class="s2">&quot;PIX&quot;</span><span class="p">:</span>
+            <span class="n">colname</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="s2">&quot;TTYPE2&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">colname</span> <span class="o">==</span> <span class="s2">&quot;KEY&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;fgst-srcmap-sparse&quot;</span>
+        <span class="k">elif</span> <span class="n">colname</span> <span class="o">==</span> <span class="s2">&quot;ENERGY1&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;fgst-template&quot;</span>
+        <span class="k">elif</span> <span class="n">colname</span> <span class="o">==</span> <span class="s2">&quot;COSBINS&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;fgst-ltcube&quot;</span>
+        <span class="k">elif</span> <span class="n">colname</span> <span class="o">==</span> <span class="s2">&quot;Bin0&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;galprop&quot;</span>
+        <span class="k">elif</span> <span class="n">colname</span> <span class="o">==</span> <span class="s2">&quot;CHANNEL1&quot;</span> <span class="ow">or</span> <span class="n">colname</span> <span class="o">==</span> <span class="s2">&quot;CHANNEL0&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hduname</span> <span class="o">==</span> <span class="s2">&quot;SKYMAP&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;fgst-ccube&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="s2">&quot;fgst-srcmap&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Could not identify HEALPIX convention&quot;</span><span class="p">)</span>
+
 
 <span class="n">HPX_FITS_CONVENTIONS</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="sd">&quot;&quot;&quot;Various conventions for storing HEALPIX maps in FITS files&quot;&quot;&quot;</span>
@@ -1320,66 +1361,6 @@
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;HEALPIX order must be 0 to 13. Got: </span><span class="si">{</span><span class="n">order</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">HPX_ORDER_TO_PIXSIZE</span><span class="p">[</span><span class="n">order</span><span class="p">]</span>
-
-
-<span class="k">def</span> <span class="nf">make_hpx_to_wcs_mapping</span><span class="p">(</span><span class="n">hpx</span><span class="p">,</span> <span class="n">wcs</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Make the pixel mapping from HPX- to a WCS-based geometry.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    hpx : `~gammapy.maps.HpxGeom`</span>
-<span class="sd">       The HEALPIX geometry</span>
-<span class="sd">    wcs : `~gammapy.maps.WcsGeom`</span>
-<span class="sd">       The WCS geometry</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    ipix : `~numpy.ndarray`</span>
-<span class="sd">        array(nx,ny) of HEALPIX pixel indices for each wcs pixel</span>
-<span class="sd">    mult_val : `~numpy.ndarray`</span>
-<span class="sd">        array(nx,ny) of 1./number of WCS pixels pointing at each HEALPIX pixel</span>
-<span class="sd">    npix : tuple</span>
-<span class="sd">        tuple(nx,ny) with the shape of the WCS grid</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
-
-    <span class="n">npix</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">npix</span>
-
-    <span class="c1"># FIXME: Calculation of WCS pixel centers should be moved into a</span>
-    <span class="c1"># method of WcsGeom</span>
-    <span class="n">pix_crds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dstack</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">npix</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">npix</span><span class="p">[</span><span class="mi">1</span><span class="p">])))</span>
-    <span class="n">pix_crds</span> <span class="o">=</span> <span class="n">pix_crds</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
-    <span class="n">sky_crds</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">wcs_pix2world</span><span class="p">(</span><span class="n">pix_crds</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-    <span class="n">sky_crds</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
-    <span class="n">sky_crds</span><span class="p">[</span><span class="mi">0</span><span class="p">:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">sky_crds</span><span class="p">[</span><span class="mi">0</span><span class="p">:,</span> <span class="mi">1</span><span class="p">]</span>
-
-    <span class="n">mask</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">sky_crds</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">ipix</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">hpx</span><span class="o">.</span><span class="n">nside</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">npix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">npix</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span> <span class="nb">int</span><span class="p">)</span>
-    <span class="n">m</span> <span class="o">=</span> <span class="n">mask</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">ipix</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
-
-    <span class="n">ipix</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="n">hp</span><span class="o">.</span><span class="n">ang2pix</span><span class="p">(</span>
-        <span class="n">hpx</span><span class="o">.</span><span class="n">nside</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
-        <span class="n">sky_crds</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">][</span><span class="n">mask</span><span class="p">][</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
-        <span class="n">sky_crds</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">][</span><span class="n">mask</span><span class="p">][</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
-        <span class="n">hpx</span><span class="o">.</span><span class="n">nest</span><span class="p">,</span>
-    <span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
-
-    <span class="c1"># Here we are counting the number of HEALPIX pixels each WCS pixel</span>
-    <span class="c1"># points to and getting a multiplicative factor that tells use how</span>
-    <span class="c1"># to split up the counts in each HEALPIX pixel (by dividing the</span>
-    <span class="c1"># corresponding WCS pixels by the number of associated HEALPIX</span>
-    <span class="c1"># pixels).</span>
-    <span class="n">mult_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">ipix</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ipix</span><span class="p">):</span>
-        <span class="n">count</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">return_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">count</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">t</span><span class="p">)</span>
-        <span class="n">mult_val</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">count</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span>
-
-    <span class="k">if</span> <span class="n">hpx</span><span class="o">.</span><span class="n">nside</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="n">ipix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">ipix</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="n">mult_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">mult_val</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">ipix</span><span class="p">,</span> <span class="n">mult_val</span><span class="p">,</span> <span class="n">npix</span>
 
 
 <span class="k">def</span> <span class="nf">match_hpx_pix</span><span class="p">(</span><span class="n">nside</span><span class="p">,</span> <span class="n">nest</span><span class="p">,</span> <span class="n">nside_pix</span><span class="p">,</span> <span class="n">ipix_ring</span><span class="p">):</span>
@@ -2282,47 +2263,8 @@
 
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">nside</span><span class="p">,</span> <span class="n">nest</span><span class="o">=</span><span class="n">nest</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">,</span> <span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="HpxGeom.identify_hpx_convention"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.identify_hpx_convention">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">identify_hpx_convention</span><span class="p">(</span><span class="n">header</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Identify the convention used to write this file.&quot;&quot;&quot;</span>
-        <span class="c1"># Hopefully the file contains the HPX_CONV keyword specifying</span>
-        <span class="c1"># the convention used</span>
-        <span class="k">if</span> <span class="s2">&quot;HPX_CONV&quot;</span> <span class="ow">in</span> <span class="n">header</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">header</span><span class="p">[</span><span class="s2">&quot;HPX_CONV&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-
-        <span class="c1"># Try based on the EXTNAME keyword</span>
-        <span class="n">hduname</span> <span class="o">=</span> <span class="n">header</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;EXTNAME&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">hduname</span> <span class="o">==</span> <span class="s2">&quot;HPXEXPOSURES&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;fgst-bexpcube&quot;</span>
-        <span class="k">elif</span> <span class="n">hduname</span> <span class="o">==</span> <span class="s2">&quot;SKYMAP2&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="s2">&quot;COORDTYPE&quot;</span> <span class="ow">in</span> <span class="n">header</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                <span class="k">return</span> <span class="s2">&quot;galprop&quot;</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">return</span> <span class="s2">&quot;galprop2&quot;</span>
-
-        <span class="c1"># Check the name of the first column</span>
-        <span class="n">colname</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="s2">&quot;TTYPE1&quot;</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">colname</span> <span class="o">==</span> <span class="s2">&quot;PIX&quot;</span><span class="p">:</span>
-            <span class="n">colname</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="s2">&quot;TTYPE2&quot;</span><span class="p">]</span>
-
-        <span class="k">if</span> <span class="n">colname</span> <span class="o">==</span> <span class="s2">&quot;KEY&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;fgst-srcmap-sparse&quot;</span>
-        <span class="k">elif</span> <span class="n">colname</span> <span class="o">==</span> <span class="s2">&quot;ENERGY1&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;fgst-template&quot;</span>
-        <span class="k">elif</span> <span class="n">colname</span> <span class="o">==</span> <span class="s2">&quot;COSBINS&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;fgst-ltcube&quot;</span>
-        <span class="k">elif</span> <span class="n">colname</span> <span class="o">==</span> <span class="s2">&quot;Bin0&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;galprop&quot;</span>
-        <span class="k">elif</span> <span class="n">colname</span> <span class="o">==</span> <span class="s2">&quot;CHANNEL1&quot;</span> <span class="ow">or</span> <span class="n">colname</span> <span class="o">==</span> <span class="s2">&quot;CHANNEL0&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">hduname</span> <span class="o">==</span> <span class="s2">&quot;SKYMAP&quot;</span><span class="p">:</span>
-                <span class="k">return</span> <span class="s2">&quot;fgst-ccube&quot;</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">return</span> <span class="s2">&quot;fgst-srcmap&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Could not identify HEALPIX convention&quot;</span><span class="p">)</span></div>
-
 <div class="viewcode-block" id="HpxGeom.from_header"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.from_header">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_header</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">header</span><span class="p">,</span> <span class="n">hdu_bands</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pix</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">from_header</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">header</span><span class="p">,</span> <span class="n">hdu_bands</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Create an HPX object from a FITS header.</span>
 
 <span class="sd">        Parameters</span>
@@ -2331,20 +2273,22 @@
 <span class="sd">            The FITS header</span>
 <span class="sd">        hdu_bands : `~astropy.io.fits.BinTableHDU`</span>
 <span class="sd">            The BANDS table HDU.</span>
-<span class="sd">        pix : tuple</span>
-<span class="sd">            List of pixel index vectors defining the pixels</span>
-<span class="sd">            encompassed by the geometry.  For EXPLICIT geometries with</span>
-<span class="sd">            HPX_REG undefined this tuple defines the geometry.</span>
+<span class="sd">        format : {&#39;gadf&#39;, &#39;fgst-ccube&#39;, &#39;fgst-ltcube&#39;, &#39;fgst-bexpcube&#39;,</span>
+<span class="sd">                  &#39;fgst-srcmap&#39;, &#39;fgst-template&#39;, &#39;fgst-srcmap-sparse&#39;,</span>
+<span class="sd">                  &#39;galprop&#39;, &#39;galprop2&#39;}</span>
+<span class="sd">            FITS convention. If None the format is guessed.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        hpx : `~HpxGeom`</span>
 <span class="sd">            HEALPix geometry.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">convname</span> <span class="o">=</span> <span class="n">HpxGeom</span><span class="o">.</span><span class="n">identify_hpx_convention</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
-        <span class="n">conv</span> <span class="o">=</span> <span class="n">HPX_FITS_CONVENTIONS</span><span class="p">[</span><span class="n">convname</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">format</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">format</span> <span class="o">=</span> <span class="n">HpxConv</span><span class="o">.</span><span class="n">identify_hpx_format</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
 
-        <span class="n">axes</span> <span class="o">=</span> <span class="n">find_and_read_bands</span><span class="p">(</span><span class="n">hdu_bands</span><span class="p">)</span>
+        <span class="n">conv</span> <span class="o">=</span> <span class="n">HPX_FITS_CONVENTIONS</span><span class="p">[</span><span class="nb">format</span><span class="p">]</span>
+
+        <span class="n">axes</span> <span class="o">=</span> <span class="n">find_and_read_bands</span><span class="p">(</span><span class="n">hdu_bands</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)</span>
         <span class="n">shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">nbin</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="n">header</span><span class="p">[</span><span class="s2">&quot;PIXTYPE&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;HEALPIX&quot;</span><span class="p">:</span>
@@ -2412,10 +2356,10 @@
 
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_header</span><span class="p">(</span><span class="n">hdu</span><span class="o">.</span><span class="n">header</span><span class="p">,</span> <span class="n">hdu_bands</span><span class="o">=</span><span class="n">hdu_bands</span><span class="p">,</span> <span class="n">pix</span><span class="o">=</span><span class="n">pix</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="HpxGeom.make_header"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.make_header">[docs]</a>    <span class="k">def</span> <span class="nf">make_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conv</span><span class="o">=</span><span class="s2">&quot;gadf&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="HpxGeom.to_header"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.to_header">[docs]</a>    <span class="k">def</span> <span class="nf">to_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Build and return FITS header for this HEALPIX map.&quot;&quot;&quot;</span>
         <span class="n">header</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">Header</span><span class="p">()</span>
-        <span class="n">conv</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;conv&quot;</span><span class="p">,</span> <span class="n">HPX_FITS_CONVENTIONS</span><span class="p">[</span><span class="n">conv</span><span class="p">])</span>
+        <span class="nb">format</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;format&quot;</span><span class="p">,</span> <span class="n">HPX_FITS_CONVENTIONS</span><span class="p">[</span><span class="nb">format</span><span class="p">])</span>
 
         <span class="c1"># FIXME: For some sparse maps we may want to allow EXPLICIT</span>
         <span class="c1"># with an empty region string</span>
@@ -2429,11 +2373,11 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">indxschm</span> <span class="o">=</span> <span class="s2">&quot;LOCAL&quot;</span>
 
-        <span class="k">if</span> <span class="s2">&quot;FGST&quot;</span> <span class="ow">in</span> <span class="n">conv</span><span class="o">.</span><span class="n">convname</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span>
+        <span class="k">if</span> <span class="s2">&quot;FGST&quot;</span> <span class="ow">in</span> <span class="nb">format</span><span class="o">.</span><span class="n">convname</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span>
             <span class="n">header</span><span class="p">[</span><span class="s2">&quot;TELESCOP&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;GLAST&quot;</span>
             <span class="n">header</span><span class="p">[</span><span class="s2">&quot;INSTRUME&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;LAT&quot;</span>
 
-        <span class="n">header</span><span class="p">[</span><span class="n">conv</span><span class="o">.</span><span class="n">frame</span><span class="p">]</span> <span class="o">=</span> <span class="n">frame_to_coordsys</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frame</span><span class="p">)</span>
+        <span class="n">header</span><span class="p">[</span><span class="nb">format</span><span class="o">.</span><span class="n">frame</span><span class="p">]</span> <span class="o">=</span> <span class="n">frame_to_coordsys</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frame</span><span class="p">)</span>
         <span class="n">header</span><span class="p">[</span><span class="s2">&quot;PIXTYPE&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;HEALPIX&quot;</span>
         <span class="n">header</span><span class="p">[</span><span class="s2">&quot;ORDERING&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ordering</span>
         <span class="n">header</span><span class="p">[</span><span class="s2">&quot;INDXSCHM&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">indxschm</span>
@@ -2441,7 +2385,7 @@
         <span class="n">header</span><span class="p">[</span><span class="s2">&quot;NSIDE&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_nside</span><span class="p">)</span>
         <span class="n">header</span><span class="p">[</span><span class="s2">&quot;FIRSTPIX&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">header</span><span class="p">[</span><span class="s2">&quot;LASTPIX&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_maxpix</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
-        <span class="n">header</span><span class="p">[</span><span class="s2">&quot;HPX_CONV&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">conv</span><span class="o">.</span><span class="n">convname</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="n">header</span><span class="p">[</span><span class="s2">&quot;HPX_CONV&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">format</span><span class="o">.</span><span class="n">convname</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame</span> <span class="o">==</span> <span class="s2">&quot;icrs&quot;</span><span class="p">:</span>
             <span class="n">header</span><span class="p">[</span><span class="s2">&quot;EQUINOX&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">2000.0</span><span class="p">,</span> <span class="s2">&quot;Equinox of RA &amp; DEC specifications&quot;</span><span class="p">)</span>
@@ -2543,7 +2487,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nside</span>
 
-<div class="viewcode-block" id="HpxGeom.make_wcs"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.make_wcs">[docs]</a>    <span class="k">def</span> <span class="nf">make_wcs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proj</span><span class="o">=</span><span class="s2">&quot;AIT&quot;</span><span class="p">,</span> <span class="n">oversample</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">drop_axes</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">width_pix</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="HpxGeom.to_wcs_geom"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxGeom.html#gammapy.maps.HpxGeom.to_wcs_geom">[docs]</a>    <span class="k">def</span> <span class="nf">to_wcs_geom</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proj</span><span class="o">=</span><span class="s2">&quot;AIT&quot;</span><span class="p">,</span> <span class="n">oversample</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">drop_axes</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">width_pix</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Make a WCS projection appropriate for this HPX pixelization.</span>
 
 <span class="sd">        Parameters</span>
@@ -2822,9 +2766,47 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        hpx2wcs : `~HpxToWcsMapping`</span>
+<span class="sd">            Mapping</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">ipix</span><span class="p">,</span> <span class="n">mult_val</span><span class="p">,</span> <span class="n">npix</span> <span class="o">=</span> <span class="n">make_hpx_to_wcs_mapping</span><span class="p">(</span><span class="n">hpx</span><span class="p">,</span> <span class="n">wcs</span><span class="p">)</span>
+        <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
+
+        <span class="n">npix</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">npix</span>
+
+        <span class="c1"># FIXME: Calculation of WCS pixel centers should be moved into a</span>
+        <span class="c1"># method of WcsGeom</span>
+        <span class="n">pix_crds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dstack</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">npix</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">npix</span><span class="p">[</span><span class="mi">1</span><span class="p">])))</span>
+        <span class="n">pix_crds</span> <span class="o">=</span> <span class="n">pix_crds</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="n">sky_crds</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">wcs_pix2world</span><span class="p">(</span><span class="n">pix_crds</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">sky_crds</span> <span class="o">*=</span> <span class="n">np</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+        <span class="n">sky_crds</span><span class="p">[</span><span class="mi">0</span><span class="p">:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">sky_crds</span><span class="p">[</span><span class="mi">0</span><span class="p">:,</span> <span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">mask</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">sky_crds</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">ipix</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">hpx</span><span class="o">.</span><span class="n">nside</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">npix</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">npix</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span> <span class="nb">int</span><span class="p">)</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">mask</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">ipix</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+
+        <span class="n">ipix</span><span class="p">[</span><span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="n">hp</span><span class="o">.</span><span class="n">ang2pix</span><span class="p">(</span>
+            <span class="n">hpx</span><span class="o">.</span><span class="n">nside</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">],</span>
+            <span class="n">sky_crds</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">][</span><span class="n">mask</span><span class="p">][</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+            <span class="n">sky_crds</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">][</span><span class="n">mask</span><span class="p">][</span><span class="kc">None</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+            <span class="n">hpx</span><span class="o">.</span><span class="n">nest</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+        <span class="c1"># Here we are counting the number of HEALPIX pixels each WCS pixel</span>
+        <span class="c1"># points to and getting a multiplicative factor that tells use how</span>
+        <span class="c1"># to split up the counts in each HEALPIX pixel (by dividing the</span>
+        <span class="c1"># corresponding WCS pixels by the number of associated HEALPIX</span>
+        <span class="c1"># pixels).</span>
+        <span class="n">mult_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">ipix</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ipix</span><span class="p">):</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">return_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">count</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">t</span><span class="p">)</span>
+            <span class="n">mult_val</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">count</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">idx</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">hpx</span><span class="o">.</span><span class="n">nside</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">ipix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">ipix</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">mult_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">mult_val</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">hpx</span><span class="p">,</span> <span class="n">wcs</span><span class="p">,</span> <span class="n">ipix</span><span class="p">,</span> <span class="n">mult_val</span><span class="p">,</span> <span class="n">npix</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">fill_wcs_map_from_hpx_data</span><span class="p">(</span>
@@ -2885,7 +2867,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 16 Sep 2020.
+        Last updated on 29 Sep 2020.
       </span>
 
     </p>

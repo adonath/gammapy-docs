@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Fermi-LAT data with Gammapy &mdash; gammapy v0.18.dev690+gede9fe4b8</title>
+  <title>Fermi-LAT data with Gammapy &mdash; gammapy v0.18.dev807+gd14a35666</title>
   
 
   
@@ -76,7 +76,7 @@
             
             
               <div class="version">
-                0.18.dev690+gede9fe4b8
+                0.18.dev807+gd14a35666
               </div>
             
           
@@ -344,6 +344,7 @@
 <li class="toctree-l4"><a class="reference internal" href="ring_background.html#Getting-the-reduced-dataset">Getting the reduced dataset</a></li>
 <li class="toctree-l4"><a class="reference internal" href="ring_background.html#Extracting-the-ring-background">Extracting the ring background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="ring_background.html#Compute-correlated-significance-and-correlated-excess-maps">Compute correlated significance and correlated excess maps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ring_background.html#Modeling-and-fitting">Modeling and fitting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="event_sampling.html">Event Sampling</a><ul>
@@ -423,6 +424,7 @@
 <li class="toctree-l4"><a class="reference internal" href="ring_background.html#Getting-the-reduced-dataset">Getting the reduced dataset</a></li>
 <li class="toctree-l4"><a class="reference internal" href="ring_background.html#Extracting-the-ring-background">Extracting the ring background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="ring_background.html#Compute-correlated-significance-and-correlated-excess-maps">Compute correlated significance and correlated excess maps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="ring_background.html#Modeling-and-fitting">Modeling and fitting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="exclusion_mask.html">Creating exclusion masks</a><ul>
@@ -469,7 +471,7 @@
 <li class="toctree-l3"><a class="reference internal" href="models.html#Setup">Setup</a></li>
 <li class="toctree-l3"><a class="reference internal" href="models.html#Spectral-Models">Spectral Models</a></li>
 <li class="toctree-l3"><a class="reference internal" href="models.html#Spatial-Models">Spatial Models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="models.html#SkyModel-and-SkyDiffuseCube">SkyModel and SkyDiffuseCube</a></li>
+<li class="toctree-l3"><a class="reference internal" href="models.html#SkyModel">SkyModel</a></li>
 <li class="toctree-l3"><a class="reference internal" href="models.html#Model-Lists-and-Serialisation">Model Lists and Serialisation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="models.html#Implementing-a-Custom-Model">Implementing a Custom Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="catalog.html">Source catalogs</a><ul>
@@ -1465,7 +1467,8 @@ iso_P8R2_SOURCE_V6_v06.txt
     <span class="n">PowerLawSpectralModel</span><span class="p">,</span>
     <span class="n">PointSpatialModel</span><span class="p">,</span>
     <span class="n">SkyModel</span><span class="p">,</span>
-    <span class="n">SkyDiffuseCube</span><span class="p">,</span>
+    <span class="n">TemplateSpatialModel</span><span class="p">,</span>
+    <span class="n">PowerLawNormSpectralModel</span><span class="p">,</span>
     <span class="n">Models</span><span class="p">,</span>
     <span class="n">create_fermi_isotropic_diffuse_model</span><span class="p">,</span>
     <span class="n">BackgroundModel</span><span class="p">,</span>
@@ -1557,7 +1560,7 @@ EventList info:
 </div>
 <div class="output_area rendered_html docutils container">
 <i>Table length=5</i>
-<table id="table140153754619464" class="table-striped table-bordered table-condensed">
+<table id="table139850011928112" class="table-striped table-bordered table-condensed">
 <thead><tr><th>ENERGY</th><th>RA</th><th>DEC</th></tr></thead>
 <thead><tr><th>MeV</th><th>deg</th><th>deg</th></tr></thead>
 <thead><tr><th>float32</th><th>float32</th><th>float32</th></tr></thead>
@@ -1738,8 +1741,6 @@ exposure cube doesn’t matter a lot. Of course you could define any energy axis
 <span></span><span class="n">exposure_hpx</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">read</span><span class="p">(</span>
     <span class="s2">&quot;$GAMMAPY_DATA/fermi_3fhl/fermi_3fhl_exposure_cube_hpx.fits.gz&quot;</span>
 <span class="p">)</span>
-<span class="c1"># Unit is not stored in the file, set it manually</span>
-<span class="n">exposure_hpx</span><span class="o">.</span><span class="n">unit</span> <span class="o">=</span> <span class="s2">&quot;cm2 s&quot;</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">exposure_hpx</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">exposure_hpx</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 </pre></div>
@@ -1810,8 +1811,7 @@ MapAxis
 <span class="p">)</span>
 <span class="n">geom</span> <span class="o">=</span> <span class="n">WcsGeom</span><span class="p">(</span><span class="n">wcs</span><span class="o">=</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">wcs</span><span class="p">,</span> <span class="n">npix</span><span class="o">=</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">npix</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">axis</span><span class="p">])</span>
 
-<span class="n">coord</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span>
-<span class="n">data</span> <span class="o">=</span> <span class="n">exposure_hpx</span><span class="o">.</span><span class="n">interp_by_coord</span><span class="p">(</span><span class="n">coord</span><span class="p">)</span>
+<span class="n">exposure</span> <span class="o">=</span> <span class="n">exposure_hpx</span><span class="o">.</span><span class="n">interp_to_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1820,8 +1820,7 @@ MapAxis
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">exposure</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">exposure_hpx</span><span class="o">.</span><span class="n">unit</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
+<span></span><span class="nb">print</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">exposure</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 </pre></div>
 </div>
@@ -1871,7 +1870,7 @@ MapAxis
 <div class="highlight"><pre>
 (&lt;Figure size 432x288 with 2 Axes&gt;,
  &lt;WCSAxesSubplot:xlabel=&#39;Galactic Longitude&#39;, ylabel=&#39;Galactic Latitude&#39;&gt;,
- &lt;matplotlib.colorbar.Colorbar at 0x7f7812d38c18&gt;)
+ &lt;matplotlib.colorbar.Colorbar at 0x7f315a5c8a90&gt;)
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1912,7 +1911,7 @@ array([3.19917466e+11, 3.27536547e+11, 3.03032026e+11])
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">diffuse_galactic_fermi</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">read</span><span class="p">(</span>
-    <span class="s2">&quot;$GAMMAPY_DATA/fermi_3fhl/gll_iem_v06_cutout.fits&quot;</span>
+    <span class="s2">&quot;$GAMMAPY_DATA/fermi-3fhl-gc/gll_iem_v06_gc.fits.gz&quot;</span>
 <span class="p">)</span>
 
 <span class="c1"># Unit is not stored in the file, set it manually</span>
@@ -1930,23 +1929,23 @@ array([3.19917466e+11, 3.27536547e+11, 3.03032026e+11])
 <div class="highlight"><pre>
 WcsGeom
 
-        axes       : [&#39;lon&#39;, &#39;lat&#39;, &#39;energy&#39;]
-        shape      : (88, 48, 30)
+        axes       : [&#39;lon&#39;, &#39;lat&#39;, &#39;energy_true&#39;]
+        shape      : (120, 64, 30)
         ndim       : 3
         frame      : galactic
         projection : CAR
         center     : 0.0 deg, -0.1 deg
-        width      : 11.0 deg x 6.0 deg
+        width      : 15.0 deg x 8.0 deg
 
 MapAxis
 
-        name       : energy
+        name       : energy_true
         unit       : &#39;MeV&#39;
         nbins      : 30
         node type  : center
         center min : 5.8e+01 MeV
         center max : 5.1e+05 MeV
-        interp     : lin
+        interp     : log
 
 </pre></div></div>
 </div>
@@ -1966,15 +1965,15 @@ WARNING: FITSFixedWarning: &#39;datfix&#39; made the change &#39;Set DATE-REF to
 <span></span><span class="c1"># Interpolate the diffuse emission model onto the counts geometry</span>
 <span class="c1"># The resolution of `diffuse_galactic_fermi` is low: bin size = 0.5 deg</span>
 <span class="c1"># We use ``interp=3`` which means cubic spline interpolation</span>
-<span class="n">coord</span> <span class="o">=</span> <span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span>
+<span class="n">coord</span> <span class="o">=</span> <span class="n">exposure</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span>
 
 <span class="n">data</span> <span class="o">=</span> <span class="n">diffuse_galactic_fermi</span><span class="o">.</span><span class="n">interp_by_coord</span><span class="p">(</span>
-    <span class="p">{</span><span class="s2">&quot;skycoord&quot;</span><span class="p">:</span> <span class="n">coord</span><span class="o">.</span><span class="n">skycoord</span><span class="p">,</span> <span class="s2">&quot;energy&quot;</span><span class="p">:</span> <span class="n">coord</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]},</span> <span class="n">interp</span><span class="o">=</span><span class="mi">3</span>
+    <span class="p">{</span><span class="s2">&quot;skycoord&quot;</span><span class="p">:</span> <span class="n">coord</span><span class="o">.</span><span class="n">skycoord</span><span class="p">,</span> <span class="s2">&quot;energy_true&quot;</span><span class="p">:</span> <span class="n">coord</span><span class="p">[</span><span class="s2">&quot;energy_true&quot;</span><span class="p">]},</span> <span class="n">interp</span><span class="o">=</span><span class="mi">3</span>
 <span class="p">)</span>
 <span class="n">diffuse_galactic</span> <span class="o">=</span> <span class="n">WcsNDMap</span><span class="p">(</span>
     <span class="n">exposure</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">diffuse_galactic_fermi</span><span class="o">.</span><span class="n">unit</span>
 <span class="p">)</span>
-
+<span class="n">diffuse_gal</span> <span class="o">=</span> <span class="n">TemplateSpatialModel</span><span class="p">(</span><span class="n">diffuse_galactic</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">diffuse_galactic</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">diffuse_galactic</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 </pre></div>
@@ -2012,7 +2011,9 @@ MapAxis
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">diffuse_gal</span> <span class="o">=</span> <span class="n">SkyDiffuseCube</span><span class="p">(</span><span class="n">diffuse_galactic</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;diffuse-gal&quot;</span><span class="p">)</span>
+<span></span><span class="n">diffuse_iem</span> <span class="o">=</span> <span class="n">SkyModel</span><span class="p">(</span>
+    <span class="n">PowerLawNormSpectralModel</span><span class="p">(),</span> <span class="n">diffuse_gal</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;diffuse-iem&quot;</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -2034,7 +2035,7 @@ MapAxis
 <div class="highlight"><pre>
 (&lt;Figure size 432x288 with 2 Axes&gt;,
  &lt;WCSAxesSubplot:xlabel=&#39;Galactic Longitude&#39;, ylabel=&#39;Galactic Latitude&#39;&gt;,
- &lt;matplotlib.colorbar.Colorbar at 0x7f7812c7f400&gt;)
+ &lt;matplotlib.colorbar.Colorbar at 0x7f315a50ee10&gt;)
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -2124,9 +2125,9 @@ Text(0, 0.5, &#39;Flux (cm-2 s-1 MeV-1 sr-1)&#39;)
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-/home/runner/work/gammapy-docs/gammapy-docs/gammapy/gammapy/modeling/models/spectral.py:323: MatplotlibDeprecationWarning: The &#39;nonposx&#39; parameter of __init__() has been renamed &#39;nonpositive&#39; since Matplotlib 3.3; support for the old name will be dropped two minor releases later.
+/home/runner/work/gammapy-docs/gammapy-docs/gammapy/gammapy/modeling/models/spectral.py:329: MatplotlibDeprecationWarning: The &#39;nonposx&#39; parameter of __init__() has been renamed &#39;nonpositive&#39; since Matplotlib 3.3; support for the old name will be dropped two minor releases later.
   ax.set_xscale(&#34;log&#34;, nonposx=&#34;clip&#34;)
-/home/runner/work/gammapy-docs/gammapy-docs/gammapy/gammapy/modeling/models/spectral.py:324: MatplotlibDeprecationWarning: The &#39;nonposy&#39; parameter of __init__() has been renamed &#39;nonpositive&#39; since Matplotlib 3.3; support for the old name will be dropped two minor releases later.
+/home/runner/work/gammapy-docs/gammapy-docs/gammapy/gammapy/modeling/models/spectral.py:330: MatplotlibDeprecationWarning: The &#39;nonposy&#39; parameter of __init__() has been renamed &#39;nonpositive&#39; since Matplotlib 3.3; support for the old name will be dropped two minor releases later.
   ax.set_yscale(&#34;log&#34;, nonposy=&#34;clip&#34;)
 </pre></div></div>
 </div>
@@ -2233,7 +2234,7 @@ Containment info:
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x7f780e7c9630&gt;
+&lt;matplotlib.legend.Legend at 0x7f31560b6710&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -2273,7 +2274,7 @@ Containment info:
 <div class="highlight"><pre>
 (&lt;Figure size 432x288 with 2 Axes&gt;,
  &lt;WCSAxesSubplot:xlabel=&#39;Galactic Longitude&#39;, ylabel=&#39;Galactic Latitude&#39;&gt;,
- &lt;matplotlib.colorbar.Colorbar at 0x7f780e5cd780&gt;)
+ &lt;matplotlib.colorbar.Colorbar at 0x7f3156091320&gt;)
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -2308,15 +2309,13 @@ Containment info:
 <span></span><span class="c1"># pre-compute iso model</span>
 <span class="n">evaluator</span> <span class="o">=</span> <span class="n">MapEvaluator</span><span class="p">(</span><span class="n">diffuse_iso</span><span class="p">)</span>
 <span class="n">evaluator</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">exposure</span><span class="o">=</span><span class="n">exposure</span><span class="p">,</span> <span class="n">psf</span><span class="o">=</span><span class="n">psf</span><span class="p">,</span> <span class="n">edisp</span><span class="o">=</span><span class="n">edisp</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
-<span class="n">diffuse_iso</span> <span class="o">=</span> <span class="n">BackgroundModel</span><span class="p">(</span>
-    <span class="n">evaluator</span><span class="o">.</span><span class="n">compute_npred</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;bkg-iso&quot;</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="mf">3.3</span>
-<span class="p">)</span>
-
+<span class="n">diffuse_iso</span> <span class="o">=</span> <span class="n">BackgroundModel</span><span class="p">(</span><span class="n">evaluator</span><span class="o">.</span><span class="n">compute_npred</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;bkg-iso&quot;</span><span class="p">)</span>
+<span class="n">diffuse_iso</span><span class="o">.</span><span class="n">spectral_model</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mf">3.3</span>
 <span class="c1"># pre-compute diffuse model</span>
-<span class="n">evaluator</span> <span class="o">=</span> <span class="n">MapEvaluator</span><span class="p">(</span><span class="n">diffuse_gal</span><span class="p">)</span>
+<span class="n">evaluator</span> <span class="o">=</span> <span class="n">MapEvaluator</span><span class="p">(</span><span class="n">diffuse_iem</span><span class="p">)</span>
 <span class="n">evaluator</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">exposure</span><span class="o">=</span><span class="n">exposure</span><span class="p">,</span> <span class="n">psf</span><span class="o">=</span><span class="n">psf</span><span class="p">,</span> <span class="n">edisp</span><span class="o">=</span><span class="n">edisp</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
 
-<span class="n">diffuse_gal</span> <span class="o">=</span> <span class="n">BackgroundModel</span><span class="p">(</span><span class="n">evaluator</span><span class="o">.</span><span class="n">compute_npred</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;bkg-iem&quot;</span><span class="p">)</span>
+<span class="n">diffuse_iem</span> <span class="o">=</span> <span class="n">BackgroundModel</span><span class="p">(</span><span class="n">evaluator</span><span class="o">.</span><span class="n">compute_npred</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;bkg-iem&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -2343,7 +2342,7 @@ Containment info:
     <span class="n">name</span><span class="o">=</span><span class="s2">&quot;source-gc&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="n">models</span> <span class="o">=</span> <span class="n">Models</span><span class="p">([</span><span class="n">source</span><span class="p">,</span> <span class="n">diffuse_gal</span><span class="p">,</span> <span class="n">diffuse_iso</span><span class="p">])</span>
+<span class="n">models</span> <span class="o">=</span> <span class="n">Models</span><span class="p">([</span><span class="n">source</span><span class="p">,</span> <span class="n">diffuse_iem</span><span class="p">,</span> <span class="n">diffuse_iso</span><span class="p">])</span>
 
 <span class="n">dataset</span> <span class="o">=</span> <span class="n">MapDataset</span><span class="p">(</span>
     <span class="n">models</span><span class="o">=</span><span class="n">models</span><span class="p">,</span> <span class="n">counts</span><span class="o">=</span><span class="n">counts</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="n">exposure</span><span class="p">,</span> <span class="n">psf</span><span class="o">=</span><span class="n">psf</span><span class="p">,</span> <span class="n">edisp</span><span class="o">=</span><span class="n">edisp</span>
@@ -2356,7 +2355,7 @@ Containment info:
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-No background model defined for dataset _R8F25jb
+No background model defined for dataset sOL75IVr
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -2375,8 +2374,8 @@ No background model defined for dataset _R8F25jb
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-CPU times: user 2.19 s, sys: 2.33 ms, total: 2.19 s
-Wall time: 2.19 s
+CPU times: user 2.67 s, sys: 5.43 ms, total: 2.67 s
+Wall time: 2.67 s
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -2399,8 +2398,8 @@ OptimizeResult
         method     : minuit
         success    : True
         message    : Optimization terminated successfully.
-        nfev       : 165
-        total stat : 20049.35
+        nfev       : 166
+        total stat : 20026.59
 
 </pre></div></div>
 </div>
@@ -2428,8 +2427,8 @@ Component 0: SkyModel
   Spatial  model type       : PointSpatialModel
   Temporal model type       :
   Parameters:
-    index                   :   2.684
-    amplitude               :   5.62e-10  1 / (cm2 s TeV)
+    index                   :   2.685
+    amplitude               :   5.63e-10  1 / (cm2 s TeV)
     reference    (frozen)   :   0.100  TeV
     lon_0                   :  -0.025  deg
     lat_0                   :  -0.040  deg
@@ -2439,7 +2438,7 @@ Component 1: BackgroundModel
   Name                      : bkg-iem
   Datasets names            : None
   Parameters:
-    norm                    :   1.028
+    norm                    :   1.033
     tilt         (frozen)   :   0.000
     reference    (frozen)   :   1.000  TeV
 
@@ -2448,7 +2447,7 @@ Component 2: BackgroundModel
   Name                      : bkg-iso
   Datasets names            : None
   Parameters:
-    norm                    :   3.549
+    norm                    :   4.447
     tilt         (frozen)   :   0.000
     reference    (frozen)   :   1.000  TeV
 
@@ -2484,7 +2483,7 @@ Component 2: BackgroundModel
 <div class="highlight"><pre>
 (&lt;Figure size 432x288 with 2 Axes&gt;,
  &lt;WCSAxesSubplot:xlabel=&#39;Galactic Longitude&#39;, ylabel=&#39;Galactic Latitude&#39;&gt;,
- &lt;matplotlib.colorbar.Colorbar at 0x7f7812e13240&gt;)
+ &lt;matplotlib.colorbar.Colorbar at 0x7f315a573080&gt;)
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -2533,7 +2532,7 @@ energy-dependent multi-resolution maps and PSF), that would be very welcome!</p>
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 16 Sep 2020.
+        Last updated on 29 Sep 2020.
       </span>
 
     </p>

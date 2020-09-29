@@ -62,9 +62,10 @@ from gammapy.modeling.models import (
     Models,
     SkyModel,
     PowerLawSpectralModel,
+    PowerLawNormSpectralModel,
     PointSpatialModel,
     GaussianSpatialModel,
-    SkyDiffuseCube,
+    TemplateSpatialModel,
 )
 from regions import CircleSkyRegion
 
@@ -273,9 +274,10 @@ result.parameters.to_table()
 # In[ ]:
 
 
-diffuse = SkyDiffuseCube.read(
-    "$GAMMAPY_DATA/fermi-3fhl-gc/gll_iem_v06_gc.fits.gz"
+diffuse_cube = TemplateSpatialModel.read(
+    "$GAMMAPY_DATA/fermi-3fhl-gc/gll_iem_v06_gc.fits.gz", normalize=False
 )
+diffuse = SkyModel(PowerLawNormSpectralModel(), diffuse_cube)
 models_diffuse = Models([diffuse])
 
 file_model = "./event_sampling/diffuse.yaml"

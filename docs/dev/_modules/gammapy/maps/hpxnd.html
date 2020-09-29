@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.maps.hpxnd &mdash; gammapy v0.18.dev690+gede9fe4b8</title>
+  <title>gammapy.maps.hpxnd &mdash; gammapy v0.18.dev807+gd14a35666</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev690+gede9fe4b8
+                0.18.dev807+gd14a35666
               </div>
             
           
@@ -342,6 +342,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Getting-the-reduced-dataset">Getting the reduced dataset</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Extracting-the-ring-background">Extracting the ring background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Compute-correlated-significance-and-correlated-excess-maps">Compute correlated significance and correlated excess maps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Modeling-and-fitting">Modeling and fitting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/event_sampling.html">Event Sampling</a><ul>
@@ -421,6 +422,7 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Getting-the-reduced-dataset">Getting the reduced dataset</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Extracting-the-ring-background">Extracting the ring background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Compute-correlated-significance-and-correlated-excess-maps">Compute correlated significance and correlated excess maps</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Modeling-and-fitting">Modeling and fitting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/exclusion_mask.html">Creating exclusion masks</a><ul>
@@ -467,7 +469,7 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/models.html#Setup">Setup</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/models.html#Spectral-Models">Spectral Models</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/models.html#Spatial-Models">Spatial Models</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/models.html#SkyModel-and-SkyDiffuseCube">SkyModel and SkyDiffuseCube</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../tutorials/models.html#SkyModel">SkyModel</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/models.html#Model-Lists-and-Serialisation">Model Lists and Serialisation</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/models.html#Implementing-a-Custom-Model">Implementing a Custom Model</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/catalog.html">Source catalogs</a><ul>
@@ -1138,7 +1140,7 @@
 <span class="kn">from</span> <span class="nn">astropy.units</span> <span class="kn">import</span> <span class="n">Quantity</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.units</span> <span class="kn">import</span> <span class="n">unit_from_fits_image_hdu</span>
 <span class="kn">from</span> <span class="nn">.geom</span> <span class="kn">import</span> <span class="n">MapCoord</span><span class="p">,</span> <span class="n">pix_tuple_to_idx</span>
-<span class="kn">from</span> <span class="nn">.hpx</span> <span class="kn">import</span> <span class="n">HPX_FITS_CONVENTIONS</span><span class="p">,</span> <span class="n">HpxGeom</span><span class="p">,</span> <span class="n">HpxToWcsMapping</span><span class="p">,</span> <span class="n">nside_to_order</span>
+<span class="kn">from</span> <span class="nn">.hpx</span> <span class="kn">import</span> <span class="n">HPX_FITS_CONVENTIONS</span><span class="p">,</span> <span class="n">HpxGeom</span><span class="p">,</span> <span class="n">HpxToWcsMapping</span><span class="p">,</span> <span class="n">nside_to_order</span><span class="p">,</span> <span class="n">HpxConv</span>
 <span class="kn">from</span> <span class="nn">.hpxmap</span> <span class="kn">import</span> <span class="n">HpxMap</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">INVALID_INDEX</span><span class="p">,</span> <span class="n">interp_to_order</span>
 
@@ -1173,8 +1175,6 @@
             <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_default_data</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meta</span><span class="p">,</span> <span class="n">unit</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_wcs2d</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_hpx2wcs</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_make_default_data</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">shape_np</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
@@ -1188,7 +1188,7 @@
         <span class="k">return</span> <span class="n">data</span>
 
 <div class="viewcode-block" id="HpxNDMap.from_hdu"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxNDMap.html#gammapy.maps.HpxNDMap.from_hdu">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_hdu</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hdu</span><span class="p">,</span> <span class="n">hdu_bands</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">from_hdu</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hdu</span><span class="p">,</span> <span class="n">hdu_bands</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Make a HpxNDMap object from a FITS HDU.</span>
 
 <span class="sd">        Parameters</span>
@@ -1197,20 +1197,31 @@
 <span class="sd">            The FITS HDU</span>
 <span class="sd">        hdu_bands  : `~astropy.io.fits.BinTableHDU`</span>
 <span class="sd">            The BANDS table HDU</span>
+<span class="sd">        format : {&#39;gadf&#39;, &#39;fgst-ccube&#39;, &#39;fgst-ltcube&#39;, &#39;fgst-bexpcube&#39;,</span>
+<span class="sd">                  &#39;fgst-srcmap&#39;, &#39;fgst-template&#39;, &#39;fgst-srcmap-sparse&#39;,</span>
+<span class="sd">                  &#39;galprop&#39;, &#39;galprop2&#39;}</span>
+<span class="sd">            FITS convention. If None the format is guessed.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        map : `HpxMap`</span>
+<span class="sd">            HEALPix map</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">hpx</span> <span class="o">=</span> <span class="n">HpxGeom</span><span class="o">.</span><span class="n">from_header</span><span class="p">(</span><span class="n">hdu</span><span class="o">.</span><span class="n">header</span><span class="p">,</span> <span class="n">hdu_bands</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">format</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">format</span> <span class="o">=</span> <span class="n">HpxConv</span><span class="o">.</span><span class="n">identify_hpx_format</span><span class="p">(</span><span class="n">hdu</span><span class="o">.</span><span class="n">header</span><span class="p">)</span>
 
-        <span class="n">convname</span> <span class="o">=</span> <span class="n">HpxGeom</span><span class="o">.</span><span class="n">identify_hpx_convention</span><span class="p">(</span><span class="n">hdu</span><span class="o">.</span><span class="n">header</span><span class="p">)</span>
-        <span class="n">hpx_conv</span> <span class="o">=</span> <span class="n">HPX_FITS_CONVENTIONS</span><span class="p">[</span><span class="n">convname</span><span class="p">]</span>
+        <span class="n">geom</span> <span class="o">=</span> <span class="n">HpxGeom</span><span class="o">.</span><span class="n">from_header</span><span class="p">(</span><span class="n">hdu</span><span class="o">.</span><span class="n">header</span><span class="p">,</span> <span class="n">hdu_bands</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)</span>
 
-        <span class="n">shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">ax</span><span class="o">.</span><span class="n">nbin</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">hpx</span><span class="o">.</span><span class="n">axes</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
-        <span class="c1"># shape_data = shape + tuple([np.max(hpx.npix)])</span>
+        <span class="n">hpx_conv</span> <span class="o">=</span> <span class="n">HPX_FITS_CONVENTIONS</span><span class="p">[</span><span class="nb">format</span><span class="p">]</span>
+
+        <span class="n">shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">ax</span><span class="o">.</span><span class="n">nbin</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
 
         <span class="c1"># TODO: Should we support extracting slices?</span>
 
         <span class="n">meta</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_meta_from_header</span><span class="p">(</span><span class="n">hdu</span><span class="o">.</span><span class="n">header</span><span class="p">)</span>
         <span class="n">unit</span> <span class="o">=</span> <span class="n">unit_from_fits_image_hdu</span><span class="p">(</span><span class="n">hdu</span><span class="o">.</span><span class="n">header</span><span class="p">)</span>
-        <span class="n">map_out</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">hpx</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
+        <span class="n">map_out</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
 
         <span class="n">colnames</span> <span class="o">=</span> <span class="n">hdu</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span>
         <span class="n">cnames</span> <span class="o">=</span> <span class="p">[]</span>
@@ -1233,44 +1244,11 @@
             <span class="k">if</span> <span class="n">nbin</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">map_out</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">hdu</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">cnames</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">cname</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cnames</span><span class="p">):</span>
-                    <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">cname</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cnames</span><span class="p">):</span>
+                    <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unravel_index</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">shape</span><span class="p">)</span>
                     <span class="n">map_out</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">),)]</span> <span class="o">=</span> <span class="n">hdu</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">cname</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">map_out</span></div>
-
-<div class="viewcode-block" id="HpxNDMap.make_wcs_mapping"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxNDMap.html#gammapy.maps.HpxNDMap.make_wcs_mapping">[docs]</a>    <span class="k">def</span> <span class="nf">make_wcs_mapping</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">sum_bands</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">proj</span><span class="o">=</span><span class="s2">&quot;AIT&quot;</span><span class="p">,</span> <span class="n">oversample</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">width_pix</span><span class="o">=</span><span class="kc">None</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Make a HEALPix to WCS mapping object.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        sum_bands : bool</span>
-<span class="sd">            sum over non-spatial dimensions before reprojecting</span>
-<span class="sd">        proj  : str</span>
-<span class="sd">            WCS-projection</span>
-<span class="sd">        oversample : float</span>
-<span class="sd">            Oversampling factor for WCS map. This will be the</span>
-<span class="sd">            approximate ratio of the width of a HPX pixel to a WCS</span>
-<span class="sd">            pixel. If this parameter is None then the width will be</span>
-<span class="sd">            set from ``width_pix``.</span>
-<span class="sd">        width_pix : int</span>
-<span class="sd">            Width of the WCS geometry in pixels.  The pixel size will</span>
-<span class="sd">            be set to the number of pixels satisfying ``oversample``</span>
-<span class="sd">            or ``width_pix`` whichever is smaller.  If this parameter</span>
-<span class="sd">            is None then the width will be set from ``oversample``.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        hpx2wcs : `~HpxToWcsMapping`</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_wcs2d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">make_wcs</span><span class="p">(</span>
-            <span class="n">proj</span><span class="o">=</span><span class="n">proj</span><span class="p">,</span> <span class="n">oversample</span><span class="o">=</span><span class="n">oversample</span><span class="p">,</span> <span class="n">width_pix</span><span class="o">=</span><span class="n">width_pix</span><span class="p">,</span> <span class="n">drop_axes</span><span class="o">=</span><span class="kc">True</span>
-        <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_hpx2wcs</span> <span class="o">=</span> <span class="n">HpxToWcsMapping</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wcs2d</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hpx2wcs</span></div>
 
 <div class="viewcode-block" id="HpxNDMap.to_wcs"><a class="viewcode-back" href="../../../api/gammapy.maps.HpxNDMap.html#gammapy.maps.HpxNDMap.to_wcs">[docs]</a>    <span class="k">def</span> <span class="nf">to_wcs</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1295,9 +1273,11 @@
 
         <span class="c1"># FIXME: Check whether the old mapping is still valid and reuse it</span>
         <span class="k">if</span> <span class="n">hpx2wcs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">hpx2wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_wcs_mapping</span><span class="p">(</span>
-                <span class="n">oversample</span><span class="o">=</span><span class="n">oversample</span><span class="p">,</span> <span class="n">proj</span><span class="o">=</span><span class="n">proj</span><span class="p">,</span> <span class="n">width_pix</span><span class="o">=</span><span class="n">width_pix</span>
+            <span class="n">geom_wcs_image</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">to_wcs_geom</span><span class="p">(</span>
+                <span class="n">proj</span><span class="o">=</span><span class="n">proj</span><span class="p">,</span> <span class="n">oversample</span><span class="o">=</span><span class="n">oversample</span><span class="p">,</span> <span class="n">width_pix</span><span class="o">=</span><span class="n">width_pix</span><span class="p">,</span> <span class="n">drop_axes</span><span class="o">=</span><span class="kc">True</span>
             <span class="p">)</span>
+
+            <span class="n">hpx2wcs</span> <span class="o">=</span> <span class="n">HpxToWcsMapping</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">geom_wcs_image</span><span class="p">)</span>
 
         <span class="c1"># FIXME: Need a function to extract a valid shape from npix property</span>
 
@@ -1650,7 +1630,7 @@
         <span class="kn">from</span> <span class="nn">matplotlib.collections</span> <span class="kn">import</span> <span class="n">PatchCollection</span>
         <span class="kn">import</span> <span class="nn">healpy</span> <span class="k">as</span> <span class="nn">hp</span>
 
-        <span class="n">wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">make_wcs</span><span class="p">(</span><span class="n">proj</span><span class="o">=</span><span class="n">proj</span><span class="p">,</span> <span class="n">oversample</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">wcs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">to_wcs_geom</span><span class="p">(</span><span class="n">proj</span><span class="o">=</span><span class="n">proj</span><span class="p">,</span> <span class="n">oversample</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()</span>
             <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="n">wcs</span><span class="o">.</span><span class="n">wcs</span><span class="p">,</span> <span class="n">aspect</span><span class="o">=</span><span class="s2">&quot;equal&quot;</span><span class="p">)</span>
@@ -1725,7 +1705,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 16 Sep 2020.
+        Last updated on 29 Sep 2020.
       </span>
 
     </p>

@@ -221,7 +221,7 @@ model = SkyModel(
 )
 
 dataset_stacked.models.append(model)
-dataset_stacked.background_model.norm.value = 1.3
+dataset_stacked.background_model.spectral_model.norm.value = 1.3
 
 
 # In[ ]:
@@ -362,7 +362,7 @@ analysis_joint.datasets.info_table()
 model_joint = model.copy(name="source-joint")
 for dataset in analysis_joint.datasets:
     dataset.models.append(model_joint)
-    dataset.background_model.norm.value = 1.1
+    dataset.background_model.spectral_model.norm.value = 1.1
 
 
 # In[ ]:
@@ -395,7 +395,7 @@ result_joint.parameters.to_table()
 
 
 for dataset in analysis_joint.datasets:
-    print(dataset.background_model.norm.value)
+    print(dataset.background_model.spectral_model.norm.value)
 
 
 # Since the joint dataset is made of multiple datasets, we can either:
