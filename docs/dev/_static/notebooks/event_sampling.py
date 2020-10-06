@@ -196,7 +196,7 @@ print(f"Background events: {(events.table['MC_ID'] == 0).sum()}")
 # In[ ]:
 
 
-events.peek()
+events.select_offset([0, 1] * u.deg).peek()
 
 
 # By default, the `~gammapy.datasets.MapDatasetEventSampler` fills the metadata keyword `OBJECT` in the event list using the first model of the SkyModel object. You can change it with the following commands:
@@ -301,7 +301,7 @@ get_ipython().run_cell_magic('time', '', 'sampler = MapDatasetEventSampler(rando
 # In[ ]:
 
 
-events.peek()
+events.select_offset([0, 1] * u.deg).peek()
 
 
 # ### Simulate mutiple event list

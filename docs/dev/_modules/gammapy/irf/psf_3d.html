@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.irf.psf_3d &mdash; gammapy v0.18.dev807+gd14a35666</title>
+  <title>gammapy.irf.psf_3d &mdash; gammapy v0.18.dev912+g5b178ce84</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev807+gd14a35666
+                0.18.dev912+g5b178ce84
               </div>
             
           
@@ -342,7 +342,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Getting-the-reduced-dataset">Getting the reduced dataset</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Extracting-the-ring-background">Extracting the ring background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Compute-correlated-significance-and-correlated-excess-maps">Compute correlated significance and correlated excess maps</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Modeling-and-fitting">Modeling and fitting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/event_sampling.html">Event Sampling</a><ul>
@@ -422,7 +421,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Getting-the-reduced-dataset">Getting the reduced dataset</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Extracting-the-ring-background">Extracting the ring background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Compute-correlated-significance-and-correlated-excess-maps">Compute correlated significance and correlated excess maps</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Modeling-and-fitting">Modeling and fitting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/exclusion_mask.html">Creating exclusion masks</a><ul>
@@ -772,7 +770,10 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../../irf/index.html">irf - Instrument response functions</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#introduction">Introduction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../irf/index.html#irf-axis-naming">IRF Axis naming</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#effective-area">Effective area</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#background">Background</a></li>
@@ -1141,9 +1142,7 @@
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="kn">import</span> <span class="n">fits</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span>
 <span class="kn">from</span> <span class="nn">astropy.utils</span> <span class="kn">import</span> <span class="n">lazyproperty</span>
-<span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">MapAxis</span>
-<span class="kn">from</span> <span class="nn">gammapy.maps.utils</span> <span class="kn">import</span> <span class="n">edges_from_lo_hi</span>
-<span class="kn">from</span> <span class="nn">gammapy.utils.array</span> <span class="kn">import</span> <span class="n">array_stats_str</span>
+<span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">MapAxis</span><span class="p">,</span> <span class="n">MapAxes</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.interpolation</span> <span class="kn">import</span> <span class="n">ScaledRegularGridInterpolator</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.scripts</span> <span class="kn">import</span> <span class="n">make_path</span>
 <span class="kn">from</span> <span class="nn">.psf_table</span> <span class="kn">import</span> <span class="n">EnergyDependentTablePSF</span><span class="p">,</span> <span class="n">TablePSF</span>
@@ -1158,16 +1157,12 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    energy_lo : `~astropy.units.Quantity`</span>
-<span class="sd">        Energy bins lower edges (1-dim)</span>
-<span class="sd">    energy_hi : `~astropy.units.Quantity`</span>
-<span class="sd">        Energy bins upper edges (1-dim)</span>
-<span class="sd">    offset : `~astropy.coordinates.Angle`</span>
-<span class="sd">        Offset angle (1-dim)</span>
-<span class="sd">    rad_lo : `~astropy.coordinates.Angle`</span>
-<span class="sd">        Offset angle bins lower edges</span>
-<span class="sd">    rad_hi : `~astropy.coordinates.Angle`</span>
-<span class="sd">        Offset angle bins upper edges</span>
+<span class="sd">    energy_axis_true : `MapAxis`</span>
+<span class="sd">        True energy axis.</span>
+<span class="sd">    offset_axis : `MapAxis`</span>
+<span class="sd">        Offset axis</span>
+<span class="sd">    rad_axis : `MapAxis`</span>
+<span class="sd">        Rad axis</span>
 <span class="sd">    psf_value : `~astropy.units.Quantity`</span>
 <span class="sd">        PSF (3-dim with axes: psf[rad_index, offset_index, energy_index]</span>
 <span class="sd">    energy_thresh_lo : `~astropy.units.Quantity`</span>
@@ -1179,21 +1174,21 @@
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">energy_lo</span><span class="p">,</span>
-        <span class="n">energy_hi</span><span class="p">,</span>
-        <span class="n">offset</span><span class="p">,</span>
-        <span class="n">rad_lo</span><span class="p">,</span>
-        <span class="n">rad_hi</span><span class="p">,</span>
+        <span class="n">energy_axis_true</span><span class="p">,</span>
+        <span class="n">offset_axis</span><span class="p">,</span>
+        <span class="n">rad_axis</span><span class="p">,</span>
         <span class="n">psf_value</span><span class="p">,</span>
         <span class="n">energy_thresh_lo</span><span class="o">=</span><span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="s2">&quot;TeV&quot;</span><span class="p">),</span>
         <span class="n">energy_thresh_hi</span><span class="o">=</span><span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="s2">&quot;TeV&quot;</span><span class="p">),</span>
         <span class="n">interp_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">energy_lo</span> <span class="o">=</span> <span class="n">energy_lo</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;TeV&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">energy_hi</span> <span class="o">=</span> <span class="n">energy_hi</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;TeV&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">offset</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">rad_lo</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">rad_lo</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">rad_hi</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">rad_hi</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">energy_axis_true</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;energy_true&quot;</span>
+        <span class="k">assert</span> <span class="n">offset_axis</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;offset&quot;</span>
+        <span class="k">assert</span> <span class="n">rad_axis</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;rad&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_energy_axis_true</span> <span class="o">=</span> <span class="n">energy_axis_true</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_offset_axis</span> <span class="o">=</span> <span class="n">offset_axis</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rad_axis</span> <span class="o">=</span> <span class="n">rad_axis</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">psf_value</span> <span class="o">=</span> <span class="n">psf_value</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;sr^-1&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">energy_thresh_lo</span> <span class="o">=</span> <span class="n">energy_thresh_lo</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;TeV&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">energy_thresh_hi</span> <span class="o">=</span> <span class="n">energy_thresh_hi</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;TeV&quot;</span><span class="p">)</span>
@@ -1201,40 +1196,34 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_interp_kwargs</span> <span class="o">=</span> <span class="n">interp_kwargs</span> <span class="ow">or</span> <span class="p">{}</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">energy_axis</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">edges</span> <span class="o">=</span> <span class="n">edges_from_lo_hi</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energy_lo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_hi</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_edges</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;energy_true&quot;</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s2">&quot;log&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">energy_axis_true</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_energy_axis_true</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">rad_axis</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">edges</span> <span class="o">=</span> <span class="n">edges_from_lo_hi</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rad_lo</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rad_hi</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_edges</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;theta&quot;</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s2">&quot;lin&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rad_axis</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">offset_axis</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_offset_axis</span>
 
     <span class="nd">@lazyproperty</span>
     <span class="k">def</span> <span class="nf">_interpolate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">center</span>
-        <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;deg&quot;</span><span class="p">)</span>
+        <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_axis_true</span><span class="o">.</span><span class="n">center</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset_axis</span><span class="o">.</span><span class="n">center</span>
         <span class="n">rad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rad_axis</span><span class="o">.</span><span class="n">center</span>
 
         <span class="k">return</span> <span class="n">ScaledRegularGridInterpolator</span><span class="p">(</span>
             <span class="n">points</span><span class="o">=</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">energy</span><span class="p">),</span> <span class="n">values</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">psf_value</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_interp_kwargs</span>
         <span class="p">)</span>
 
-<div class="viewcode-block" id="PSF3D.info"><a class="viewcode-back" href="../../../api/gammapy.irf.PSF3D.html#gammapy.irf.PSF3D.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Print some basic info.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">ss</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Summary PSF3D info</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="n">ss</span> <span class="o">+=</span> <span class="s2">&quot;---------------------</span><span class="se">\n</span><span class="s2">&quot;</span>
-        <span class="n">ss</span> <span class="o">+=</span> <span class="n">array_stats_str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energy_lo</span><span class="p">,</span> <span class="s2">&quot;energy_lo&quot;</span><span class="p">)</span>
-        <span class="n">ss</span> <span class="o">+=</span> <span class="n">array_stats_str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">energy_hi</span><span class="p">,</span> <span class="s2">&quot;energy_hi&quot;</span><span class="p">)</span>
-        <span class="n">ss</span> <span class="o">+=</span> <span class="n">array_stats_str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">,</span> <span class="s2">&quot;offset&quot;</span><span class="p">)</span>
-        <span class="n">ss</span> <span class="o">+=</span> <span class="n">array_stats_str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rad_lo</span><span class="p">,</span> <span class="s2">&quot;rad_lo&quot;</span><span class="p">)</span>
-        <span class="n">ss</span> <span class="o">+=</span> <span class="n">array_stats_str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rad_hi</span><span class="p">,</span> <span class="s2">&quot;rad_hi&quot;</span><span class="p">)</span>
-        <span class="n">ss</span> <span class="o">+=</span> <span class="n">array_stats_str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psf_value</span><span class="p">,</span> <span class="s2">&quot;psf_value&quot;</span><span class="p">)</span>
-
-        <span class="c1"># TODO: should quote containment values also</span>
-
-        <span class="k">return</span> <span class="n">ss</span></div>
+        <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">info</span> <span class="o">+=</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+        <span class="n">info</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">shape      : </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">psf_value</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">info</span>
 
 <div class="viewcode-block" id="PSF3D.read"><a class="viewcode-back" href="../../../api/gammapy.irf.PSF3D.html#gammapy.irf.PSF3D.read">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;PSF_2D_TABLE&quot;</span><span class="p">):</span>
@@ -1259,17 +1248,6 @@
 <span class="sd">        table : `~astropy.table.Table`</span>
 <span class="sd">            Table Table-PSF info.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">theta_lo</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s2">&quot;THETA_LO&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">theta_hi</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s2">&quot;THETA_HI&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">offset</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta_hi</span> <span class="o">+</span> <span class="n">theta_lo</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
-        <span class="n">offset</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;THETA_LO&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
-
-        <span class="n">energy_lo</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s2">&quot;ENERG_LO&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">energy_hi</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s2">&quot;ENERG_HI&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-
-        <span class="n">rad_lo</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s2">&quot;RAD_LO&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">rad_hi</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s2">&quot;RAD_HI&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-
         <span class="n">psf_value</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s2">&quot;RPSF&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="n">opts</span> <span class="o">=</span> <span class="p">{}</span>
@@ -1279,42 +1257,30 @@
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
             <span class="k">pass</span>
 
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">energy_lo</span><span class="p">,</span> <span class="n">energy_hi</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">rad_lo</span><span class="p">,</span> <span class="n">rad_hi</span><span class="p">,</span> <span class="n">psf_value</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span></div>
+        <span class="n">energy_axis_true</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">column_prefix</span><span class="o">=</span><span class="s2">&quot;ENERG&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf-dl3&quot;</span><span class="p">)</span>
+        <span class="n">offset_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">column_prefix</span><span class="o">=</span><span class="s2">&quot;THETA&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf-dl3&quot;</span><span class="p">)</span>
+        <span class="n">rad_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">column_prefix</span><span class="o">=</span><span class="s2">&quot;RAD&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf-dl3&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">energy_axis_true</span><span class="o">=</span><span class="n">energy_axis_true</span><span class="p">,</span>
+            <span class="n">offset_axis</span><span class="o">=</span><span class="n">offset_axis</span><span class="p">,</span>
+            <span class="n">rad_axis</span><span class="o">=</span><span class="n">rad_axis</span><span class="p">,</span>
+            <span class="n">psf_value</span><span class="o">=</span><span class="n">psf_value</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">opts</span>
+        <span class="p">)</span></div>
 
 <div class="viewcode-block" id="PSF3D.to_hdulist"><a class="viewcode-back" href="../../../api/gammapy.irf.PSF3D.html#gammapy.irf.PSF3D.to_hdulist">[docs]</a>    <span class="k">def</span> <span class="nf">to_hdulist</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Convert PSF table data to FITS HDU list.</span>
+        <span class="sd">&quot;&quot;&quot;Convert PSF table data to FITS HDU list.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        hdu_list : `~astropy.io.fits.HDUList`</span>
 <span class="sd">            PSF in HDU list format.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Set up data</span>
-        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="s2">&quot;ENERG_LO&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;ENERG_HI&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;THETA_LO&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;THETA_HI&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;RAD_LO&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;RAD_HI&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;RPSF&quot;</span><span class="p">,</span>
-        <span class="p">]</span>
-        <span class="n">units</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TeV&quot;</span><span class="p">,</span> <span class="s2">&quot;TeV&quot;</span><span class="p">,</span> <span class="s2">&quot;deg&quot;</span><span class="p">,</span> <span class="s2">&quot;deg&quot;</span><span class="p">,</span> <span class="s2">&quot;deg&quot;</span><span class="p">,</span> <span class="s2">&quot;deg&quot;</span><span class="p">,</span> <span class="s2">&quot;sr^-1&quot;</span><span class="p">]</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">energy_lo</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">energy_hi</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">rad_lo</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">rad_hi</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">psf_value</span><span class="p">,</span>
-        <span class="p">]</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="n">MapAxes</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">offset_axis</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_axis_true</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">rad_axis</span><span class="p">])</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">to_table</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf-dl3&quot;</span><span class="p">)</span>
 
-        <span class="n">table</span> <span class="o">=</span> <span class="n">Table</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">name_</span><span class="p">,</span> <span class="n">data_</span><span class="p">,</span> <span class="n">unit_</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">units</span><span class="p">):</span>
-            <span class="n">table</span><span class="p">[</span><span class="n">name_</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">data_</span><span class="p">]</span>
-            <span class="n">table</span><span class="p">[</span><span class="n">name_</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span> <span class="o">=</span> <span class="n">unit_</span>
+        <span class="n">table</span><span class="p">[</span><span class="s2">&quot;RPSF&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">psf_value</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
 
         <span class="n">hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
         <span class="n">hdu</span><span class="o">.</span><span class="n">header</span><span class="p">[</span><span class="s2">&quot;LO_THRES&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_thresh_lo</span><span class="o">.</span><span class="n">value</span>
@@ -1347,9 +1313,9 @@
 <span class="sd">            Interpolated value</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">energy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">center</span>
+            <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_axis_true</span><span class="o">.</span><span class="n">center</span>
         <span class="k">if</span> <span class="n">offset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset_axis</span><span class="o">.</span><span class="n">center</span>
         <span class="k">if</span> <span class="n">rad</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">rad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rad_axis</span><span class="o">.</span><span class="n">center</span>
 
@@ -1385,16 +1351,18 @@
 <span class="sd">            Energy-dependent PSF</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">theta</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
-        <span class="n">energies</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">center</span>
 
-        <span class="k">if</span> <span class="n">rad</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">rad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rad_axis</span><span class="o">.</span><span class="n">center</span>
+        <span class="k">if</span> <span class="n">rad</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">rad_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_edges</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;rad&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">rad</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">rad</span><span class="p">)</span>
+            <span class="n">rad_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rad_axis</span>
 
-        <span class="n">psf_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">offset</span><span class="o">=</span><span class="n">theta</span><span class="p">,</span> <span class="n">rad</span><span class="o">=</span><span class="n">rad</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
+        <span class="n">psf_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">offset</span><span class="o">=</span><span class="n">theta</span><span class="p">,</span> <span class="n">rad</span><span class="o">=</span><span class="n">rad_axis</span><span class="o">.</span><span class="n">center</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">EnergyDependentTablePSF</span><span class="p">(</span>
-            <span class="n">energy</span><span class="o">=</span><span class="n">energies</span><span class="p">,</span> <span class="n">rad</span><span class="o">=</span><span class="n">rad</span><span class="p">,</span> <span class="n">exposure</span><span class="o">=</span><span class="n">exposure</span><span class="p">,</span> <span class="n">psf_value</span><span class="o">=</span><span class="n">psf_value</span><span class="o">.</span><span class="n">T</span>
+            <span class="n">energy_axis_true</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">energy_axis_true</span><span class="p">,</span>
+            <span class="n">rad_axis</span><span class="o">=</span><span class="n">rad_axis</span><span class="p">,</span>
+            <span class="n">exposure</span><span class="o">=</span><span class="n">exposure</span><span class="p">,</span>
+            <span class="n">psf_value</span><span class="o">=</span><span class="n">psf_value</span><span class="o">.</span><span class="n">T</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="PSF3D.to_table_psf"><a class="viewcode-back" href="../../../api/gammapy.irf.PSF3D.html#gammapy.irf.PSF3D.to_table_psf">[docs]</a>    <span class="k">def</span> <span class="nf">to_table_psf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="s2">&quot;0 deg&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -1415,8 +1383,7 @@
         <span class="n">energy</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">energy</span><span class="p">)</span>
         <span class="n">theta</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span>
         <span class="n">psf_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
-        <span class="n">rad</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rad_axis</span><span class="o">.</span><span class="n">center</span>
-        <span class="k">return</span> <span class="n">TablePSF</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">psf_value</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">TablePSF</span><span class="p">(</span><span class="n">rad_axis</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rad_axis</span><span class="p">,</span> <span class="n">psf_value</span><span class="o">=</span><span class="n">psf_value</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="PSF3D.containment_radius"><a class="viewcode-back" href="../../../api/gammapy.irf.PSF3D.html#gammapy.irf.PSF3D.containment_radius">[docs]</a>    <span class="k">def</span> <span class="nf">containment_radius</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="s2">&quot;0 deg&quot;</span><span class="p">,</span> <span class="n">fraction</span><span class="o">=</span><span class="mf">0.68</span><span class="p">,</span> <span class="n">interp_kwargs</span><span class="o">=</span><span class="kc">None</span>
@@ -1457,7 +1424,7 @@
         <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
 
         <span class="n">energy</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_energy_bounds</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">energy_lo</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_hi</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">100</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">energy_axis_true</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_axis_true</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">100</span>
         <span class="p">)</span><span class="o">.</span><span class="n">edges</span>
 
         <span class="k">for</span> <span class="n">theta</span> <span class="ow">in</span> <span class="n">thetas</span><span class="p">:</span>
@@ -1486,10 +1453,9 @@
         <span class="k">return</span> <span class="n">table</span><span class="o">.</span><span class="n">plot_psf_vs_rad</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="PSF3D.plot_containment"><a class="viewcode-back" href="../../../api/gammapy.irf.PSF3D.html#gammapy.irf.PSF3D.plot_containment">[docs]</a>    <span class="k">def</span> <span class="nf">plot_containment</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">fraction</span><span class="o">=</span><span class="mf">0.68</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_safe_energy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">add_cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">fraction</span><span class="o">=</span><span class="mf">0.68</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">add_cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Plot containment image with energy and theta axes.</span>
+        <span class="sd">&quot;&quot;&quot;Plot containment image with energy and theta axes.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1502,8 +1468,8 @@
 
         <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
 
-        <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">center</span>
-        <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span>
+        <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_axis_true</span><span class="o">.</span><span class="n">center</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset_axis</span><span class="o">.</span><span class="n">center</span>
 
         <span class="c1"># Set up and compute data</span>
         <span class="n">containment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">containment_radius</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">fraction</span><span class="p">)</span>
@@ -1525,8 +1491,10 @@
         <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">x</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">y</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
 
-        <span class="k">if</span> <span class="n">show_safe_energy</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_plot_safe_energy_range</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">pass</span>
 
         <span class="k">if</span> <span class="n">add_cbar</span><span class="p">:</span>
             <span class="n">label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Containment radius R</span><span class="si">{</span><span class="mi">100</span> <span class="o">*</span> <span class="n">fraction</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">containment</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">)&quot;</span>
@@ -1537,8 +1505,8 @@
     <span class="k">def</span> <span class="nf">_plot_safe_energy_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;add safe energy range lines to the plot&quot;&quot;&quot;</span>
         <span class="n">esafe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_thresh_lo</span>
-        <span class="n">omin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
-        <span class="n">omax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="n">omin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset_axis</span><span class="o">.</span><span class="n">center</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+        <span class="n">omax</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">offset_axis</span><span class="o">.</span><span class="n">center</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">hlines</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">esafe</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">xmin</span><span class="o">=</span><span class="n">omin</span><span class="p">,</span> <span class="n">xmax</span><span class="o">=</span><span class="n">omax</span><span class="p">)</span>
         <span class="n">label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Safe energy threshold: </span><span class="si">{</span><span class="n">esafe</span><span class="si">:</span><span class="s2">3.2f</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">0.9</span> <span class="o">*</span> <span class="n">esafe</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="n">label</span><span class="p">,</span> <span class="n">va</span><span class="o">=</span><span class="s2">&quot;top&quot;</span><span class="p">)</span>
@@ -1573,7 +1541,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 29 Sep 2020.
+        Last updated on 06 Oct 2020.
       </span>
 
     </p>

@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.maps.wcs &mdash; gammapy v0.18.dev807+gd14a35666</title>
+  <title>gammapy.maps.wcs &mdash; gammapy v0.18.dev912+g5b178ce84</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev807+gd14a35666
+                0.18.dev912+g5b178ce84
               </div>
             
           
@@ -342,7 +342,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Getting-the-reduced-dataset">Getting the reduced dataset</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Extracting-the-ring-background">Extracting the ring background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Compute-correlated-significance-and-correlated-excess-maps">Compute correlated significance and correlated excess maps</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Modeling-and-fitting">Modeling and fitting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/event_sampling.html">Event Sampling</a><ul>
@@ -422,7 +421,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Getting-the-reduced-dataset">Getting the reduced dataset</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Extracting-the-ring-background">Extracting the ring background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Compute-correlated-significance-and-correlated-excess-maps">Compute correlated significance and correlated excess maps</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Modeling-and-fitting">Modeling and fitting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/exclusion_mask.html">Creating exclusion masks</a><ul>
@@ -772,7 +770,10 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../../irf/index.html">irf - Instrument response functions</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#introduction">Introduction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../irf/index.html#irf-axis-naming">IRF Axis naming</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#effective-area">Effective area</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#background">Background</a></li>
@@ -1152,9 +1153,8 @@
 <span class="kn">from</span> <span class="nn">.geom</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">Geom</span><span class="p">,</span>
     <span class="n">MapCoord</span><span class="p">,</span>
-    <span class="n">find_and_read_bands</span><span class="p">,</span>
+    <span class="n">MapAxes</span><span class="p">,</span>
     <span class="n">get_shape</span><span class="p">,</span>
-    <span class="n">make_axes</span><span class="p">,</span>
     <span class="n">pix_tuple_to_idx</span><span class="p">,</span>
     <span class="n">skycoord_to_lonlat</span><span class="p">,</span>
 <span class="p">)</span>
@@ -1249,7 +1249,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="n">wcs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_frame</span> <span class="o">=</span> <span class="n">wcs_to_celestial_frame</span><span class="p">(</span><span class="n">wcs</span><span class="p">)</span><span class="o">.</span><span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_projection</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">ctype</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">5</span><span class="p">:]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span> <span class="o">=</span> <span class="n">make_axes</span><span class="p">(</span><span class="n">axes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span> <span class="o">=</span> <span class="n">MapAxes</span><span class="o">.</span><span class="n">from_default</span><span class="p">(</span><span class="n">axes</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">cdelt</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">cdelt</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">cdelt</span><span class="p">))</span>
@@ -1297,15 +1297,13 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">npix_shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
-        <span class="n">ax_shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">nbin</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">]</span>
-        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">npix_shape</span> <span class="o">+</span> <span class="n">ax_shape</span><span class="p">)</span>
+        <span class="n">npix_shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">1</span><span class="p">])])</span>
+        <span class="k">return</span> <span class="n">npix_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">shape</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_shape_edges</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">npix_shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
-        <span class="n">ax_shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">nbin</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">]</span>
-        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">npix_shape</span> <span class="o">+</span> <span class="n">ax_shape</span><span class="p">)</span>
+        <span class="n">npix_shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">npix_shape</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">shape</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">shape_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1564,8 +1562,8 @@
         <span class="c1"># TODO: see https://github.com/astropy/astropy/issues/9259</span>
         <span class="n">wcs</span><span class="o">.</span><span class="n">_naxis</span> <span class="o">=</span> <span class="n">wcs</span><span class="o">.</span><span class="n">_naxis</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
 
-        <span class="n">axes</span> <span class="o">=</span> <span class="n">find_and_read_bands</span><span class="p">(</span><span class="n">hdu_bands</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)</span>
-        <span class="n">shape</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">ax</span><span class="o">.</span><span class="n">nbin</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">])</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="n">MapAxes</span><span class="o">.</span><span class="n">from_table_hdu</span><span class="p">(</span><span class="n">hdu_bands</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">shape</span>
 
         <span class="k">if</span> <span class="n">hdu_bands</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="s2">&quot;NPIX&quot;</span> <span class="ow">in</span> <span class="n">hdu_bands</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
             <span class="n">npix</span> <span class="o">=</span> <span class="n">hdu_bands</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s2">&quot;NPIX&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">shape</span> <span class="o">+</span> <span class="p">(</span><span class="mi">2</span><span class="p">,))</span>
@@ -1631,7 +1629,7 @@
 
 <div class="viewcode-block" id="WcsGeom.to_header"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsGeom.html#gammapy.maps.WcsGeom.to_header">[docs]</a>    <span class="k">def</span> <span class="nf">to_header</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">to_header</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_fill_header_from_axes</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">to_header</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
         <span class="n">shape</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">,</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">npix</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
         <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
             <span class="n">shape</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;,</span><span class="si">{</span><span class="n">ax</span><span class="o">.</span><span class="n">nbin</span><span class="si">}</span><span class="s2">&quot;</span>
@@ -1721,7 +1719,7 @@
             <span class="n">is_finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="n">coords</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">c</span><span class="p">[</span><span class="n">is_finite</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coords</span><span class="p">])</span>
 
-        <span class="n">axes_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;lon&quot;</span><span class="p">,</span> <span class="s2">&quot;lat&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">]</span>
+        <span class="n">axes_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;lon&quot;</span><span class="p">,</span> <span class="s2">&quot;lat&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">names</span>
         <span class="n">cdict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">axes_names</span><span class="p">,</span> <span class="n">coords</span><span class="p">))</span>
 
         <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1730,20 +1728,14 @@
         <span class="k">return</span> <span class="n">MapCoord</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">cdict</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">frame</span><span class="p">)</span><span class="o">.</span><span class="n">to_frame</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="WcsGeom.coord_to_pix"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsGeom.html#gammapy.maps.WcsGeom.coord_to_pix">[docs]</a>    <span class="k">def</span> <span class="nf">coord_to_pix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">):</span>
-        <span class="n">coords</span> <span class="o">=</span> <span class="n">MapCoord</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">frame</span><span class="p">)</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">MapCoord</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">frame</span><span class="p">,</span> <span class="n">axis_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">names</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">coords</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">coords</span><span class="o">.</span><span class="n">ndim</span><span class="p">)])</span>
 
-        <span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coord_to_tuple</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
         <span class="c1"># Variable Bin Size</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_regular</span><span class="p">:</span>
-            <span class="n">idxs</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">coord_to_idx</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="p">]),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">ax</span><span class="o">.</span><span class="n">nbin</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span>
-                <span class="p">]</span>
-            <span class="p">)</span>
+            <span class="n">idxs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">coord_to_idx</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">clip</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="n">crpix</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="n">idxs</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_crpix</span><span class="p">]</span>
             <span class="n">cdelt</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="p">[</span><span class="n">idxs</span><span class="p">]</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cdelt</span><span class="p">]</span>
             <span class="n">pix</span> <span class="o">=</span> <span class="n">world2pix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">wcs</span><span class="p">,</span> <span class="n">cdelt</span><span class="p">,</span> <span class="n">crpix</span><span class="p">,</span> <span class="p">(</span><span class="n">coords</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="n">coords</span><span class="o">.</span><span class="n">lat</span><span class="p">))</span>
@@ -1751,9 +1743,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">pix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="o">.</span><span class="n">wcs_world2pix</span><span class="p">(</span><span class="n">coords</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="n">coords</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">coord</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_slice_non_spatial_axes</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">):</span>
-            <span class="n">pix</span> <span class="o">+=</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">coord_to_pix</span><span class="p">(</span><span class="n">coord</span><span class="p">)]</span>
-
+        <span class="n">pix</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">coord_to_pix</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">pix</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="WcsGeom.pix_to_coord"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsGeom.html#gammapy.maps.WcsGeom.pix_to_coord">[docs]</a>    <span class="k">def</span> <span class="nf">pix_to_coord</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pix</span><span class="p">):</span>
@@ -1766,15 +1756,14 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">coords</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span><span class="o">.</span><span class="n">wcs_pix2world</span><span class="p">(</span><span class="n">pix</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pix</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">0</span><span class="p">)</span>
 
-        <span class="n">coords</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;deg&quot;</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
             <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;deg&quot;</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
-        <span class="p">]</span>
+        <span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="n">pix</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_slice_non_spatial_axes</span><span class="p">]):</span>
-            <span class="n">coords</span> <span class="o">+=</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">pix_to_coord</span><span class="p">(</span><span class="n">t</span><span class="p">)]</span>
+        <span class="n">coords</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">pix_to_coord</span><span class="p">(</span><span class="n">pix</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_slice_non_spatial_axes</span><span class="p">])</span>
 
-        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">coords</span></div>
 
 <div class="viewcode-block" id="WcsGeom.pix_to_idx"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsGeom.html#gammapy.maps.WcsGeom.pix_to_idx">[docs]</a>    <span class="k">def</span> <span class="nf">pix_to_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pix</span><span class="p">,</span> <span class="n">clip</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="c1"># TODO: copy idx to avoid modifying input pix?</span>
@@ -1863,10 +1852,7 @@
                 <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
                     <span class="s2">&quot;Upsampling in non-spatial axes not supported for irregular geometries&quot;</span>
                 <span class="p">)</span>
-
-            <span class="n">axes</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_axis_index_by_name</span><span class="p">(</span><span class="n">axis_name</span><span class="p">)</span>
-            <span class="n">axes</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">factor</span><span class="p">)</span>
+            <span class="n">axes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">,</span> <span class="n">axis_name</span><span class="o">=</span><span class="n">axis_name</span><span class="p">)</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_copy</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="WcsGeom.upsample"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsGeom.html#gammapy.maps.WcsGeom.upsample">[docs]</a>    <span class="k">def</span> <span class="nf">upsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">axis_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -1880,9 +1866,7 @@
                 <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
                     <span class="s2">&quot;Upsampling in non-spatial axes not supported for irregular geometries&quot;</span>
                 <span class="p">)</span>
-            <span class="n">axes</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span>
-            <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_axis_index_by_name</span><span class="p">(</span><span class="n">axis_name</span><span class="p">)</span>
-            <span class="n">axes</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">upsample</span><span class="p">(</span><span class="n">factor</span><span class="p">)</span>
+            <span class="n">axes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">upsample</span><span class="p">(</span><span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">,</span> <span class="n">axis_name</span><span class="o">=</span><span class="n">axis_name</span><span class="p">)</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_copy</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="WcsGeom.to_binsz"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsGeom.html#gammapy.maps.WcsGeom.to_binsz">[docs]</a>    <span class="k">def</span> <span class="nf">to_binsz</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">binsz</span><span class="p">):</span>
@@ -2198,7 +2182,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 29 Sep 2020.
+        Last updated on 06 Oct 2020.
       </span>
 
     </p>

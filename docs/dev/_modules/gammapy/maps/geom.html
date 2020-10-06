@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.maps.geom &mdash; gammapy v0.18.dev807+gd14a35666</title>
+  <title>gammapy.maps.geom &mdash; gammapy v0.18.dev912+g5b178ce84</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev807+gd14a35666
+                0.18.dev912+g5b178ce84
               </div>
             
           
@@ -342,7 +342,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Getting-the-reduced-dataset">Getting the reduced dataset</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Extracting-the-ring-background">Extracting the ring background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Compute-correlated-significance-and-correlated-excess-maps">Compute correlated significance and correlated excess maps</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Modeling-and-fitting">Modeling and fitting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/event_sampling.html">Event Sampling</a><ul>
@@ -422,7 +421,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Getting-the-reduced-dataset">Getting the reduced dataset</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Extracting-the-ring-background">Extracting the ring background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Compute-correlated-significance-and-correlated-excess-maps">Compute correlated significance and correlated excess maps</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Modeling-and-fitting">Modeling and fitting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/exclusion_mask.html">Creating exclusion masks</a><ul>
@@ -772,7 +770,10 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../../irf/index.html">irf - Instrument response functions</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#introduction">Introduction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../irf/index.html#irf-axis-naming">IRF Axis naming</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#effective-area">Effective area</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#background">Background</a></li>
@@ -1139,101 +1140,20 @@
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">inspect</span>
 <span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">scipy.interpolate</span>
 <span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">SkyCoord</span>
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="kn">import</span> <span class="n">fits</span>
-<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Column</span><span class="p">,</span> <span class="n">QTable</span><span class="p">,</span> <span class="n">Table</span>
+<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Column</span><span class="p">,</span> <span class="n">Table</span><span class="p">,</span> <span class="n">hstack</span>
 <span class="kn">from</span> <span class="nn">astropy.utils</span> <span class="kn">import</span> <span class="n">lazyproperty</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.interpolation</span> <span class="kn">import</span> <span class="n">interpolation_scale</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">INVALID_INDEX</span><span class="p">,</span> <span class="n">edges_from_lo_hi</span><span class="p">,</span> <span class="n">find_bands_hdu</span><span class="p">,</span> <span class="n">find_hdu</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;MapCoord&quot;</span><span class="p">,</span> <span class="s2">&quot;Geom&quot;</span><span class="p">,</span> <span class="s2">&quot;MapAxis&quot;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;MapCoord&quot;</span><span class="p">,</span> <span class="s2">&quot;Geom&quot;</span><span class="p">,</span> <span class="s2">&quot;MapAxis&quot;</span><span class="p">,</span> <span class="s2">&quot;MapAxes&quot;</span><span class="p">]</span>
 
 <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
-
-
-<span class="k">def</span> <span class="nf">make_axes</span><span class="p">(</span><span class="n">axes_in</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Make a sequence of `~MapAxis` objects.&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">axes_in</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">[]</span>
-
-    <span class="n">axes_out</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">axes_in</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
-            <span class="n">ax</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-            <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;axis</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes_out</span><span class="p">]:</span>
-            <span class="n">axes_out</span> <span class="o">+=</span> <span class="p">[</span><span class="n">ax</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Duplicated axis name: &#39;</span><span class="si">{</span><span class="n">ax</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">axes_out</span>
-
-
-<span class="k">def</span> <span class="nf">make_axes_cols</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">axis_names</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Make FITS table columns for map axes.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    axes : list</span>
-<span class="sd">        Python list of `MapAxis` objects</span>
-
-<span class="sd">    Returns</span>
-<span class="sd">    -------</span>
-<span class="sd">    cols : list</span>
-<span class="sd">        Python list of `~astropy.io.fits.Column`</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">([</span><span class="n">ax</span><span class="o">.</span><span class="n">nbin</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">])</span>
-    <span class="n">chan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
-    <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="s2">&quot;CHANNEL&quot;</span><span class="p">,</span> <span class="s2">&quot;I&quot;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">chan</span><span class="p">)]</span>
-
-    <span class="k">if</span> <span class="n">axis_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">axis_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">]</span>
-    <span class="n">axis_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">_</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">axis_names</span><span class="p">]</span>
-
-    <span class="n">axes_ctr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">center</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">])</span>
-    <span class="n">axes_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">])</span>
-    <span class="n">axes_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">])</span>
-
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">axis_names</span><span class="p">)):</span>
-
-        <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;ENERGY&quot;</span><span class="p">:</span>
-            <span class="n">colnames</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ENERGY&quot;</span><span class="p">,</span> <span class="s2">&quot;E_MIN&quot;</span><span class="p">,</span> <span class="s2">&quot;E_MAX&quot;</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;AXIS</span><span class="si">%i</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">i</span> <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span> <span class="k">else</span> <span class="n">name</span>
-            <span class="n">colnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">,</span> <span class="n">s</span> <span class="o">+</span> <span class="s2">&quot;_MIN&quot;</span><span class="p">,</span> <span class="n">s</span> <span class="o">+</span> <span class="s2">&quot;_MAX&quot;</span><span class="p">]</span>
-
-        <span class="k">for</span> <span class="n">colname</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">colnames</span><span class="p">,</span> <span class="p">[</span><span class="n">axes_ctr</span><span class="p">,</span> <span class="n">axes_min</span><span class="p">,</span> <span class="n">axes_max</span><span class="p">]):</span>
-            <span class="n">array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
-            <span class="n">unit</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="s2">&quot;fits&quot;</span><span class="p">)</span>
-            <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">colname</span><span class="p">,</span> <span class="s2">&quot;E&quot;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">array</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">))</span>
-
-    <span class="k">return</span> <span class="n">cols</span>
-
-
-<span class="c1"># TODO: remove and use proper format handling</span>
-<span class="k">def</span> <span class="nf">find_and_read_bands</span><span class="p">(</span><span class="n">hdu</span><span class="p">,</span> <span class="nb">format</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">hdu</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">[]</span>
-
-    <span class="k">if</span> <span class="nb">format</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;fgst-ccube&quot;</span><span class="p">,</span> <span class="s2">&quot;fgst-template&quot;</span><span class="p">,</span> <span class="s2">&quot;fgst-bexpcube&quot;</span><span class="p">]:</span>
-        <span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="n">MapAxis</span><span class="o">.</span><span class="n">from_table_hdu</span><span class="p">(</span><span class="n">hdu</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)]</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
-
-        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_table_hdu</span><span class="p">(</span><span class="n">hdu</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="n">idx</span><span class="p">)</span>
-                <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span>
-            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
-                <span class="k">continue</span>
-
-    <span class="k">return</span> <span class="n">axes</span>
 
 
 <span class="k">def</span> <span class="nf">get_shape</span><span class="p">(</span><span class="n">param</span><span class="p">):</span>
@@ -1290,25 +1210,6 @@
     <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">coord_to_idx</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">clip</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Convert axis coordinates ``x`` to bin indices.</span>
-
-<span class="sd">    Returns -1 for values below/above the lower/upper edge.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">ndmin</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">ibin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">digitize</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">edges</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
-
-    <span class="k">if</span> <span class="n">clip</span><span class="p">:</span>
-        <span class="n">ibin</span><span class="p">[</span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">ibin</span><span class="p">[</span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">edges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
-            <span class="n">ibin</span><span class="p">[</span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">edges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">INVALID_INDEX</span><span class="o">.</span><span class="n">int</span>
-
-    <span class="n">ibin</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">x</span><span class="p">)]</span> <span class="o">=</span> <span class="n">INVALID_INDEX</span><span class="o">.</span><span class="n">int</span>
-    <span class="k">return</span> <span class="n">ibin</span>
-
-
 <span class="k">def</span> <span class="nf">coord_to_pix</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="n">coord</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s2">&quot;lin&quot;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Convert axis to pixel coordinates for given interpolation scheme.&quot;&quot;&quot;</span>
     <span class="n">scale</span> <span class="o">=</span> <span class="n">interpolation_scale</span><span class="p">(</span><span class="n">interp</span><span class="p">)</span>
@@ -1329,6 +1230,425 @@
     <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">scale</span><span class="o">.</span><span class="n">inverse</span><span class="p">(</span><span class="n">interp_fn</span><span class="p">(</span><span class="n">pix</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="MapAxes"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxes.html#gammapy.maps.MapAxes">[docs]</a><span class="k">class</span> <span class="nc">MapAxes</span><span class="p">(</span><span class="n">Sequence</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;MapAxis container class.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    axes : list of `MapAxis`</span>
+<span class="sd">        List of map axis objects.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axes</span><span class="p">):</span>
+        <span class="n">unique_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">unique_names</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Axis names must be unique&quot;</span><span class="p">))</span>
+            <span class="n">unique_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span> <span class="o">=</span> <span class="n">axes</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Shape of the axes&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">ax</span><span class="o">.</span><span class="n">nbin</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">])</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Names of the axes&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">]</span>
+
+<div class="viewcode-block" id="MapAxes.index"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxes.html#gammapy.maps.MapAxes.index">[docs]</a>    <span class="k">def</span> <span class="nf">index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get index in list&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">axis_name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapAxes.index_data"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxes.html#gammapy.maps.MapAxes.index_data">[docs]</a>    <span class="k">def</span> <span class="nf">index_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get data index of the axes</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        axis_name : str</span>
+<span class="sd">            Name of the axis.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        idx : int</span>
+<span class="sd">            Data index</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">axis_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-</span> <span class="n">idx</span> <span class="o">-</span> <span class="mi">1</span></div>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">other</span><span class="p">))</span>
+
+<div class="viewcode-block" id="MapAxes.upsample"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxes.html#gammapy.maps.MapAxes.upsample">[docs]</a>    <span class="k">def</span> <span class="nf">upsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">axis_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Upsample axis by a given factor</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        factor : int</span>
+<span class="sd">            Upsampling factor.</span>
+<span class="sd">        axis_name : str</span>
+<span class="sd">            Axis to upsample.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        axes : `MapAxes`</span>
+<span class="sd">            Map axes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">axis_name</span><span class="p">:</span>
+                <span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">upsample</span><span class="p">(</span><span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">)</span>
+
+            <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapAxes.resample"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxes.html#gammapy.maps.MapAxes.resample">[docs]</a>    <span class="k">def</span> <span class="nf">resample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Resample axis binning.</span>
+
+<span class="sd">        This method groups the existing bins into a new binning.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        axis : `MapAxis`</span>
+<span class="sd">            New map axis.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        axes : `MapAxes`</span>
+<span class="sd">            Axes object with resampled axis.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">axis_self</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">groups</span> <span class="o">=</span> <span class="n">axis_self</span><span class="o">.</span><span class="n">group_table</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">edges</span><span class="p">)</span>
+
+        <span class="c1"># Keep only normal bins</span>
+        <span class="n">groups</span> <span class="o">=</span> <span class="n">groups</span><span class="p">[</span><span class="n">groups</span><span class="p">[</span><span class="s2">&quot;bin_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;normal   &quot;</span><span class="p">]</span>
+
+        <span class="n">edges</span> <span class="o">=</span> <span class="n">edges_from_lo_hi</span><span class="p">(</span>
+            <span class="n">groups</span><span class="p">[</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_min&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span>
+            <span class="n">groups</span><span class="p">[</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_max&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">axis_resampled</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_edges</span><span class="p">(</span>
+            <span class="n">edges</span><span class="o">=</span><span class="n">edges</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="n">axis</span><span class="o">.</span><span class="n">interp</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span>
+        <span class="p">)</span>
+
+        <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">axis_resampled</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapAxes.downsample"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxes.html#gammapy.maps.MapAxes.downsample">[docs]</a>    <span class="k">def</span> <span class="nf">downsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">axis_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Downsample axis by a given factor</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        factor : int</span>
+<span class="sd">            Upsampling factor.</span>
+<span class="sd">        axis_name : str</span>
+<span class="sd">            Axis to upsample.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        axes : `MapAxes`</span>
+<span class="sd">            Map axes</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">axis_name</span><span class="p">:</span>
+                <span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">)</span>
+
+            <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapAxes.squash"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxes.html#gammapy.maps.MapAxes.squash">[docs]</a>    <span class="k">def</span> <span class="nf">squash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Squash axis.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        axis_name : str</span>
+<span class="sd">            Axis to squash.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        axes : `MapAxes`</span>
+<span class="sd">            Axes with squashed axis.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">axis_name</span><span class="p">:</span>
+                <span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">squash</span><span class="p">()</span>
+            <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapAxes.drop"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxes.html#gammapy.maps.MapAxes.drop">[docs]</a>    <span class="k">def</span> <span class="nf">drop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis_name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Drop an axis.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        axis_name : str</span>
+<span class="sd">            Name of the axis to remove.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        axes : `MapAxes`</span>
+<span class="sd">            Axes with squashed axis.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">axis_name</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">slice</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">idx</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">ax</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No axes: </span><span class="si">{</span><span class="n">idx</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MapAxes.coord_to_idx"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxes.html#gammapy.maps.MapAxes.coord_to_idx">[docs]</a>    <span class="k">def</span> <span class="nf">coord_to_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coord</span><span class="p">,</span> <span class="n">clip</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Transform from axis to pixel indices.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        coord : dict of `~numpy.ndarray` or `MapCoord`</span>
+<span class="sd">            Array of axis coordinate values.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pix : tuple of `~numpy.ndarray`</span>
+<span class="sd">            Array of pixel indices values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">ax</span><span class="o">.</span><span class="n">coord_to_idx</span><span class="p">(</span><span class="n">coord</span><span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">name</span><span class="p">],</span> <span class="n">clip</span><span class="o">=</span><span class="n">clip</span><span class="p">)</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="MapAxes.coord_to_pix"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxes.html#gammapy.maps.MapAxes.coord_to_pix">[docs]</a>    <span class="k">def</span> <span class="nf">coord_to_pix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coord</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Transform from axis to pixel coordinates.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        coord : dict of `~numpy.ndarray`</span>
+<span class="sd">            Array of axis coordinate values.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pix : tuple of `~numpy.ndarray`</span>
+<span class="sd">            Array of pixel coordinate values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">ax</span><span class="o">.</span><span class="n">coord_to_pix</span><span class="p">(</span><span class="n">coord</span><span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">name</span><span class="p">])</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="MapAxes.pix_to_coord"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxes.html#gammapy.maps.MapAxes.pix_to_coord">[docs]</a>    <span class="k">def</span> <span class="nf">pix_to_coord</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pix</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert pixel coordinates to map coordinates.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        pix : tuple</span>
+<span class="sd">            Tuple of pixel coordinates.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        coords : tuple</span>
+<span class="sd">            Tuple of map coordinates.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">([</span><span class="n">ax</span><span class="o">.</span><span class="n">pix_to_coord</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pix</span><span class="p">)])</span></div>
+
+<div class="viewcode-block" id="MapAxes.slice_by_idx"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxes.html#gammapy.maps.MapAxes.slice_by_idx">[docs]</a>    <span class="k">def</span> <span class="nf">slice_by_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slices</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a new geometry by slicing the non-spatial axes.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        slices : dict</span>
+<span class="sd">            Dict of axes names and integers or `slice` object pairs. Contains one</span>
+<span class="sd">            element for each non-spatial dimension. For integer indexing the</span>
+<span class="sd">            corresponding axes is dropped from the map. Axes not specified in the</span>
+<span class="sd">            dict are kept unchanged.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        geom : `~Geom`</span>
+<span class="sd">            Sliced geometry.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">ax_slice</span> <span class="o">=</span> <span class="n">slices</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">))</span>
+
+            <span class="c1"># in the case where isinstance(ax_slice, int) the axes is dropped</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ax_slice</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
+                <span class="n">ax_sliced</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="n">ax_slice</span><span class="p">)</span>
+                <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax_sliced</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapAxes.to_header"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxes.html#gammapy.maps.MapAxes.to_header">[docs]</a>    <span class="k">def</span> <span class="nf">to_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert axes to FITS header</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        header : `~astropy.io.fits.Header`</span>
+<span class="sd">            If a header is provided it is extended with the information.</span>
+<span class="sd">            Otherwise a new one is created.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        header : `~astropy.io.fits.Header`</span>
+<span class="sd">            FITS header.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">header</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">header</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">Header</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;AXCOLS</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;energy&quot;</span> <span class="ow">and</span> <span class="n">ax</span><span class="o">.</span><span class="n">node_type</span> <span class="o">==</span> <span class="s2">&quot;edges&quot;</span><span class="p">:</span>
+                <span class="n">header</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;E_MIN,E_MAX&quot;</span>
+            <span class="k">elif</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;energy&quot;</span> <span class="ow">and</span> <span class="n">ax</span><span class="o">.</span><span class="n">node_type</span> <span class="o">==</span> <span class="s2">&quot;center&quot;</span><span class="p">:</span>
+                <span class="n">header</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;ENERGY&quot;</span>
+            <span class="k">elif</span> <span class="n">ax</span><span class="o">.</span><span class="n">node_type</span> <span class="o">==</span> <span class="s2">&quot;edges&quot;</span><span class="p">:</span>
+                <span class="n">header</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_MIN,</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_MAX&quot;</span>
+            <span class="k">elif</span> <span class="n">ax</span><span class="o">.</span><span class="n">node_type</span> <span class="o">==</span> <span class="s2">&quot;center&quot;</span><span class="p">:</span>
+                <span class="n">header</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid node type </span><span class="si">{</span><span class="n">ax</span><span class="o">.</span><span class="n">node_type</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="n">key_interp</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;INTERP</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">header</span><span class="p">[</span><span class="n">key_interp</span><span class="p">]</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">interp</span>
+        <span class="k">return</span> <span class="n">header</span></div>
+
+<div class="viewcode-block" id="MapAxes.to_table"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxes.html#gammapy.maps.MapAxes.to_table">[docs]</a>    <span class="k">def</span> <span class="nf">to_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert axes to table</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        format : {&quot;gadf-dl3&quot;}</span>
+<span class="sd">            Format to use.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        table : `~astropy.table.Table`</span>
+<span class="sd">            Table with axis data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">tables</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">tables</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">to_table</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">hstack</span><span class="p">(</span><span class="n">tables</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapAxes.to_table_hdu"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxes.html#gammapy.maps.MapAxes.to_table_hdu">[docs]</a>    <span class="k">def</span> <span class="nf">to_table_hdu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make FITS table columns for map axes.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        format : {&quot;gadf&quot;, &quot;fgst-ccube&quot;, &quot;fgst-template&quot;}</span>
+<span class="sd">            Format to use.</span>
+<span class="sd">        prefix : str</span>
+<span class="sd">            HDU name prefix to use</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        hdu : `~astropy.io.fits.BinTableHDU`</span>
+<span class="sd">            Bin table HDU.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># FIXME: Check whether convention is compatible with</span>
+        <span class="c1">#  dimensionality of geometry and simplify!!!</span>
+
+        <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;fgst-ccube&quot;</span><span class="p">:</span>
+            <span class="n">hdu</span> <span class="o">=</span> <span class="s2">&quot;EBOUNDS&quot;</span>
+        <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;fgst-template&quot;</span><span class="p">:</span>
+            <span class="n">hdu</span> <span class="o">=</span> <span class="s2">&quot;ENERGIES&quot;</span>
+        <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;gadf&quot;</span> <span class="ow">or</span> <span class="nb">format</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">prefix</span><span class="p">:</span>
+                <span class="n">hdu</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">_BANDS&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">hdu</span> <span class="o">=</span> <span class="s2">&quot;BANDS&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown format </span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">([</span><span class="n">ax</span><span class="o">.</span><span class="n">nbin</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">])</span>
+        <span class="n">chan</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="s2">&quot;CHANNEL&quot;</span><span class="p">,</span> <span class="s2">&quot;I&quot;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">chan</span><span class="p">)]</span>
+
+        <span class="n">axes_ctr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">center</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">])</span>
+        <span class="n">axes_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">])</span>
+        <span class="n">axes_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">])</span>
+
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;ENERGY&quot;</span><span class="p">:</span>
+                <span class="n">colnames</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ENERGY&quot;</span><span class="p">,</span> <span class="s2">&quot;E_MIN&quot;</span><span class="p">,</span> <span class="s2">&quot;E_MAX&quot;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">colnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span><span class="p">,</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_MIN&quot;</span><span class="p">,</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_MAX&quot;</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">colname</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">colnames</span><span class="p">,</span> <span class="p">[</span><span class="n">axes_ctr</span><span class="p">,</span> <span class="n">axes_min</span><span class="p">,</span> <span class="n">axes_max</span><span class="p">]):</span>
+                <span class="n">array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+                <span class="n">unit</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="s2">&quot;fits&quot;</span><span class="p">)</span>
+                <span class="n">cols</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">fits</span><span class="o">.</span><span class="n">Column</span><span class="p">(</span><span class="n">colname</span><span class="p">,</span> <span class="s2">&quot;E&quot;</span><span class="p">,</span> <span class="n">array</span><span class="o">=</span><span class="n">array</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">))</span>
+
+        <span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_header</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="o">.</span><span class="n">from_columns</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">hdu</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">header</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapAxes.from_table_hdu"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxes.html#gammapy.maps.MapAxes.from_table_hdu">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_table_hdu</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hdu</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create MapAxes from BinTableHDU</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">hdu</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="p">([])</span>
+
+        <span class="k">if</span> <span class="nb">format</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;fgst-ccube&quot;</span><span class="p">,</span> <span class="s2">&quot;fgst-template&quot;</span><span class="p">,</span> <span class="s2">&quot;fgst-bexpcube&quot;</span><span class="p">]:</span>
+            <span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="n">MapAxis</span><span class="o">.</span><span class="n">from_table_hdu</span><span class="p">(</span><span class="n">hdu</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_table_hdu</span><span class="p">(</span><span class="n">hdu</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="n">idx</span><span class="p">)</span>
+                    <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">axes</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapAxes.from_default"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxes.html#gammapy.maps.MapAxes.from_default">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_default</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">axes</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make a sequence of `~MapAxis` objects.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">axes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="p">([])</span>
+
+        <span class="n">axes_out</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">axes</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="n">ax</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;axis</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">&quot;</span>
+
+            <span class="n">axes_out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">axes_out</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="MapAxis"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxis.html#gammapy.maps.MapAxis">[docs]</a><span class="k">class</span> <span class="nc">MapAxis</span><span class="p">:</span>
@@ -1367,8 +1687,7 @@
     <span class="c1"># TODO: Add methods to faciliate FITS I/O.</span>
     <span class="c1"># TODO: Cache an interpolation object?</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s2">&quot;lin&quot;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">node_type</span><span class="o">=</span><span class="s2">&quot;edges&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
 
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">nodes</span><span class="p">)):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;MapAxis: node values must be unique&quot;</span><span class="p">)</span>
@@ -1455,6 +1774,10 @@
         <span class="k">return</span> <span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
     <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_energy_axis</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">,</span> <span class="s2">&quot;energy_true&quot;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">interp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Interpolation scale of the axis.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interp</span>
@@ -1465,8 +1788,9 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
 
     <span class="nd">@name</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">val</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Name of the axis.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">value</span>
 
     <span class="nd">@lazyproperty</span>
     <span class="k">def</span> <span class="nf">edges</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1784,8 +2108,19 @@
 <span class="sd">        idx : `~numpy.ndarray`</span>
 <span class="sd">            Array of bin indices.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">coord</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
-        <span class="k">return</span> <span class="n">coord_to_idx</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">coord</span><span class="p">,</span> <span class="n">clip</span><span class="p">)</span></div>
+        <span class="n">coord</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">ndmin</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">digitize</span><span class="p">(</span><span class="n">coord</span><span class="p">,</span> <span class="n">edges</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">clip</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbin</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
+                <span class="n">idx</span><span class="p">[</span><span class="n">coord</span> <span class="o">&gt;</span> <span class="n">edges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">INVALID_INDEX</span><span class="o">.</span><span class="n">int</span>
+
+        <span class="n">idx</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">coord</span><span class="p">)]</span> <span class="o">=</span> <span class="n">INVALID_INDEX</span><span class="o">.</span><span class="n">int</span>
+
+        <span class="k">return</span> <span class="n">idx</span></div>
 
 <div class="viewcode-block" id="MapAxis.slice"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxis.html#gammapy.maps.MapAxis.slice">[docs]</a>    <span class="k">def</span> <span class="nf">slice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Create a new axis object by extracting a slice from this axis.</span>
@@ -1921,7 +2256,7 @@
         <span class="n">edges_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">edges_idx</span><span class="p">)</span>
         <span class="n">edges_ref</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pix_to_coord</span><span class="p">(</span><span class="n">edges_idx</span><span class="p">)</span>
 
-        <span class="n">groups</span> <span class="o">=</span> <span class="n">QTable</span><span class="p">()</span>
+        <span class="n">groups</span> <span class="o">=</span> <span class="n">Table</span><span class="p">()</span>
         <span class="n">groups</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_min&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_ref</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">groups</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_max&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_ref</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
 
@@ -1960,32 +2295,18 @@
         <span class="n">groups</span><span class="o">.</span><span class="n">add_column</span><span class="p">(</span><span class="n">group_idx</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;group_idx&quot;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">groups</span></div>
 
-    <span class="k">def</span> <span class="nf">_up_down_sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">nbin</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_type</span> <span class="o">==</span> <span class="s2">&quot;edges&quot;</span><span class="p">:</span>
-            <span class="n">nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span>
-
-        <span class="n">lo_bnd</span><span class="p">,</span> <span class="n">hi_bnd</span> <span class="o">=</span> <span class="n">nodes</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">nodes</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_bounds</span><span class="p">(</span>
-            <span class="n">lo_bnd</span><span class="o">=</span><span class="n">lo_bnd</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-            <span class="n">hi_bnd</span><span class="o">=</span><span class="n">hi_bnd</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
-            <span class="n">nbin</span><span class="o">=</span><span class="n">nbin</span><span class="p">,</span>
-            <span class="n">interp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">interp</span><span class="p">,</span>
-            <span class="n">node_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">node_type</span><span class="p">,</span>
-            <span class="n">unit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="p">,</span>
-            <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-        <span class="p">)</span>
-
 <div class="viewcode-block" id="MapAxis.upsample"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxis.html#gammapy.maps.MapAxis.upsample">[docs]</a>    <span class="k">def</span> <span class="nf">upsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Upsample map axis by a given factor.</span>
+
+<span class="sd">        When up-sampling for each node specified in the axis, the corresponding</span>
+<span class="sd">        number of sub-nodes are introduced and preserving the initial nodes. For</span>
+<span class="sd">        node type &quot;edges&quot; this results in nbin * factor new bins. For node type</span>
+<span class="sd">        &quot;center&quot; this results in (nbin - 1) * factor + 1 new bins.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        factor : int</span>
 <span class="sd">            Upsampling factor.</span>
-
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1993,11 +2314,26 @@
 <span class="sd">            Usampled map axis.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">nbin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbin</span> <span class="o">*</span> <span class="n">factor</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_up_down_sample</span><span class="p">(</span><span class="n">nbin</span><span class="p">)</span></div>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_type</span> <span class="o">==</span> <span class="s2">&quot;edges&quot;</span><span class="p">:</span>
+            <span class="n">pix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coord_to_pix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="p">)</span>
+            <span class="n">nbin</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nbin</span> <span class="o">*</span> <span class="n">factor</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">pix_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">pix</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">pix</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">nbin</span><span class="p">)</span>
+            <span class="n">edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pix_to_coord</span><span class="p">(</span><span class="n">pix_new</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_edges</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">interp</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">coord_to_pix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">)</span>
+            <span class="n">nbin</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">nbin</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">factor</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">pix_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">pix</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">pix</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span> <span class="n">nbin</span><span class="p">)</span>
+            <span class="n">nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pix_to_coord</span><span class="p">(</span><span class="n">pix_new</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_nodes</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">interp</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="MapAxis.downsample"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxis.html#gammapy.maps.MapAxis.downsample">[docs]</a>    <span class="k">def</span> <span class="nf">downsample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Downsample map axis by a given factor.</span>
+
+<span class="sd">        When down-sampling each n-th (given by the factor) bin is selected from</span>
+<span class="sd">        the axis while preserving the axis limits. For node type &quot;edges&quot; this</span>
+<span class="sd">        requires nbin to be dividable by the factor, for node type &quot;center&quot; this</span>
+<span class="sd">        requires nbin - 1 to be dividable by the factor.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -2009,14 +2345,108 @@
 <span class="sd">        -------</span>
 <span class="sd">        axis : `MapAxis`</span>
 <span class="sd">            Downsampled map axis.</span>
-
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">nbin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbin</span> <span class="o">/</span> <span class="n">factor</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_type</span> <span class="o">==</span> <span class="s2">&quot;edges&quot;</span><span class="p">:</span>
+            <span class="n">nbin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbin</span> <span class="o">/</span> <span class="n">factor</span>
 
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">nbin</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> bins is not divisible by </span><span class="si">{</span><span class="n">factor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">nbin</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> bins is not divisible by </span><span class="si">{</span><span class="n">factor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_up_down_sample</span><span class="p">(</span><span class="n">nbin</span><span class="p">)</span></div>
+            <span class="n">edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="p">[::</span><span class="n">factor</span><span class="p">]</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_edges</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">interp</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">nbin</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nbin</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">factor</span>
+
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">nbin</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> bins - 1 is not divisible by </span><span class="si">{</span><span class="n">factor</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="n">nodes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">[::</span><span class="n">factor</span><span class="p">]</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_nodes</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">interp</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapAxis.to_header"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxis.html#gammapy.maps.MapAxis.to_header">[docs]</a>    <span class="k">def</span> <span class="nf">to_header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;ogip&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create FITS header</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        header : `~astropy.io.fits.Header`</span>
+<span class="sd">            Header to extend.</span>
+<span class="sd">        format : {&quot;ogip&quot;}</span>
+<span class="sd">            Format specification</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        header : `~astropy.io.fits.Header`</span>
+<span class="sd">            Header to extend.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;ogip&quot;</span><span class="p">:</span>
+            <span class="n">header</span><span class="p">[</span><span class="s2">&quot;EXTNAME&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;EBOUNDS&quot;</span><span class="p">,</span> <span class="s2">&quot;Name of this binary table extension&quot;</span>
+            <span class="n">header</span><span class="p">[</span><span class="s2">&quot;TELESCOP&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;DUMMY&quot;</span><span class="p">,</span> <span class="s2">&quot;Mission/satellite name&quot;</span>
+            <span class="n">header</span><span class="p">[</span><span class="s2">&quot;INSTRUME&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;DUMMY&quot;</span><span class="p">,</span> <span class="s2">&quot;Instrument/detector&quot;</span>
+            <span class="n">header</span><span class="p">[</span><span class="s2">&quot;FILTER&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="s2">&quot;Filter information&quot;</span>
+            <span class="n">header</span><span class="p">[</span><span class="s2">&quot;CHANTYPE&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;PHA&quot;</span><span class="p">,</span> <span class="s2">&quot;Type of channels (PHA, PI etc)&quot;</span>
+            <span class="n">header</span><span class="p">[</span><span class="s2">&quot;DETCHANS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbin</span><span class="p">,</span> <span class="s2">&quot;Total number of detector PHA channels&quot;</span>
+            <span class="n">header</span><span class="p">[</span><span class="s2">&quot;HDUCLASS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;OGIP&quot;</span><span class="p">,</span> <span class="s2">&quot;Organisation devising file format&quot;</span>
+            <span class="n">header</span><span class="p">[</span><span class="s2">&quot;HDUCLAS1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;RESPONSE&quot;</span><span class="p">,</span> <span class="s2">&quot;File relates to response of instrument&quot;</span>
+            <span class="n">header</span><span class="p">[</span><span class="s2">&quot;HDUCLAS2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;EBOUNDS&quot;</span><span class="p">,</span> <span class="s2">&quot;This is an EBOUNDS extension&quot;</span>
+            <span class="n">header</span><span class="p">[</span><span class="s2">&quot;HDUVERS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1.2.0&quot;</span><span class="p">,</span> <span class="s2">&quot;Version of file format&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown format </span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">header</span></div>
+
+<div class="viewcode-block" id="MapAxis.to_table"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxis.html#gammapy.maps.MapAxis.to_table">[docs]</a>    <span class="k">def</span> <span class="nf">to_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;ogip&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert `~astropy.units.Quantity` to OGIP ``EBOUNDS`` extension.</span>
+
+<span class="sd">        See https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html#tth_sEc3.2</span>
+
+<span class="sd">        The &#39;ogip-sherpa&#39; format is equivalent to &#39;ogip&#39; but uses keV energy units.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        format : {&quot;ogip&quot;, &quot;ogip-sherpa&quot;, &quot;gadf-dl3&quot;}</span>
+<span class="sd">            Format specification</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        table : `~astropy.table.Table`</span>
+<span class="sd">            Table HDU</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">Table</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">format</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ogip&quot;</span><span class="p">,</span> <span class="s2">&quot;ogip-sherpa&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="s2">&quot;energy&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Only energy axes can be converted to HDU&quot;</span><span class="p">)</span>
+
+            <span class="n">edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges</span>
+
+            <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;ogip-sherpa&quot;</span><span class="p">:</span>
+                <span class="n">edges</span> <span class="o">=</span> <span class="n">edges</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;keV&quot;</span><span class="p">)</span>
+
+            <span class="n">table</span><span class="p">[</span><span class="s2">&quot;CHANNEL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nbin</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">)</span>
+            <span class="n">table</span><span class="p">[</span><span class="s2">&quot;E_MIN&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">table</span><span class="p">[</span><span class="s2">&quot;E_MAX&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;gadf-dl3&quot;</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">gammapy.irf.io</span> <span class="kn">import</span> <span class="n">IRF_DL3_AXES_SPECIFICATION</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;energy&quot;</span><span class="p">:</span>
+                <span class="n">column_prefix</span> <span class="o">=</span> <span class="s2">&quot;ENERG&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">column_prefix</span><span class="p">,</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">IRF_DL3_AXES_SPECIFICATION</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="n">spec</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+                        <span class="k">break</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_type</span> <span class="o">==</span> <span class="s2">&quot;edges&quot;</span><span class="p">:</span>
+                <span class="n">edges_hi</span><span class="p">,</span> <span class="n">edges_lo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">edges_hi</span><span class="p">,</span> <span class="n">edges_lo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span>
+
+            <span class="n">table</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">column_prefix</span><span class="si">}</span><span class="s2">_LO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_hi</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+            <span class="n">table</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">column_prefix</span><span class="si">}</span><span class="s2">_HI&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_lo</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2"> is not a valid format&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">table</span></div>
 
 <div class="viewcode-block" id="MapAxis.to_table_hdu"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxis.html#gammapy.maps.MapAxis.to_table_hdu">[docs]</a>    <span class="k">def</span> <span class="nf">to_table_hdu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;ogip&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Convert `~astropy.units.Quantity` to OGIP ``EBOUNDS`` extension.</span>
@@ -2030,64 +2460,37 @@
 <span class="sd">        format : {&quot;ogip&quot;, &quot;ogip-sherpa&quot;}</span>
 <span class="sd">            Format specification</span>
 
-
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        hdu : `~astropy.io.fits.BinTableHDU`</span>
 <span class="sd">            Table HDU</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="nb">format</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ogip&quot;</span><span class="p">,</span> <span class="s2">&quot;ogip-sherpa&quot;</span><span class="p">]:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Only &#39;ogip&#39; and &#39;ogip-sherpa&#39; format supported&quot;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="s2">&quot;energy&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Only energy axes can be converted to HDU&quot;</span><span class="p">)</span>
-
-        <span class="n">edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges</span>
-
-        <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;ogip-sherpa&quot;</span><span class="p">:</span>
-            <span class="n">edges</span> <span class="o">=</span> <span class="n">edges</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;keV&quot;</span><span class="p">)</span>
-
-        <span class="n">table</span> <span class="o">=</span> <span class="n">Table</span><span class="p">()</span>
-        <span class="n">table</span><span class="p">[</span><span class="s2">&quot;CHANNEL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nbin</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">)</span>
-        <span class="n">table</span><span class="p">[</span><span class="s2">&quot;E_MIN&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">table</span><span class="p">[</span><span class="s2">&quot;E_MAX&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
-
+        <span class="n">table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_table</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)</span>
         <span class="n">hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
-
-        <span class="n">header</span> <span class="o">=</span> <span class="n">hdu</span><span class="o">.</span><span class="n">header</span>
-        <span class="n">header</span><span class="p">[</span><span class="s2">&quot;EXTNAME&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;EBOUNDS&quot;</span><span class="p">,</span> <span class="s2">&quot;Name of this binary table extension&quot;</span>
-        <span class="n">header</span><span class="p">[</span><span class="s2">&quot;TELESCOP&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;DUMMY&quot;</span><span class="p">,</span> <span class="s2">&quot;Mission/satellite name&quot;</span>
-        <span class="n">header</span><span class="p">[</span><span class="s2">&quot;INSTRUME&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;DUMMY&quot;</span><span class="p">,</span> <span class="s2">&quot;Instrument/detector&quot;</span>
-        <span class="n">header</span><span class="p">[</span><span class="s2">&quot;FILTER&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span> <span class="s2">&quot;Filter information&quot;</span>
-        <span class="n">header</span><span class="p">[</span><span class="s2">&quot;CHANTYPE&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;PHA&quot;</span><span class="p">,</span> <span class="s2">&quot;Type of channels (PHA, PI etc)&quot;</span>
-        <span class="n">header</span><span class="p">[</span><span class="s2">&quot;DETCHANS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nbin</span><span class="p">,</span> <span class="s2">&quot;Total number of detector PHA channels&quot;</span>
-        <span class="n">header</span><span class="p">[</span><span class="s2">&quot;HDUCLASS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;OGIP&quot;</span><span class="p">,</span> <span class="s2">&quot;Organisation devising file format&quot;</span>
-        <span class="n">header</span><span class="p">[</span><span class="s2">&quot;HDUCLAS1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;RESPONSE&quot;</span><span class="p">,</span> <span class="s2">&quot;File relates to response of instrument&quot;</span>
-        <span class="n">header</span><span class="p">[</span><span class="s2">&quot;HDUCLAS2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;EBOUNDS&quot;</span><span class="p">,</span> <span class="s2">&quot;This is an EBOUNDS extension&quot;</span>
-        <span class="n">header</span><span class="p">[</span><span class="s2">&quot;HDUVERS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;1.2.0&quot;</span><span class="p">,</span> <span class="s2">&quot;Version of file format&quot;</span>
+        <span class="k">if</span> <span class="nb">format</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ogip&quot;</span><span class="p">,</span> <span class="s2">&quot;ogip-sherpa&quot;</span><span class="p">]:</span>
+            <span class="n">hdu</span><span class="o">.</span><span class="n">header</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_header</span><span class="p">(</span><span class="n">hdu</span><span class="o">.</span><span class="n">header</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">hdu</span></div>
 
-
-<div class="viewcode-block" id="MapAxis.from_table_hdu"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxis.html#gammapy.maps.MapAxis.from_table_hdu">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_table_hdu</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hdu</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;ogip&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<div class="viewcode-block" id="MapAxis.from_table"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxis.html#gammapy.maps.MapAxis.from_table">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_table</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;ogip&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">column_prefix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Instanciate MapAxis from table HDU</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        hdu : `~astropy.io.fits.BinTableHDU`</span>
-<span class="sd">            Table HDU</span>
-<span class="sd">        format : {&quot;ogip&quot;, &quot;ogip-arf&quot;, &quot;fgst-ccube&quot;, &quot;fgst-template&quot;}</span>
+<span class="sd">        table : `~astropy.table.Table`</span>
+<span class="sd">            Table</span>
+<span class="sd">        format : {&quot;ogip&quot;, &quot;ogip-arf&quot;, &quot;fgst-ccube&quot;, &quot;fgst-template&quot;, &quot;gadf&quot;, &quot;gadf-dl3&quot;}</span>
 <span class="sd">            Format specification</span>
 <span class="sd">        idx : int</span>
 <span class="sd">            Column index of the axis.</span>
+<span class="sd">        column_prefix : str</span>
+<span class="sd">            Column name prefix of the axis, used for</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        axis : `MapAxis`</span>
 <span class="sd">            Map Axis</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">table</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">hdu</span><span class="p">)</span>
-
         <span class="k">if</span> <span class="nb">format</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ogip&quot;</span><span class="p">,</span> <span class="s2">&quot;fgst-ccube&quot;</span><span class="p">]:</span>
             <span class="n">emin</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s2">&quot;E_MIN&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
             <span class="n">emax</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s2">&quot;E_MAX&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span>
@@ -2120,6 +2523,9 @@
                 <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;energy&quot;</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">name</span> <span class="o">=</span> <span class="n">colnames</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_MIN&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                <span class="c1"># this is need for backward compatibility</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;theta&quot;</span><span class="p">:</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;rad&quot;</span>
 
             <span class="n">interp</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;INTERP</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;lin&quot;</span><span class="p">)</span>
 
@@ -2132,10 +2538,50 @@
 
             <span class="n">axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="p">(</span><span class="n">nodes</span><span class="o">=</span><span class="n">nodes</span><span class="p">,</span> <span class="n">node_type</span><span class="o">=</span><span class="n">node_type</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
 
+        <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;gadf-dl3&quot;</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">gammapy.irf.io</span> <span class="kn">import</span> <span class="n">IRF_DL3_AXES_SPECIFICATION</span>
+
+            <span class="n">spec</span> <span class="o">=</span> <span class="n">IRF_DL3_AXES_SPECIFICATION</span><span class="p">[</span><span class="n">column_prefix</span><span class="p">]</span>
+            <span class="n">name</span><span class="p">,</span> <span class="n">interp</span> <span class="o">=</span> <span class="n">spec</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span> <span class="n">spec</span><span class="p">[</span><span class="s2">&quot;interp&quot;</span><span class="p">]</span>
+
+            <span class="c1"># background models are stored in reconstructed energy</span>
+            <span class="n">extname</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;EXTNAME&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">extname</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;BACKGROUND&quot;</span><span class="p">,</span> <span class="s2">&quot;BKG&quot;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">column_prefix</span> <span class="o">==</span> <span class="s2">&quot;ENERG&quot;</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;energy&quot;</span>
+
+            <span class="n">edges_lo</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">column_prefix</span><span class="si">}</span><span class="s2">_LO&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">edges_hi</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">column_prefix</span><span class="si">}</span><span class="s2">_HI&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">edges_hi</span><span class="p">,</span> <span class="n">edges_lo</span><span class="p">):</span>
+                <span class="n">axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_nodes</span><span class="p">(</span><span class="n">edges_hi</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">edges</span> <span class="o">=</span> <span class="n">edges_from_lo_hi</span><span class="p">(</span><span class="n">edges_lo</span><span class="p">,</span> <span class="n">edges_hi</span><span class="p">)</span>
+                <span class="n">axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_edges</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Format &#39;</span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2">&#39; not supported&quot;</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">axis</span></div></div>
+        <span class="k">return</span> <span class="n">axis</span></div>
+
+<div class="viewcode-block" id="MapAxis.from_table_hdu"><a class="viewcode-back" href="../../../api/gammapy.maps.MapAxis.html#gammapy.maps.MapAxis.from_table_hdu">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_table_hdu</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hdu</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;ogip&quot;</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Instanciate MapAxis from table HDU</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        hdu : `~astropy.io.fits.BinTableHDU`</span>
+<span class="sd">            Table HDU</span>
+<span class="sd">        format : {&quot;ogip&quot;, &quot;ogip-arf&quot;, &quot;fgst-ccube&quot;, &quot;fgst-template&quot;}</span>
+<span class="sd">            Format specification</span>
+<span class="sd">        idx : int</span>
+<span class="sd">            Column index of the axis.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        axis : `MapAxis`</span>
+<span class="sd">            Map Axis</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">hdu</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="n">idx</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="MapCoord"><a class="viewcode-back" href="../../../api/gammapy.maps.MapCoord.html#gammapy.maps.MapCoord">[docs]</a><span class="k">class</span> <span class="nc">MapCoord</span><span class="p">:</span>
@@ -2229,7 +2675,7 @@
         <span class="k">return</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;deg&quot;</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">frame</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_from_lonlat</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_from_lonlat</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axis_names</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Create a `~MapCoord` from a tuple of coordinate vectors.</span>
 
 <span class="sd">        The first two elements of the tuple should be longitude and latitude in degrees.</span>
@@ -2244,24 +2690,27 @@
 <span class="sd">        coord : `~MapCoord`</span>
 <span class="sd">            A coordinates object.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">axis_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">axis_names</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;axis</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)]</span>
+
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
             <span class="n">coords_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;lon&quot;</span><span class="p">:</span> <span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;lat&quot;</span><span class="p">:</span> <span class="n">coords</span><span class="p">[</span><span class="mi">1</span><span class="p">]}</span>
-            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">2</span><span class="p">:]):</span>
-                <span class="n">coords_dict</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;axis</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axis_names</span><span class="p">,</span> <span class="n">coords</span><span class="p">[</span><span class="mi">2</span><span class="p">:]):</span>
+                <span class="n">coords_dict</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">c</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unrecognized input type.&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">coords_dict</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">,</span> <span class="n">match_by_name</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_from_tuple</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_from_tuple</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axis_names</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Create from tuple of coordinate vectors.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">))</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
-            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_from_lonlat</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_from_lonlat</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">,</span> <span class="n">axis_names</span><span class="o">=</span><span class="n">axis_names</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">SkyCoord</span><span class="p">):</span>
             <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">frame</span> <span class="o">=</span> <span class="n">skycoord_to_lonlat</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">)</span>
             <span class="n">coords</span> <span class="o">=</span> <span class="p">(</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">)</span> <span class="o">+</span> <span class="n">coords</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
-            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_from_lonlat</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_from_lonlat</span><span class="p">(</span><span class="n">coords</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">,</span> <span class="n">axis_names</span><span class="o">=</span><span class="n">axis_names</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Type not supported: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
 
@@ -2282,7 +2731,7 @@
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;coords dict must contain &#39;lon&#39;/&#39;lat&#39; or &#39;skycoord&#39;.&quot;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="MapCoord.create"><a class="viewcode-back" href="../../../api/gammapy.maps.MapCoord.html#gammapy.maps.MapCoord.create">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axis_names</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Create a new `~MapCoord` object.</span>
 
 <span class="sd">        This method can be used to create either unnamed (with tuple input)</span>
@@ -2296,6 +2745,8 @@
 <span class="sd">            Set the coordinate system for longitude and latitude. If</span>
 <span class="sd">            None longitude and latitude will be assumed to be in</span>
 <span class="sd">            the coordinate system native to a given map geometry.</span>
+<span class="sd">        axis_names : list of str</span>
+<span class="sd">            Axis names use if a tuple is provided</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
@@ -2320,9 +2771,9 @@
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
             <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
-            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_from_tuple</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_from_tuple</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">,</span> <span class="n">axis_names</span><span class="o">=</span><span class="n">axis_names</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">SkyCoord</span><span class="p">):</span>
-            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_from_tuple</span><span class="p">((</span><span class="n">data</span><span class="p">,),</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_from_tuple</span><span class="p">((</span><span class="n">data</span><span class="p">,),</span> <span class="n">frame</span><span class="o">=</span><span class="n">frame</span><span class="p">,</span> <span class="n">axis_names</span><span class="o">=</span><span class="n">axis_names</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported input type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
@@ -2416,10 +2867,6 @@
     <span class="k">def</span> <span class="nf">center_skydir</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">pass</span>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">axes_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">]</span>
-
 <div class="viewcode-block" id="Geom.from_hdulist"><a class="viewcode-back" href="../../../api/gammapy.maps.Geom.html#gammapy.maps.Geom.from_hdulist">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_hdulist</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hdu_bands</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Load a geometry object from a FITS HDUList.</span>
@@ -2454,30 +2901,12 @@
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_header</span><span class="p">(</span><span class="n">hdu</span><span class="o">.</span><span class="n">header</span><span class="p">,</span> <span class="n">hdu_bands</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Geom.to_bands_hdu"><a class="viewcode-back" href="../../../api/gammapy.maps.Geom.html#gammapy.maps.Geom.to_bands_hdu">[docs]</a>    <span class="k">def</span> <span class="nf">to_bands_hdu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">hdu_skymap</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="n">header</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">Header</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_fill_header_from_axes</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
-        <span class="n">axis_names</span> <span class="o">=</span> <span class="kc">None</span>
-
-        <span class="c1"># FIXME: Check whether convention is compatible with</span>
-        <span class="c1"># dimensionality of geometry</span>
-
-        <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;fgst-ccube&quot;</span><span class="p">:</span>
-            <span class="n">hdu</span> <span class="o">=</span> <span class="s2">&quot;EBOUNDS&quot;</span>
-            <span class="n">axis_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;fgst-template&quot;</span><span class="p">:</span>
-            <span class="n">hdu</span> <span class="o">=</span> <span class="s2">&quot;ENERGIES&quot;</span>
-            <span class="n">axis_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;gadf&quot;</span> <span class="ow">and</span> <span class="n">hdu</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">hdu_skymap</span><span class="p">:</span>
-                <span class="n">hdu</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">hdu_skymap</span><span class="si">}</span><span class="s2">_BANDS&quot;</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">hdu</span> <span class="o">=</span> <span class="s2">&quot;BANDS&quot;</span>
-        <span class="c1"># else:</span>
-        <span class="c1">#     raise ValueError(&#39;Unknown conv: {}&#39;.format(conv))</span>
-
-        <span class="n">cols</span> <span class="o">=</span> <span class="n">make_axes_cols</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="n">axis_names</span><span class="p">)</span>
-        <span class="n">cols</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_bands_cols</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="o">.</span><span class="n">from_columns</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span> <span class="n">header</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">hdu</span><span class="p">)</span></div>
+        <span class="n">table_hdu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">to_table_hdu</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="n">hdu_skymap</span><span class="p">)</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="n">table_hdu</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">columns</span>
+        <span class="n">cols</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_make_bands_cols</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="o">.</span><span class="n">from_columns</span><span class="p">(</span>
+            <span class="n">cols</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="n">table_hdu</span><span class="o">.</span><span class="n">header</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">table_hdu</span><span class="o">.</span><span class="n">name</span>
+        <span class="p">)</span></div>
 
     <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
     <span class="k">def</span> <span class="nf">_make_bands_cols</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -2666,7 +3095,7 @@
 <span class="sd">        slices : dict</span>
 <span class="sd">            Dict of axes names and integers or `slice` object pairs. Contains one</span>
 <span class="sd">            element for each non-spatial dimension. For integer indexing the</span>
-<span class="sd">            correspoding axes is dropped from the map. Axes not specified in the</span>
+<span class="sd">            corresponding axes is dropped from the map. Axes not specified in the</span>
 <span class="sd">            dict are kept unchanged.</span>
 
 <span class="sd">        Returns</span>
@@ -2674,14 +3103,7 @@
 <span class="sd">        geom : `~Geom`</span>
 <span class="sd">            Sliced geometry.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
-            <span class="n">ax_slice</span> <span class="o">=</span> <span class="n">slices</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">))</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ax_slice</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
-                <span class="n">ax_sliced</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="n">ax_slice</span><span class="p">)</span>
-                <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax_sliced</span><span class="p">)</span>
-                <span class="c1"># in the case where isinstance(ax_slice, int) the axes is dropped</span>
-
+        <span class="n">axes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">(</span><span class="n">slices</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_copy</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Geom.to_image"><a class="viewcode-back" href="../../../api/gammapy.maps.Geom.html#gammapy.maps.Geom.to_image">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
@@ -2715,12 +3137,12 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
 
-<div class="viewcode-block" id="Geom.squash"><a class="viewcode-back" href="../../../api/gammapy.maps.Geom.html#gammapy.maps.Geom.squash">[docs]</a>    <span class="k">def</span> <span class="nf">squash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">):</span>
+<div class="viewcode-block" id="Geom.squash"><a class="viewcode-back" href="../../../api/gammapy.maps.Geom.html#gammapy.maps.Geom.squash">[docs]</a>    <span class="k">def</span> <span class="nf">squash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis_name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Squash geom axis.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        axis : str</span>
+<span class="sd">        axis_name : str</span>
 <span class="sd">            Axis to squash.</span>
 
 <span class="sd">        Returns</span>
@@ -2728,20 +3150,15 @@
 <span class="sd">        geom : `Geom`</span>
 <span class="sd">            Geom with squashed axis.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">axis</span><span class="p">:</span>
-                <span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">squash</span><span class="p">()</span>
-            <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-
+        <span class="n">axes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">squash</span><span class="p">(</span><span class="n">axis_name</span><span class="o">=</span><span class="n">axis_name</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span><span class="o">.</span><span class="n">to_cube</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Geom.drop"><a class="viewcode-back" href="../../../api/gammapy.maps.Geom.html#gammapy.maps.Geom.drop">[docs]</a>    <span class="k">def</span> <span class="nf">drop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">):</span>
+<div class="viewcode-block" id="Geom.drop"><a class="viewcode-back" href="../../../api/gammapy.maps.Geom.html#gammapy.maps.Geom.drop">[docs]</a>    <span class="k">def</span> <span class="nf">drop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis_name</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Drop an axis from the geom.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        axis : str</span>
+<span class="sd">        axis_name : str</span>
 <span class="sd">            Name of the axis to remove.</span>
 
 <span class="sd">        Returns</span>
@@ -2749,32 +3166,8 @@
 <span class="sd">        geom : `Geom`</span>
 <span class="sd">            New geom with the axis removed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">axis</span><span class="p">:</span>
-                <span class="k">continue</span>
-            <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-
+        <span class="n">axes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">axis_name</span><span class="o">=</span><span class="n">axis_name</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span><span class="o">.</span><span class="n">to_cube</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="Geom.coord_to_tuple"><a class="viewcode-back" href="../../../api/gammapy.maps.Geom.html#gammapy.maps.Geom.coord_to_tuple">[docs]</a>    <span class="k">def</span> <span class="nf">coord_to_tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coord</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Generate a coordinate tuple compatible with this geometry.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        coord : `~MapCoord`</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="n">coord</span><span class="o">.</span><span class="n">ndim</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;ndim mismatch&quot;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">coord</span><span class="o">.</span><span class="n">match_by_name</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">coord</span><span class="o">.</span><span class="n">_data</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
-
-        <span class="n">coord_tuple</span> <span class="o">=</span> <span class="p">[</span><span class="n">coord</span><span class="o">.</span><span class="n">lon</span><span class="p">,</span> <span class="n">coord</span><span class="o">.</span><span class="n">lat</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
-            <span class="n">coord_tuple</span> <span class="o">+=</span> <span class="p">[</span><span class="n">coord</span><span class="p">[</span><span class="n">ax</span><span class="o">.</span><span class="n">name</span><span class="p">]]</span>
-
-        <span class="k">return</span> <span class="n">coord_tuple</span></div>
 
 <div class="viewcode-block" id="Geom.pad"><a class="viewcode-back" href="../../../api/gammapy.maps.Geom.html#gammapy.maps.Geom.pad">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
     <span class="k">def</span> <span class="nf">pad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pad_width</span><span class="p">):</span>
@@ -2863,50 +3256,13 @@
 <span class="sd">        map : `Geom`</span>
 <span class="sd">            Geom with resampled axis.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">axis_self</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-        <span class="n">groups</span> <span class="o">=</span> <span class="n">axis_self</span><span class="o">.</span><span class="n">group_table</span><span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">edges</span><span class="p">)</span>
-
-        <span class="c1"># Keep only normal bins</span>
-        <span class="c1"># TODO: improve on this</span>
-        <span class="n">groups</span> <span class="o">=</span> <span class="n">groups</span><span class="p">[</span><span class="n">groups</span><span class="p">[</span><span class="s2">&quot;bin_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;normal   &quot;</span><span class="p">]</span>
-
-        <span class="n">edges</span> <span class="o">=</span> <span class="n">edges_from_lo_hi</span><span class="p">(</span><span class="n">groups</span><span class="p">[</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_min&quot;</span><span class="p">],</span> <span class="n">groups</span><span class="p">[</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;_max&quot;</span><span class="p">])</span>
-
-        <span class="n">axis_resampled</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_edges</span><span class="p">(</span>
-            <span class="n">edges</span><span class="o">=</span><span class="n">edges</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="n">axis</span><span class="o">.</span><span class="n">interp</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span>
-        <span class="p">)</span>
-
-        <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
-                <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">axis_resampled</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
-
+        <span class="n">axes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_copy</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Geom.solid_angle"><a class="viewcode-back" href="../../../api/gammapy.maps.Geom.html#gammapy.maps.Geom.solid_angle">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
     <span class="k">def</span> <span class="nf">solid_angle</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Solid angle (`~astropy.units.Quantity` in ``sr``).&quot;&quot;&quot;</span>
         <span class="k">pass</span></div>
-
-    <span class="k">def</span> <span class="nf">_fill_header_from_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">header</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-            <span class="n">key</span> <span class="o">=</span> <span class="s2">&quot;AXCOLS</span><span class="si">%i</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">idx</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;energy&quot;</span> <span class="ow">and</span> <span class="n">ax</span><span class="o">.</span><span class="n">node_type</span> <span class="o">==</span> <span class="s2">&quot;edges&quot;</span><span class="p">:</span>
-                <span class="n">header</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;E_MIN,E_MAX&quot;</span>
-            <span class="k">elif</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;energy&quot;</span> <span class="ow">and</span> <span class="n">ax</span><span class="o">.</span><span class="n">node_type</span> <span class="o">==</span> <span class="s2">&quot;center&quot;</span><span class="p">:</span>
-                <span class="n">header</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;ENERGY&quot;</span>
-            <span class="k">elif</span> <span class="n">ax</span><span class="o">.</span><span class="n">node_type</span> <span class="o">==</span> <span class="s2">&quot;edges&quot;</span><span class="p">:</span>
-                <span class="n">header</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_MIN,</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">_MAX&quot;</span>
-            <span class="k">elif</span> <span class="n">ax</span><span class="o">.</span><span class="n">node_type</span> <span class="o">==</span> <span class="s2">&quot;center&quot;</span><span class="p">:</span>
-                <span class="n">header</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid node type </span><span class="si">{</span><span class="n">ax</span><span class="o">.</span><span class="n">node_type</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-            <span class="n">key_interp</span> <span class="o">=</span> <span class="s2">&quot;INTERP</span><span class="si">%i</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">idx</span>
-            <span class="n">header</span><span class="p">[</span><span class="n">key_interp</span><span class="p">]</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">_interp</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">is_image</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -2925,38 +3281,6 @@
             <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">:</span>
                 <span class="n">valid</span> <span class="o">=</span> <span class="n">valid</span> <span class="ow">and</span> <span class="p">(</span><span class="n">axis</span><span class="o">.</span><span class="n">nbin</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">valid</span>
-
-<div class="viewcode-block" id="Geom.get_axis_by_name"><a class="viewcode-back" href="../../../api/gammapy.maps.Geom.html#gammapy.maps.Geom.get_axis_by_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_axis_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Get an axis by name (case in-sensitive).</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        name : str</span>
-<span class="sd">           Name of the requested axis</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        axis : `~gammapy.maps.MapAxis`</span>
-<span class="sd">            Axis</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">axes</span> <span class="o">=</span> <span class="p">{</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">():</span> <span class="n">axis</span> <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">}</span>
-        <span class="k">return</span> <span class="n">axes</span><span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()]</span></div>
-
-<div class="viewcode-block" id="Geom.get_axis_index_by_name"><a class="viewcode-back" href="../../../api/gammapy.maps.Geom.html#gammapy.maps.Geom.get_axis_index_by_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_axis_index_by_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Get an axis index by name (case in-sensitive).</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        name : str</span>
-<span class="sd">           Axis name</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        index : int</span>
-<span class="sd">            Axis index</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">axis</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">axis</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span></div>
 
     <span class="k">def</span> <span class="nf">_init_copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Init map geom instance by copying missing init arguments from self.</span>
@@ -3001,7 +3325,7 @@
 <span class="sd">            Energy mask</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># get energy axes and values</span>
-        <span class="n">energy_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_axis_by_name</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
+        <span class="n">energy_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span>
 
         <span class="k">if</span> <span class="n">round_to_edge</span><span class="p">:</span>
             <span class="n">emin</span><span class="p">,</span> <span class="n">emax</span> <span class="o">=</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">round</span><span class="p">([</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">])</span>
@@ -3031,7 +3355,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 29 Sep 2020.
+        Last updated on 06 Oct 2020.
       </span>
 
     </p>

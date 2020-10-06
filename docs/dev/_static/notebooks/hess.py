@@ -26,7 +26,6 @@
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 from astropy.coordinates import SkyCoord
-import numpy as np
 import astropy.units as u
 
 
@@ -61,6 +60,12 @@ data_store.obs_table[:2][["OBS_ID", "DATE-OBS", "RA_PNT", "DEC_PNT", "OBJECT"]]
 
 
 obs = data_store.obs(23523)
+
+
+# In[ ]:
+
+
+obs.events.select_offset([0, 2.5] * u.deg).peek()
 
 
 # In[ ]:

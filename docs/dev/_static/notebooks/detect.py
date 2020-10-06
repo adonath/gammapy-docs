@@ -83,8 +83,8 @@ psf = EnergyDependentTablePSF.read(
 psfmap = PSFMap.from_energy_dependent_table_psf(psf)
 
 edisp = EDispKernelMap.from_diagonal_response(
-    energy_axis=counts.geom.get_axis_by_name("energy"),
-    energy_axis_true=exposure.geom.get_axis_by_name("energy_true"),
+    energy_axis=counts.geom.axes["energy"],
+    energy_axis_true=exposure.geom.axes["energy_true"],
 )
 
 dataset = MapDataset(

@@ -383,7 +383,7 @@ psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch="log", add_cbar=True);
 # In[ ]:
 
 
-e_true = exposure.geom.get_axis_by_name("energy_true")
+e_true = exposure.geom.axes["energy_true"]
 edisp = EDispMap.from_diagonal_response(energy_axis_true=e_true)
 
 

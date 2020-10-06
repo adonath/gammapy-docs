@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.modeling.parameter &mdash; gammapy v0.18.dev807+gd14a35666</title>
+  <title>gammapy.modeling.parameter &mdash; gammapy v0.18.dev912+g5b178ce84</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev807+gd14a35666
+                0.18.dev912+g5b178ce84
               </div>
             
           
@@ -342,7 +342,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Getting-the-reduced-dataset">Getting the reduced dataset</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Extracting-the-ring-background">Extracting the ring background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Compute-correlated-significance-and-correlated-excess-maps">Compute correlated significance and correlated excess maps</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Modeling-and-fitting">Modeling and fitting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/event_sampling.html">Event Sampling</a><ul>
@@ -422,7 +421,6 @@
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Getting-the-reduced-dataset">Getting the reduced dataset</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Extracting-the-ring-background">Extracting the ring background</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Compute-correlated-significance-and-correlated-excess-maps">Compute correlated significance and correlated excess maps</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/ring_background.html#Modeling-and-fitting">Modeling and fitting</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/exclusion_mask.html">Creating exclusion masks</a><ul>
@@ -772,7 +770,10 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../../irf/index.html">irf - Instrument response functions</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#introduction">Introduction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../irf/index.html#irf-axis-naming">IRF Axis naming</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#effective-area">Effective area</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../irf/index.html#background">Background</a></li>
@@ -1221,6 +1222,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">max</span> <span class="o">=</span> <span class="nb">max</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">frozen</span> <span class="o">=</span> <span class="n">frozen</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_error</span> <span class="o">=</span> <span class="n">error</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_type</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="c1"># TODO: move this to a setter method that can be called from `__set__` also!</span>
         <span class="c1"># Having it here is bad: behaviour not clear if Quantity and `unit` is passed.</span>
@@ -1235,17 +1237,20 @@
     <span class="k">def</span> <span class="fm">__get__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">owner</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span>
-        <span class="k">return</span> <span class="n">instance</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">par</span> <span class="o">=</span> <span class="n">instance</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">par</span><span class="o">.</span><span class="n">_type</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">par</span>
 
     <span class="k">def</span> <span class="fm">__set__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">):</span>
             <span class="n">instance</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
-            <span class="c1"># TODO: create the link in the parameters list</span>
-            <span class="c1"># par = instance.__dict__[self.name]</span>
-            <span class="c1"># instance.__dict__[&quot;_parameters&quot;].link(par, value)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">par</span> <span class="o">=</span> <span class="n">instance</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot assign </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2"> to parameter </span><span class="si">{</span><span class="n">par</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_type</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1453,6 +1458,11 @@
             <span class="n">par</span><span class="o">.</span><span class="n">check_limits</span><span class="p">()</span></div>
 
     <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">types</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Parameter types&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">par</span><span class="o">.</span><span class="n">type</span> <span class="k">for</span> <span class="n">par</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Parameter values (`numpy.ndarray`).&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">_</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
@@ -1467,8 +1477,7 @@
 <span class="sd">            List of `Parameters` objects</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">pars</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="n">parameters_list</span><span class="p">)</span>
-        <span class="n">parameters</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">pars</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">parameters</span></div>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">pars</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Parameters.copy"><a class="viewcode-back" href="../../../api/gammapy.modeling.Parameters.html#gammapy.astro.darkmatter.Parameters.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;A deep copy&quot;&quot;&quot;</span>
@@ -1630,7 +1639,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 29 Sep 2020.
+        Last updated on 06 Oct 2020.
       </span>
 
     </p>
