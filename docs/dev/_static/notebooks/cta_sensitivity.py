@@ -78,7 +78,7 @@ obs = Observation.create(pointing=pointing, irfs=irfs, livetime="5 h")
 
 
 spectrum_maker = SpectrumDatasetMaker(
-    selection=["aeff", "edisp", "background"]
+    selection=["exposure", "edisp", "background"]
 )
 dataset = spectrum_maker.run(empty_dataset, obs)
 
@@ -90,8 +90,8 @@ dataset = spectrum_maker.run(empty_dataset, obs)
 
 containment = 0.68
 
-# correct effective area
-dataset.aeff.data *= containment
+# correct exposure
+dataset.exposure *= containment
 
 # correct background estimation
 on_radii = obs.psf.containment_radius(
@@ -119,7 +119,9 @@ dataset_on_off = SpectrumDatasetOnOff.from_spectrum_dataset(
 # In[ ]:
 
 
-sensitivity_estimator = SensitivityEstimator(gamma_min=5, n_sigma=3)
+sensitivity_estimator = SensitivityEstimator(
+    gamma_min=5, n_sigma=3, bkg_syst_fraction=0.10
+)
 sensitivity_table = sensitivity_estimator.run(dataset_on_off)
 
 
@@ -160,6 +162,14 @@ plt.plot(
 is_g = t["criterion"] == "gamma"
 plt.plot(
     t["energy"][is_g], t["e2dnde"][is_g], "*-", color="blue", label="gamma"
+)
+is_bkg_syst = t["criterion"] == "bkg"
+plt.plot(
+    t["energy"][is_bkg_syst],
+    t["e2dnde"][is_bkg_syst],
+    "v-",
+    color="green",
+    label="bkg syst",
 )
 
 plt.loglog()

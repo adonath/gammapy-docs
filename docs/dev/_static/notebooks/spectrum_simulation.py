@@ -117,7 +117,7 @@ print(obs)
 dataset_empty = SpectrumDataset.create(
     e_reco=energy_axis, e_true=energy_axis_true, region=on_region, name="obs-0"
 )
-maker = SpectrumDatasetMaker(selection=["aeff", "edisp", "background"])
+maker = SpectrumDatasetMaker(selection=["exposure", "edisp", "background"])
 dataset = maker.run(dataset_empty, obs)
 
 
@@ -168,10 +168,10 @@ print(datasets.names)
 table = datasets.info_table()
 
 fix, axes = plt.subplots(1, 3, figsize=(12, 4))
-axes[0].hist(table["n_on"])
-axes[0].set_xlabel("n_on")
-axes[1].hist(table["n_off"])
-axes[1].set_xlabel("n_off")
+axes[0].hist(table["counts"])
+axes[0].set_xlabel("Counts")
+axes[1].hist(table["counts_off"])
+axes[1].set_xlabel("Counts Off")
 axes[2].hist(table["excess"])
 axes[2].set_xlabel("excess");
 

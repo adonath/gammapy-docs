@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.makers.spectrum &mdash; gammapy v0.18.dev912+g5b178ce84</title>
+  <title>gammapy.makers.spectrum &mdash; gammapy v0.18.dev1001+gca7b61171</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev912+g5b178ce84
+                0.18.dev1001+gca7b61171
               </div>
             
           
@@ -500,7 +500,8 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/background_model.html">Make template background model</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/background_model.html#Introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/background_model.html#Context">Context</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/background_model.html#Proposed-approach">Proposed approach</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/background_model.html#Setup">Setup</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/background_model.html#Select-off-data">Select off data</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/background_model.html#Background-model">Background model</a></li>
@@ -1137,6 +1138,7 @@
   <h1>Source code for gammapy.makers.spectrum</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
 <span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span>
 <span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
 <span class="kn">from</span> <span class="nn">regions</span> <span class="kn">import</span> <span class="n">CircleSkyRegion</span>
@@ -1161,14 +1163,14 @@
 <span class="sd">    ----------</span>
 <span class="sd">    selection : list</span>
 <span class="sd">        List of str, selecting which maps to make.</span>
-<span class="sd">        Available: &#39;counts&#39;, &#39;aeff&#39;, &#39;background&#39;, &#39;edisp&#39;</span>
+<span class="sd">        Available: &#39;counts&#39;, &#39;exposure&#39;, &#39;background&#39;, &#39;edisp&#39;</span>
 <span class="sd">        By default, all spectra are made.</span>
 <span class="sd">    containment_correction : bool</span>
 <span class="sd">        Apply containment correction for point sources and circular on regions.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">tag</span> <span class="o">=</span> <span class="s2">&quot;SpectrumDatasetMaker&quot;</span>
-    <span class="n">available_selection</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">,</span> <span class="s2">&quot;background&quot;</span><span class="p">,</span> <span class="s2">&quot;aeff&quot;</span><span class="p">,</span> <span class="s2">&quot;edisp&quot;</span><span class="p">]</span>
+    <span class="n">available_selection</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">,</span> <span class="s2">&quot;background&quot;</span><span class="p">,</span> <span class="s2">&quot;exposure&quot;</span><span class="p">,</span> <span class="s2">&quot;edisp&quot;</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selection</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">containment_correction</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">containment_correction</span> <span class="o">=</span> <span class="n">containment_correction</span>
@@ -1227,8 +1229,8 @@
         <span class="n">data</span> <span class="o">*=</span> <span class="n">observation</span><span class="o">.</span><span class="n">observation_time_duration</span>
         <span class="k">return</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="o">=</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="SpectrumDatasetMaker.make_aeff"><a class="viewcode-back" href="../../../api/gammapy.makers.SpectrumDatasetMaker.html#gammapy.makers.SpectrumDatasetMaker.make_aeff">[docs]</a>    <span class="k">def</span> <span class="nf">make_aeff</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">observation</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Make effective area.</span>
+<div class="viewcode-block" id="SpectrumDatasetMaker.make_exposure"><a class="viewcode-back" href="../../../api/gammapy.makers.SpectrumDatasetMaker.html#gammapy.makers.SpectrumDatasetMaker.make_exposure">[docs]</a>    <span class="k">def</span> <span class="nf">make_exposure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">observation</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Make exposure.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1237,11 +1239,10 @@
 <span class="sd">        observation: `~gammapy.data.Observation`</span>
 <span class="sd">            Observation to compute effective area for.</span>
 
-
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        aeff : `~gammapy.irf.EffectiveAreaTable`</span>
-<span class="sd">            Effective area table.</span>
+<span class="sd">        exposure : `~gammapy.irf.EffectiveAreaTable`</span>
+<span class="sd">            Exposure map.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">offset</span> <span class="o">=</span> <span class="n">observation</span><span class="o">.</span><span class="n">pointing_radec</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">center_skydir</span><span class="p">)</span>
         <span class="n">energy</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy_true&quot;</span><span class="p">]</span>
@@ -1257,32 +1258,44 @@
             <span class="n">containment</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">containment</span><span class="p">(</span><span class="n">energy</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="n">geom</span><span class="o">.</span><span class="n">region</span><span class="o">.</span><span class="n">radius</span><span class="p">)</span>
             <span class="n">data</span> <span class="o">*=</span> <span class="n">containment</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
 
-        <span class="k">return</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span></div>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span> <span class="o">*</span> <span class="n">observation</span><span class="o">.</span><span class="n">observation_live_time_duration</span>
+        <span class="n">meta</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;livetime&quot;</span><span class="p">:</span> <span class="n">observation</span><span class="o">.</span><span class="n">observation_live_time_duration</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">unit</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="n">meta</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="SpectrumDatasetMaker.make_edisp"><a class="viewcode-back" href="../../../api/gammapy.makers.SpectrumDatasetMaker.html#gammapy.makers.SpectrumDatasetMaker.make_edisp">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">make_edisp</span><span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="n">energy_axis</span><span class="p">,</span> <span class="n">energy_axis_true</span><span class="p">,</span> <span class="n">observation</span><span class="p">):</span>
+<div class="viewcode-block" id="SpectrumDatasetMaker.make_edisp_kernel"><a class="viewcode-back" href="../../../api/gammapy.makers.SpectrumDatasetMaker.html#gammapy.makers.SpectrumDatasetMaker.make_edisp_kernel">[docs]</a>    <span class="k">def</span> <span class="nf">make_edisp_kernel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">observation</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Make energy dispersion.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        position : `~astropy.coordinates.SkyCoord`</span>
-<span class="sd">            Position to compute energy dispersion for.</span>
-<span class="sd">        energy_axis : `~gammapy.maps.MapAxis`</span>
-<span class="sd">            Reconstructed energy axis.</span>
-<span class="sd">        energy_axis_true : `~gammapy.maps.MapAxis`</span>
-<span class="sd">            True energy axis.</span>
+<span class="sd">        geom : `~gammapy.maps.Geom`</span>
+<span class="sd">            Reference geom. Must contain &quot;energy&quot; and &quot;energy_true&quot; axes in that order.</span>
 <span class="sd">        observation: `~gammapy.data.Observation`</span>
 <span class="sd">            Observation to compute edisp for.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        edisp : `~gammapy.irf.EDispKernel`</span>
-<span class="sd">            Energy dispersion</span>
+<span class="sd">        edisp : `~gammapy.irf.EDispKernelMap`</span>
+<span class="sd">            Energy dispersion kernel map</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">position</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">center_skydir</span>
+        <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span>
+        <span class="n">energy_axis_true</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy_true&quot;</span><span class="p">]</span>
+
         <span class="n">offset</span> <span class="o">=</span> <span class="n">observation</span><span class="o">.</span><span class="n">pointing_radec</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">position</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">observation</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">to_energy_dispersion</span><span class="p">(</span>
+
+        <span class="n">kernel</span> <span class="o">=</span> <span class="n">observation</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">to_energy_dispersion</span><span class="p">(</span>
             <span class="n">offset</span><span class="p">,</span> <span class="n">e_reco</span><span class="o">=</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">,</span> <span class="n">e_true</span><span class="o">=</span><span class="n">energy_axis_true</span><span class="o">.</span><span class="n">edges</span>
-        <span class="p">)</span></div>
+        <span class="p">)</span>
+
+        <span class="n">edisp</span> <span class="o">=</span> <span class="n">EDispKernelMap</span><span class="o">.</span><span class="n">from_edisp_kernel</span><span class="p">(</span>
+            <span class="n">kernel</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="n">geom</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="n">exposure</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_exposure</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">squash</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">),</span> <span class="n">observation</span><span class="p">)</span>
+        <span class="n">edisp</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">exposure</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="k">return</span> <span class="n">edisp</span></div>
 
 <div class="viewcode-block" id="SpectrumDatasetMaker.make_meta_table"><a class="viewcode-back" href="../../../api/gammapy.makers.SpectrumDatasetMaker.html#gammapy.makers.SpectrumDatasetMaker.make_meta_table">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">make_meta_table</span><span class="p">(</span><span class="n">observation</span><span class="p">):</span>
@@ -1321,13 +1334,8 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;gti&quot;</span><span class="p">:</span> <span class="n">observation</span><span class="o">.</span><span class="n">gti</span><span class="p">,</span>
-            <span class="s2">&quot;livetime&quot;</span><span class="p">:</span> <span class="n">observation</span><span class="o">.</span><span class="n">observation_live_time_duration</span><span class="p">,</span>
             <span class="s2">&quot;meta_table&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_meta_table</span><span class="p">(</span><span class="n">observation</span><span class="p">),</span>
         <span class="p">}</span>
-
-        <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span>
-        <span class="n">energy_axis_true</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy_true&quot;</span><span class="p">]</span>
-        <span class="n">region</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">region</span>
 
         <span class="k">if</span> <span class="s2">&quot;counts&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">:</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_counts</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">observation</span><span class="p">)</span>
@@ -1340,16 +1348,12 @@
             <span class="n">bkg_model</span><span class="o">.</span><span class="n">spectral_model</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">frozen</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;models&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bkg_model</span>
 
-        <span class="k">if</span> <span class="s2">&quot;aeff&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;aeff&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_aeff</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">aeff</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">observation</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">&quot;exposure&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_exposure</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">observation</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="s2">&quot;edisp&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="p">:</span>
-            <span class="n">edisp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_edisp</span><span class="p">(</span>
-                <span class="n">region</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="n">energy_axis</span><span class="p">,</span> <span class="n">energy_axis_true</span><span class="p">,</span> <span class="n">observation</span>
-            <span class="p">)</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;edisp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">EDispKernelMap</span><span class="o">.</span><span class="n">from_edisp_kernel</span><span class="p">(</span>
-                <span class="n">edisp</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span>
-            <span class="p">)</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;edisp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_edisp_kernel</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">edisp_map</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">observation</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">SpectrumDataset</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
 </pre></div>
 
@@ -1366,7 +1370,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 06 Oct 2020.
+        Last updated on 15 Oct 2020.
       </span>
 
     </p>

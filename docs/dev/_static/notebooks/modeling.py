@@ -44,6 +44,7 @@
 import numpy as np
 from astropy import units as u
 import matplotlib.pyplot as plt
+import scipy.stats as st
 from gammapy.modeling import Fit
 from gammapy.datasets import Datasets, SpectrumDatasetOnOff
 from gammapy.modeling.models import LogParabolaSpectralModel, SkyModel
@@ -179,7 +180,9 @@ total_stat = result_minuit.total_stat
 for par in dataset_hess.models.parameters:
     if par.frozen is False:
         profile = fit.stat_profile(parameter=par)
-        plt.plot(profile["values"], profile["stat"] - total_stat)
+        plt.plot(
+            profile[f"{par.name}_scan"], profile["stat_scan"] - total_stat
+        )
         plt.xlabel(f"{par.unit}")
         plt.ylabel("Delta TS")
         plt.title(f"{par.name}: {par.value} +- {par.error}")
@@ -213,14 +216,18 @@ ax = crab_spectrum.plot_error(energy_range=energy_range, energy_power=2)
 # 
 # 
 # In most studies, one wishes to estimate parameters distribution using observed sample data.
-# A confidence interval gives an estimated range of values which is likely to include an unknown parameter.
-# The selection of a confidence level for an interval determines the probability that the confidence interval produced will contain the true parameter value.
-# A confidence contour is a 2D generalization of a confidence interval, often represented as an ellipsoid around the best-fit value.
+# A 1-dimensional confidence interval gives an estimated range of values which is likely to include an unknown parameter.
+# A confidence contour is a 2-dimensional generalization of a confidence interval, often represented as an ellipsoid around the best-fit value.
 # 
+# Gammapy offers two ways of computing confidence contours, in the dedicated methods `Fit.minos_contour()` and `Fit.stat_profile()`. In the following sections we will describe them.
+
+# An important point to keep in mind is: *what does a $N\sigma$ confidence contour really mean?* The answer is it represents the points of the parameter space for which the model likelihood is $N\sigma$ above the minimum. But one always has to keep in mind that **1 standard deviation in two dimensions has a smaller coverage probability than 68%**, and similarly for all other levels. In particular, in 2-dimensions the probability enclosed by the $N\sigma$ confidence contour is $P(N)=1-e^{-N^2/2}$.
+
+# ### Computing contours using `Fit.minos_contour()` 
+
 # After the fit, MINUIT offers the possibility to compute the confidence confours.
 # gammapy provides an interface to this functionnality throught the `Fit` object using the `minos_contour` method.
 # Here we defined a function to automatize the contour production for the differents parameterer and confidence levels (expressed in term of sigma):
-# 
 
 # In[ ]:
 
@@ -237,8 +244,8 @@ def make_contours(fit, result, npoints, sigmas):
                 sigma=sigma,
             )
             contours[f"contour_{par_1}_{par_2}"] = {
-                par_1: contour["x"].tolist(),
-                par_2: contour["y"].tolist(),
+                par_1: contour[par_1].tolist(),
+                par_2: contour[par_2].tolist(),
             }
         cts_sigma.append(contours)
     return cts_sigma
@@ -315,6 +322,103 @@ for p, ax in zip(panels, axes):
 plt.legend()
 plt.tight_layout()
 
+
+# ### Computing contours using `Fit.stat_surface()`
+
+# This alternative method for the computation of confidence contours, although more time consuming than `Fit.minos_contour()`, is expected to be more stable. It consists of a generalization of `Fit.stat_profile()` to a 2-dimensional parameter space. The algorithm is very simple:
+# - First, passing two arrays of parameters values, a 2-dimensional discrete parameter space is defined;
+# - For each node of the parameter space, the two parameters of interest are frozen. This way, a likelihood value ($-2\mathrm{ln}\,\mathcal{L}$, actually) is computed, by either freezing (default) or fitting all nuisance parameters;
+# - Finally, a 2-dimensional surface of $-2\mathrm{ln}(\mathcal{L})$ values is returned.
+# Using that surface, one can easily compute a surface of $TS = -2\Delta\mathrm{ln}(\mathcal{L})$ and compute confidence contours.
+# 
+# Let's see it step by step.
+
+# First of all, we can notice that this method is "backend-agnostic", meaning that it can be run with MINUIT, sherpa or scipy as fitting tools. Here we will stick with MINUIT, which is the default choice:
+
+# In[ ]:
+
+
+optimize_opts = {"backend": "minuit", "print_level": 0}
+
+
+# As an example, we can compute the confidence contour for the `alpha` and `beta` parameters of the `dataset_hess`. Here we define the parameter space:
+
+# In[ ]:
+
+
+result = result_minuit
+par_1 = result.parameters["alpha"]
+par_2 = result.parameters["beta"]
+
+x = par_1
+y = par_2
+x_values = np.linspace(1.55, 2.7, 20)
+y_values = np.linspace(-0.05, 0.55, 20)
+
+
+# Then we run the algorithm, by choosing `reoptimize=False` for the sake of time saving. In real life applications, we strongly recommend to  use `reoptimize=True`, so that all free nuisance parameters will be fit at each grid node. This is the correct way, statistically speaking, of computing confidence contours, but is expected to be time consuming.
+
+# In[ ]:
+
+
+stat_surface = fit.stat_surface(
+    x, y, x_values, y_values, reoptimize=False, **optimize_opts
+)
+
+
+# In order to easily inspect the results, we can convert the $-2\mathrm{ln}(\mathcal{L})$ surface to a surface of statistical significance (in units of Gaussian standard deviations from the surface minimum):
+
+# In[ ]:
+
+
+# Compute TS
+TS = stat_surface["stat_scan"] - result.total_stat
+
+
+# In[ ]:
+
+
+# Compute the corresponding statistical significance surface
+gaussian_sigmas = np.sqrt(TS.T)
+
+
+# Notice that, as explained before, $1\sigma$ contour obtained this way will not contain 68% of the probability, but rather 
+
+# In[ ]:
+
+
+# Compute the corresponding statistical significance surface
+# p_value = 1 - st.chi2(df=1).cdf(TS)
+# gaussian_sigmas = st.norm.isf(p_value / 2).T
+
+
+# Finally, we can plot the surface values together with contours:
+
+# In[ ]:
+
+
+fig, ax = plt.subplots(figsize=(8, 6))
+
+# We choose to plot 1 and 2 sigma confidence contours
+levels = [1, 2]
+
+contours = plt.contour(gaussian_sigmas, levels=levels, colors="white")
+plt.clabel(contours, fmt="%.0f$\,\sigma$", inline=3, fontsize=15)
+
+im = plt.imshow(
+    gaussian_sigmas,
+    extent=[0, len(x_values) - 1, 0, len(y_values) - 1],
+    origin="lower",
+)
+fig.colorbar(im)
+
+plt.xticks(range(len(x_values)), np.around(x_values, decimals=2), rotation=45)
+plt.yticks(range(len(y_values)), np.around(y_values, decimals=2));
+
+
+# Note that, if computed with `reoptimize=True`, this plot would be completely consistent with the third panel of the plot produced with `Fit.minos_contour` (try!).
+
+# Finally, it is always remember that confidence contours are approximations. In particular, when the parameter range boundaries are close to the contours lines, it is expected that the statistical meaning of the countours is not well defined. That's why we advise to always choose a parameter space that com contain the contours you're interested in.
 
 # In[ ]:
 

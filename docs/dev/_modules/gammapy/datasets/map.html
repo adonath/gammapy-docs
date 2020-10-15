@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.datasets.map &mdash; gammapy v0.18.dev912+g5b178ce84</title>
+  <title>gammapy.datasets.map &mdash; gammapy v0.18.dev1001+gca7b61171</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev912+g5b178ce84
+                0.18.dev1001+gca7b61171
               </div>
             
           
@@ -500,7 +500,8 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/background_model.html">Make template background model</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/background_model.html#Introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/background_model.html#Context">Context</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/background_model.html#Proposed-approach">Proposed approach</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/background_model.html#Setup">Setup</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/background_model.html#Select-off-data">Select off data</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/background_model.html#Background-model">Background model</a></li>
@@ -1156,7 +1157,7 @@
     <span class="n">Models</span><span class="p">,</span>
     <span class="n">ProperModels</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="kn">import</span> <span class="n">cash</span><span class="p">,</span> <span class="n">cash_sum_cython</span><span class="p">,</span> <span class="n">wstat</span><span class="p">,</span> <span class="n">get_wstat_mu_bkg</span>
+<span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="kn">import</span> <span class="n">cash</span><span class="p">,</span> <span class="n">cash_sum_cython</span><span class="p">,</span> <span class="n">wstat</span><span class="p">,</span> <span class="n">get_wstat_mu_bkg</span><span class="p">,</span> <span class="n">WStatCountsStatistic</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.random</span> <span class="kn">import</span> <span class="n">get_random_state</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.scripts</span> <span class="kn">import</span> <span class="n">make_name</span><span class="p">,</span> <span class="n">make_path</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.fits</span> <span class="kn">import</span> <span class="n">LazyFitsData</span><span class="p">,</span> <span class="n">HDULocation</span>
@@ -1223,9 +1224,7 @@
     <span class="k">if</span> <span class="n">migra_axis</span><span class="p">:</span>
         <span class="n">geom_edisp</span> <span class="o">=</span> <span class="n">geom_irf</span><span class="o">.</span><span class="n">to_cube</span><span class="p">([</span><span class="n">migra_axis</span><span class="p">,</span> <span class="n">energy_axis_true</span><span class="p">])</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">geom_edisp</span> <span class="o">=</span> <span class="n">geom_irf</span><span class="o">.</span><span class="n">to_cube</span><span class="p">(</span>
-            <span class="p">[</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">],</span> <span class="n">energy_axis_true</span><span class="p">]</span>
-        <span class="p">)</span>
+        <span class="n">geom_edisp</span> <span class="o">=</span> <span class="n">geom_irf</span><span class="o">.</span><span class="n">to_cube</span><span class="p">([</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">],</span> <span class="n">energy_axis_true</span><span class="p">])</span>
 
     <span class="k">return</span> <span class="p">{</span>
         <span class="s2">&quot;geom&quot;</span><span class="p">:</span> <span class="n">geom</span><span class="p">,</span>
@@ -1314,61 +1313,23 @@
         <span class="n">str_</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
         <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
         <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: {{name}} </span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Name&quot;</span><span class="p">)</span>
+        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: {{counts:.0f}} </span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Total counts&quot;</span><span class="p">)</span>
+        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: {{npred:.2f}}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Total predicted counts&quot;</span><span class="p">)</span>
+        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: {{background:.2f}}</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Total background counts&quot;</span><span class="p">)</span>
 
-        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: </span><span class="si">{}</span><span class="s2"> </span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Name&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: {{exposure_min:.2e}}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Exposure min&quot;</span><span class="p">)</span>
+        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: {{exposure_max:.2e}}</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Exposure max&quot;</span><span class="p">)</span>
 
-        <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: </span><span class="si">{:.0f}</span><span class="s2"> </span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Total counts&quot;</span><span class="p">,</span> <span class="n">counts</span><span class="p">)</span>
-
-        <span class="n">npred</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">npred</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: </span><span class="si">{:.2f}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Total predicted counts&quot;</span><span class="p">,</span> <span class="n">npred</span><span class="p">)</span>
-
-        <span class="n">background</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">background</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: </span><span class="si">{:.2f}</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Total background counts&quot;</span><span class="p">,</span> <span class="n">background</span><span class="p">)</span>
-
-        <span class="n">exposure_min</span><span class="p">,</span> <span class="n">exposure_max</span><span class="p">,</span> <span class="n">exposure_unit</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="s2">&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">reduce_over_axes</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">mask</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-                    <span class="n">mask</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">mask</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="n">exposure_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">mask</span><span class="p">])</span>
-            <span class="n">exposure_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">mask</span><span class="p">])</span>
-            <span class="n">exposure_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">unit</span>
-
-        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: </span><span class="si">{:.2e}</span><span class="s2"> </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="s2">&quot;Exposure min&quot;</span><span class="p">,</span> <span class="n">exposure_min</span><span class="p">,</span> <span class="n">exposure_unit</span>
-        <span class="p">)</span>
-        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: </span><span class="si">{:.2e}</span><span class="s2"> </span><span class="si">{}</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-            <span class="s2">&quot;Exposure max&quot;</span><span class="p">,</span> <span class="n">exposure_max</span><span class="p">,</span> <span class="n">exposure_unit</span>
-        <span class="p">)</span>
-
-        <span class="c1"># data section</span>
-        <span class="n">n_bins</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">n_bins</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">size</span>
-        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: </span><span class="si">{}</span><span class="s2"> </span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Number of total bins&quot;</span><span class="p">,</span> <span class="n">n_bins</span><span class="p">)</span>
-
-        <span class="n">n_fit_bins</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">n_fit_bins</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mask</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: </span><span class="si">{}</span><span class="s2"> </span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Number of fit bins&quot;</span><span class="p">,</span> <span class="n">n_fit_bins</span><span class="p">)</span>
+        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: {{n_bins}} </span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Number of total bins&quot;</span><span class="p">)</span>
+        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: {{n_fit_bins}} </span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Number of fit bins&quot;</span><span class="p">)</span>
 
         <span class="c1"># likelihood section</span>
-        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: </span><span class="si">{}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Fit statistic type&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_type</span><span class="p">)</span>
+        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: {{stat_type}}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Fit statistic type&quot;</span><span class="p">)</span>
+        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: {{stat_sum:.2f}}</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Fit statistic value (-2 log(L))&quot;</span><span class="p">)</span>
 
-        <span class="n">stat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">stat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_sum</span><span class="p">()</span>
-        <span class="n">str_</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="si">{:32}</span><span class="s2">: </span><span class="si">{:.2f}</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;Fit statistic value (-2 log(L))&quot;</span><span class="p">,</span> <span class="n">stat</span><span class="p">)</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">info_dict</span><span class="p">()</span>
+        <span class="n">str_</span> <span class="o">=</span> <span class="n">str_</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="n">info</span><span class="p">)</span>
 
         <span class="c1"># model section</span>
         <span class="n">n_models</span><span class="p">,</span> <span class="n">n_pars</span><span class="p">,</span> <span class="n">n_free_pars</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
@@ -1475,6 +1436,29 @@
                 <span class="n">npred</span> <span class="o">=</span> <span class="n">evaluator</span><span class="o">.</span><span class="n">compute_npred</span><span class="p">()</span>
                 <span class="n">npred_total</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">npred</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">npred_total</span></div>
+
+<div class="viewcode-block" id="MapDataset.npred_sig"><a class="viewcode-back" href="../../../api/gammapy.datasets.MapDataset.html#gammapy.datasets.MapDataset.npred_sig">[docs]</a>    <span class="k">def</span> <span class="nf">npred_sig</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;&quot;Model predicted signal counts. If a model is passed, predicted counts from that component is returned.</span>
+<span class="sd">        Else, the total signal counts are returned.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -------------</span>
+<span class="sd">        model: `~gammapy.modeling.models.SkyModel`, optional</span>
+<span class="sd">            Sky model to compute the npred for.</span>
+<span class="sd">            If none, the sum of all components (minus the background model)</span>
+<span class="sd">            is returned</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        ----------</span>
+<span class="sd">        npred_sig: `gammapy.maps.WcsNDMap`</span>
+<span class="sd">            Map of the predicted signal counts</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluators</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="o">.</span><span class="n">compute_npred</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="MapDataset.from_geoms"><a class="viewcode-back" href="../../../api/gammapy.datasets.MapDataset.html#gammapy.datasets.MapDataset.from_geoms">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_geoms</span><span class="p">(</span>
@@ -1589,6 +1573,60 @@
 
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_geoms</span><span class="p">(</span><span class="n">reference_time</span><span class="o">=</span><span class="n">reference_time</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">mask_safe_image</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Reduced mask safe&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">reduce_over_axes</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">mask_safe_psf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Mask safe for psf maps&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">geom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">squash</span><span class="p">(</span><span class="s2">&quot;energy_true&quot;</span><span class="p">)</span>
+        <span class="n">mask_safe_psf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe_image</span><span class="o">.</span><span class="n">interp_to_geom</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">to_image</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">mask_safe_psf</span><span class="o">.</span><span class="n">to_cube</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">mask_safe_edisp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Mask safe for edisp maps&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="n">geom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">edisp_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">squash</span><span class="p">(</span><span class="s2">&quot;energy_true&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;migra&quot;</span> <span class="ow">in</span> <span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
+            <span class="n">geom</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">squash</span><span class="p">(</span><span class="s2">&quot;migra&quot;</span><span class="p">)</span>
+            <span class="n">mask_safe_edisp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe_image</span><span class="o">.</span><span class="n">interp_to_geom</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">to_image</span><span class="p">())</span>
+            <span class="k">return</span> <span class="n">mask_safe_edisp</span><span class="o">.</span><span class="n">to_cube</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">interp_to_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MapDataset.apply_mask_safe"><a class="viewcode-back" href="../../../api/gammapy.datasets.MapDataset.html#gammapy.datasets.MapDataset.apply_mask_safe">[docs]</a>    <span class="k">def</span> <span class="nf">apply_mask_safe</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Apply mask safe to the dataset&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe_image</span><span class="o">.</span><span class="n">data</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">map</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">.</span><span class="n">psf_map</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe_psf</span><span class="o">.</span><span class="n">data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">.</span><span class="n">exposure_map</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe_psf</span><span class="o">.</span><span class="n">data</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">edisp_map</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe_edisp</span><span class="o">.</span><span class="n">data</span></div>
+            <span class="c1">#self.edisp.exposure_map *= self.mask_safe_edisp.data</span>
+
 <div class="viewcode-block" id="MapDataset.stack"><a class="viewcode-back" href="../../../api/gammapy.datasets.MapDataset.html#gammapy.datasets.MapDataset.stack">[docs]</a>    <span class="k">def</span> <span class="nf">stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Stack another dataset in place.</span>
 
@@ -1598,28 +1636,13 @@
 <span class="sd">            Map dataset to be stacked with this one. If other is an on-off</span>
 <span class="sd">            dataset alpha * counts_off is used as a background model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_shape</span><span class="p">)</span>
-            <span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">other</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">other_mask_safe</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span>
-                <span class="n">other</span><span class="o">.</span><span class="n">_geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">data_shape</span><span class="p">)</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">other_mask_safe</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">mask_safe</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">apply_mask_safe</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">counts</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">counts</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">other_mask_safe</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">counts</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">exposure</span><span class="p">:</span>
-            <span class="n">mask_exposure</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_safe_irf</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">*=</span> <span class="n">mask_exposure</span><span class="o">.</span><span class="n">data</span>
-
-            <span class="n">mask_exposure_other</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_safe_irf</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">exposure</span><span class="p">,</span> <span class="n">other_mask_safe</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">exposure</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">mask_exposure_other</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">exposure</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">mask_safe_image</span><span class="p">)</span>
 
         <span class="c1"># TODO: unify background model handling</span>
         <span class="k">if</span> <span class="n">other</span><span class="o">.</span><span class="n">stat_type</span> <span class="o">==</span> <span class="s2">&quot;wstat&quot;</span><span class="p">:</span>
@@ -1628,56 +1651,19 @@
             <span class="n">background_model</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">background_model</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span> <span class="ow">and</span> <span class="n">background_model</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_background_model</span><span class="o">.</span><span class="n">map</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_background_model</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">background_model</span><span class="p">,</span> <span class="n">other_mask_safe</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="n">Models</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="p">])</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">background_model</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">psf</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">psf</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="p">,</span> <span class="n">PSFMap</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">psf</span><span class="p">,</span> <span class="n">PSFMap</span><span class="p">):</span>
-                <span class="n">mask_irf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_safe_irf</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">.</span><span class="n">exposure_map</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="s2">&quot;rad&quot;</span>
-                <span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">.</span><span class="n">psf_map</span><span class="o">.</span><span class="n">data</span> <span class="o">*=</span> <span class="n">mask_irf</span><span class="o">.</span><span class="n">data</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">data</span> <span class="o">*=</span> <span class="n">mask_irf</span><span class="o">.</span><span class="n">data</span>
-
-                <span class="n">mask_irf_other</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_safe_irf</span><span class="p">(</span>
-                    <span class="n">other</span><span class="o">.</span><span class="n">psf</span><span class="o">.</span><span class="n">exposure_map</span><span class="p">,</span> <span class="n">other_mask_safe</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="s2">&quot;rad&quot;</span>
-                <span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">psf</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">mask_irf_other</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">psf</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">mask_safe_psf</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Stacking of PSF kernels not supported&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">edisp</span><span class="p">:</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="p">,</span> <span class="n">EDispKernelMap</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span>
-                <span class="n">other</span><span class="o">.</span><span class="n">edisp</span><span class="p">,</span> <span class="n">EDispKernelMap</span>
-            <span class="p">):</span>
-                <span class="n">mask_irf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_safe_irf</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">edisp_map</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="s2">&quot;energy_true&quot;</span>
-                <span class="p">)</span>
-                <span class="n">mask_irf_other</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_safe_irf</span><span class="p">(</span>
-                    <span class="n">other</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">edisp_map</span><span class="p">,</span> <span class="n">other_mask_safe</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="s2">&quot;energy_true&quot;</span>
-                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">edisp</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">mask_safe_edisp</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="p">,</span> <span class="n">EDispMap</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">edisp</span><span class="p">,</span> <span class="n">EDispMap</span><span class="p">):</span>
-                <span class="n">mask_irf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_safe_irf</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">(),</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">reduce_over_axes</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-                <span class="p">)</span>
-                <span class="n">mask_irf_other</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_safe_irf</span><span class="p">(</span>
-                    <span class="n">other</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">(),</span>
-                    <span class="n">other_mask_safe</span><span class="o">.</span><span class="n">reduce_over_axes</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-                <span class="p">)</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">edisp_map</span><span class="o">.</span><span class="n">data</span> <span class="o">*=</span> <span class="n">mask_irf</span><span class="o">.</span><span class="n">data</span>
-            <span class="c1"># Question: Should mask be applied on exposure map as well?</span>
-            <span class="c1"># Mask here is on the reco energy.</span>
-            <span class="c1"># self.edisp.exposure_map.data *= mask_irf.data</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">edisp</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">mask_irf_other</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other_mask_safe</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gti</span> <span class="ow">and</span> <span class="n">other</span><span class="o">.</span><span class="n">gti</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">gti</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">gti</span><span class="p">)</span>
@@ -1687,25 +1673,6 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">meta_table</span> <span class="o">=</span> <span class="n">hstack_columns</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">meta_table</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">meta_table</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">other</span><span class="o">.</span><span class="n">meta_table</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">meta_table</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">meta_table</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span></div>
-
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_mask_safe_irf</span><span class="p">(</span><span class="n">irf_map</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">None</span>
-
-        <span class="n">geom</span> <span class="o">=</span> <span class="n">irf_map</span><span class="o">.</span><span class="n">geom</span>
-        <span class="n">geom_squash</span> <span class="o">=</span> <span class="n">irf_map</span><span class="o">.</span><span class="n">geom</span>
-        <span class="k">if</span> <span class="n">drop</span><span class="p">:</span>
-            <span class="n">geom</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">drop</span><span class="p">)</span>
-            <span class="n">geom_squash</span> <span class="o">=</span> <span class="n">geom_squash</span><span class="o">.</span><span class="n">squash</span><span class="p">(</span><span class="n">drop</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="s2">&quot;energy_true&quot;</span> <span class="ow">in</span> <span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">names</span><span class="p">:</span>
-            <span class="n">ax</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy_true&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
-            <span class="n">geom</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span><span class="o">.</span><span class="n">to_cube</span><span class="p">([</span><span class="n">ax</span><span class="p">])</span>
-
-        <span class="n">coords</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">get_by_coord</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="o">=</span><span class="n">geom_squash</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">])</span>
 
 <div class="viewcode-block" id="MapDataset.stat_array"><a class="viewcode-back" href="../../../api/gammapy.datasets.MapDataset.html#gammapy.datasets.MapDataset.stat_array">[docs]</a>    <span class="k">def</span> <span class="nf">stat_array</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Likelihood per bin given the current model parameters&quot;&quot;&quot;</span>
@@ -1727,10 +1694,7 @@
 <span class="sd">        residuals : `gammapy.maps.WcsNDMap`</span>
 <span class="sd">            Residual map.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">npred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">MapDatasetOnOff</span><span class="p">):</span>
-            <span class="n">npred</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_residuals</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="p">,</span> <span class="n">npred</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_residuals</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">npred</span><span class="p">(),</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="MapDataset.plot_residuals"><a class="viewcode-back" href="../../../api/gammapy.datasets.MapDataset.html#gammapy.datasets.MapDataset.plot_residuals">[docs]</a>    <span class="k">def</span> <span class="nf">plot_residuals</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1775,9 +1739,6 @@
         <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
 
         <span class="n">counts</span><span class="p">,</span> <span class="n">npred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span>
-
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">MapDatasetOnOff</span><span class="p">):</span>
-            <span class="n">npred</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">counts</span> <span class="o">=</span> <span class="n">counts</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask</span>
@@ -2117,7 +2078,7 @@
         <span class="sd">&quot;&quot;&quot;Convert to dict for YAML serialization.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">tag</span><span class="p">,</span> <span class="s2">&quot;filename&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">filename</span><span class="p">)}</span></div>
 
-<div class="viewcode-block" id="MapDataset.info_dict"><a class="viewcode-back" href="../../../api/gammapy.datasets.MapDataset.html#gammapy.datasets.MapDataset.info_dict">[docs]</a>    <span class="k">def</span> <span class="nf">info_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">region</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="MapDataset.info_dict"><a class="viewcode-back" href="../../../api/gammapy.datasets.MapDataset.html#gammapy.datasets.MapDataset.info_dict">[docs]</a>    <span class="k">def</span> <span class="nf">info_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_safe_data_range</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Basic info dict with summary statistics</span>
 
 <span class="sd">        If a region is passed, then a spectrum dataset is</span>
@@ -2125,46 +2086,16 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        region : `~regions.SkyRegion`, optional</span>
-<span class="sd">            the input ON region on which to extract the spectrum</span>
+<span class="sd">        in_safe_data_range : bool</span>
+<span class="sd">            Whether to sum only in the safe energy range</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        info_dict : dict</span>
 <span class="sd">            Dictionary with summary info.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gti</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">region</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">region</span> <span class="o">=</span> <span class="n">RectangleSkyRegion</span><span class="p">(</span>
-                    <span class="n">center</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_geom</span><span class="o">.</span><span class="n">center_skydir</span><span class="p">,</span>
-                    <span class="n">width</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_geom</span><span class="o">.</span><span class="n">width</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
-                    <span class="n">height</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_geom</span><span class="o">.</span><span class="n">width</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
-                <span class="p">)</span>
-            <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_spectrum_dataset</span><span class="p">(</span><span class="n">on_region</span><span class="o">=</span><span class="n">region</span><span class="p">)</span><span class="o">.</span><span class="n">info_dict</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">info</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="p">:</span>
-                <span class="n">info</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="p">:</span>
-                <span class="n">info</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-                <span class="n">info</span><span class="p">[</span><span class="s2">&quot;excess&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">]</span>
-
-            <span class="n">info</span><span class="p">[</span><span class="s2">&quot;npred&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">npred</span><span class="p">())</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">reduce_over_axes</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">)</span><span class="o">.</span><span class="n">data</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">mask</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-                    <span class="n">mask</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">mask</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="p">:</span>
-                <span class="n">exposure_min</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">mask</span><span class="p">])</span>
-                <span class="n">exposure_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">mask</span><span class="p">])</span>
-                <span class="n">info</span><span class="p">[</span><span class="s2">&quot;aeff_min&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exposure_min</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">unit</span>
-                <span class="n">info</span><span class="p">[</span><span class="s2">&quot;aeff_max&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exposure_max</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">unit</span>
-
-        <span class="n">info</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
-
-        <span class="k">return</span> <span class="n">info</span></div>
+        <span class="kn">from</span> <span class="nn">.spectrum</span> <span class="kn">import</span> <span class="n">SpectrumDataset</span>
+        <span class="k">return</span> <span class="n">SpectrumDataset</span><span class="o">.</span><span class="n">info_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_safe_data_range</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="MapDataset.to_spectrum_dataset"><a class="viewcode-back" href="../../../api/gammapy.datasets.MapDataset.html#gammapy.datasets.MapDataset.to_spectrum_dataset">[docs]</a>    <span class="k">def</span> <span class="nf">to_spectrum_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">on_region</span><span class="p">,</span> <span class="n">containment_correction</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return a ~gammapy.datasets.SpectrumDataset from on_region.</span>
@@ -2199,24 +2130,23 @@
         <span class="n">name</span> <span class="o">=</span> <span class="n">make_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;gti&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">gti</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">}</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gti</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;livetime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gti</span><span class="o">.</span><span class="n">time_sum</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No GTI in `MapDataset`, cannot compute livetime&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;mask_safe&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">get_spectrum</span><span class="p">(</span><span class="n">on_region</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">get_spectrum</span><span class="p">(</span><span class="n">on_region</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">)</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">get_spectrum</span><span class="p">(</span><span class="n">on_region</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">bkg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span><span class="o">.</span><span class="n">get_spectrum</span><span class="p">(</span><span class="n">on_region</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">)</span>
+            <span class="n">bkg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span><span class="o">.</span><span class="n">get_spectrum</span><span class="p">(</span><span class="n">on_region</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
             <span class="n">bkg_model</span> <span class="o">=</span> <span class="n">BackgroundModel</span><span class="p">(</span><span class="n">bkg</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;-bkg&quot;</span><span class="p">,</span> <span class="n">datasets_names</span><span class="o">=</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
             <span class="n">bkg_model</span><span class="o">.</span><span class="n">spectral_model</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">frozen</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;models&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Models</span><span class="p">([</span><span class="n">bkg_model</span><span class="p">])</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;aeff&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">get_spectrum</span><span class="p">(</span><span class="n">on_region</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;livetime&quot;</span><span class="p">]</span>
-            <span class="p">)</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">get_spectrum</span><span class="p">(</span><span class="n">on_region</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gti</span><span class="p">:</span>
+                <span class="c1"># TODO: this is mising the deadtime correction</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s2">&quot;livetime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">gti</span><span class="o">.</span><span class="n">time_sum</span>
 
         <span class="k">if</span> <span class="n">containment_correction</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">on_region</span><span class="p">,</span> <span class="n">CircleSkyRegion</span><span class="p">):</span>
@@ -2225,13 +2155,14 @@
                     <span class="s2">&quot; `CircleSkyRegion`.&quot;</span>
                 <span class="p">)</span>
             <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">psf</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="p">,</span> <span class="n">PSFKernel</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No PSFMap set. Containement correction impossible&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No PSFMap set. Containment correction impossible&quot;</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">psf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">psf</span><span class="o">.</span><span class="n">get_energy_dependent_table_psf</span><span class="p">(</span><span class="n">on_region</span><span class="o">.</span><span class="n">center</span><span class="p">)</span>
-                <span class="n">energy</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;aeff&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy_true&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">center</span>
+                <span class="n">energy</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy_true&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">center</span>
                 <span class="n">containment</span> <span class="o">=</span> <span class="n">psf</span><span class="o">.</span><span class="n">containment</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">on_region</span><span class="o">.</span><span class="n">radius</span><span class="p">)</span>
-                <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;aeff&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">*=</span> <span class="n">containment</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;exposure&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">*=</span> <span class="n">containment</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
 
+        <span class="c1"># TODO: Compute average edisp in region</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">energy_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span>
             <span class="n">edisp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">get_edisp_kernel</span><span class="p">(</span>
@@ -2320,7 +2251,10 @@
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span>
-                <span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">,</span> <span class="n">preserve_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axis_name</span><span class="o">=</span><span class="n">axis_name</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span>
+                <span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">,</span>
+                <span class="n">preserve_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">axis_name</span><span class="o">=</span><span class="n">axis_name</span><span class="p">,</span>
+                <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -2339,7 +2273,9 @@
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">axis_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;edisp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">,</span> <span class="n">axis_name</span><span class="o">=</span><span class="n">axis_name</span><span class="p">)</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;edisp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span>
+                    <span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">,</span> <span class="n">axis_name</span><span class="o">=</span><span class="n">axis_name</span>
+                <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;edisp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
@@ -2484,14 +2420,20 @@
         <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;psf&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">psf</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;mask_safe&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">resample_axis</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">ufunc</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">)</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;mask_safe&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">resample_axis</span><span class="p">(</span>
+                <span class="n">axis</span><span class="o">=</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">ufunc</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">logical_or</span>
+            <span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">resample_axis</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">resample_axis</span><span class="p">(</span>
+                <span class="n">axis</span><span class="o">=</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span>
+            <span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">background</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">background_model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
-            <span class="n">background</span> <span class="o">=</span> <span class="n">background</span><span class="o">.</span><span class="n">resample_axis</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
+            <span class="n">background</span> <span class="o">=</span> <span class="n">background</span><span class="o">.</span><span class="n">resample_axis</span><span class="p">(</span>
+                <span class="n">axis</span><span class="o">=</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span>
+            <span class="p">)</span>
             <span class="n">model</span> <span class="o">=</span> <span class="n">BackgroundModel</span><span class="p">(</span>
                 <span class="n">background</span><span class="p">,</span> <span class="n">datasets_names</span><span class="o">=</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">-bkg&quot;</span>
             <span class="p">)</span>
@@ -2499,10 +2441,9 @@
 
         <span class="c1"># Mask_safe or mask_irf??</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="p">,</span> <span class="n">EDispKernelMap</span><span class="p">):</span>
-            <span class="n">mask_irf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mask_safe_irf</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">edisp_map</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="s2">&quot;energy_true&quot;</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;edisp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">resample_energy_axis</span><span class="p">(</span>
+                <span class="n">energy_axis</span><span class="o">=</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe_edisp</span>
             <span class="p">)</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;edisp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">resample_energy_axis</span><span class="p">(</span><span class="n">energy_axis</span><span class="o">=</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">mask_irf</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># None or EDispMap</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;edisp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span>
 
@@ -2639,15 +2580,15 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">background</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;`</span>
 <span class="sd">        Background counts estimated from the marginalized likelihood estimate.</span>
-<span class="sd">        See :ref:wstat.</span>
+<span class="sd">        See :ref:`wstat`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">mu_bkg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">get_wstat_mu_bkg</span><span class="p">(</span>
             <span class="n">n_on</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
             <span class="n">n_off</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
             <span class="n">alpha</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-            <span class="n">mu_sig</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">mu_sig</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">npred_sig</span><span class="p">()</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">mu_bkg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">mu_bkg</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">mu_bkg</span><span class="p">)</span>
@@ -2662,9 +2603,31 @@
         <span class="sd">&quot;&quot;&quot;Excess (counts - alpha * counts_off)&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off_normalised</span>
 
+<div class="viewcode-block" id="MapDatasetOnOff.npred_sig"><a class="viewcode-back" href="../../../api/gammapy.datasets.MapDatasetOnOff.html#gammapy.datasets.MapDatasetOnOff.npred_sig">[docs]</a>    <span class="k">def</span> <span class="nf">npred_sig</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;&quot;Model predicted signal counts. If a model is passed, predicted counts from that component is returned.</span>
+<span class="sd">            Else, the total signal counts are returned.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        -------------</span>
+<span class="sd">        model: `~gammapy.modeling.models.Models`, optional</span>
+<span class="sd">           The model to computed the npred for.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        ----------</span>
+<span class="sd">        npred_sig: `gammapy.maps.WcsNDMap`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">npred_sig</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapDatasetOnOff.npred"><a class="viewcode-back" href="../../../api/gammapy.datasets.MapDatasetOnOff.html#gammapy.datasets.MapDatasetOnOff.npred">[docs]</a>    <span class="k">def</span> <span class="nf">npred</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Predicted counts from source + background(`WcsNDMap`).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">npred_sig</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">background</span></div>
+
 <div class="viewcode-block" id="MapDatasetOnOff.stat_array"><a class="viewcode-back" href="../../../api/gammapy.datasets.MapDatasetOnOff.html#gammapy.datasets.MapDatasetOnOff.stat_array">[docs]</a>    <span class="k">def</span> <span class="nf">stat_array</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Likelihood per bin given the current model parameters&quot;&quot;&quot;</span>
-        <span class="n">mu_sig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">mu_sig</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npred_sig</span><span class="p">()</span><span class="o">.</span><span class="n">data</span>
         <span class="n">on_stat_</span> <span class="o">=</span> <span class="n">wstat</span><span class="p">(</span>
             <span class="n">n_on</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
             <span class="n">n_off</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
@@ -2867,7 +2830,7 @@
 <span class="sd">                Passed to `~gammapy.utils.random.get_random_state`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">random_state</span> <span class="o">=</span> <span class="n">get_random_state</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
-        <span class="n">npred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npred</span><span class="p">()</span>
+        <span class="n">npred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">npred_sig</span><span class="p">()</span>
         <span class="n">npred</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">random_state</span><span class="o">.</span><span class="n">poisson</span><span class="p">(</span><span class="n">npred</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
         <span class="n">npred_bkg</span> <span class="o">=</span> <span class="n">background_model</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -2958,7 +2921,7 @@
             <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;gti&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">gti</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="MapDatasetOnOff.info_dict"><a class="viewcode-back" href="../../../api/gammapy.datasets.MapDatasetOnOff.html#gammapy.datasets.MapDatasetOnOff.info_dict">[docs]</a>    <span class="k">def</span> <span class="nf">info_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">region</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="MapDatasetOnOff.info_dict"><a class="viewcode-back" href="../../../api/gammapy.datasets.MapDatasetOnOff.html#gammapy.datasets.MapDatasetOnOff.info_dict">[docs]</a>    <span class="k">def</span> <span class="nf">info_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">in_safe_data_range</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Basic info dict with summary statistics</span>
 
 <span class="sd">        If a region is passed, then a spectrum dataset is</span>
@@ -2966,27 +2929,53 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        region : `~regions.SkyRegion`, optional</span>
-<span class="sd">            the input ON region on which to extract the spectrum</span>
+<span class="sd">        in_safe_data_range : bool</span>
+<span class="sd">            Whether to sum only in the safe energy range</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        info_dict : dict</span>
 <span class="sd">            Dictionary with summary info.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">info</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">info_dict</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
-        <span class="n">info</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gti</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">info</span><span class="p">[</span><span class="s2">&quot;counts_off&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="c1"># TODO: remove code duplication with SpectrumDatasetOnOff</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">info_dict</span><span class="p">(</span><span class="n">in_safe_data_range</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acceptance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">info</span><span class="p">[</span><span class="s2">&quot;acceptance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acceptance</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">and</span> <span class="n">in_safe_data_range</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acceptance_off</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">info</span><span class="p">[</span><span class="s2">&quot;acceptance_off&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acceptance_off</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">counts_off</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">counts_off</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
 
-            <span class="n">info</span><span class="p">[</span><span class="s2">&quot;excess&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">excess</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">info</span><span class="p">[</span><span class="s2">&quot;counts_off&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">counts_off</span>
+
+        <span class="n">acceptance</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acceptance</span><span class="p">:</span>
+            <span class="c1"># TODO: handle energy dependent a_on / a_off</span>
+            <span class="n">acceptance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">acceptance</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+        <span class="n">info</span><span class="p">[</span><span class="s2">&quot;acceptance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">acceptance</span>
+
+        <span class="n">acceptance_off</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acceptance_off</span><span class="p">:</span>
+            <span class="n">acceptance_off</span> <span class="o">=</span> <span class="n">acceptance</span> <span class="o">*</span> <span class="n">counts_off</span> <span class="o">/</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;background&quot;</span><span class="p">]</span>
+
+        <span class="n">info</span><span class="p">[</span><span class="s2">&quot;acceptance_off&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">acceptance_off</span>
+
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acceptance_off</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">acceptance</span><span class="p">:</span>
+            <span class="n">alpha</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alpha</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">])</span>
+
+        <span class="n">info</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">alpha</span>
+
+        <span class="n">info</span><span class="p">[</span><span class="s2">&quot;sqrt_ts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">WStatCountsStatistic</span><span class="p">(</span>
+            <span class="n">info</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">],</span>
+            <span class="n">info</span><span class="p">[</span><span class="s2">&quot;counts_off&quot;</span><span class="p">],</span>
+            <span class="n">acceptance</span> <span class="o">/</span> <span class="n">acceptance_off</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">significance</span>
+        <span class="n">info</span><span class="p">[</span><span class="s2">&quot;stat_sum&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_sum</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">info</span></div>
 
 <div class="viewcode-block" id="MapDatasetOnOff.to_spectrum_dataset"><a class="viewcode-back" href="../../../api/gammapy.datasets.MapDatasetOnOff.html#gammapy.datasets.MapDatasetOnOff.to_spectrum_dataset">[docs]</a>    <span class="k">def</span> <span class="nf">to_spectrum_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">on_region</span><span class="p">,</span> <span class="n">containment_correction</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -3026,14 +3015,14 @@
 
         <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;counts_off&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span><span class="o">.</span><span class="n">get_spectrum</span><span class="p">(</span><span class="n">on_region</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">)</span>
+           <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;counts_off&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span><span class="o">.</span><span class="n">get_spectrum</span><span class="p">(</span><span class="n">on_region</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acceptance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;acceptance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">acceptance</span><span class="o">.</span><span class="n">get_spectrum</span><span class="p">(</span><span class="n">on_region</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span>
-            <span class="n">norm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off_normalised</span><span class="o">.</span><span class="n">get_spectrum</span><span class="p">(</span><span class="n">on_region</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">)</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;acceptance_off&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;acceptance&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;counts_off&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">norm</span>
-            <span class="p">)</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;acceptance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">acceptance</span><span class="o">.</span><span class="n">get_spectrum</span><span class="p">(</span><span class="n">on_region</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
+            <span class="n">norm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off_normalised</span><span class="o">.</span><span class="n">get_spectrum</span><span class="p">(</span><span class="n">on_region</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
+            <span class="n">acceptance_off</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;acceptance&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;counts_off&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">norm</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">acceptance_off</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;acceptance_off&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">acceptance_off</span>
 
         <span class="k">return</span> <span class="n">SpectrumDatasetOnOff</span><span class="o">.</span><span class="n">from_spectrum_dataset</span><span class="p">(</span><span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
 
@@ -3105,7 +3094,10 @@
         <span class="n">counts_off</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">counts_off</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span>
-                <span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">,</span> <span class="n">preserve_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axis_name</span><span class="o">=</span><span class="n">axis_name</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span>
+                <span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">,</span>
+                <span class="n">preserve_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">axis_name</span><span class="o">=</span><span class="n">axis_name</span><span class="p">,</span>
+                <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="n">acceptance</span><span class="p">,</span> <span class="n">acceptance_off</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
@@ -3114,7 +3106,10 @@
                 <span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">,</span> <span class="n">preserve_counts</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">axis_name</span><span class="o">=</span><span class="n">axis_name</span>
             <span class="p">)</span>
             <span class="n">factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off_normalised</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span>
-                <span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">,</span> <span class="n">preserve_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">axis_name</span><span class="o">=</span><span class="n">axis_name</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span>
+                <span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">,</span>
+                <span class="n">preserve_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">axis_name</span><span class="o">=</span><span class="n">axis_name</span><span class="p">,</span>
+                <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">acceptance_off</span> <span class="o">=</span> <span class="n">acceptance</span> <span class="o">*</span> <span class="n">counts_off</span> <span class="o">/</span> <span class="n">factor</span>
 
@@ -3122,7 +3117,7 @@
             <span class="n">dataset</span><span class="p">,</span>
             <span class="n">acceptance</span><span class="o">=</span><span class="n">acceptance</span><span class="p">,</span>
             <span class="n">acceptance_off</span><span class="o">=</span><span class="n">acceptance_off</span><span class="p">,</span>
-            <span class="n">counts_off</span><span class="o">=</span><span class="n">counts_off</span>
+            <span class="n">counts_off</span><span class="o">=</span><span class="n">counts_off</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="MapDatasetOnOff.pad"><a class="viewcode-back" href="../../../api/gammapy.datasets.MapDatasetOnOff.html#gammapy.datasets.MapDatasetOnOff.pad">[docs]</a>    <span class="k">def</span> <span class="nf">pad</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -3184,15 +3179,21 @@
         <span class="n">counts_off</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">counts_off</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span>
-            <span class="n">counts_off</span> <span class="o">=</span> <span class="n">counts_off</span><span class="o">.</span><span class="n">resample_axis</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
+            <span class="n">counts_off</span> <span class="o">=</span> <span class="n">counts_off</span><span class="o">.</span><span class="n">resample_axis</span><span class="p">(</span>
+                <span class="n">axis</span><span class="o">=</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span>
+            <span class="p">)</span>
 
         <span class="n">acceptance</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="n">acceptance_off</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acceptance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">acceptance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">acceptance</span>
-            <span class="n">acceptance</span> <span class="o">=</span> <span class="n">acceptance</span><span class="o">.</span><span class="n">resample_axis</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
+            <span class="n">acceptance</span> <span class="o">=</span> <span class="n">acceptance</span><span class="o">.</span><span class="n">resample_axis</span><span class="p">(</span>
+                <span class="n">axis</span><span class="o">=</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span>
+            <span class="p">)</span>
 
-            <span class="n">norm_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off_normalised</span><span class="o">.</span><span class="n">resample_axis</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">)</span>
+            <span class="n">norm_factor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts_off_normalised</span><span class="o">.</span><span class="n">resample_axis</span><span class="p">(</span>
+                <span class="n">axis</span><span class="o">=</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span>
+            <span class="p">)</span>
 
             <span class="n">acceptance_off</span> <span class="o">=</span> <span class="n">acceptance</span> <span class="o">*</span> <span class="n">counts_off</span> <span class="o">/</span> <span class="n">norm_factor</span>
 
@@ -3200,7 +3201,7 @@
             <span class="n">dataset</span><span class="p">,</span>
             <span class="n">acceptance</span><span class="o">=</span><span class="n">acceptance</span><span class="p">,</span>
             <span class="n">acceptance_off</span><span class="o">=</span><span class="n">acceptance_off</span><span class="p">,</span>
-            <span class="n">counts_off</span><span class="o">=</span><span class="n">counts_off</span>
+            <span class="n">counts_off</span><span class="o">=</span><span class="n">counts_off</span><span class="p">,</span>
         <span class="p">)</span></div></div>
 
 
@@ -3514,7 +3515,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 06 Oct 2020.
+        Last updated on 15 Oct 2020.
       </span>
 
     </p>

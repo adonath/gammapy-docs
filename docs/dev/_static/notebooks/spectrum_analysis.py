@@ -189,7 +189,7 @@ dataset_empty = SpectrumDataset.create(
 
 
 dataset_maker = SpectrumDatasetMaker(
-    containment_correction=False, selection=["counts", "aeff", "edisp"]
+    containment_correction=False, selection=["counts", "exposure", "edisp"]
 )
 bkg_maker = ReflectedRegionsBackgroundMaker(exclusion_mask=exclusion_mask)
 safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
@@ -243,12 +243,12 @@ plt.ylabel("Excess");
 
 plt.plot(
     info_table["livetime"].to("h"),
-    info_table["significance"],
+    info_table["sqrt_ts"],
     marker="o",
     ls="none",
 )
 plt.xlabel("Livetime [h]")
-plt.ylabel("Significance");
+plt.ylabel("Sqrt(TS)");
 
 
 # Finally you can write the extrated datasets to disk using the OGIP format (PHA, ARF, RMF, BKG, see [here](https://gamma-astro-data-formats.readthedocs.io/en/latest/spectra/ogip/index.html) for details):

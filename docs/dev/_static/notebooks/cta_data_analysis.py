@@ -153,7 +153,7 @@ exclusion_mask.plot();
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'stacked = MapDataset.create(geom=geom)\nmaker = MapDatasetMaker(selection=["counts", "background", "exposure", "psf"])\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=2.5 * u.deg)\n\nfor obs in observations:\n    cutout = stacked.cutout(obs.pointing_radec, width="5 deg")\n    dataset = maker.run(cutout, obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n    stacked.stack(dataset)')
+get_ipython().run_cell_magic('time', '', 'stacked = MapDataset.create(geom=geom)\nstacked.edisp = None\nmaker = MapDatasetMaker(selection=["counts", "background", "exposure", "psf"])\nmaker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=2.5 * u.deg)\n\nfor obs in observations:\n    cutout = stacked.cutout(obs.pointing_radec, width="5 deg")\n    dataset = maker.run(cutout, obs)\n    dataset = maker_safe_mask.run(dataset, obs)\n    stacked.stack(dataset)')
 
 
 # In[ ]:
@@ -286,7 +286,7 @@ dataset_empty = SpectrumDataset.create(
 
 
 dataset_maker = SpectrumDatasetMaker(
-    containment_correction=False, selection=["counts", "aeff", "edisp"]
+    containment_correction=False, selection=["counts", "exposure", "edisp"]
 )
 bkg_maker = ReflectedRegionsBackgroundMaker(exclusion_mask=exclusion_mask)
 safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)

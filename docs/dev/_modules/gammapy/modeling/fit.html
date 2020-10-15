@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.modeling.fit &mdash; gammapy v0.18.dev912+g5b178ce84</title>
+  <title>gammapy.modeling.fit &mdash; gammapy v0.18.dev1001+gca7b61171</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev912+g5b178ce84
+                0.18.dev1001+gca7b61171
               </div>
             
           
@@ -500,7 +500,8 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../tutorials/background_model.html">Make template background model</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/background_model.html#Introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/background_model.html#Context">Context</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../tutorials/background_model.html#Proposed-approach">Proposed approach</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/background_model.html#Setup">Setup</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/background_model.html#Select-off-data">Select off data</a></li>
 <li class="toctree-l4"><a class="reference internal" href="../../../tutorials/background_model.html#Background-model">Background model</a></li>
@@ -1463,7 +1464,8 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        results : dict</span>
-<span class="sd">            Dictionary with keys &quot;values&quot; and &quot;stat&quot;.</span>
+<span class="sd">            Dictionary with keys &quot;values&quot;, &quot;stat&quot; and &quot;fit_results&quot;. The latter contains an</span>
+<span class="sd">            empty list, if `reoptimize` is set to False</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span>
         <span class="n">parameter</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="n">parameter</span><span class="p">]</span>
@@ -1483,6 +1485,7 @@
             <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">parmin</span><span class="p">,</span> <span class="n">parmax</span><span class="p">,</span> <span class="n">nvalues</span><span class="p">)</span>
 
         <span class="n">stats</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">fit_results</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">with</span> <span class="n">parameters</span><span class="o">.</span><span class="n">restore_values</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span><span class="p">:</span>
                 <span class="n">parameter</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
@@ -1490,15 +1493,14 @@
                     <span class="n">parameter</span><span class="o">.</span><span class="n">frozen</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="o">**</span><span class="n">optimize_opts</span><span class="p">)</span>
                     <span class="n">stat</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">total_stat</span>
+                    <span class="n">fit_results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">stat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">stat_sum</span><span class="p">()</span>
                 <span class="n">stats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stat</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;values&quot;</span><span class="p">:</span> <span class="n">values</span><span class="p">,</span> <span class="s2">&quot;stat&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">stats</span><span class="p">)}</span></div>
+        <span class="k">return</span> <span class="p">{</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">parameter</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_scan&quot;</span><span class="p">:</span> <span class="n">values</span><span class="p">,</span> <span class="s2">&quot;stat_scan&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">stats</span><span class="p">),</span> <span class="s2">&quot;fit_results&quot;</span><span class="p">:</span> <span class="n">fit_results</span><span class="p">}</span></div>
 
-<div class="viewcode-block" id="Fit.stat_surface"><a class="viewcode-back" href="../../../api/gammapy.modeling.Fit.html#gammapy.modeling.Fit.stat_surface">[docs]</a>    <span class="k">def</span> <span class="nf">stat_surface</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x_values</span><span class="p">,</span> <span class="n">y_values</span><span class="p">,</span> <span class="n">reoptimize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">optimize_opts</span>
-    <span class="p">):</span>
+<div class="viewcode-block" id="Fit.stat_surface"><a class="viewcode-back" href="../../../api/gammapy.modeling.Fit.html#gammapy.modeling.Fit.stat_surface">[docs]</a>    <span class="k">def</span> <span class="nf">stat_surface</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x_values</span><span class="p">,</span> <span class="n">y_values</span><span class="p">,</span> <span class="n">reoptimize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">optimize_opts</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compute fit statistic surface.</span>
 
 <span class="sd">        The method used is to vary two parameters, keeping all others fixed.</span>
@@ -1522,14 +1524,15 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        results : dict</span>
-<span class="sd">            Dictionary with keys &quot;x_values&quot;, &quot;y_values&quot; and &quot;stat&quot;.</span>
-
+<span class="sd">            Dictionary with keys &quot;x_values&quot;, &quot;y_values&quot;, &quot;stat&quot; and &quot;fit_results&quot;. The latter contains an</span>
+<span class="sd">            empty list, if `reoptimize` is set to False</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
         <span class="n">y</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="n">y</span><span class="p">]</span>
 
         <span class="n">stats</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">fit_results</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">with</span> <span class="n">parameters</span><span class="o">.</span><span class="n">restore_values</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">x_value</span><span class="p">,</span> <span class="n">y_value</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">(</span><span class="n">x_values</span><span class="p">,</span> <span class="n">y_values</span><span class="p">):</span>
                 <span class="c1"># TODO: Remove log.info() and provide a nice progress bar</span>
@@ -1541,17 +1544,25 @@
                     <span class="n">y</span><span class="o">.</span><span class="n">frozen</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimize</span><span class="p">(</span><span class="o">**</span><span class="n">optimize_opts</span><span class="p">)</span>
                     <span class="n">stat</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">total_stat</span>
+                    <span class="n">fit_results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">stat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">stat_sum</span><span class="p">()</span>
 
                 <span class="n">stats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">stat</span><span class="p">)</span>
 
+        <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x_values</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y_values</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
         <span class="n">stats</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">stats</span><span class="p">)</span>
-        <span class="n">stats</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
-            <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x_values</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y_values</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-        <span class="p">)</span>
+        <span class="n">stats</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">reoptimize</span><span class="p">:</span>
+            <span class="n">fit_results</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">fit_results</span><span class="p">)</span>
+            <span class="n">fit_results</span> <span class="o">=</span> <span class="n">fit_results</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;x_values&quot;</span><span class="p">:</span> <span class="n">x_values</span><span class="p">,</span> <span class="s2">&quot;y_values&quot;</span><span class="p">:</span> <span class="n">y_values</span><span class="p">,</span> <span class="s2">&quot;stat&quot;</span><span class="p">:</span> <span class="n">stats</span><span class="p">}</span></div>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_scan&quot;</span><span class="p">:</span> <span class="n">x_values</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">y</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_scan&quot;</span><span class="p">:</span> <span class="n">y_values</span><span class="p">,</span>
+            <span class="s2">&quot;stat_scan&quot;</span><span class="p">:</span> <span class="n">stats</span><span class="p">,</span>
+            <span class="s2">&quot;fit_results&quot;</span><span class="p">:</span> <span class="n">fit_results</span><span class="p">,</span>
+        <span class="p">}</span></div>
 
 <div class="viewcode-block" id="Fit.minos_contour"><a class="viewcode-back" href="../../../api/gammapy.modeling.Fit.html#gammapy.modeling.Fit.minos_contour">[docs]</a>    <span class="k">def</span> <span class="nf">minos_contour</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">numpoints</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Compute MINOS contour.</span>
@@ -1578,10 +1589,8 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        result : dict</span>
-<span class="sd">            Dictionary with keys &quot;x&quot;, &quot;y&quot; (Numpy arrays with contour points)</span>
-<span class="sd">            and a boolean flag &quot;success&quot;.</span>
-<span class="sd">            The result objects from ``mncontour`` are in the additional</span>
-<span class="sd">            keys &quot;x_info&quot; and &quot;y_info&quot;.</span>
+<span class="sd">            Dictionary containing the parameter values defining the contour, with the</span>
+<span class="sd">            boolean flag &quot;success&quot; and the info objects from ``mncontour``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
@@ -1590,15 +1599,17 @@
         <span class="k">with</span> <span class="n">parameters</span><span class="o">.</span><span class="n">restore_values</span><span class="p">:</span>
             <span class="n">result</span> <span class="o">=</span> <span class="n">mncontour</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">minuit</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">numpoints</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
 
+        <span class="n">x_name</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">y_name</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">name</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">x</span><span class="o">.</span><span class="n">scale</span>
         <span class="n">y</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;y&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">y</span><span class="o">.</span><span class="n">scale</span>
 
         <span class="k">return</span> <span class="p">{</span>
-            <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span>
-            <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="n">y</span><span class="p">,</span>
+            <span class="n">x_name</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span>
+            <span class="n">y_name</span><span class="p">:</span> <span class="n">y</span><span class="p">,</span>
             <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;success&quot;</span><span class="p">],</span>
-            <span class="s2">&quot;x_info&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;x_info&quot;</span><span class="p">],</span>
-            <span class="s2">&quot;y_info&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;y_info&quot;</span><span class="p">],</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">x_name</span><span class="si">}</span><span class="s2">_info&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;x_info&quot;</span><span class="p">],</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">y_name</span><span class="si">}</span><span class="s2">_info&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;y_info&quot;</span><span class="p">],</span>
         <span class="p">}</span></div></div>
 
 
@@ -1691,7 +1702,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 06 Oct 2020.
+        Last updated on 15 Oct 2020.
       </span>
 
     </p>

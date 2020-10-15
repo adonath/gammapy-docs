@@ -220,12 +220,12 @@ plt.ylabel("Excess events")
 ax = fig.add_subplot(122)
 ax.plot(
     info_table["livetime"].to("h"),
-    info_table["significance"],
+    info_table["sqrt_ts"],
     marker="o",
     ls="none",
 )
 plt.xlabel("Livetime [h]")
-plt.ylabel("Significance");
+plt.ylabel("Sqrt(TS)");
 
 
 # ## Perform spectral model fitting

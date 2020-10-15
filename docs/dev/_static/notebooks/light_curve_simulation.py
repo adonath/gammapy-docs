@@ -151,7 +151,7 @@ empty = SpectrumDataset.create(
     e_reco=energy_axis, e_true=energy_axis_true, region=on_region, name="empty"
 )
 
-maker = SpectrumDatasetMaker(selection=["aeff", "background", "edisp"])
+maker = SpectrumDatasetMaker(selection=["exposure", "background", "edisp"])
 
 for idx in range(n_obs):
     obs = Observation.create(
@@ -251,7 +251,7 @@ for dataset in datasets:
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '# Do a joint fit\nfit = Fit(datasets)\nresult = fit.optimize()')
+get_ipython().run_cell_magic('time', '', '# Do a joint fit\nfit = Fit(datasets)\nresult = fit.run()')
 
 
 # In[ ]:

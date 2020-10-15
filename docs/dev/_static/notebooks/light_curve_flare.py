@@ -166,7 +166,7 @@ on_region = CircleSkyRegion(center=target_position, radius=on_region_radius)
 
 
 dataset_maker = SpectrumDatasetMaker(
-    containment_correction=True, selection=["counts", "aeff", "edisp"]
+    containment_correction=True, selection=["counts", "exposure", "edisp"]
 )
 bkg_maker = ReflectedRegionsBackgroundMaker()
 safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
