@@ -284,7 +284,7 @@ estimator = ExcessMapEstimator(
 dataset_image = dataset_stacked.to_image()
 estimator_dict = estimator.run(dataset_image)
 
-residuals_significance = estimator_dict["significance"]
+residuals_significance = estimator_dict["sqrt_ts"]
 residuals_significance.sum_over_axes().plot(cmap="coolwarm", add_cbar=True)
 
 

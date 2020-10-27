@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>stats - Statistics &mdash; gammapy v0.18.dev1008+ga3f9b1e78</title>
+  <title>stats - Statistics &mdash; gammapy v0.18.dev1085+g7fd0ef796</title>
   
 
   
@@ -76,7 +76,7 @@
             
             
               <div class="version">
-                0.18.dev1008+ga3f9b1e78
+                0.18.dev1085+g7fd0ef796
               </div>
             
           
@@ -920,10 +920,10 @@
 </ul>
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">stats - Statistics</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#general-notions">General notions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#notations">Notations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#counts-and-fit-statistics">Counts and fit statistics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#estimating-delta-ts">Estimating Delta TS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#estimating-ts">Estimating TS</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#counts-statistics-classes">Counts statistics classes</a><ul>
@@ -933,11 +933,10 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#wstat-counts-statistic">WStat counts statistic</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#id1">Excess and Significance</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#id3">Excess errors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id2">Excess and Significance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id4">Excess errors</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#notations">Notations</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#using-gammapy-stats">Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.stats</span></code></a><ul>
@@ -1186,172 +1185,10 @@ commonly used in gamma-ray astronomy.</p>
 <p>It is mostly concerned with the evaluation of one or several observations that
 count events in a given region and time window, i.e. with Poisson-distributed
 counts measurements.</p>
-</div>
-<div class="section" id="general-notions">
-<h2>General notions<a class="headerlink" href="#general-notions" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="counts-and-fit-statistics">
-<h3>Counts and fit statistics<a class="headerlink" href="#counts-and-fit-statistics" title="Permalink to this headline">¶</a></h3>
-<p>Gamma-ray measurements are counts, <code class="docutils literal notranslate"><span class="pre">n_on</span></code>, containing both signal and background events.</p>
-<p>Estimation of number of signal events or of quantities in physical models is done through
-Poisson likelihood functions, the fit statistics. In gammapy, they are all log-likelihood
-functions normalized like chi-squares, i.e. if <span class="math notranslate nohighlight">\(L\)</span> is the likelihood function used,
-they follow the expression <span class="math notranslate nohighlight">\(2 \times log L\)</span>.</p>
-<p>When the expected number of background events, <code class="docutils literal notranslate"><span class="pre">mu_bkg</span></code> is known, the statistic function
-is <code class="docutils literal notranslate"><span class="pre">Cash</span></code> (see <a class="reference internal" href="fit_statistics.html#cash"><span class="std std-ref">Cash : Poisson data with background model</span></a>). When the number of background events is unknown, one has to
-use a background estimate <code class="docutils literal notranslate"><span class="pre">n_bkg</span></code> taken from an OFF measurement where only background events
-are expected. In this case, the statistic function is <code class="docutils literal notranslate"><span class="pre">WStat</span></code> (see <a class="reference internal" href="fit_statistics.html#wstat"><span class="std std-ref">WStat : Poisson data with background measurement</span></a>).</p>
-<p>These statistic functions are at the heart of the model fitting approach in gammapy. They are
-used to estimate the best fit values of model parameters and their associated confidence intervals.</p>
-<p>They are used also to estimate the excess counts significance, i.e. the probability that
-a given number of measured events <code class="docutils literal notranslate"><span class="pre">n_on</span></code> actually contains some signal events <span class="math notranslate nohighlight">\(n_{excess}\)</span>,
-as well as the errors associated to this estimated number of signal counts.</p>
-</div>
-<div class="section" id="estimating-delta-ts">
-<h3>Estimating Delta TS<a class="headerlink" href="#estimating-delta-ts" title="Permalink to this headline">¶</a></h3>
-<p>A classical approach to modeling and fitting relies on hypothesis testing. One wants to estimate whether
-an hypothesis <span class="math notranslate nohighlight">\(H_1\)</span> is statistically preferred over the reference, or null-hypothesis, <span class="math notranslate nohighlight">\(H_0\)</span>.</p>
-<p>The maximum log-likelihood ratio test provides a way to estimate the p-value of the data following <span class="math notranslate nohighlight">\(H_1\)</span>
-rather than <span class="math notranslate nohighlight">\(H_0\)</span>, when the two hypotheses are nested.
-We note this ratio <span class="math notranslate nohighlight">\(\lambda = \frac{max L(X|{H_1})}{max L(X|H_0)}\)</span></p>
-<p>The Wilks theorem shows that under some hypothesis, <span class="math notranslate nohighlight">\(-2 \log \lambda\)</span> assymptotically follows a <span class="math notranslate nohighlight">\(\chi^2\)</span>
-distribution with <span class="math notranslate nohighlight">\(n_{dof}\)</span> degrees of freedom, where <span class="math notranslate nohighlight">\(n_{dof}\)</span> is the difference of free parameters
-between <span class="math notranslate nohighlight">\(H_1\)</span> and <span class="math notranslate nohighlight">\(H_0\)</span>.</p>
-<p>With the definition the fit statistics <span class="math notranslate nohighlight">\(-2 \log \lambda\)</span> is simply the difference of the fit statistic values for
-the two hypotheses, the delta TS (for test statistic). Hence, <span class="math notranslate nohighlight">\(\Delta TS\)</span> follows <span class="math notranslate nohighlight">\(\chi^2\)</span>
-distribution with <span class="math notranslate nohighlight">\(n_{dof}\)</span> degrees of freedom. In particular, with only one degree of freedom (e.g. intensity
-of a signal), on can estimate the statistical significance in terms of number of <span class="math notranslate nohighlight">\(\sigma\)</span>
-as <span class="math notranslate nohighlight">\(\sqrt{\Delta TS}\)</span>.</p>
-</div>
-</div>
-<div class="section" id="counts-statistics-classes">
-<h2>Counts statistics classes<a class="headerlink" href="#counts-statistics-classes" title="Permalink to this headline">¶</a></h2>
-<p>To estimate the excess counts significance and errors, gammapy uses two classes for Poisson counts with
-and without known background: <a class="reference internal" href="../api/gammapy.stats.CashCountsStatistic.html#gammapy.stats.CashCountsStatistic" title="gammapy.stats.CashCountsStatistic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CashCountsStatistic</span></code></a> and <a class="reference internal" href="../api/gammapy.stats.WStatCountsStatistic.html#gammapy.stats.WStatCountsStatistic" title="gammapy.stats.WStatCountsStatistic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WStatCountsStatistic</span></code></a></p>
-<p>We show below how to use them.</p>
-<div class="section" id="cash-counts-statistic">
-<h3>Cash counts statistic<a class="headerlink" href="#cash-counts-statistic" title="Permalink to this headline">¶</a></h3>
-<div class="section" id="excess-and-significance">
-<h4>Excess and Significance<a class="headerlink" href="#excess-and-significance" title="Permalink to this headline">¶</a></h4>
-<p>Assume one measured <span class="math notranslate nohighlight">\(n_{on} = 13\)</span> counts in a region where one suspects a source might be present.
-if the expected number of background events is known (here e.g. <span class="math notranslate nohighlight">\(\mu_{bkg}=9.5\)</span>), one can use
-the Cash statistic to estimate the signal or excess number, its statistical significance as well as
-the confidence interval on the true signal value.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="kn">import</span> <span class="n">CashCountsStatistic</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span> <span class="o">=</span> <span class="n">CashCountsStatistic</span><span class="p">(</span><span class="n">n_on</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span> <span class="n">mu_bkg</span><span class="o">=</span><span class="mf">5.5</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">excess</span>
-<span class="go">7.5</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">error</span>
-<span class="go">3.605551275463989</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">delta_ts</span>
-<span class="go">7.365232895800901</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">significance</span>
-<span class="go">2.7138962573762653</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">p_value</span>
-<span class="go">0.006649698694909719</span>
-</pre></div>
-</div>
-<p>The error is the symmetric error obtained from the covariance of the statistic function, here <span class="math notranslate nohighlight">\(\sqrt{n_{on}}\)</span>.
-The significance is the square root of the <span class="math notranslate nohighlight">\(\Delta TS\)</span>, multiplied by the sign of the excess,
-which is equivalent to the Li &amp; Ma significance for known background.</p>
-<p>To see how the <span class="math notranslate nohighlight">\(\Delta TS\)</span>, relates to the statistic function, we plot below the profile of the Cash
-statistic as a function of the expected signal events number.</p>
-<p>(<a class="reference external" href="../stats/plot_cash_significance.png">png</a>, <a class="reference external" href="../stats/plot_cash_significance.hires.png">hires.png</a>, <a class="reference external" href="../stats/plot_cash_significance.pdf">pdf</a>)</p>
-<div class="figure align-default">
-<img alt="../_images/plot_cash_significance.png" src="../_images/plot_cash_significance.png" />
-</div>
-</div>
-<div class="section" id="excess-errors">
-<h4>Excess errors<a class="headerlink" href="#excess-errors" title="Permalink to this headline">¶</a></h4>
-<p>You can also compute the confidence interval for the true excess based on the statistic value:
-If you are interested in 68% (1 <span class="math notranslate nohighlight">\(\sigma\)</span>) and 95% (2 <span class="math notranslate nohighlight">\(\sigma\)</span>) confidence ranges:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="kn">import</span> <span class="n">CashCountsStatistic</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span> <span class="o">=</span> <span class="n">CashCountsStatistic</span><span class="p">(</span><span class="n">n_on</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span> <span class="n">mu_bkg</span><span class="o">=</span><span class="mf">5.5</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">errn</span> <span class="o">=</span> <span class="n">count_statistic</span><span class="o">.</span><span class="n">compute_errn</span><span class="p">(</span><span class="mf">1.</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">errp</span> <span class="o">=</span> <span class="n">count_statistic</span><span class="o">.</span><span class="n">compute_errp</span><span class="p">(</span><span class="mf">1.</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;68% confidence range: </span><span class="si">{</span><span class="n">excess</span><span class="o">+</span><span class="n">errn</span><span class="si">}</span><span class="s2"> &lt; mu &lt; </span><span class="si">{</span><span class="n">excess</span><span class="o">+</span><span class="n">errp</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="go">68% confidence range: 4.219788441647667 &lt; mu &lt; 11.446309124623102</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">errn_2sigma</span> <span class="o">=</span> <span class="n">count_statistic</span><span class="o">.</span><span class="n">compute_errn</span><span class="p">(</span><span class="mf">2.</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">errp_2sigma</span> <span class="o">=</span> <span class="n">count_statistic</span><span class="o">.</span><span class="n">compute_errp</span><span class="p">(</span><span class="mf">2.</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;95% confidence range: </span><span class="si">{</span><span class="n">excess</span><span class="o">+</span><span class="n">errn_2sigma</span><span class="si">}</span><span class="s2"> &lt; mu &lt; </span><span class="si">{</span><span class="n">excess</span><span class="o">+</span><span class="n">errp_2sigma</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="go">95% confidence range: 1.5559091942635206 &lt; mu &lt; 16.10168631791818</span>
-</pre></div>
-</div>
-<p>The 68% confidence interval (1 <span class="math notranslate nohighlight">\(\sigma\)</span>) is obtained by finding the expected signal values for which the TS
-variation is 1. The 95% confidence interval (2 <span class="math notranslate nohighlight">\(\sigma\)</span>) is obtained by finding the expected signal values
-for which the TS variation is <span class="math notranslate nohighlight">\(2^2 = 4\)</span>.</p>
-<p>On the following plot, we show how the 1 <span class="math notranslate nohighlight">\(\sigma\)</span> and 2 <span class="math notranslate nohighlight">\(\sigma\)</span> confidence errors
-relate to the Cash statistic profile.</p>
-<p>(<a class="reference external" href="../stats/plot_cash_errors.png">png</a>, <a class="reference external" href="../stats/plot_cash_errors.hires.png">hires.png</a>, <a class="reference external" href="../stats/plot_cash_errors.pdf">pdf</a>)</p>
-<div class="figure align-default">
-<img alt="../_images/plot_cash_errors.png" src="../_images/plot_cash_errors.png" />
-</div>
-</div>
-</div>
-<div class="section" id="wstat-counts-statistic">
-<h3>WStat counts statistic<a class="headerlink" href="#wstat-counts-statistic" title="Permalink to this headline">¶</a></h3>
-<div class="section" id="id1">
-<h4>Excess and Significance<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h4>
-<p>To measure the significance of an excess, one can directly use the delta TS of the measurement with and
-without the excess. Taking the square root of the result yields the so-called Li &amp; Ma significance
-<a class="reference internal" href="../references.html#lima1983" id="id2"><span>[LiMa1983]</span></a> (see equation 17).</p>
-<p>As an example, assume you measured <span class="math notranslate nohighlight">\(n_{on} = 13\)</span> counts in a region where
-you suspect a source might be present and <span class="math notranslate nohighlight">\(n_{off} = 11\)</span> counts in a
-background control region where you assume no source is present and that is
-<span class="math notranslate nohighlight">\(a_{off}/a_{on}=2\)</span> times larger than the on-region.</p>
-<p>Here’s how you compute the statistical significance of your detection:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="kn">import</span> <span class="n">WStatCountsStatistic</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span> <span class="o">=</span> <span class="n">WStatCountsStatistic</span><span class="p">(</span><span class="n">n_on</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span> <span class="n">n_off</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">1.</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">excess</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">significance</span>
-</pre></div>
-</div>
-<p>(<a class="reference external" href="../stats/plot_wstat_significance.png">png</a>, <a class="reference external" href="../stats/plot_wstat_significance.hires.png">hires.png</a>, <a class="reference external" href="../stats/plot_wstat_significance.pdf">pdf</a>)</p>
-<div class="figure align-default">
-<img alt="../_images/plot_wstat_significance.png" src="../_images/plot_wstat_significance.png" />
-</div>
-<p>Conversely, if you know that the expected number of background events is <span class="math notranslate nohighlight">\(\mu_{bkg}=9.5\)</span>, you can use
-the Cash statistic and obtain the Li &amp; Ma significance for known background:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="kn">import</span> <span class="n">CashCountsStatistic</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span> <span class="o">=</span> <span class="n">CashCountsStatistic</span><span class="p">(</span><span class="n">n_on</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span> <span class="n">mu_bkg</span><span class="o">=</span><span class="mf">5.5</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">excess</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">significance</span>
-</pre></div>
-</div>
-<p>(<a class="reference external" href="../stats/plot_cash_significance.png">png</a>, <a class="reference external" href="../stats/plot_cash_significance.hires.png">hires.png</a>, <a class="reference external" href="../stats/plot_cash_significance.pdf">pdf</a>)</p>
-<div class="figure align-default">
-<img alt="../_images/plot_cash_significance.png" src="../_images/plot_cash_significance.png" />
-</div>
-</div>
-<div class="section" id="id3">
-<h4>Excess errors<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h4>
-<p>You can also compute the confidence interval for the true excess based on the statistic value:</p>
-<p>If you are interested in 68% (1 <span class="math notranslate nohighlight">\(\sigma\)</span>) and 95% (1 <span class="math notranslate nohighlight">\(\sigma\)</span>) confidence errors:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="kn">import</span> <span class="n">CashCountsStatistic</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span> <span class="o">=</span> <span class="n">CashCountsStatistic</span><span class="p">(</span><span class="n">n_on</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span> <span class="n">mu_bkg</span><span class="o">=</span><span class="mf">5.5</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">compute_errn</span><span class="p">(</span><span class="mf">1.</span><span class="p">)</span>
-<span class="go">-3.91606323</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">compute_errp</span><span class="p">(</span><span class="mf">1.</span><span class="p">)</span>
-<span class="go">4.5823187389960225</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">compute_errn</span><span class="p">(</span><span class="mf">2.</span><span class="p">)</span>
-<span class="go">-3.91606323</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">compute_errp</span><span class="p">(</span><span class="mf">2.</span><span class="p">)</span>
-<span class="go">4.5823187389960225</span>
-</pre></div>
-</div>
-<p>The 68% confidence interval (1 <span class="math notranslate nohighlight">\(\sigma\)</span>) is obtained by finding the expected signal values for which the TS
-variation is 1. The 95% confidence interval (2 <span class="math notranslate nohighlight">\(\sigma\)</span>) is obtained by finding the expected signal values
-for which the TS variation is <span class="math notranslate nohighlight">\(2^2 = 4\)</span>.</p>
-<p>On the following plot, we show how the 1 <span class="math notranslate nohighlight">\(\sigma\)</span> and 2 <span class="math notranslate nohighlight">\(\sigma\)</span> confidence errors
-relate to the fit statistic profile.
-.. plot:: stats/plot_cash_errors.py</p>
-<p>Note that confidence intervals can be computed in a more robust manner following <a class="reference internal" href="../references.html#feldman1998" id="id4"><span>[Feldman1998]</span></a>.
-See <a class="reference internal" href="feldman_cousins.html#feldman-cousins"><span class="std std-ref">Feldman and Cousins Confidence Intervals</span></a>.</p>
-</div>
-</div>
 <div class="section" id="notations">
 <span id="stats-notation"></span><h3>Notations<a class="headerlink" href="#notations" title="Permalink to this headline">¶</a></h3>
 <p>For on-off methods we use the following variable names following the
-notation in <a class="reference internal" href="../references.html#cousins2007" id="id5"><span>[Cousins2007]</span></a>:</p>
+notation in <a class="reference internal" href="../references.html#cousins2007" id="id1"><span>[Cousins2007]</span></a>:</p>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 19%" />
@@ -1416,8 +1253,191 @@ ON measurement: <span class="math notranslate nohighlight">\(n_{bkg} = \alpha\ n
 ON and OFF acceptances.</p>
 <p>Therefore <span class="math notranslate nohighlight">\(n_{off}\)</span> follows a Poisson distribution  with expected value
 :math:mu_{off} = mu_{bkg) / alpha</p>
+</div>
+<div class="section" id="counts-and-fit-statistics">
+<h3>Counts and fit statistics<a class="headerlink" href="#counts-and-fit-statistics" title="Permalink to this headline">¶</a></h3>
+<p>Gamma-ray measurements are counts, <code class="docutils literal notranslate"><span class="pre">n_on</span></code>, containing both signal and background events.</p>
+<p>Estimation of number of signal events or of quantities in physical models is done through
+Poisson likelihood functions, the fit statistics. In gammapy, they are all log-likelihood
+functions normalized like chi-squares, i.e. if <span class="math notranslate nohighlight">\(L\)</span> is the likelihood function used,
+they follow the expression <span class="math notranslate nohighlight">\(2 \times log L\)</span>.</p>
+<p>When the expected number of background events, <code class="docutils literal notranslate"><span class="pre">mu_bkg</span></code> is known, the statistic function
+is <code class="docutils literal notranslate"><span class="pre">Cash</span></code> (see <a class="reference internal" href="fit_statistics.html#cash"><span class="std std-ref">Cash : Poisson data with background model</span></a>). When the number of background events is unknown, one has to
+use a background estimate <code class="docutils literal notranslate"><span class="pre">n_bkg</span></code> taken from an OFF measurement where only background events
+are expected. In this case, the statistic function is <code class="docutils literal notranslate"><span class="pre">WStat</span></code> (see <a class="reference internal" href="fit_statistics.html#wstat"><span class="std std-ref">WStat : Poisson data with background measurement</span></a>).</p>
+<p>These statistic functions are at the heart of the model fitting approach in gammapy. They are
+used to estimate the best fit values of model parameters and their associated confidence intervals.</p>
+<p>They are used also to estimate the excess counts significance, i.e. the probability that
+a given number of measured events <code class="docutils literal notranslate"><span class="pre">n_on</span></code> actually contains some signal events <span class="math notranslate nohighlight">\(n_{excess}\)</span>,
+as well as the errors associated to this estimated number of signal counts.</p>
+</div>
+<div class="section" id="estimating-ts">
+<h3>Estimating TS<a class="headerlink" href="#estimating-ts" title="Permalink to this headline">¶</a></h3>
+<p>A classical approach to modeling and fitting relies on hypothesis testing. One wants to estimate whether
+an hypothesis <span class="math notranslate nohighlight">\(H_1\)</span> is statistically preferred over the reference, or null-hypothesis, <span class="math notranslate nohighlight">\(H_0\)</span>.</p>
+<p>The maximum log-likelihood ratio test provides a way to estimate the p-value of the data following <span class="math notranslate nohighlight">\(H_1\)</span>
+rather than <span class="math notranslate nohighlight">\(H_0\)</span>, when the two hypotheses are nested.
+We note this ratio <span class="math notranslate nohighlight">\(\lambda = \frac{max L(X|{H_1})}{max L(X|H_0)}\)</span></p>
+<p>The Wilks theorem shows that under some hypothesis, <span class="math notranslate nohighlight">\(2 \log \lambda\)</span> assymptotically follows a <span class="math notranslate nohighlight">\(\chi^2\)</span>
+distribution with <span class="math notranslate nohighlight">\(n_{dof}\)</span> degrees of freedom, where <span class="math notranslate nohighlight">\(n_{dof}\)</span> is the difference of free parameters
+between <span class="math notranslate nohighlight">\(H_1\)</span> and <span class="math notranslate nohighlight">\(H_0\)</span>.</p>
+<p>With the definition the fit statistics <span class="math notranslate nohighlight">\(-2 \log \lambda\)</span> is simply the difference of the fit statistic values for
+the two hypotheses, the delta TS (short for test statistic). Hence, <span class="math notranslate nohighlight">\(\Delta TS\)</span> follows <span class="math notranslate nohighlight">\(\chi^2\)</span>
+distribution with <span class="math notranslate nohighlight">\(n_{dof}\)</span> degrees of freedom. This can be used to convert <span class="math notranslate nohighlight">\(\Delta TS\)</span> into a “classical
+significance” using the following recipe:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">chi2</span><span class="p">,</span> <span class="n">norm</span>
+
+<span class="k">def</span> <span class="nf">sigma_to_ts</span><span class="p">(</span><span class="n">sigma</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert sigma to delta ts&quot;&quot;&quot;</span>
+        <span class="n">p_value</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">norm</span><span class="o">.</span><span class="n">sf</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">chi2</span><span class="o">.</span><span class="n">isf</span><span class="p">(</span><span class="n">p_value</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">ts_to_sigma</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert delta ts to sigma&quot;&quot;&quot;</span>
+        <span class="n">p_value</span> <span class="o">=</span> <span class="n">chi2</span><span class="o">.</span><span class="n">sf</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">norm</span><span class="o">.</span><span class="n">isf</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">p_value</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In particular, with only one degree of freedom (e.g. flux amplitude), one
+can estimate the statistical significance in terms of number of <span class="math notranslate nohighlight">\(\sigma\)</span>
+as <span class="math notranslate nohighlight">\(\sqrt{\Delta TS}\)</span>.</p>
+<p>In case the excess is negative, which can happen if the background is overestimated
+the following convention is used:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\sqrt{\Delta TS} = \left \{
+\begin{array}{ll}
+  -\sqrt{\Delta TS} &amp; : \text{if} \text{Excess} &lt; 0 \\
+  \sqrt{\Delta TS} &amp; : \text{else}
+\end{array}
+\right.\end{split}\]</div>
+</div>
+</div>
+<div class="section" id="counts-statistics-classes">
+<h2>Counts statistics classes<a class="headerlink" href="#counts-statistics-classes" title="Permalink to this headline">¶</a></h2>
+<p>To estimate the excess counts significance and errors, gammapy uses two classes for Poisson counts with
+and without known background: <a class="reference internal" href="../api/gammapy.stats.CashCountsStatistic.html#gammapy.stats.CashCountsStatistic" title="gammapy.stats.CashCountsStatistic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CashCountsStatistic</span></code></a> and <a class="reference internal" href="../api/gammapy.stats.WStatCountsStatistic.html#gammapy.stats.WStatCountsStatistic" title="gammapy.stats.WStatCountsStatistic"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WStatCountsStatistic</span></code></a></p>
+<p>We show below how to use them.</p>
+<div class="section" id="cash-counts-statistic">
+<h3>Cash counts statistic<a class="headerlink" href="#cash-counts-statistic" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="excess-and-significance">
+<h4>Excess and Significance<a class="headerlink" href="#excess-and-significance" title="Permalink to this headline">¶</a></h4>
+<p>Assume one measured <span class="math notranslate nohighlight">\(n_{on} = 13\)</span> counts in a region where one suspects a source might be present.
+if the expected number of background events is known (here e.g. <span class="math notranslate nohighlight">\(\mu_{bkg}=9.5\)</span>), one can use
+the Cash statistic to estimate the signal or excess number, its statistical significance
+as well as the confidence interval on the true signal counts number value.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="kn">import</span> <span class="n">CashCountsStatistic</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span> <span class="o">=</span> <span class="n">CashCountsStatistic</span><span class="p">(</span><span class="n">n_on</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span> <span class="n">mu_bkg</span><span class="o">=</span><span class="mf">5.5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">excess</span>
+<span class="go">7.5</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">error</span>
+<span class="go">3.605551275463989</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">ts</span>
+<span class="go">7.365232895800901</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">sqrt_ts</span>
+<span class="go">2.7138962573762653</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">p_value</span>
+<span class="go">0.006649698694909719</span>
+</pre></div>
+</div>
+<p>The error is the symmetric error obtained from the covariance of the statistic function, here <span class="math notranslate nohighlight">\(\sqrt{n_{on}}\)</span>.
+The significance is the square root of the <span class="math notranslate nohighlight">\(TS\)</span>, multiplied by the sign of the excess,
+which is equivalent to the Li &amp; Ma significance for known background.</p>
+<p>To see how the <span class="math notranslate nohighlight">\(TS\)</span>, relates to the statistic function, we plot below the profile of the Cash
+statistic as a function of the expected signal events number.</p>
+<p>(<a class="reference external" href="../stats/plot_cash_significance.png">png</a>, <a class="reference external" href="../stats/plot_cash_significance.hires.png">hires.png</a>, <a class="reference external" href="../stats/plot_cash_significance.pdf">pdf</a>)</p>
+<div class="figure align-default">
+<img alt="../_images/plot_cash_significance.png" src="../_images/plot_cash_significance.png" />
+</div>
+</div>
+<div class="section" id="excess-errors">
+<h4>Excess errors<a class="headerlink" href="#excess-errors" title="Permalink to this headline">¶</a></h4>
+<p>You can also compute the confidence interval for the true excess based on the statistic value:
+If you are interested in 68% (1 <span class="math notranslate nohighlight">\(\sigma\)</span>) and 95% (2 <span class="math notranslate nohighlight">\(\sigma\)</span>) confidence ranges:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="kn">import</span> <span class="n">CashCountsStatistic</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span> <span class="o">=</span> <span class="n">CashCountsStatistic</span><span class="p">(</span><span class="n">n_on</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span> <span class="n">mu_bkg</span><span class="o">=</span><span class="mf">5.5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">errn</span> <span class="o">=</span> <span class="n">count_statistic</span><span class="o">.</span><span class="n">compute_errn</span><span class="p">(</span><span class="mf">1.</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">errp</span> <span class="o">=</span> <span class="n">count_statistic</span><span class="o">.</span><span class="n">compute_errp</span><span class="p">(</span><span class="mf">1.</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;68% confidence range: </span><span class="si">{</span><span class="n">excess</span><span class="o">+</span><span class="n">errn</span><span class="si">}</span><span class="s2"> &lt; mu &lt; </span><span class="si">{</span><span class="n">excess</span><span class="o">+</span><span class="n">errp</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="go">68% confidence range: 4.219788441647667 &lt; mu &lt; 11.446309124623102</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">errn_2sigma</span> <span class="o">=</span> <span class="n">count_statistic</span><span class="o">.</span><span class="n">compute_errn</span><span class="p">(</span><span class="mf">2.</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">errp_2sigma</span> <span class="o">=</span> <span class="n">count_statistic</span><span class="o">.</span><span class="n">compute_errp</span><span class="p">(</span><span class="mf">2.</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;95% confidence range: </span><span class="si">{</span><span class="n">excess</span><span class="o">+</span><span class="n">errn_2sigma</span><span class="si">}</span><span class="s2"> &lt; mu &lt; </span><span class="si">{</span><span class="n">excess</span><span class="o">+</span><span class="n">errp_2sigma</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="go">95% confidence range: 1.5559091942635206 &lt; mu &lt; 16.10168631791818</span>
+</pre></div>
+</div>
+<p>The 68% confidence interval (1 <span class="math notranslate nohighlight">\(\sigma\)</span>) is obtained by finding the expected signal values for which the TS
+variation is 1. The 95% confidence interval (2 <span class="math notranslate nohighlight">\(\sigma\)</span>) is obtained by finding the expected signal values
+for which the TS variation is <span class="math notranslate nohighlight">\(2^2 = 4\)</span>.</p>
+<p>On the following plot, we show how the 1 <span class="math notranslate nohighlight">\(\sigma\)</span> and 2 <span class="math notranslate nohighlight">\(\sigma\)</span> confidence errors
+relate to the Cash statistic profile.</p>
+<p>(<a class="reference external" href="../stats/plot_cash_errors.png">png</a>, <a class="reference external" href="../stats/plot_cash_errors.hires.png">hires.png</a>, <a class="reference external" href="../stats/plot_cash_errors.pdf">pdf</a>)</p>
+<div class="figure align-default">
+<img alt="../_images/plot_cash_errors.png" src="../_images/plot_cash_errors.png" />
+</div>
+</div>
+</div>
+<div class="section" id="wstat-counts-statistic">
+<h3>WStat counts statistic<a class="headerlink" href="#wstat-counts-statistic" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="id2">
+<h4>Excess and Significance<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h4>
+<p>To measure the significance of an excess, one can directly use the TS of the measurement with and
+without the excess. Taking the square root of the result yields the so-called Li &amp; Ma significance
+<a class="reference internal" href="../references.html#lima1983" id="id3"><span>[LiMa1983]</span></a> (see equation 17).</p>
+<p>As an example, assume you measured <span class="math notranslate nohighlight">\(n_{on} = 13\)</span> counts in a region where
+you suspect a source might be present and <span class="math notranslate nohighlight">\(n_{off} = 11\)</span> counts in a
+background control region where you assume no source is present and that is
+<span class="math notranslate nohighlight">\(a_{off}/a_{on}=2\)</span> times larger than the on-region.</p>
+<p>Here’s how you compute the statistical significance of your detection:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="kn">import</span> <span class="n">WStatCountsStatistic</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span> <span class="o">=</span> <span class="n">WStatCountsStatistic</span><span class="p">(</span><span class="n">n_on</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span> <span class="n">n_off</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">1.</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">excess</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">sqrt_ts</span>
+</pre></div>
+</div>
+<p>(<a class="reference external" href="../stats/plot_wstat_significance.png">png</a>, <a class="reference external" href="../stats/plot_wstat_significance.hires.png">hires.png</a>, <a class="reference external" href="../stats/plot_wstat_significance.pdf">pdf</a>)</p>
+<div class="figure align-default">
+<img alt="../_images/plot_wstat_significance.png" src="../_images/plot_wstat_significance.png" />
+</div>
+<p>Conversely, if you know that the expected number of background events is <span class="math notranslate nohighlight">\(\mu_{bkg}=9.5\)</span>, you can use
+the Cash statistic and obtain the <span class="math notranslate nohighlight">\(\sqrt TS\)</span> or Li &amp; Ma significance for known background:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="kn">import</span> <span class="n">CashCountsStatistic</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span> <span class="o">=</span> <span class="n">CashCountsStatistic</span><span class="p">(</span><span class="n">n_on</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span> <span class="n">mu_bkg</span><span class="o">=</span><span class="mf">5.5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">excess</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">sqrt_ts</span>
+</pre></div>
+</div>
+<p>(<a class="reference external" href="../stats/plot_cash_significance.png">png</a>, <a class="reference external" href="../stats/plot_cash_significance.hires.png">hires.png</a>, <a class="reference external" href="../stats/plot_cash_significance.pdf">pdf</a>)</p>
+<div class="figure align-default">
+<img alt="../_images/plot_cash_significance.png" src="../_images/plot_cash_significance.png" />
+</div>
+</div>
+<div class="section" id="id4">
+<h4>Excess errors<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h4>
+<p>You can also compute the confidence interval for the true excess based on the statistic value:</p>
+<p>If you are interested in 68% (1 <span class="math notranslate nohighlight">\(\sigma\)</span>) and 95% (1 <span class="math notranslate nohighlight">\(\sigma\)</span>) confidence errors:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="kn">import</span> <span class="n">CashCountsStatistic</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span> <span class="o">=</span> <span class="n">CashCountsStatistic</span><span class="p">(</span><span class="n">n_on</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span> <span class="n">mu_bkg</span><span class="o">=</span><span class="mf">5.5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">compute_errn</span><span class="p">(</span><span class="mf">1.</span><span class="p">)</span>
+<span class="go">-3.91606323</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">compute_errp</span><span class="p">(</span><span class="mf">1.</span><span class="p">)</span>
+<span class="go">4.5823187389960225</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">compute_errn</span><span class="p">(</span><span class="mf">2.</span><span class="p">)</span>
+<span class="go">-3.91606323</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stat</span><span class="o">.</span><span class="n">compute_errp</span><span class="p">(</span><span class="mf">2.</span><span class="p">)</span>
+<span class="go">4.5823187389960225</span>
+</pre></div>
+</div>
+<p>The 68% confidence interval (1 <span class="math notranslate nohighlight">\(\sigma\)</span>) is obtained by finding the expected signal values for which the TS
+variation is 1. The 95% confidence interval (2 <span class="math notranslate nohighlight">\(\sigma\)</span>) is obtained by finding the expected signal values
+for which the TS variation is <span class="math notranslate nohighlight">\(2^2 = 4\)</span>.</p>
+<p>On the following plot, we show how the 1 <span class="math notranslate nohighlight">\(\sigma\)</span> and 2 <span class="math notranslate nohighlight">\(\sigma\)</span> confidence errors
+relate to the fit statistic profile.
+.. plot:: stats/plot_cash_errors.py</p>
+<p>Note that confidence intervals can be computed in a more robust manner following <a class="reference internal" href="../references.html#feldman1998" id="id5"><span>[Feldman1998]</span></a>.
+See <a class="reference internal" href="feldman_cousins.html#feldman-cousins"><span class="std std-ref">Feldman and Cousins Confidence Intervals</span></a>.</p>
 <p>These are references describing the available methods: <a class="reference internal" href="../references.html#lima1983" id="id6"><span>[LiMa1983]</span></a>, <a class="reference internal" href="../references.html#cash1979" id="id7"><span>[Cash1979]</span></a>,
 <a class="reference internal" href="../references.html#stewart2009" id="id8"><span>[Stewart2009]</span></a>, <a class="reference internal" href="../references.html#rolke2005" id="id9"><span>[Rolke2005]</span></a>, <a class="reference internal" href="../references.html#feldman1998" id="id10"><span>[Feldman1998]</span></a>, <a class="reference internal" href="../references.html#cousins2007" id="id11"><span>[Cousins2007]</span></a>.</p>
+</div>
 </div>
 </div>
 <div class="section" id="using-gammapy-stats">
@@ -1538,7 +1558,7 @@ ON and OFF acceptances.</p>
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 16 Oct 2020.
+        Last updated on 27 Oct 2020.
       </span>
 
     </p>

@@ -198,7 +198,7 @@ result = estimator.run(dataset)
 # In[ ]:
 
 
-mask_map_significance = result["significance"] < 5.0
+mask_map_significance = result["sqrt_ts"] < 5.0
 
 
 # In[ ]:

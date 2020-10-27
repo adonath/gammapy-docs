@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>astropy.table.table &mdash; gammapy v0.18.dev1008+ga3f9b1e78</title>
+  <title>astropy.table.table &mdash; gammapy v0.18.dev1085+g7fd0ef796</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev1008+ga3f9b1e78
+                0.18.dev1085+g7fd0ef796
               </div>
             
           
@@ -918,10 +918,10 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../../stats/index.html">stats - Statistics</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#general-notions">General notions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#introduction">Introduction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#notations">Notations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#counts-and-fit-statistics">Counts and fit statistics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#estimating-delta-ts">Estimating Delta TS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#estimating-ts">Estimating TS</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#counts-statistics-classes">Counts statistics classes</a><ul>
@@ -931,11 +931,10 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#wstat-counts-statistic">WStat counts statistic</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id1">Excess and Significance</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id3">Excess errors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id2">Excess and Significance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id4">Excess errors</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#notations">Notations</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#using-gammapy-stats">Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.stats</span></code></a><ul>
@@ -1160,6 +1159,7 @@
 <span class="kn">import</span> <span class="nn">warnings</span>
 <span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
 <span class="kn">import</span> <span class="nn">types</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">ma</span>
@@ -1168,10 +1168,9 @@
 <span class="kn">from</span> <span class="nn">astropy.units</span> <span class="kn">import</span> <span class="n">Quantity</span><span class="p">,</span> <span class="n">QuantityInfo</span>
 <span class="kn">from</span> <span class="nn">astropy.utils</span> <span class="kn">import</span> <span class="n">isiterable</span><span class="p">,</span> <span class="n">ShapedLikeNDArray</span>
 <span class="kn">from</span> <span class="nn">astropy.utils.console</span> <span class="kn">import</span> <span class="n">color_print</span>
-<span class="kn">from</span> <span class="nn">astropy.utils.metadata</span> <span class="kn">import</span> <span class="n">MetaData</span>
+<span class="kn">from</span> <span class="nn">astropy.utils.metadata</span> <span class="kn">import</span> <span class="n">MetaData</span><span class="p">,</span> <span class="n">MetaAttribute</span>
 <span class="kn">from</span> <span class="nn">astropy.utils.data_info</span> <span class="kn">import</span> <span class="n">BaseColumnInfo</span><span class="p">,</span> <span class="n">MixinInfo</span><span class="p">,</span> <span class="n">ParentDtypeInfo</span><span class="p">,</span> <span class="n">DataInfo</span>
 <span class="kn">from</span> <span class="nn">astropy.utils.decorators</span> <span class="kn">import</span> <span class="n">format_doc</span>
-<span class="kn">from</span> <span class="nn">astropy.utils.exceptions</span> <span class="kn">import</span> <span class="n">AstropyDeprecationWarning</span><span class="p">,</span> <span class="n">NoValue</span>
 <span class="kn">from</span> <span class="nn">astropy.io.registry</span> <span class="kn">import</span> <span class="n">UnifiedReadWriteMethod</span>
 
 <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">groups</span>
@@ -1526,6 +1525,10 @@
 <span class="sd">        Row-oriented data for table instead of ``data`` argument.</span>
 <span class="sd">    copy_indices : bool, optional</span>
 <span class="sd">        Copy any indices in the input data. Default is True.</span>
+<span class="sd">    units : list, dict, optional</span>
+<span class="sd">        List or dict of units to apply to columns.</span>
+<span class="sd">    descriptions : list, dict, optional</span>
+<span class="sd">        List or dict of descriptions to apply to columns.</span>
 <span class="sd">    **kwargs : dict, optional</span>
 <span class="sd">        Additional keyword args when converting table-like object.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -1605,6 +1608,7 @@
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">masked</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">rows</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">copy_indices</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                 <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">descriptions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
 
         <span class="c1"># Set up a placeholder empty table</span>
@@ -1647,6 +1651,15 @@
 
         <span class="n">default_names</span> <span class="o">=</span> <span class="kc">None</span>
 
+        <span class="c1"># Handle custom (subclass) table attributes that are stored in meta.</span>
+        <span class="c1"># These are defined as class attributes using the MetaAttribute</span>
+        <span class="c1"># descriptor.  Any such attributes get removed from kwargs here.</span>
+        <span class="k">if</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">kwargs</span><span class="p">):</span>
+                <span class="n">descr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">descr</span><span class="p">,</span> <span class="n">TableAttribute</span><span class="p">):</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">attr</span><span class="p">))</span>
+
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">&#39;__astropy_table__&#39;</span><span class="p">):</span>
             <span class="c1"># Data object implements the __astropy_table__ interface method.</span>
             <span class="c1"># Calling that method returns an appropriate instance of</span>
@@ -1658,9 +1671,9 @@
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;__init__() got unexpected keyword argument </span><span class="si">{!r}</span><span class="s1">&#39;</span>
                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]))</span>
 
-        <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span>
-                <span class="n">data</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)</span> <span class="ow">and</span>
-                <span class="ow">not</span> <span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="mi">0</span><span class="p">,)</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">):</span>
             <span class="n">data</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Row</span><span class="p">):</span>
@@ -1669,8 +1682,8 @@
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
             <span class="c1"># Get column names from `data` if it is a list of dict, otherwise this is None.</span>
             <span class="c1"># This might be previously defined if `rows` was supplied as an init arg.</span>
-            <span class="n">names_from_list_of_dict</span> <span class="o">=</span> <span class="p">(</span><span class="n">names_from_list_of_dict</span> <span class="ow">or</span>
-                                       <span class="n">_get_names_from_list_of_dict</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
+            <span class="n">names_from_list_of_dict</span> <span class="o">=</span> <span class="p">(</span><span class="n">names_from_list_of_dict</span>
+                                       <span class="ow">or</span> <span class="n">_get_names_from_list_of_dict</span><span class="p">(</span><span class="n">data</span><span class="p">))</span>
             <span class="k">if</span> <span class="n">names_from_list_of_dict</span><span class="p">:</span>
                 <span class="n">init_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_from_list_of_dicts</span>
                 <span class="n">n_cols</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">names_from_list_of_dict</span><span class="p">)</span>
@@ -1769,6 +1782,39 @@
         <span class="c1"># Whatever happens above, the masked property should be set to a boolean</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">masked</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;masked property must be None, True or False&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_column_attribute</span><span class="p">(</span><span class="s1">&#39;unit&#39;</span><span class="p">,</span> <span class="n">units</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_column_attribute</span><span class="p">(</span><span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="n">descriptions</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_set_column_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set ``attr`` for columns to ``values``, which can be either a dict (keyed by column</span>
+<span class="sd">        name) or a dict of name: value pairs.  This is used for handling the ``units`` and</span>
+<span class="sd">        ``descriptions`` kwargs to ``__init__``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">values</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">Row</span><span class="p">):</span>
+            <span class="c1"># For a Row object transform to an equivalent dict.</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">values</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">values</span><span class="o">.</span><span class="n">colnames</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="c1"># If not a dict map, assume iterable and map to dict if the right length</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;sequence of </span><span class="si">{</span><span class="n">attr</span><span class="si">}</span><span class="s1"> values must match number of columns&#39;</span><span class="p">)</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">colnames</span><span class="p">,</span> <span class="n">values</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">values</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;invalid column name </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1"> for setting </span><span class="si">{</span><span class="n">attr</span><span class="si">}</span><span class="s1"> attribute&#39;</span><span class="p">)</span>
+
+            <span class="c1"># Special case: ignore unit if it is an empty or blank string</span>
+            <span class="k">if</span> <span class="n">attr</span> <span class="o">==</span> <span class="s1">&#39;unit&#39;</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="n">value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ma</span><span class="o">.</span><span class="n">masked</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">info</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__getstate__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">columns</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">((</span><span class="n">key</span><span class="p">,</span> <span class="n">col</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">BaseColumn</span><span class="p">)</span> <span class="k">else</span> <span class="n">col_copy</span><span class="p">(</span><span class="n">col</span><span class="p">))</span>
@@ -1997,8 +2043,8 @@
         <span class="c1"># if it is ordered, or alphabetically.  Starting with Python 3.7, dict</span>
         <span class="c1"># is ordered so this test can be relaxed.  (In practice CPython 3.6 is</span>
         <span class="c1"># this way, but not according to the formal spec).</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">OrderedDict</span><span class="p">)</span> <span class="ow">and</span>
-                <span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="n">names_from_data</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">OrderedDict</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="n">names_from_data</span><span class="p">):</span>
             <span class="n">names_from_data</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">names_from_data</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">names_from_data</span><span class="p">)</span>
@@ -2114,8 +2160,8 @@
 
         <span class="c1"># Structured ndarray gets viewed as a mixin unless already a valid</span>
         <span class="c1"># mixin class</span>
-        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">Column</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">data_is_mixin</span> <span class="ow">and</span>
-                <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">Column</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">data_is_mixin</span>
+                <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">):</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">NdarrayMixin</span><span class="p">)</span>
             <span class="n">data_is_mixin</span> <span class="o">=</span> <span class="kc">True</span>
 
@@ -2490,7 +2536,7 @@
 
     <span class="nd">@format_doc</span><span class="p">(</span><span class="n">_pprint_docs</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">pprint_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_lines</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_width</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">show_name</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-               <span class="n">show_unit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_dtype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                   <span class="n">show_unit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_dtype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Print a formatted string representation of the entire table.</span>
 
 <span class="sd">        This method is the same as `astropy.table.Table.pprint` except that</span>
@@ -2500,13 +2546,13 @@
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">max_lines</span><span class="p">,</span> <span class="n">max_width</span><span class="p">,</span> <span class="n">show_name</span><span class="p">,</span>
-               <span class="n">show_unit</span><span class="p">,</span> <span class="n">show_dtype</span><span class="p">,</span> <span class="n">align</span><span class="p">)</span>
+                           <span class="n">show_unit</span><span class="p">,</span> <span class="n">show_dtype</span><span class="p">,</span> <span class="n">align</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_make_index_row_display_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index_row_name</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">index_row_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
             <span class="n">idx_col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ColumnClass</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">index_row_name</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)))</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">([</span><span class="n">idx_col</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span>
-                                           <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                                  <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span>
 
@@ -2556,7 +2602,7 @@
 
         <span class="k">if</span> <span class="n">tableid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">tableid</span> <span class="o">=</span> <span class="s1">&#39;table</span><span class="si">{}</span><span class="s1">-</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span>
-                                            <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">1e6</span><span class="p">))</span>
+                                          <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">1e6</span><span class="p">))</span>
 
         <span class="n">jsv</span> <span class="o">=</span> <span class="n">JSViewer</span><span class="p">(</span><span class="n">display_length</span><span class="o">=</span><span class="n">display_length</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">show_row_index</span><span class="p">:</span>
@@ -2685,8 +2731,8 @@
 
     <span class="nd">@format_doc</span><span class="p">(</span><span class="n">_pformat_docs</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{id}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">pformat_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_lines</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_width</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">show_name</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                <span class="n">show_unit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_dtype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">html</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">tableid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                <span class="n">align</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tableclass</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+                    <span class="n">show_unit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_dtype</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">html</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">tableid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">align</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tableclass</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Return a list of lines for the formatted string representation of</span>
 <span class="sd">        the entire table.</span>
 
@@ -2703,8 +2749,8 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pformat</span><span class="p">(</span><span class="n">max_lines</span><span class="p">,</span> <span class="n">max_width</span><span class="p">,</span> <span class="n">show_name</span><span class="p">,</span>
-                <span class="n">show_unit</span><span class="p">,</span> <span class="n">show_dtype</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">tableid</span><span class="p">,</span>
-                <span class="n">align</span><span class="p">,</span> <span class="n">tableclass</span><span class="p">)</span>
+                            <span class="n">show_unit</span><span class="p">,</span> <span class="n">show_dtype</span><span class="p">,</span> <span class="n">html</span><span class="p">,</span> <span class="n">tableid</span><span class="p">,</span>
+                            <span class="n">align</span><span class="p">,</span> <span class="n">tableclass</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">more</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_lines</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">max_width</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_name</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
              <span class="n">show_unit</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_dtype</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
@@ -2758,15 +2804,15 @@
                                              <span class="n">keys</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">groups</span><span class="o">.</span><span class="n">_keys</span><span class="p">)</span>
             <span class="n">out</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>  <span class="c1"># Shallow copy for meta</span>
             <span class="k">return</span> <span class="n">out</span>
-        <span class="k">elif</span> <span class="p">((</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">item</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span>
-              <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">))</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">item</span><span class="p">)):</span>
+        <span class="k">elif</span> <span class="p">((</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="n">item</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+              <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">))</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">item</span><span class="p">)):</span>
             <span class="c1"># If item is an empty array/list/tuple then return the table with no rows</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_new_from_slice</span><span class="p">([])</span>
-        <span class="k">elif</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">slice</span><span class="p">)</span> <span class="ow">or</span>
-              <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">or</span>
-              <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span>
-              <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
-                                              <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">item</span><span class="p">)):</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">slice</span><span class="p">)</span>
+              <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+              <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+              <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+                                                 <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">item</span><span class="p">)):</span>
             <span class="c1"># here for the many ways to give a slice; a tuple of ndarray</span>
             <span class="c1"># is produced by np.where, as in t[np.where(t[&#39;a&#39;] &gt; 2)]</span>
             <span class="c1"># For all, a new table is constructed with slice of all columns</span>
@@ -2800,11 +2846,11 @@
             <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_set_row</span><span class="p">(</span><span class="n">idx</span><span class="o">=</span><span class="n">item</span><span class="p">,</span> <span class="n">colnames</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">colnames</span><span class="p">,</span> <span class="n">vals</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
 
-            <span class="k">elif</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">slice</span><span class="p">)</span> <span class="ow">or</span>
-                  <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">or</span>
-                  <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span>
-                  <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span>  <span class="c1"># output from np.where</span>
-                   <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">item</span><span class="p">))):</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">slice</span><span class="p">)</span>
+                  <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+                  <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+                  <span class="ow">or</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span>  <span class="c1"># output from np.where</span>
+                      <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">item</span><span class="p">))):</span>
 
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Table</span><span class="p">):</span>
                     <span class="n">vals</span> <span class="o">=</span> <span class="p">(</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">value</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
@@ -2813,7 +2859,6 @@
                     <span class="n">vals</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">value</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">names</span><span class="p">)</span>
 
                 <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
-                    <span class="kn">import</span> <span class="nn">itertools</span>
                     <span class="n">vals</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">n_cols</span><span class="p">)</span>
 
                 <span class="k">else</span><span class="p">:</span>  <span class="c1"># Assume this is an iterable that will work</span>
@@ -2834,11 +2879,11 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">remove_column</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">remove_row</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">))</span> <span class="ow">and</span>
-              <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">item</span><span class="p">)):</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">))</span>
+              <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">item</span><span class="p">)):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">remove_columns</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">))</span> <span class="ow">and</span>
-              <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">item</span><span class="p">)</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;i&#39;</span><span class="p">):</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">))</span>
+              <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">item</span><span class="p">)</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;i&#39;</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">remove_rows</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">remove_rows</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
@@ -2895,11 +2940,17 @@
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_is_list_or_tuple_of_str</span><span class="p">(</span><span class="n">names</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Check that ``names`` is a tuple or list of strings&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">))</span> <span class="ow">and</span> <span class="n">names</span> <span class="ow">and</span>
-                <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">names</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">))</span> <span class="ow">and</span> <span class="n">names</span>
+                <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">names</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># For performance reasons (esp. in Row) cache the first column name</span>
@@ -3047,10 +3098,10 @@
             <span class="n">new_shape</span> <span class="o">=</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">),)</span> <span class="o">+</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="s1">&#39;shape&#39;</span><span class="p">,</span> <span class="p">())[</span><span class="mi">1</span><span class="p">:]</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
                 <span class="n">col</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">new_shape</span><span class="p">,</span>
-                                       <span class="n">subok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                                      <span class="n">subok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
             <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">ShapedLikeNDArray</span><span class="p">):</span>
                 <span class="n">col</span> <span class="o">=</span> <span class="n">col</span><span class="o">.</span><span class="n">_apply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">new_shape</span><span class="p">,</span>
-                                   <span class="n">subok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                                 <span class="n">subok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
             <span class="c1"># broadcast_to() results in a read-only array.  Apparently it only changes</span>
             <span class="c1"># the view to look like the broadcasted array.  So copy.</span>
@@ -3986,13 +4037,15 @@
         <span class="k">if</span> <span class="n">keys</span><span class="p">:</span>
             <span class="c1"># For multiple keys return a structured array which gets sorted,</span>
             <span class="c1"># while for a single key return a single ndarray.  Sorting a</span>
-            <span class="c1"># one-column structured array is much slower than ndarray, e.g. a</span>
-            <span class="c1"># factor of ~6 for a 10 million long random array.</span>
+            <span class="c1"># one-column structured array is slower than ndarray (e.g. a</span>
+            <span class="c1"># factor of ~6 for a 10 million long random array), and much slower</span>
+            <span class="c1"># for in principle sortable columns like Time, which get stored as</span>
+            <span class="c1"># object arrays.</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;order&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">keys</span>
                 <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">as_array</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="n">keys</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># No keys provided so sort on all columns.</span>
             <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">as_array</span><span class="p">()</span>
@@ -4000,7 +4053,9 @@
         <span class="k">if</span> <span class="n">kind</span><span class="p">:</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;kind&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">kind</span>
 
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># np.argsort will look for a possible .argsort method (e.g., for Time),</span>
+        <span class="c1"># and if that fails cast to an array and try sorting that way.</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">idx</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">reverse</span> <span class="k">else</span> <span class="n">idx</span>
 
@@ -4125,6 +4180,70 @@
 
         <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">:</span>
             <span class="n">index</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">round</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Round numeric columns in-place to the specified number of decimals.</span>
+<span class="sd">        Non-numeric columns will be ignored.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Create three columns with different types:</span>
+
+<span class="sd">            &gt;&gt;&gt; t = Table([[1, 4, 5], [-25.55, 12.123, 85],</span>
+<span class="sd">            ...     [&#39;a&#39;, &#39;b&#39;, &#39;c&#39;]], names=(&#39;a&#39;, &#39;b&#39;, &#39;c&#39;))</span>
+<span class="sd">            &gt;&gt;&gt; print(t)</span>
+<span class="sd">             a    b     c</span>
+<span class="sd">            --- ------ ---</span>
+<span class="sd">              1 -25.55   a</span>
+<span class="sd">              4 12.123   b</span>
+<span class="sd">              5   85.0   c</span>
+
+<span class="sd">        Round them all to 0:</span>
+
+<span class="sd">            &gt;&gt;&gt; t.round(0)</span>
+<span class="sd">            &gt;&gt;&gt; print(t)</span>
+<span class="sd">             a    b    c</span>
+<span class="sd">            --- ----- ---</span>
+<span class="sd">              1 -26.0   a</span>
+<span class="sd">              4  12.0   b</span>
+<span class="sd">              5  85.0   c</span>
+
+<span class="sd">        Round column &#39;a&#39; to -1 decimal:</span>
+
+<span class="sd">            &gt;&gt;&gt; t.round({&#39;a&#39;:-1})</span>
+<span class="sd">            &gt;&gt;&gt; print(t)</span>
+<span class="sd">             a    b    c</span>
+<span class="sd">            --- ----- ---</span>
+<span class="sd">              0 -26.0   a</span>
+<span class="sd">              0  12.0   b</span>
+<span class="sd">              0  85.0   c</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        decimals: int, dict</span>
+<span class="sd">            Number of decimals to round the columns to. If a dict is given,</span>
+<span class="sd">            the columns will be rounded to the number specified as the value.</span>
+<span class="sd">            If a certain column is not in the dict given, it will remain the</span>
+<span class="sd">            same.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">decimals</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">decimal_values</span> <span class="o">=</span> <span class="n">decimals</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="n">column_names</span> <span class="o">=</span> <span class="n">decimals</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">decimals</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">decimal_values</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">decimals</span><span class="p">)</span>
+            <span class="n">column_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">colnames</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&#39;decimals&#39; argument must be an int or a dict&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">colname</span><span class="p">,</span> <span class="n">decimal</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">column_names</span><span class="p">,</span> <span class="n">decimal_values</span><span class="p">):</span>
+            <span class="n">col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="n">colname</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">col</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="n">decimal</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">col</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                    <span class="c1"># Bug in numpy see https://github.com/numpy/numpy/issues/15438</span>
+                    <span class="n">col</span><span class="p">[()]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">around</span><span class="p">(</span><span class="n">col</span><span class="p">,</span> <span class="n">decimals</span><span class="o">=</span><span class="n">decimal</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy_data</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&#39;&#39;&#39;</span>
@@ -4271,17 +4390,17 @@
                 <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">(</span><span class="n">record</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">warns</span><span class="p">:</span>
                     <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s1">&#39;always&#39;</span><span class="p">)</span>
                     <span class="n">eq</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">==</span> <span class="n">other</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
-                    <span class="k">if</span> <span class="p">(</span><span class="n">warns</span> <span class="ow">and</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">warns</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">category</span><span class="p">,</span> <span class="ne">FutureWarning</span><span class="p">)</span> <span class="ow">and</span>
-                            <span class="s1">&#39;elementwise comparison failed&#39;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">warns</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="p">)):</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="n">warns</span> <span class="ow">and</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">warns</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">category</span><span class="p">,</span> <span class="ne">FutureWarning</span><span class="p">)</span>
+                            <span class="ow">and</span> <span class="s1">&#39;elementwise comparison failed&#39;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">warns</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="p">)):</span>
                         <span class="k">raise</span> <span class="ne">FutureWarning</span><span class="p">(</span><span class="n">warns</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;unable to compare column </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">err</span>
 
             <span class="c1"># Be strict about the result from the comparison. E.g. SkyCoord __eq__ is just</span>
             <span class="c1"># broken and completely ignores that it should return an array.</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span>
-                    <span class="n">eq</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="s1">&#39;bool&#39;</span><span class="p">)</span> <span class="ow">and</span>
-                    <span class="nb">len</span><span class="p">(</span><span class="n">eq</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="n">eq</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">is</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="s1">&#39;bool&#39;</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">eq</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)):</span>
                 <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;comparison for column </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1"> returned </span><span class="si">{</span><span class="n">eq</span><span class="si">}</span><span class="s1"> &#39;</span>
                                 <span class="sa">f</span><span class="s1">&#39;instead of the expected boolean ndarray&#39;</span><span class="p">)</span>
 
@@ -4324,7 +4443,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">groups</span><span class="o">.</span><span class="n">table_group_by</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">to_pandas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">to_pandas</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">use_nullable_int</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return a :class:`pandas.DataFrame` instance</span>
 
@@ -4335,7 +4454,7 @@
 <span class="sd">        then no DataFrame index will be specified.  If ``index`` is the name of</span>
 <span class="sd">        a column in the table then that will be the DataFrame index.</span>
 
-<span class="sd">        In additional to vanilla columns or masked columns, this supports Table</span>
+<span class="sd">        In addition to vanilla columns or masked columns, this supports Table</span>
 <span class="sd">        mixin columns like Quantity, Time, or SkyCoord.  In many cases these</span>
 <span class="sd">        objects have no analog in pandas and will be converted to a &quot;encoded&quot;</span>
 <span class="sd">        representation using only Column or MaskedColumn.  The exception is</span>
@@ -4343,12 +4462,20 @@
 <span class="sd">        representation in pandas using ``np.datetime64`` or ``np.timedelta64``.</span>
 <span class="sd">        See the example below.</span>
 
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        index : None, bool, str</span>
+<span class="sd">            Specify DataFrame index mode</span>
+<span class="sd">        use_nullable_int : bool, default=True</span>
+<span class="sd">            Convert integer MaskedColumn to pandas nullable integer type.</span>
+<span class="sd">            If ``use_nullable_int=False`` or the pandas version does not support</span>
+<span class="sd">            nullable integer types (version &lt; 0.24), then the column is converted</span>
+<span class="sd">            to float with NaN for missing elements and a warning is issued.</span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        dataframe : :class:`pandas.DataFrame`</span>
 <span class="sd">            A pandas :class:`pandas.DataFrame` instance</span>
-<span class="sd">        index : None, bool, str</span>
-<span class="sd">            Specify DataFrame index mode</span>
 
 <span class="sd">        Raises</span>
 <span class="sd">        ------</span>
@@ -4384,7 +4511,7 @@
 <span class="sd">          2002-01-01  2.0    6.0     8.0 0 days 00:03:20</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">DataFrame</span>
+        <span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">Series</span>
 
         <span class="k">if</span> <span class="n">index</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">index</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
@@ -4403,7 +4530,6 @@
 <span class="sd">            astropy Columns + appropriate meta-data to allow subsequent decoding.</span>
 <span class="sd">            &quot;&quot;&quot;</span>
             <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">serialize</span>
-            <span class="kn">from</span> <span class="nn">astropy.utils.data_info</span> <span class="kn">import</span> <span class="n">MixinInfo</span><span class="p">,</span> <span class="n">serialize_context_as</span>
             <span class="kn">from</span> <span class="nn">astropy.time</span> <span class="kn">import</span> <span class="n">Time</span><span class="p">,</span> <span class="n">TimeDelta</span>
 
             <span class="c1"># Convert any Time or TimeDelta columns and pay attention to masking</span>
@@ -4449,18 +4575,26 @@
         <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">tbl</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="n">MaskedColumn</span><span class="p">)</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">column</span><span class="o">.</span><span class="n">mask</span><span class="p">):</span>
                 <span class="k">if</span> <span class="n">column</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="s1">&#39;u&#39;</span><span class="p">]:</span>
-                    <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">column</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
-                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-                        <span class="s2">&quot;converted column &#39;</span><span class="si">{}</span><span class="s2">&#39; from integer to float&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                            <span class="n">name</span><span class="p">),</span> <span class="n">TableReplaceWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+                    <span class="n">pd_dtype</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">column</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">use_nullable_int</span><span class="p">:</span>
+                        <span class="c1"># Convert int64 to Int64, uint32 to UInt32, etc for nullable types</span>
+                        <span class="n">pd_dtype</span> <span class="o">=</span> <span class="n">pd_dtype</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;i&#39;</span><span class="p">,</span> <span class="s1">&#39;I&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="s1">&#39;U&#39;</span><span class="p">)</span>
+                    <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Series</span><span class="p">(</span><span class="n">column</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">pd_dtype</span><span class="p">)</span>
+
+                    <span class="c1"># If pandas is older than 0.24 the type may have turned to float</span>
+                    <span class="k">if</span> <span class="n">column</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">!=</span> <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span><span class="p">:</span>
+                        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;converted column &#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39; from </span><span class="si">{</span><span class="n">column</span><span class="o">.</span><span class="n">dtype</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="n">TableReplaceWarning</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
                 <span class="k">elif</span> <span class="n">column</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;f&#39;</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">]:</span>
-                    <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">column</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+                    <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">column</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">column</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">object</span><span class="p">)</span><span class="o">.</span><span class="n">filled</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">column</span>
 
-            <span class="k">if</span> <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">byteorder</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">,</span> <span class="s1">&#39;|&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="s1">&#39;byteorder&#39;</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">byteorder</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">,</span> <span class="s1">&#39;|&#39;</span><span class="p">)):</span>
                 <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">byteswap</span><span class="p">()</span><span class="o">.</span><span class="n">newbyteorder</span><span class="p">()</span>
 
         <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;index&#39;</span><span class="p">:</span> <span class="n">out</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">index</span><span class="p">)}</span> <span class="k">if</span> <span class="n">index</span> <span class="k">else</span> <span class="p">{}</span>
@@ -4468,7 +4602,7 @@
         <span class="k">return</span> <span class="n">DataFrame</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_pandas</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">from_pandas</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dataframe</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a `~astropy.table.Table` from a :class:`pandas.DataFrame` instance</span>
 
@@ -4482,6 +4616,9 @@
 <span class="sd">            A pandas :class:`pandas.DataFrame` instance</span>
 <span class="sd">        index : bool</span>
 <span class="sd">            Include the index column in the returned table (default=False)</span>
+<span class="sd">        units: dict</span>
+<span class="sd">            A dict mapping column names to to a `~astropy.units.Unit`.</span>
+<span class="sd">            The columns will have the specified unit in the Table.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -4539,7 +4676,29 @@
             <span class="n">datas</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dataframe</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
             <span class="n">masks</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dataframe</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">))</span>
 
-        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">column</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">mask</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">datas</span><span class="p">,</span> <span class="n">masks</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">units</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">units</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">units</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;Expected a Mapping &quot;column-name&quot; -&gt; &quot;unit&quot;&#39;</span><span class="p">)</span>
+
+            <span class="n">not_found</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">units</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">not_found</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s1">&#39;`units` contains additionial columns: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">not_found</span>
+                <span class="p">))</span>
+
+            <span class="n">units</span> <span class="o">=</span> <span class="p">[</span><span class="n">units</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">column</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">unit</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">columns</span><span class="p">,</span> <span class="n">datas</span><span class="p">,</span> <span class="n">masks</span><span class="p">,</span> <span class="n">units</span><span class="p">):</span>
+
+            <span class="k">if</span> <span class="n">column</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;u&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">mask</span><span class="p">):</span>
+                <span class="c1"># Special-case support for pandas nullable int</span>
+                <span class="n">np_dtype</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">column</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="n">column</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np_dtype</span><span class="p">)</span>
+                <span class="n">data</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="n">column</span><span class="p">[</span><span class="o">~</span><span class="n">mask</span><span class="p">]</span>
+                <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">MaskedColumn</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="k">continue</span>
 
             <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;O&#39;</span><span class="p">:</span>
                 <span class="c1"># If all elements of an object array are string-like or np.nan</span>
@@ -4573,9 +4732,9 @@
 
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">mask</span><span class="p">):</span>
-                    <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">MaskedColumn</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">)</span>
+                    <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">MaskedColumn</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">mask</span><span class="o">=</span><span class="n">mask</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+                    <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Column</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
 
@@ -4691,6 +4850,39 @@
         <span class="n">nd_state</span><span class="p">,</span> <span class="n">own_state</span> <span class="o">=</span> <span class="n">state</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__setstate__</span><span class="p">(</span><span class="n">nd_state</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">own_state</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">TableAttribute</span><span class="p">(</span><span class="n">MetaAttribute</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Descriptor to define a custom attribute for a Table subclass.</span>
+
+<span class="sd">    The value of the ``TableAttribute`` will be stored in a dict named</span>
+<span class="sd">    ``__attributes__`` that is stored in the table ``meta``.  The attribute</span>
+<span class="sd">    can be accessed and set in the usual way, and it can be provided when</span>
+<span class="sd">    creating the object.</span>
+
+<span class="sd">    Defining an attribute by this mechanism ensures that it will persist if</span>
+<span class="sd">    the table is sliced or serialized, for example as a pickle or ECSV file.</span>
+
+<span class="sd">    See the `~astropy.utils.metadata.MetaAttribute` documentation for additional</span>
+<span class="sd">    details.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    default : object</span>
+<span class="sd">        Default value for attribute</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">      &gt;&gt;&gt; from astropy.table import Table, TableAttribute</span>
+<span class="sd">      &gt;&gt;&gt; class MyTable(Table):</span>
+<span class="sd">      ...     identifier = TableAttribute(default=1)</span>
+<span class="sd">      &gt;&gt;&gt; t = MyTable(identifier=10)</span>
+<span class="sd">      &gt;&gt;&gt; t.identifier</span>
+<span class="sd">      10</span>
+<span class="sd">      &gt;&gt;&gt; t.meta</span>
+<span class="sd">      OrderedDict([(&#39;__attributes__&#39;, {&#39;identifier&#39;: 10})])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 </pre></div>
 
            </div>
@@ -4706,7 +4898,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 16 Oct 2020.
+        Last updated on 27 Oct 2020.
       </span>
 
     </p>

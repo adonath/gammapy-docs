@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>astropy.table.connect &mdash; gammapy v0.18.dev1008+ga3f9b1e78</title>
+  <title>astropy.table.connect &mdash; gammapy v0.18.dev1085+g7fd0ef796</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev1008+ga3f9b1e78
+                0.18.dev1085+g7fd0ef796
               </div>
             
           
@@ -918,10 +918,10 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../../stats/index.html">stats - Statistics</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#general-notions">General notions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#introduction">Introduction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#notations">Notations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#counts-and-fit-statistics">Counts and fit statistics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#estimating-delta-ts">Estimating Delta TS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#estimating-ts">Estimating TS</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#counts-statistics-classes">Counts statistics classes</a><ul>
@@ -931,11 +931,10 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#wstat-counts-statistic">WStat counts statistic</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id1">Excess and Significance</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id3">Excess errors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id2">Excess and Significance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id4">Excess errors</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#notations">Notations</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#using-gammapy-stats">Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.stats</span></code></a><ul>
@@ -1185,6 +1184,10 @@
 <span class="sd">        first argument is typically the input filename.</span>
 <span class="sd">    format : str</span>
 <span class="sd">        File format specifier.</span>
+<span class="sd">    units : list, dict, optional</span>
+<span class="sd">        List or dict of units to apply to columns</span>
+<span class="sd">    descriptions : list, dict, optional</span>
+<span class="sd">        List or dict of descriptions to apply to columns</span>
 <span class="sd">    **kwargs : dict, optional</span>
 <span class="sd">        Keyword arguments passed through to data reader.</span>
 
@@ -1196,11 +1199,15 @@
 <span class="sd">    Notes</span>
 <span class="sd">    -----</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="bp">cls</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="s1">&#39;read&#39;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="bp">cls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cls</span>
+        <span class="n">units</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;units&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">descriptions</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;descriptions&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
         <span class="n">out</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="c1"># For some readers (e.g., ascii.ecsv), the returned `out` class is not</span>
@@ -1214,6 +1221,10 @@
             <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;could not convert reader output to </span><span class="si">{}</span><span class="s1"> &#39;</span>
                                 <span class="s1">&#39;class.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+
+        <span class="n">out</span><span class="o">.</span><span class="n">_set_column_attribute</span><span class="p">(</span><span class="s1">&#39;unit&#39;</span><span class="p">,</span> <span class="n">units</span><span class="p">)</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">_set_column_attribute</span><span class="p">(</span><span class="s1">&#39;description&#39;</span><span class="p">,</span> <span class="n">descriptions</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">out</span>
 
 
@@ -1256,6 +1267,7 @@
 <span class="sd">    Notes</span>
 <span class="sd">    -----</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="bp">cls</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">instance</span><span class="p">,</span> <span class="bp">cls</span><span class="p">,</span> <span class="s1">&#39;write&#39;</span><span class="p">)</span>
 
@@ -1278,7 +1290,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 16 Oct 2020.
+        Last updated on 27 Oct 2020.
       </span>
 
     </p>

@@ -102,10 +102,10 @@ dataset_hess.mask_fit = dataset_hess.counts.geom.energy_mask(e_min, e_max)
 # In[ ]:
 
 
-fit = Fit([dataset_hess])
+fit = Fit([dataset_hess], store_trace=True)
 
 
-# By default the fit is performed using MINUIT, you can select alternative optimizers and set their option using the `optimize_opts` argument of the `Fit.run()` method.
+# By default the fit is performed using MINUIT, you can select alternative optimizers and set their option using the `optimize_opts` argument of the `Fit.run()` method. In addition we have specified to store the trace of parameter values of the fit.
 # 
 # Note that, for now, covaraince matrix and errors are computed only for the fitting with MINUIT. However depending on the problem other optimizers can better perform, so somethimes it can be usefull to run a pre-fit with alternative optimization methods.
 # 
@@ -160,6 +160,14 @@ print(results_simplex)
 
 
 print(result_minuit)
+
+
+# - Check the trace of the fit e.g. in case the fit did not converge properly
+
+# In[ ]:
+
+
+result_minuit.trace
 
 
 # - Check that the fitted values and errors for all parameters are reasonable, and no fitted parameter value is "too close" - or even outside - its allowed min-max range

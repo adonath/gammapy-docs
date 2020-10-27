@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>estimators - High level estimators &mdash; gammapy v0.18.dev1008+ga3f9b1e78</title>
+  <title>estimators - High level estimators &mdash; gammapy v0.18.dev1085+g7fd0ef796</title>
   
 
   
@@ -76,7 +76,7 @@
             
             
               <div class="version">
-                0.18.dev1008+ga3f9b1e78
+                0.18.dev1085+g7fd0ef796
               </div>
             
           
@@ -920,10 +920,10 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../stats/index.html">stats - Statistics</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../stats/index.html#introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../stats/index.html#general-notions">General notions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../stats/index.html#introduction">Introduction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../stats/index.html#notations">Notations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../stats/index.html#counts-and-fit-statistics">Counts and fit statistics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../stats/index.html#estimating-delta-ts">Estimating Delta TS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../stats/index.html#estimating-ts">Estimating TS</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../stats/index.html#counts-statistics-classes">Counts statistics classes</a><ul>
@@ -933,11 +933,10 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../stats/index.html#wstat-counts-statistic">WStat counts statistic</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../stats/index.html#id1">Excess and Significance</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../stats/index.html#id3">Excess errors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../stats/index.html#id2">Excess and Significance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../stats/index.html#id4">Excess errors</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="../stats/index.html#notations">Notations</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../stats/index.html#using-gammapy-stats">Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.stats</span></code></a><ul>
@@ -1182,12 +1181,44 @@
 <div class="section" id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
 <p>The <a class="reference internal" href="#module-gammapy.estimators" title="gammapy.estimators"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.estimators</span></code></a> submodule contains algorithms and classes
-for high level flux and significance estimation such as TS maps,
-flux points and light curves.</p>
+for high level flux and significance estimation such as flux maps,
+flux points, flux profiles and flux light curves. All estimators
+feature a common API and allow to estimate fluxes in bands of reconstructed
+energy.</p>
+<p>The core of any estimator algorithm is hypothesis testing: a reference
+model or counts excess is tested against a null hypothesis. From the
+best fit reference model a flux is derived and a corresponding <span class="math notranslate nohighlight">\(\sqrt{\Delta TS}\)</span>
+value from the difference in fit statistics to the null hypothesis,
+assuming one degree of freedom (<span class="xref std std-ref">Estimating Delta TS</span>). In this case
+<span class="math notranslate nohighlight">\(\sqrt{\Delta TS}\)</span> represents an approximation of the
+“classical significance”.</p>
+<p>In general the flux can be estimated using methods:</p>
+<p>#. Based on model fitting: given a (global) best fit model with multiple model components,
+the flux of the component of interest is re-fitted in the chosen energy, time or spatial
+region. The new flux is given as a <code class="docutils literal notranslate"><span class="pre">norm</span></code> with respect to the global reference model.
+Optionally other component parameters in the global model can be re-optimised.</p>
+<p>#. Based on excess: in the case of having one energy bin, neglecting the PSF and not re-optimising
+other parameters, once can estimate the flux based on excess and derive the significance
+analytically from the classical Li &amp; Ma solution.</p>
+<p>The technical implementation follows the concept of a reference
+best fit model. Given a global best fit model, the source of interest
+(for which flux points are computed) is scaled in amplitude by fitting a <code class="docutils literal notranslate"><span class="pre">norm</span></code>
+parameter. The fitting is done by grouping the data in time
+and reconstructed energy bins (reference?).</p>
+<p>Based on this algorithm most estimators compute the same basic quantities:</p>
+<p>In addition the following optional quantities can be computed:</p>
+<p>To compute the assymetric errors as well as upper limits one can
+specify the arguments <code class="docutils literal notranslate"><span class="pre">n_sigma</span></code> and <code class="docutils literal notranslate"><span class="pre">n_sigma_ul</span></code>. The <code class="docutils literal notranslate"><span class="pre">n_sigma</span></code>
+arguments are translated into a TS value assuming <code class="docutils literal notranslate"><span class="pre">ts</span> <span class="pre">=</span> <span class="pre">sigma</span> <span class="pre">**</span> <span class="pre">2</span></code>.</p>
+<p>In addition to the norm values a reference spectral model is given.
+Using this reference spectral model the norm values can be converted
+to the following different SED types:</p>
+<p>The same can be applied for the error and upper limit information.
+More information can be found on the <a class="reference external" href="https://gamma-astro-data-formats.readthedocs.io/en/latest/spectra/binned_likelihoods/index.html">likelihood SED type page</a>.</p>
 </div>
 <div class="section" id="getting-started">
 <h2>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h2>
-<p>An <a class="reference internal" href="../api/gammapy.estimators.Estimator.html#gammapy.estimators.Estimator" title="gammapy.estimators.Estimator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Estimator</span></code></a> takes a reduced dataset as input.</p>
+<p>An <a class="reference internal" href="../api/gammapy.estimators.Estimator.html#gammapy.estimators.Estimator" title="gammapy.estimators.Estimator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Estimator</span></code></a> takes a reduced dataset and model definition as input.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="detect.html">Flux and significance maps</a></li>
@@ -1221,7 +1252,7 @@ flux points and light curves.</p>
 <td><p>Abstract estimator base class.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="../api/gammapy.estimators.ExcessMapEstimator.html#gammapy.estimators.ExcessMapEstimator" title="gammapy.estimators.ExcessMapEstimator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ExcessMapEstimator</span></code></a>([correlation_radius, …])</p></td>
-<td><p>Computes correlated excess, significance and errors for MapDatasets.</p></td>
+<td><p>Computes correlated excess, sqrt TS (i.e.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="../api/gammapy.estimators.TSMapEstimator.html#gammapy.estimators.TSMapEstimator" title="gammapy.estimators.TSMapEstimator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TSMapEstimator</span></code></a>([model, kernel_width, …])</p></td>
 <td><p>Compute TS map from a MapDataset using different optimization methods.</p></td>
@@ -1288,7 +1319,7 @@ flux points and light curves.</p>
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 16 Oct 2020.
+        Last updated on 27 Oct 2020.
       </span>
 
     </p>

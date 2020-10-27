@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.modeling.models.spectral &mdash; gammapy v0.18.dev1008+ga3f9b1e78</title>
+  <title>gammapy.modeling.models.spectral &mdash; gammapy v0.18.dev1085+g7fd0ef796</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev1008+ga3f9b1e78
+                0.18.dev1085+g7fd0ef796
               </div>
             
           
@@ -918,10 +918,10 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../stats/index.html">stats - Statistics</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../../../stats/index.html#introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../stats/index.html#general-notions">General notions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../stats/index.html#introduction">Introduction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../stats/index.html#notations">Notations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../stats/index.html#counts-and-fit-statistics">Counts and fit statistics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../../stats/index.html#estimating-delta-ts">Estimating Delta TS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../stats/index.html#estimating-ts">Estimating TS</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../stats/index.html#counts-statistics-classes">Counts statistics classes</a><ul>
@@ -931,11 +931,10 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../stats/index.html#wstat-counts-statistic">WStat counts statistic</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../../stats/index.html#id1">Excess and Significance</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../stats/index.html#id3">Excess errors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../stats/index.html#id2">Excess and Significance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../stats/index.html#id4">Excess errors</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="../../../../stats/index.html#notations">Notations</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../stats/index.html#using-gammapy-stats">Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.stats</span></code></a><ul>
@@ -1171,7 +1170,7 @@
 <span class="kn">from</span> <span class="nn">.core</span> <span class="kn">import</span> <span class="n">Model</span>
 
 
-<span class="k">def</span> <span class="nf">integrate_spectrum</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="n">ndecade</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">intervals</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">integrate_spectrum</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="n">ndecade</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Integrate 1d function using the log-log trapezoidal rule.</span>
 
 <span class="sd">    If scalar values for xmin and xmax are passed an oversampled grid is generated using the</span>
@@ -1190,24 +1189,18 @@
 <span class="sd">    ndecade : int, optional</span>
 <span class="sd">        Number of grid points per decade used for the integration.</span>
 <span class="sd">        Default : 100.</span>
-<span class="sd">    intervals : bool, optional</span>
-<span class="sd">        Return integrals in the grid not the sum, default: False</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">emin</span><span class="o">.</span><span class="n">isscalar</span> <span class="ow">and</span> <span class="n">emax</span><span class="o">.</span><span class="n">isscalar</span><span class="p">:</span>
-        <span class="n">energies</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_energy_bounds</span><span class="p">(</span>
-            <span class="n">emin</span><span class="o">=</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="o">=</span><span class="n">emax</span><span class="p">,</span> <span class="n">nbin</span><span class="o">=</span><span class="n">ndecade</span><span class="p">,</span> <span class="n">per_decade</span><span class="o">=</span><span class="kc">True</span>
-        <span class="p">)</span><span class="o">.</span><span class="n">edges</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">energies</span> <span class="o">=</span> <span class="n">edges_from_lo_hi</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">)</span>
+    <span class="n">edges</span> <span class="o">=</span> <span class="n">edges_from_lo_hi</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">)</span>
+    <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_energy_edges</span><span class="p">(</span><span class="n">edges</span><span class="o">=</span><span class="n">edges</span><span class="p">)</span>
 
-    <span class="n">values</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">energies</span><span class="p">)</span>
+    <span class="n">factor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">ndecade</span> <span class="o">/</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">nbin_per_decade</span><span class="p">)</span>
+    <span class="n">energy_axis_upsampled</span> <span class="o">=</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">upsample</span><span class="p">(</span><span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">)</span>
 
-    <span class="n">integral</span> <span class="o">=</span> <span class="n">trapz_loglog</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">energies</span><span class="p">)</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">energy_axis_upsampled</span><span class="o">.</span><span class="n">edges</span><span class="p">)</span>
+    <span class="n">integral</span> <span class="o">=</span> <span class="n">trapz_loglog</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">energy_axis_upsampled</span><span class="o">.</span><span class="n">edges</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">intervals</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">integral</span>
-
-    <span class="k">return</span> <span class="n">integral</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">energy_axis_upsampled</span><span class="o">.</span><span class="n">coord_to_idx</span><span class="p">(</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="o">.</span><span class="n">reduceat</span><span class="p">(</span><span class="n">integral</span><span class="p">,</span> <span class="n">indices</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="SpectralModel"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.SpectralModel.html#gammapy.astro.darkmatter.SpectralModel">[docs]</a><span class="k">class</span> <span class="nc">SpectralModel</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
@@ -1223,6 +1216,11 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_type</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">is_norm_spectral_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Whether model is a norm spectral model&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;Norm&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_convert_evaluate_unit</span><span class="p">(</span><span class="n">kwargs_ref</span><span class="p">,</span> <span class="n">energy</span><span class="p">):</span>
@@ -1306,9 +1304,6 @@
 <span class="sd">        .. math::</span>
 <span class="sd">            F(E_{min}, E_{max}) = \int_{E_{min}}^{E_{max}} \phi(E) dE</span>
 
-<span class="sd">        If array input for ``emin`` and ``emax`` is given you have to set</span>
-<span class="sd">        ``intervals=True`` if you want the integral in each energy bin.</span>
-
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        emin, emax : `~astropy.units.Quantity`</span>
@@ -1339,10 +1334,48 @@
 <span class="sd">            Integral flux and flux error betwen emin and emax.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">emin</span> <span class="o">*</span> <span class="n">emax</span><span class="p">)</span>
-        <span class="n">flux</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">integral</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="n">intervals</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">flux</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">integral</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">)</span>
         <span class="n">dnde</span><span class="p">,</span> <span class="n">dnde_err</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate_error</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">)</span>
         <span class="n">flux_err</span> <span class="o">=</span> <span class="n">flux</span> <span class="o">*</span> <span class="n">dnde_err</span> <span class="o">/</span> <span class="n">dnde</span>
         <span class="k">return</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">([</span><span class="n">flux</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">flux_err</span><span class="o">.</span><span class="n">value</span><span class="p">],</span> <span class="n">unit</span><span class="o">=</span><span class="n">flux</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_propagate_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fct</span><span class="p">,</span> <span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="n">eps</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate error of a given function with uncertainty propagation.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        fct : `~astropy.units.Quantity`</span>
+<span class="sd">            Function to estimate the error.</span>
+<span class="sd">        emin, emax : `~astropy.units.Quantity`</span>
+<span class="sd">            Array of lower and upper bound of integration range.</span>
+<span class="sd">        epsilon : float</span>
+<span class="sd">            Step size of the gradient evaluation. Given as a</span>
+<span class="sd">            fraction of the parameter error.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        f_cov : `~astropy.units.Quantity`</span>
+<span class="sd">            Error of the given function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+        <span class="n">C</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariance</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="n">fct</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">emin</span><span class="p">)))</span>
+        <span class="n">df_dp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">parameter</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">parameter</span><span class="o">.</span><span class="n">frozen</span> <span class="ow">or</span> <span class="n">eps</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">parameter</span><span class="o">.</span><span class="n">value</span> <span class="o">+=</span> <span class="n">eps</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_flux</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span><span class="n">emax</span><span class="p">)</span> <span class="o">-</span> <span class="n">f</span>
+            <span class="n">df_dp</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">value</span> <span class="o">/</span> <span class="n">eps</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+            <span class="c1"># Reset model to original parameter</span>
+        <span class="n">parameter</span><span class="o">.</span><span class="n">value</span> <span class="o">-=</span> <span class="n">eps</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+        <span class="n">f_cov</span> <span class="o">=</span> <span class="n">df_dp</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">C</span> <span class="o">@</span> <span class="n">df_dp</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diagonal</span><span class="p">(</span><span class="n">f_cov</span><span class="p">))</span>
 
 <div class="viewcode-block" id="SpectralModel.energy_flux"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.SpectralModel.html#gammapy.astro.darkmatter.SpectralModel.energy_flux">[docs]</a>    <span class="k">def</span> <span class="nf">energy_flux</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Compute energy flux in given energy range.</span>
@@ -1367,6 +1400,26 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate_energy_flux</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">integrate_spectrum</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SpectralModel.energy_flux_error"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.SpectralModel.html#gammapy.astro.darkmatter.SpectralModel.energy_flux_error">[docs]</a>    <span class="k">def</span> <span class="nf">energy_flux_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate the error of the energy flux of a given spectrum in</span>
+<span class="sd">            a given energy range.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        emin, emax :  `~astropy.units.Quantity`</span>
+<span class="sd">            Lower and upper bound of integration range.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        energy_flux, energy_flux_err : tuple of `~astropy.units.Quantity`</span>
+<span class="sd">            Energy flux and energy flux error betwen emin and emax.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">p_cov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariance</span>
+        <span class="n">eps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">p_cov</span><span class="p">))</span> <span class="o">*</span> <span class="n">epsilon</span>
+        <span class="n">enrg_flux</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_flux</span><span class="p">(</span><span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">enrg_flux_err</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_propagate_error</span><span class="p">(</span><span class="n">enrg_flux</span><span class="p">,</span> <span class="n">emin</span><span class="p">,</span> <span class="n">emax</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">([</span><span class="n">enrg_flux</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">enrg_flux_err</span><span class="p">],</span> <span class="n">unit</span><span class="o">=</span><span class="n">enrg_flux</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="SpectralModel.plot"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.SpectralModel.html#gammapy.astro.darkmatter.SpectralModel.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -3052,7 +3105,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 16 Oct 2020.
+        Last updated on 27 Oct 2020.
       </span>
 
     </p>

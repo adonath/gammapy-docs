@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>astropy.utils.metadata &mdash; gammapy v0.18.dev1008+ga3f9b1e78</title>
+  <title>astropy.utils.metadata &mdash; gammapy v0.18.dev1085+g7fd0ef796</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev1008+ga3f9b1e78
+                0.18.dev1085+g7fd0ef796
               </div>
             
           
@@ -918,10 +918,10 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../../stats/index.html">stats - Statistics</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#general-notions">General notions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#introduction">Introduction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#notations">Notations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#counts-and-fit-statistics">Counts and fit statistics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#estimating-delta-ts">Estimating Delta TS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#estimating-ts">Estimating TS</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#counts-statistics-classes">Counts statistics classes</a><ul>
@@ -931,11 +931,10 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#wstat-counts-statistic">WStat counts statistic</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id1">Excess and Significance</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id3">Excess errors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id2">Excess and Significance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id4">Excess errors</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#notations">Notations</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#using-gammapy-stats">Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.stats</span></code></a><ul>
@@ -1170,7 +1169,8 @@
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;MergeConflictError&#39;</span><span class="p">,</span> <span class="s1">&#39;MergeConflictWarning&#39;</span><span class="p">,</span> <span class="s1">&#39;MERGE_STRATEGIES&#39;</span><span class="p">,</span>
            <span class="s1">&#39;common_dtype&#39;</span><span class="p">,</span> <span class="s1">&#39;MergePlus&#39;</span><span class="p">,</span> <span class="s1">&#39;MergeNpConcatenate&#39;</span><span class="p">,</span> <span class="s1">&#39;MergeStrategy&#39;</span><span class="p">,</span>
-           <span class="s1">&#39;MergeStrategyMeta&#39;</span><span class="p">,</span> <span class="s1">&#39;enable_merge_strategies&#39;</span><span class="p">,</span> <span class="s1">&#39;merge&#39;</span><span class="p">,</span> <span class="s1">&#39;MetaData&#39;</span><span class="p">]</span>
+           <span class="s1">&#39;MergeStrategyMeta&#39;</span><span class="p">,</span> <span class="s1">&#39;enable_merge_strategies&#39;</span><span class="p">,</span> <span class="s1">&#39;merge&#39;</span><span class="p">,</span> <span class="s1">&#39;MetaData&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;MetaAttribute&#39;</span><span class="p">]</span>
 
 
 <span class="k">class</span> <span class="nc">MergeConflictError</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">):</span>
@@ -1566,6 +1566,76 @@
                     <span class="n">instance</span><span class="o">.</span><span class="n">_meta</span> <span class="o">=</span> <span class="n">value</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;meta attribute must be dict-like&quot;</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">MetaAttribute</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Descriptor to define custom attribute which gets stored in the object</span>
+<span class="sd">    ``meta`` dict and can have a defined default.</span>
+
+<span class="sd">    This descriptor is intended to provide a convenient way to add attributes</span>
+<span class="sd">    to a subclass of a complex class such as ``Table`` or ``NDData``.</span>
+
+<span class="sd">    This requires that the object has an attribute ``meta`` which is a</span>
+<span class="sd">    dict-like object.  The value of the MetaAttribute will be stored in a</span>
+<span class="sd">    new dict meta[&#39;__attributes__&#39;] that is created when required.</span>
+
+<span class="sd">    Classes that define MetaAttributes are encouraged to support initializing</span>
+<span class="sd">    the attributes via the class ``__init__``.  For example::</span>
+
+<span class="sd">        for attr in list(kwargs):</span>
+<span class="sd">            descr = getattr(self.__class__, attr, None)</span>
+<span class="sd">            if isinstance(descr, MetaAttribute):</span>
+<span class="sd">                setattr(self, attr, kwargs.pop(attr))</span>
+
+<span class="sd">    The name of a ``MetaAttribute`` cannot be the same as any of the following:</span>
+
+<span class="sd">    - Keyword argument in the owner class ``__init__``</span>
+<span class="sd">    - Method or attribute of the &quot;parent class&quot;, where the parent class is</span>
+<span class="sd">      taken to be ``owner.__mro__[1]``.</span>
+
+<span class="sd">    :param default: default value</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default</span> <span class="o">=</span> <span class="n">default</span>
+
+    <span class="k">def</span> <span class="fm">__get__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">owner</span><span class="p">):</span>
+        <span class="c1"># When called without an instance, return self to allow access</span>
+        <span class="c1"># to descriptor attributes.</span>
+        <span class="k">if</span> <span class="n">instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+
+        <span class="c1"># Get the __attributes__ dict and create if not there already.</span>
+        <span class="n">attributes</span> <span class="o">=</span> <span class="n">instance</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;__attributes__&#39;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">attributes</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">attributes</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">default</span><span class="p">)</span>
+            <span class="c1"># Return either specified default or None</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">attributes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="fm">__set__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="c1"># Get the __attributes__ dict and create if not there already.</span>
+        <span class="n">attributes</span> <span class="o">=</span> <span class="n">instance</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s1">&#39;__attributes__&#39;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">attributes</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">__set_name__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="kn">import</span> <span class="nn">inspect</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">[</span><span class="n">param</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">owner</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+                  <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_KEYWORD</span><span class="p">,</span>
+                                        <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_POSITIONAL</span><span class="p">)]</span>
+
+        <span class="c1"># Reject names from existing params or best guess at parent class</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">params</span> <span class="ow">or</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">owner</span><span class="o">.</span><span class="vm">__mro__</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">name</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1"> not allowed as </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;&lt;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> name=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1"> default=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">default</span><span class="si">}</span><span class="s1">&gt;&#39;</span>
 </pre></div>
 
            </div>
@@ -1581,7 +1651,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 16 Oct 2020.
+        Last updated on 27 Oct 2020.
       </span>
 
     </p>

@@ -198,7 +198,7 @@ lima_maps = estimator.run(stacked_on_off)
 # In[ ]:
 
 
-significance_map = lima_maps["significance"]
+significance_map = lima_maps["sqrt_ts"]
 excess_map = lima_maps["excess"]
 
 

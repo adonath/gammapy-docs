@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>astropy.units.quantity &mdash; gammapy v0.18.dev1008+ga3f9b1e78</title>
+  <title>astropy.units.quantity &mdash; gammapy v0.18.dev1085+g7fd0ef796</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev1008+ga3f9b1e78
+                0.18.dev1085+g7fd0ef796
               </div>
             
           
@@ -918,10 +918,10 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../../stats/index.html">stats - Statistics</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#general-notions">General notions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#introduction">Introduction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#notations">Notations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#counts-and-fit-statistics">Counts and fit statistics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#estimating-delta-ts">Estimating Delta TS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#estimating-ts">Estimating TS</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#counts-statistics-classes">Counts statistics classes</a><ul>
@@ -931,11 +931,10 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#wstat-counts-statistic">WStat counts statistic</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id1">Excess and Significance</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id3">Excess errors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id2">Excess and Significance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id4">Excess errors</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#notations">Notations</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#using-gammapy-stats">Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.stats</span></code></a><ul>
@@ -2473,7 +2472,7 @@
 
     <span class="k">def</span> <span class="nf">tolist</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;cannot make a list of Quantities.  Get &quot;</span>
-                                  <span class="s2">&quot;list of values with q.value.list()&quot;</span><span class="p">)</span>
+                                  <span class="s2">&quot;list of values with q.value.tolist()&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_to_own_unit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">check_precision</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
@@ -2888,30 +2887,85 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_set_unit</span><span class="p">(</span><span class="n">unit</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">isclose</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1.e-5</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">isclose</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1.e-5</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">equal_nan</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return a boolean array where two arrays are element-wise equal</span>
+<span class="sd">    within a tolerance.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    a, b : array_like or :class:`~astropy.units.Quantity`</span>
+<span class="sd">        Input values or arrays to compare</span>
+<span class="sd">    rtol : array_like or dimensionless :class:`~astropy.units.Quantity`</span>
+<span class="sd">        The relative tolerance for the comparison, which defaults to</span>
+<span class="sd">        ``1e-5``.  If ``rtol`` is a :class:`~astropy.units.Quantity`,</span>
+<span class="sd">        then it must be dimensionless.</span>
+<span class="sd">    atol : number or :class:`~astropy.units.Quantity`</span>
+<span class="sd">        The absolute tolerance for the comparison.  The units (or lack</span>
+<span class="sd">        thereof) of ``a``, ``b``, and ``atol`` must be consistent with</span>
+<span class="sd">        each other.  If `None`, ``atol`` defaults to zero in the</span>
+<span class="sd">        appropriate units.</span>
+<span class="sd">    equal_nan : `bool`</span>
+<span class="sd">        Whether to compare NaN’s as equal. If `True`, NaNs in ``a`` will</span>
+<span class="sd">        be considered equal to NaN’s in ``b``.</span>
+
 <span class="sd">    Notes</span>
 <span class="sd">    -----</span>
-<span class="sd">    Returns True if two arrays are element-wise equal within a tolerance.</span>
-
 <span class="sd">    This is a :class:`~astropy.units.Quantity`-aware version of</span>
 <span class="sd">    :func:`numpy.isclose`.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    UnitsError</span>
+<span class="sd">        If the dimensions of ``a``, ``b``, or ``atol`` are incompatible,</span>
+<span class="sd">        or if ``rtol`` is not dimensionless.</span>
+
+<span class="sd">    See also</span>
+<span class="sd">    --------</span>
+<span class="sd">    allclose</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="o">*</span><span class="n">_unquantify_allclose_arguments</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">rtol</span><span class="p">,</span> <span class="n">atol</span><span class="p">),</span>
-                      <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">unquantified_args</span> <span class="o">=</span> <span class="n">_unquantify_allclose_arguments</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">rtol</span><span class="p">,</span> <span class="n">atol</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="o">*</span><span class="n">unquantified_args</span><span class="p">,</span> <span class="n">equal_nan</span><span class="o">=</span><span class="n">equal_nan</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">allclose</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1.e-5</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">allclose</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1.e-5</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">equal_nan</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Whether two arrays are element-wise equal within a tolerance.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    a, b : array_like or :class:`~astropy.units.Quantity`</span>
+<span class="sd">        Input values or arrays to compare</span>
+<span class="sd">    rtol : array_like or dimensionless :class:`~astropy.units.Quantity`</span>
+<span class="sd">        The relative tolerance for the comparison, which defaults to</span>
+<span class="sd">        ``1e-5``.  If ``rtol`` is a :class:`~astropy.units.Quantity`,</span>
+<span class="sd">        then it must be dimensionless.</span>
+<span class="sd">    atol : number or :class:`~astropy.units.Quantity`</span>
+<span class="sd">        The absolute tolerance for the comparison.  The units (or lack</span>
+<span class="sd">        thereof) of ``a``, ``b``, and ``atol`` must be consistent with</span>
+<span class="sd">        each other.  If `None`, ``atol`` defaults to zero in the</span>
+<span class="sd">        appropriate units.</span>
+<span class="sd">    equal_nan : `bool`</span>
+<span class="sd">        Whether to compare NaN’s as equal. If `True`, NaNs in ``a`` will</span>
+<span class="sd">        be considered equal to NaN’s in ``b``.</span>
+
 <span class="sd">    Notes</span>
 <span class="sd">    -----</span>
-<span class="sd">    Returns True if two arrays are element-wise equal within a tolerance.</span>
-
 <span class="sd">    This is a :class:`~astropy.units.Quantity`-aware version of</span>
 <span class="sd">    :func:`numpy.allclose`.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    UnitsError</span>
+<span class="sd">        If the dimensions of ``a``, ``b``, or ``atol`` are incompatible,</span>
+<span class="sd">        or if ``rtol`` is not dimensionless.</span>
+
+<span class="sd">    See also</span>
+<span class="sd">    --------</span>
+<span class="sd">    isclose</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="o">*</span><span class="n">_unquantify_allclose_arguments</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">rtol</span><span class="p">,</span> <span class="n">atol</span><span class="p">),</span>
-                       <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">unquantified_args</span> <span class="o">=</span> <span class="n">_unquantify_allclose_arguments</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">rtol</span><span class="p">,</span> <span class="n">atol</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="o">*</span><span class="n">unquantified_args</span><span class="p">,</span> <span class="n">equal_nan</span><span class="o">=</span><span class="n">equal_nan</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">_unquantify_allclose_arguments</span><span class="p">(</span><span class="n">actual</span><span class="p">,</span> <span class="n">desired</span><span class="p">,</span> <span class="n">rtol</span><span class="p">,</span> <span class="n">atol</span><span class="p">):</span>
@@ -2921,27 +2975,32 @@
     <span class="k">try</span><span class="p">:</span>
         <span class="n">desired</span> <span class="o">=</span> <span class="n">desired</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">actual</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">UnitsError</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">UnitsError</span><span class="p">(</span><span class="s2">&quot;Units for &#39;desired&#39; (</span><span class="si">{}</span><span class="s2">) and &#39;actual&#39; (</span><span class="si">{}</span><span class="s2">) &quot;</span>
-                         <span class="s2">&quot;are not convertible&quot;</span>
-                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">desired</span><span class="o">.</span><span class="n">unit</span><span class="p">,</span> <span class="n">actual</span><span class="o">.</span><span class="n">unit</span><span class="p">))</span>
+        <span class="k">raise</span> <span class="n">UnitsError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Units for &#39;desired&#39; (</span><span class="si">{</span><span class="n">desired</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">) and &#39;actual&#39; &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">actual</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">) are not convertible&quot;</span>
+        <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">atol</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="c1"># by default, we assume an absolute tolerance of 0</span>
+        <span class="c1"># By default, we assume an absolute tolerance of zero in the</span>
+        <span class="c1"># appropriate units.  The default value of None for atol is</span>
+        <span class="c1"># needed because the units of atol must be consistent with the</span>
+        <span class="c1"># units for a and b.</span>
         <span class="n">atol</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">atol</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="n">atol</span><span class="p">,</span> <span class="n">subok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">atol</span> <span class="o">=</span> <span class="n">atol</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">actual</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
         <span class="k">except</span> <span class="n">UnitsError</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">UnitsError</span><span class="p">(</span><span class="s2">&quot;Units for &#39;atol&#39; (</span><span class="si">{}</span><span class="s2">) and &#39;actual&#39; (</span><span class="si">{}</span><span class="s2">) &quot;</span>
-                             <span class="s2">&quot;are not convertible&quot;</span>
-                             <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">atol</span><span class="o">.</span><span class="n">unit</span><span class="p">,</span> <span class="n">actual</span><span class="o">.</span><span class="n">unit</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="n">UnitsError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Units for &#39;atol&#39; (</span><span class="si">{</span><span class="n">atol</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">) and &#39;actual&#39; &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">actual</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">) are not convertible&quot;</span>
+            <span class="p">)</span>
 
     <span class="n">rtol</span> <span class="o">=</span> <span class="n">Quantity</span><span class="p">(</span><span class="n">rtol</span><span class="p">,</span> <span class="n">subok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">rtol</span> <span class="o">=</span> <span class="n">rtol</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">dimensionless_unscaled</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">UnitsError</span><span class="p">(</span><span class="s2">&quot;`rtol` should be dimensionless&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">UnitsError</span><span class="p">(</span><span class="s2">&quot;&#39;rtol&#39; should be dimensionless&quot;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">actual</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">desired</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">rtol</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">atol</span><span class="o">.</span><span class="n">value</span>
 </pre></div>
@@ -2959,7 +3018,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 16 Oct 2020.
+        Last updated on 27 Oct 2020.
       </span>
 
     </p>

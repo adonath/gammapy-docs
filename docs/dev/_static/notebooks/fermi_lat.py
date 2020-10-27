@@ -56,7 +56,6 @@ from gammapy.modeling.models import (
     PowerLawNormSpectralModel,
     Models,
     create_fermi_isotropic_diffuse_model,
-    BackgroundModel,
 )
 from gammapy.modeling import Fit
 
@@ -233,27 +232,18 @@ print(diffuse_galactic_fermi.geom.axes[0])
 # In[ ]:
 
 
-# Interpolate the diffuse emission model onto the counts geometry
-# The resolution of `diffuse_galactic_fermi` is low: bin size = 0.5 deg
-# We use ``interp=3`` which means cubic spline interpolation
-coord = exposure.geom.get_coord()
-
-data = diffuse_galactic_fermi.interp_by_coord(
-    {"skycoord": coord.skycoord, "energy_true": coord["energy_true"]}, interp=3
+template_diffuse = TemplateSpatialModel(
+    diffuse_galactic_fermi, normalize=False
 )
-diffuse_galactic = WcsNDMap(
-    exposure.geom, data, unit=diffuse_galactic_fermi.unit
-)
-diffuse_gal = TemplateSpatialModel(diffuse_galactic, normalize=False)
-print(diffuse_galactic.geom)
-print(diffuse_galactic.geom.axes[0])
 
 
 # In[ ]:
 
 
 diffuse_iem = SkyModel(
-    PowerLawNormSpectralModel(), diffuse_gal, name="diffuse-iem"
+    spectral_model=PowerLawNormSpectralModel(),
+    spatial_model=template_diffuse,
+    name="diffuse-iem",
 )
 
 
@@ -262,7 +252,7 @@ diffuse_iem = SkyModel(
 # In[ ]:
 
 
-diffuse_gal.map.slice_by_idx({"energy_true": 0}).plot(add_cbar=True);
+template_diffuse.map.slice_by_idx({"energy_true": 0}).plot(add_cbar=True);
 
 
 # Here is the spectrum at the Glaactic center:
@@ -272,7 +262,7 @@ diffuse_gal.map.slice_by_idx({"energy_true": 0}).plot(add_cbar=True);
 
 # Exposure varies very little with energy at these high energies
 energy = np.logspace(1, 3, 10) * u.GeV
-dnde = diffuse_gal.map.interp_by_coord(
+dnde = template_diffuse.map.interp_by_coord(
     {"skycoord": gc_pos, "energy_true": energy},
     interp="linear",
     fill_value=None,
@@ -387,28 +377,8 @@ e_true = exposure.geom.axes["energy_true"]
 edisp = EDispMap.from_diagonal_response(energy_axis_true=e_true)
 
 
-# ### Pre-processing
-# 
-# The model components for which only a norm is fitted can be pre-processed so we don't have to apply the IRF at each iteration of the fit and then save computation time. This can be done using the `MapEvaluator`.
-# 
-
-# In[ ]:
-
-
-# pre-compute iso model
-evaluator = MapEvaluator(diffuse_iso)
-evaluator.update(exposure=exposure, psf=psf, edisp=edisp, geom=counts.geom)
-diffuse_iso = BackgroundModel(evaluator.compute_npred(), name="bkg-iso")
-diffuse_iso.spectral_model.norm.value = 3.3
-# pre-compute diffuse model
-evaluator = MapEvaluator(diffuse_iem)
-evaluator.update(exposure=exposure, psf=psf, edisp=edisp, geom=counts.geom)
-
-diffuse_iem = BackgroundModel(evaluator.compute_npred(), name="bkg-iem")
-
-
 # ## Fit
-# Finally, the big finale: let’s do a 3D map fit for the source at the Galactic center, to measure it’s position and spectrum. We keep the background normalization free.
+# Now, the big finale: let’s do a 3D map fit for the source at the Galactic center, to measure it’s position and spectrum. We keep the background normalization free.
 
 # In[ ]:
 

@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.modeling.models.cube &mdash; gammapy v0.18.dev1008+ga3f9b1e78</title>
+  <title>gammapy.modeling.models.cube &mdash; gammapy v0.18.dev1085+g7fd0ef796</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev1008+ga3f9b1e78
+                0.18.dev1085+g7fd0ef796
               </div>
             
           
@@ -918,10 +918,10 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../../../stats/index.html">stats - Statistics</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../../../stats/index.html#introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../stats/index.html#general-notions">General notions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../stats/index.html#introduction">Introduction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../stats/index.html#notations">Notations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../stats/index.html#counts-and-fit-statistics">Counts and fit statistics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../../stats/index.html#estimating-delta-ts">Estimating Delta TS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../stats/index.html#estimating-ts">Estimating TS</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../stats/index.html#counts-statistics-classes">Counts statistics classes</a><ul>
@@ -931,11 +931,10 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../stats/index.html#wstat-counts-statistic">WStat counts statistic</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../../stats/index.html#id1">Excess and Significance</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../../stats/index.html#id3">Excess errors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../stats/index.html#id2">Excess and Significance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../../stats/index.html#id4">Excess errors</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="../../../../stats/index.html#notations">Notations</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../stats/index.html#using-gammapy-stats">Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.stats</span></code></a><ul>
@@ -1153,17 +1152,16 @@
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
 <span class="sd">&quot;&quot;&quot;Cube models (axes: lon, lat, energy).&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">copy</span>
-<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
 <span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">Map</span><span class="p">,</span> <span class="n">MapAxis</span><span class="p">,</span> <span class="n">RegionGeom</span><span class="p">,</span> <span class="n">WcsGeom</span>
-<span class="kn">from</span> <span class="nn">gammapy.modeling</span> <span class="kn">import</span> <span class="n">Covariance</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">Parameters</span>
+<span class="kn">from</span> <span class="nn">gammapy.modeling</span> <span class="kn">import</span> <span class="n">Covariance</span><span class="p">,</span> <span class="n">Parameters</span>
 <span class="kn">from</span> <span class="nn">gammapy.modeling.parameter</span> <span class="kn">import</span> <span class="n">_get_parameters_str</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.scripts</span> <span class="kn">import</span> <span class="n">make_name</span><span class="p">,</span> <span class="n">make_path</span>
-<span class="kn">from</span> <span class="nn">gammapy.utils.fits</span> <span class="kn">import</span> <span class="n">LazyFitsData</span><span class="p">,</span> <span class="n">HDULocation</span>
+<span class="kn">from</span> <span class="nn">gammapy.utils.fits</span> <span class="kn">import</span> <span class="n">LazyFitsData</span>
 <span class="kn">from</span> <span class="nn">.core</span> <span class="kn">import</span> <span class="n">Model</span><span class="p">,</span> <span class="n">Models</span>
-<span class="kn">from</span> <span class="nn">.spatial</span> <span class="kn">import</span> <span class="n">SpatialModel</span>
-<span class="kn">from</span> <span class="nn">.spectral</span> <span class="kn">import</span> <span class="n">SpectralModel</span><span class="p">,</span> <span class="n">PowerLawNormSpectralModel</span>
+<span class="kn">from</span> <span class="nn">.spatial</span> <span class="kn">import</span> <span class="n">SpatialModel</span><span class="p">,</span> <span class="n">ConstantSpatialModel</span>
+<span class="kn">from</span> <span class="nn">.spectral</span> <span class="kn">import</span> <span class="n">SpectralModel</span><span class="p">,</span> <span class="n">PowerLawNormSpectralModel</span><span class="p">,</span> <span class="n">TemplateSpectralModel</span>
 <span class="kn">from</span> <span class="nn">.temporal</span> <span class="kn">import</span> <span class="n">TemporalModel</span>
 
 
@@ -1343,7 +1341,7 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">position</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;`~astropy.coordinates.SkyCoord`&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span><span class="o">.</span><span class="n">position</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span><span class="p">,</span> <span class="s2">&quot;position&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">evaluation_radius</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1431,7 +1429,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">energy</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy_true&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span>
         <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">spectral_model</span><span class="o">.</span><span class="n">integral</span><span class="p">(</span>
-            <span class="n">energy</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">energy</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">intervals</span><span class="o">=</span><span class="kc">True</span>
+            <span class="n">energy</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">energy</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
         <span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">RegionGeom</span><span class="p">):</span>
@@ -1778,9 +1776,6 @@
 <span class="sd">    diffuse_model : `SkyModel`</span>
 <span class="sd">        Fermi isotropic diffuse sky model.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">.spectral</span> <span class="kn">import</span> <span class="n">TemplateSpectralModel</span>
-    <span class="kn">from</span> <span class="nn">.spatial</span> <span class="kn">import</span> <span class="n">ConstantSpatialModel</span>
-
     <span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">make_path</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
     <span class="n">energy</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">vals</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;MeV&quot;</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">values</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">vals</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;MeV-1 s-1 cm-2&quot;</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -1796,6 +1791,7 @@
         <span class="n">spatial_model</span><span class="o">=</span><span class="n">spatial_model</span><span class="p">,</span>
         <span class="n">spectral_model</span><span class="o">=</span><span class="n">spectral_model</span><span class="p">,</span>
         <span class="n">name</span><span class="o">=</span><span class="s2">&quot;fermi-diffuse-iso&quot;</span><span class="p">,</span>
+        <span class="n">apply_irf</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;psf&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;exposure&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;edisp&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
     <span class="p">)</span>
 </pre></div>
 
@@ -1812,7 +1808,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 16 Oct 2020.
+        Last updated on 27 Oct 2020.
       </span>
 
     </p>

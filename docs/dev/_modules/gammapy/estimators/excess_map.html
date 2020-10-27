@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.estimators.excess_map &mdash; gammapy v0.18.dev1008+ga3f9b1e78</title>
+  <title>gammapy.estimators.excess_map &mdash; gammapy v0.18.dev1085+g7fd0ef796</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev1008+ga3f9b1e78
+                0.18.dev1085+g7fd0ef796
               </div>
             
           
@@ -918,10 +918,10 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../../stats/index.html">stats - Statistics</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#introduction">Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#general-notions">General notions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#introduction">Introduction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#notations">Notations</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#counts-and-fit-statistics">Counts and fit statistics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#estimating-delta-ts">Estimating Delta TS</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#estimating-ts">Estimating TS</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#counts-statistics-classes">Counts statistics classes</a><ul>
@@ -931,11 +931,10 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#wstat-counts-statistic">WStat counts statistic</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id1">Excess and Significance</a></li>
-<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id3">Excess errors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id2">Excess and Significance</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../../../stats/index.html#id4">Excess errors</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="../../../stats/index.html#notations">Notations</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../stats/index.html#using-gammapy-stats">Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.stats</span></code></a><ul>
@@ -1218,7 +1217,7 @@
 
 
 <div class="viewcode-block" id="ExcessMapEstimator"><a class="viewcode-back" href="../../../api/gammapy.estimators.ExcessMapEstimator.html#gammapy.estimators.ExcessMapEstimator">[docs]</a><span class="k">class</span> <span class="nc">ExcessMapEstimator</span><span class="p">(</span><span class="n">Estimator</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Computes correlated excess, significance and errors for MapDatasets.</span>
+    <span class="sd">&quot;&quot;&quot;Computes correlated excess, sqrt TS (i.e. Li-Ma significance) and errors for MapDatasets.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -1234,7 +1233,6 @@
 <span class="sd">        Which additional maps to estimate besides delta TS, significance and symmetric error.</span>
 <span class="sd">        Available options are:</span>
 
-<span class="sd">            * &quot;flux&quot;: estimate flux map</span>
 <span class="sd">            * &quot;errn-errp&quot;: estimate asymmetric errors.</span>
 <span class="sd">            * &quot;ul&quot;: estimate upper limits.</span>
 
@@ -1257,7 +1255,6 @@
         <span class="n">selection_optional</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span>
         <span class="n">e_edges</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">apply_mask_fit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="n">return_image</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">correlation_radius</span> <span class="o">=</span> <span class="n">correlation_radius</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span> <span class="o">=</span> <span class="n">n_sigma</span>
@@ -1291,8 +1288,8 @@
 <span class="sd">                * counts : correlated counts map</span>
 <span class="sd">                * background : correlated background map</span>
 <span class="sd">                * excess : correlated excess map</span>
-<span class="sd">                * ts : delta TS map</span>
-<span class="sd">                * significance : sqrt(delta TS), or Li-Ma significance map</span>
+<span class="sd">                * ts : TS map</span>
+<span class="sd">                * sqrt_ts : sqrt(delta TS), or Li-Ma significance map</span>
 <span class="sd">                * err : symmetric error map (from covariance)</span>
 <span class="sd">                * flux : flux map. An exposure map must be present in the dataset to compute flux map</span>
 <span class="sd">                * errn : negative error map</span>
@@ -1355,9 +1352,9 @@
 
         <span class="n">result</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;counts&quot;</span><span class="p">:</span> <span class="n">n_on</span><span class="p">,</span> <span class="s2">&quot;background&quot;</span><span class="p">:</span> <span class="n">bkg</span><span class="p">,</span> <span class="s2">&quot;excess&quot;</span><span class="p">:</span> <span class="n">excess</span><span class="p">}</span>
 
-        <span class="n">tsmap</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">delta_ts</span><span class="p">)</span>
-        <span class="n">significance</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">significance</span><span class="p">)</span>
-        <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;ts&quot;</span><span class="p">:</span> <span class="n">tsmap</span><span class="p">,</span> <span class="s2">&quot;significance&quot;</span><span class="p">:</span> <span class="n">significance</span><span class="p">})</span>
+        <span class="n">tsmap</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">ts</span><span class="p">)</span>
+        <span class="n">sqrt_ts</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">sqrt_ts</span><span class="p">)</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;ts&quot;</span><span class="p">:</span> <span class="n">tsmap</span><span class="p">,</span> <span class="s2">&quot;sqrt_ts&quot;</span><span class="p">:</span> <span class="n">sqrt_ts</span><span class="p">})</span>
 
         <span class="n">err</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">error</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span><span class="p">)</span>
         <span class="n">result</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;err&quot;</span><span class="p">:</span> <span class="n">err</span><span class="p">})</span>
@@ -1400,7 +1397,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 16 Oct 2020.
+        Last updated on 27 Oct 2020.
       </span>
 
     </p>
