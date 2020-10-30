@@ -5,7 +5,7 @@
 # 
 # [H.E.S.S.](https://www.mpi-hd.mpg.de/hfm/HESS/) is an array of gamma-ray telescopes located in Namibia. Gammapy is regularly used and fully supports H.E.S.S. high-level data analysis, after export to the current [open data level 3 format](https://gamma-astro-data-formats.readthedocs.io/).
 # 
-# The H.E.S.S. data is private, and H.E.S.S. analysis is mostly documented and discussed at https://hess-confluence.desy.de/ and in H.E.S.S.-internal communication channels. However, in 2018, a small sub-set of archival H.E.S.S. data was publicly released, called the [H.E.S.S. DL3 DR1](https://www.mpi-hd.mpg.de/hfm/HESS/pages/dl3-dr1/), the data level 3, data release number 1. This dataset is 50 MB in size and is used in many Gammapy analysis tutorials, and can be downloaded via `gammapy download` (TODO: add link to description).
+# The H.E.S.S. data is private, and H.E.S.S. analysis is mostly documented and discussed at https://hess-confluence.desy.de/ and in H.E.S.S.-internal communication channels. However, in 2018, a small sub-set of archival H.E.S.S. data was publicly released, called the [H.E.S.S. DL3 DR1](https://www.mpi-hd.mpg.de/hfm/HESS/pages/dl3-dr1/), the data level 3, data release number 1. This dataset is 50 MB in size and is used in many Gammapy analysis tutorials, and can be downloaded via [`gammapy download`](https://docs.gammapy.org/dev/scripts/index.html?highlight=download).
 # 
 # This notebook is a quick introduction to H.E.S.S. data and instrument responses and contains some specifics that are important for H.E.S.S. users:
 # 
@@ -92,7 +92,7 @@ obs.psf.peek()
 obs.bkg.to_2d().plot()
 
 
-# ## Theta sqared event distribution
+# ## Theta squared event distribution
 # As a quick look plot it can be helpful to plot the quadratic offset (theta squared) distribution of the events. 
 
 # In[ ]:

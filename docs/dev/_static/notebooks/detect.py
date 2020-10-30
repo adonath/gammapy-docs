@@ -69,7 +69,6 @@ counts = Map.read(
 background = Map.read(
     "$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-background-cube.fits.gz"
 )
-background = BackgroundModel(background, datasets_names=["fermi-3fhl-gc"])
 
 exposure = Map.read(
     "$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-exposure-cube.fits.gz"
@@ -89,7 +88,7 @@ edisp = EDispKernelMap.from_diagonal_response(
 
 dataset = MapDataset(
     counts=counts,
-    models=[background],
+    background=background,
     exposure=exposure,
     psf=psfmap,
     name="fermi-3fhl-gc",

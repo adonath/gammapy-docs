@@ -98,7 +98,7 @@ on_radii = obs.psf.containment_radius(
     energy=e_reco.center, theta=0.5 * u.deg, fraction=containment
 )[0]
 factor = (1 - np.cos(on_radii)) / (1 - np.cos(region.radius))
-dataset.background_model.map *= factor.value.reshape((-1, 1, 1))
+dataset.background *= factor.value.reshape((-1, 1, 1))
 
 
 # And finally define a `SpectrumDatasetOnOff` with an alpha of `0.2`. The off counts are created from the background model:

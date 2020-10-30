@@ -87,7 +87,6 @@ from astropy.coordinates import SkyCoord
 # * Smooth images
 # * Plot images
 # * Cutout parts from images
-# * Reproject images to different WCS
 
 # In[ ]:
 

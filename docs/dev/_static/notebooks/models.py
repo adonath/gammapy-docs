@@ -37,7 +37,7 @@ import matplotlib.pyplot as plt
 
 
 from astropy import units as u
-from gammapy.maps import Map
+from gammapy.maps import Map, WcsGeom, MapAxis
 
 
 # # Spectral Models
@@ -384,7 +384,7 @@ model_copy = model.copy(name="my-source-copy")
 models.append(model_copy)
 
 
-# This list of models can be also serialised toa custom YAML based format: 
+# This list of models can be also serialised to a custom YAML based format: 
 
 # In[ ]:
 
@@ -516,3 +516,103 @@ get_ipython().system('cat my-custom-models.yaml')
 
 
 # Similarly you can also create custom spatial models and add them to the `SPATIAL_MODELS` registry. In that case gammapy assumes that the evaluate function return a normalized quantity in "sr-1" such as the model integral over the whole sky is one.
+
+# # Models with Energy dependent morphology
+# 
+# A common science case in the study of extended sources is to probe for energy dependent morphology, in Supernova Remnants or Pulsar Wind Nebulae. Traditionally, this has been done by splitting the data into energy bands and doing individual fits of the morphology in these energy bands.
+# 
+# `SkyModel` offers a natural framework to simultaneously model the energy and morphology, e.g. spatial extent described by a parametric model expression with energy dependent parameters.
+# 
+# The models shipped within gammapy use a “factorised” representation of the source model, where the spatial ($l,b$), energy ($E$) and time ($t$) dependence are independent model components and not correlated:
+# 
+#    $$f(l, b, E, t) = F(l, b) \cdot G(E) \cdot H(t) $$
+#     
+# To use full 3D models, ie $f(l, b, E) = F(l, b, E) \cdot G(E) $,  you have to implement your own custom `SpatialModel`. Note that it is still necessary to multiply by a `SpectralModel`, $G(E)$ to be dimensionally consistent.
+# 
+# In this example, we create Gaussian Spatial Model with the extension varying with energy. For simplicity, we assume a linear dependence on energy and parameterize this by specifing the extension at 2 energies. You can add more complex dependences, probably motivated by physical models.
+
+# In[ ]:
+
+
+from gammapy.modeling.models import SpatialModel
+from astropy.coordinates.angle_utilities import angular_separation
+
+
+class MyCustomGaussianModel(SpatialModel):
+    """My custom Energy Dependent Gaussian model.
+
+    Parameters
+    ----------
+    lon_0, lat_0 : `~astropy.coordinates.Angle`
+        Center position
+    sigma_1TeV : `~astropy.coordinates.Angle`
+        Width of the Gaussian at 1 TeV
+    sigma_10TeV : `~astropy.coordinates.Angle`
+        Width of the Gaussian at 10 TeV
+
+    """
+
+    tag = "MyCustomGaussianModel"
+    lon_0 = Parameter("lon_0", "0 deg")
+    lat_0 = Parameter("lat_0", "0 deg", min=-90, max=90)
+
+    sigma_1TeV = Parameter("sigma_1TeV", "2.0 deg", min=0)
+    sigma_10TeV = Parameter("sigma_10TeV", "0.2 deg", min=0)
+
+    @staticmethod
+    def get_sigma(energy, sigma_1TeV, sigma_10TeV):
+        """Get the sigma for a particular energy"""
+        sigmas = u.Quantity([sigma_1TeV, sigma_10TeV])
+        energy_nodes = [1, 10] * u.TeV
+
+        log_s = np.log(sigmas.to("deg").value)
+        log_en = np.log(energy_nodes.to("TeV").value)
+        log_e = np.log(energy.to("TeV").value)
+        return np.exp(np.interp(log_e, log_en, log_s)) * u.deg
+
+    def evaluate(
+        self, lon, lat, energy, lon_0, lat_0, sigma_1TeV, sigma_10TeV
+    ):
+        """Evaluate custom Gaussian model"""
+
+        sigma = self.get_sigma(energy, sigma_1TeV, sigma_10TeV)
+        sep = angular_separation(lon, lat, lon_0, lat_0)
+
+        exponent = -0.5 * (sep / sigma) ** 2
+        norm = 1 / (2 * np.pi * sigma ** 2)
+        return norm * np.exp(exponent)
+
+    @property
+    def evaluation_radius(self):
+        """Evaluation radius (`~astropy.coordinates.Angle`)."""
+        return (
+            5 * np.max([self.sigma_1TeV.value, self.sigma_10TeV.value]) * u.deg
+        )
+
+
+# Serialisation of this model can be achieved as explained in the previous section.
+# You can now use it as stadard `SpatialModel` in your analysis. Note that this is still a `SpatialModel`, and not a `SkyModel`, so it needs to be multiplied by a `SpectralModel` as before. 
+
+# In[ ]:
+
+
+spatial_model = MyCustomGaussianModel()
+spectral_model = PowerLawSpectralModel()
+sky_model = SkyModel(
+    spatial_model=spatial_model, spectral_model=spectral_model
+)
+
+
+# To visualise it, we evaluate it on a 3D geom. 
+
+# In[ ]:
+
+
+energy_axis = MapAxis.from_energy_bounds(
+    emin=0.1 * u.TeV, emax=10.0 * u.TeV, nbin=3, name="energy_true"
+)
+geom = WcsGeom.create(
+    skydir=(0, 0), width=5.0 * u.deg, binsz=0.1, axes=[energy_axis]
+)
+spatial_model.plot_grid(geom=geom, add_cbar=True);
+

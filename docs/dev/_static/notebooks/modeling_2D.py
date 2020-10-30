@@ -70,11 +70,15 @@ config.datasets.geom.wcs.skydir = {
     "lat": "0 deg",
     "frame": "galactic",
 }  # The WCS geometry - centered on the galactic center
-config.datasets.geom.wcs.fov = {"width": "10 deg", "height": "8 deg"}
+config.datasets.geom.wcs.fov = {"width": "8 deg", "height": "6 deg"}
 config.datasets.geom.wcs.binsize = "0.02 deg"
 
 # The FoV radius to use for cutouts
-config.datasets.geom.selection.offset_max = 3.5 * u.deg
+config.datasets.geom.selection.offset_max = 2.5 * u.deg
+config.datasets.safe_mask.methods = ["offset-max"]
+config.datasets.safe_mask.parameters = {"offset_max": 2.5 * u.deg}
+config.datasets.background.method = "fov_background"
+config.fit.fit_range = {"min": "0.1 TeV", "max": "30.0 TeV"}
 
 # We now fix the energy axis for the counts map - (the reconstructed energy binning)
 config.datasets.geom.axes.energy.min = "0.1 TeV"
@@ -117,7 +121,7 @@ print(analysis.datasets["stacked"].counts)
 # In[ ]:
 
 
-print(analysis.datasets["stacked"].background_model.map)
+print(analysis.datasets["stacked"].background)
 
 
 # In[ ]:
@@ -179,7 +183,6 @@ analysis.set_models(model_config)
 # In[ ]:
 
 
-analysis.datasets["stacked"].background_model.parameters["norm"].frozen = True
 analysis.datasets["stacked"].background_model.parameters["tilt"].frozen = True
 
 

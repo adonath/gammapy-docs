@@ -47,6 +47,7 @@ from gammapy.modeling.models import (
     PowerLawSpectralModel,
     SkyModel,
     GaussianSpatialModel,
+    PointSpatialModel,
 )
 from gammapy.maps import MapAxis, WcsNDMap, WcsGeom
 from gammapy.makers import (
@@ -166,7 +167,7 @@ dataset_image = stacked.to_image()
 images = {
     "counts": dataset_image.counts,
     "exposure": dataset_image.exposure,
-    "background": dataset_image.background_model.map,
+    "background": dataset_image.background,
 }
 
 images["excess"] = images["counts"] - images["background"]
@@ -201,7 +202,7 @@ images["excess"].smooth(3).plot(vmax=2);
 # In[ ]:
 
 
-spatial_model = GaussianSpatialModel(sigma="0.1 deg")
+spatial_model = GaussianSpatialModel(sigma="0.05 deg")
 spectral_model = PowerLawSpectralModel(index=2)
 model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
 

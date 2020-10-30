@@ -48,7 +48,6 @@ from gammapy.makers import SpectrumDatasetMaker
 from gammapy.modeling import Fit
 from gammapy.modeling.models import (
     PowerLawSpectralModel,
-    SpectralModel,
     SkyModel,
 )
 from gammapy.irf import load_cta_irfs
@@ -65,8 +64,10 @@ from gammapy.maps import MapAxis
 
 # Define simulation parameters parameters
 livetime = 1 * u.h
+
 pointing = SkyCoord(0, 0, unit="deg", frame="galactic")
 offset = 0.5 * u.deg
+
 # Reconstructed and true energy axis
 energy_axis = MapAxis.from_edges(
     np.logspace(-0.5, 1.0, 10), unit="TeV", name="energy", interp="log"
@@ -76,7 +77,11 @@ energy_axis_true = MapAxis.from_edges(
 )
 
 on_region_radius = Angle("0.11 deg")
-on_region = CircleSkyRegion(center=pointing, radius=on_region_radius)
+
+center = pointing.directional_offset_by(
+    position_angle=0 * u.deg, separation=offset
+)
+on_region = CircleSkyRegion(center=center, radius=on_region_radius)
 
 
 # In[ ]:
@@ -118,6 +123,7 @@ dataset_empty = SpectrumDataset.create(
     e_reco=energy_axis, e_true=energy_axis_true, region=on_region, name="obs-0"
 )
 maker = SpectrumDatasetMaker(selection=["exposure", "edisp", "background"])
+
 dataset = maker.run(dataset_empty, obs)
 
 
@@ -132,18 +138,18 @@ print(dataset)
 
 # You can see that backgound counts are now simulated
 
-# ### OnOff analysis
+# ### On-Off analysis
 # 
-# To do `OnOff` spectral analysis, which is the usual science case, the standard would be to use `SpectrumDatasetOnOff`, which uses the acceptance to fake off-counts 
+# To do an on off spectral analysis, which is the usual science case, the standard would be to use `SpectrumDatasetOnOff`, which uses the acceptance to fake off-counts 
 
 # In[ ]:
 
 
-dataset_onoff = SpectrumDatasetOnOff.from_spectrum_dataset(
+dataset_on_off = SpectrumDatasetOnOff.from_spectrum_dataset(
     dataset=dataset, acceptance=1, acceptance_off=5
 )
-dataset_onoff.fake(background_model=dataset.background_model)
-print(dataset_onoff)
+dataset_on_off.fake(npred_background=dataset.npred_background())
+print(dataset_on_off)
 
 
 # You can see that off counts are now simulated as well. We now simulate several spectra using the same set of observation conditions.
@@ -151,21 +157,20 @@ print(dataset_onoff)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', '\nn_obs = 100\ndatasets = Datasets()\n\nfor idx in range(n_obs):\n    dataset_onoff.fake(\n        random_state=idx, background_model=dataset.background_model\n    )\n    datasets.append(dataset_onoff.copy(name=f"obs-{idx}"))')
+get_ipython().run_cell_magic('time', '', '\nn_obs = 100\ndatasets = Datasets()\n\nfor idx in range(n_obs):\n    dataset_on_off.fake(\n        random_state=idx, npred_background=dataset.npred_background()\n    )\n    dataset_fake = dataset_on_off.copy(name=f"obs-{idx}")\n    dataset_fake.meta_table["OBS_ID"] = [idx]\n    datasets.append(dataset_fake)')
 
 
 # In[ ]:
 
 
-print(datasets.names)
+table = datasets.info_table()
+table
 
 
 # Before moving on to the fit let's have a look at the simulated observations.
 
 # In[ ]:
 
-
-table = datasets.info_table()
 
 fix, axes = plt.subplots(1, 3, figsize=(12, 4))
 axes[0].hist(table["counts"])
@@ -181,7 +186,7 @@ axes[2].set_xlabel("excess");
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'results = []\nfor dataset in datasets:\n    dataset.models = model.copy()\n    fit = Fit([dataset])\n    result = fit.optimize()\n    results.append(\n        {\n            "index": result.parameters["index"].value,\n            "amplitude": result.parameters["amplitude"].value,\n        }\n    )')
+get_ipython().run_cell_magic('time', '', 'results = []\n\nfor dataset in datasets:\n    dataset.models = model.copy()\n    fit = Fit([dataset])\n    result = fit.optimize()\n    results.append(\n        {\n            "index": result.parameters["index"].value,\n            "amplitude": result.parameters["amplitude"].value,\n        }\n    )')
 
 
 # We take a look at the distribution of the fitted indices. This matches very well with the spectrum that we initially injected.

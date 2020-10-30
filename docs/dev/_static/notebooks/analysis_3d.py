@@ -170,7 +170,7 @@ dataset_stacked.counts.smooth(0.02 * u.deg).plot_interactive(add_cbar=True)
 
 
 # And the background map
-dataset_stacked.background_model.map.plot_interactive(add_cbar=True)
+dataset_stacked.background.plot_interactive(add_cbar=True)
 
 
 # In[ ]:
@@ -178,7 +178,7 @@ dataset_stacked.background_model.map.plot_interactive(add_cbar=True)
 
 # You can also get an excess image with a few lines of code:
 counts = dataset_stacked.counts.sum_over_axes()
-background = dataset_stacked.background_model.map.sum_over_axes()
+background = dataset_stacked.background.sum_over_axes()
 excess = counts - background
 excess.smooth("0.06 deg").plot(stretch="sqrt", add_cbar=True);
 
@@ -410,12 +410,7 @@ for dataset in analysis_joint.datasets:
 # TODO: clean this up
 
 # We need to stack on the full geometry, so we use to geom from the stacked counts map.
-stacked = MapDataset.from_geoms(
-    geom=dataset_stacked.counts.geom,
-    geom_exposure=dataset_stacked.exposure.geom,
-    geom_edisp=dataset_stacked.edisp.edisp_map.geom,
-    geom_psf=dataset_stacked.psf.psf_map.geom,
-)
+stacked = MapDataset.from_geoms(**dataset_stacked.geoms)
 
 for dataset in analysis_joint.datasets:
     # TODO: Apply mask_fit before stacking
