@@ -105,7 +105,7 @@ conf_3d.datasets.geom.axes.energy = dict(
     min=0.7 * u.TeV, max=10 * u.TeV, nbins=5
 )
 conf_3d.datasets.geom.axes.energy_true = dict(
-    min=0.3 * u.TeV, max=20 * u.TeV, nbins=10
+    min=0.3 * u.TeV, max=20 * u.TeV, nbins=20
 )
 
 
@@ -225,10 +225,10 @@ conf_1d.datasets.containment_correction = True
 
 # Finally we define the energy binning for the spectra
 conf_1d.datasets.geom.axes.energy = dict(
-    min=0.7 * u.TeV, max=10 * u.TeV, nbins=20
+    min=0.7 * u.TeV, max=10 * u.TeV, nbins=5
 )
 conf_1d.datasets.geom.axes.energy_true = dict(
-    min=0.3 * u.TeV, max=20 * u.TeV, nbins=40
+    min=0.3 * u.TeV, max=20 * u.TeV, nbins=20
 )
 
 
@@ -287,6 +287,12 @@ lc_maker_1d = LightCurveEstimator(
     energy_edges=[1, 10] * u.TeV, source="crab", reoptimize=False
 )
 lc_1d = lc_maker_1d.run(analysis_1d.datasets)
+
+
+# In[ ]:
+
+
+lc_1d.table
 
 
 # ### Compare results

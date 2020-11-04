@@ -335,11 +335,10 @@ flux_points_dataset = FluxPointsDataset(data=flux_points, models=model)
 # In[ ]:
 
 
-plt.figure(figsize=(8, 6))
-ax_spectrum, ax_residual = flux_points_dataset.peek()
+ax_spectrum, ax_residuals = flux_points_dataset.plot_fit()
 
 ax_spectrum.set_ylim([1e-14, 3e-11])
-ax_residual.set_ylim([-1.7, 1.7])
+ax_residuals.set_ylim([-1.7, 1.7])
 
 spec_model_true.plot(
     ax=ax_spectrum,

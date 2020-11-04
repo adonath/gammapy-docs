@@ -330,8 +330,7 @@ analysis.get_flux_points()
 # In[ ]:
 
 
-plt.figure(figsize=(8, 5))
-ax_sed, ax_residuals = analysis.flux_points.peek()
+ax_sed, ax_residuals = analysis.flux_points.plot_fit()
 
 
 # The flux points can be exported to a fits table following the format defined [here](https://gamma-astro-data-formats.readthedocs.io/en/latest/spectra/flux_points/index.html) 

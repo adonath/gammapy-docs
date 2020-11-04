@@ -252,15 +252,17 @@ print(result)
 result.parameters.to_table()
 
 
-# A quick way to inspect the model residuals is using the function `~MapDataset.plot_residuals()`. This function computes and plots a residual image (by default, the smoothing radius is `0.1 deg` and `method=diff`, which corresponds to a simple `data - model` plot):
+# A quick way to inspect the model residuals is using the function `~MapDataset.plot_residuals_spatial()`. This function computes and plots a residual image (by default, the smoothing radius is `0.1 deg` and `method=diff`, which corresponds to a simple `data - model` plot):
 
 # In[ ]:
 
 
-dataset_stacked.plot_residuals(method="diff/sqrt(model)", vmin=-1, vmax=1);
+dataset_stacked.plot_residuals_spatial(
+    method="diff/sqrt(model)", vmin=-1, vmax=1
+);
 
 
-# The same function can also extract and display spectral residuals, in case a region (used for the spectral extraction) is passed:
+# The more general function `~MapDataset.plot_residuals()` can also extract and display spectral residuals in a region:
 
 # In[ ]:
 
@@ -268,7 +270,8 @@ dataset_stacked.plot_residuals(method="diff/sqrt(model)", vmin=-1, vmax=1);
 region = CircleSkyRegion(spatial_model.position, radius=0.15 * u.deg)
 
 dataset_stacked.plot_residuals(
-    method="diff/sqrt(model)", vmin=-1, vmax=1, region=region
+    kwargs_spatial=dict(method="diff/sqrt(model)", vmin=-1, vmax=1),
+    kwargs_spectral=dict(region=region),
 );
 
 
@@ -432,7 +435,7 @@ stacked.models = [model_joint]
 # In[ ]:
 
 
-stacked.plot_residuals(vmin=-1, vmax=1);
+stacked.plot_residuals_spatial(vmin=-1, vmax=1);
 
 
 # Then, we can access the stacked model residuals as previously shown in the section `Fit quality and model residuals for a MapDataset` in this notebook.

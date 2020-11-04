@@ -209,8 +209,13 @@ get_ipython().run_cell_magic('time', '', 'lc_maker_1d = LightCurveEstimator(\n  
 # In[ ]:
 
 
+lc_1d.table["is_ul"] = lc_1d.table["ts"] < 1
+
+
+# In[ ]:
+
+
 ax = lc_1d.plot(marker="o", label="3D")
-plt.ylim(0, 4e-11)
 
 
 # We have the reconstructed lightcurve at this point. Further standard analyis might involve modeling the temporal profiles with an analytical or theoretical model. You may do this using your favourite fitting package, one possible option being `curve_fit` inside `scipy.optimize`.

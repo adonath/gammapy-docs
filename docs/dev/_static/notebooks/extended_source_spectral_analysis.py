@@ -276,7 +276,6 @@ result_joint.parameters.to_table()
 # In[ ]:
 
 
-plt.figure(figsize=(8, 6))
 # First stack them all
 reduced = datasets.stack_reduce()
 # Assign the fitted model

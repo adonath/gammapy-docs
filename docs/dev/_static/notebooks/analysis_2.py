@@ -270,15 +270,15 @@ result.parameters.to_table()
 
 # ### Inspecting residuals
 # 
-# For any fit it is usefull to inspect the residual images. We have a few option on the dataset object to handle this. First we can use `.plot_residuals()` to plot a residual image, summed over all energies: 
+# For any fit it is useful to inspect the residual images. We have a few options on the dataset object to handle this. First we can use `.plot_residuals_spatial()` to plot a residual image, summed over all energies:
 
 # In[ ]:
 
 
-stacked.plot_residuals(method="diff/sqrt(model)", vmin=-0.5, vmax=0.5);
+stacked.plot_residuals_spatial(method="diff/sqrt(model)", vmin=-0.5, vmax=0.5);
 
 
-# In addition we can aslo specify a region in the map to show the spectral residuals:
+# In addition, we can also specify a region in the map to show the spectral residuals:
 
 # In[ ]:
 
@@ -292,7 +292,8 @@ region = CircleSkyRegion(
 
 
 stacked.plot_residuals(
-    region=region, method="diff/sqrt(model)", vmin=-0.5, vmax=0.5
+    kwargs_spatial=dict(method="diff/sqrt(model)", vmin=-0.5, vmax=0.5),
+    kwargs_spectral=dict(region=region),
 );
 
 

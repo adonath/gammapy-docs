@@ -315,8 +315,7 @@ print(result_joint)
 # In[ ]:
 
 
-plt.figure(figsize=(8, 6))
-ax_spectrum, ax_residual = datasets[0].plot_fit()
+ax_spectrum, ax_residuals = datasets[0].plot_fit()
 ax_spectrum.set_ylim(0.1, 40)
 
 
@@ -360,7 +359,7 @@ flux_points.table["is_ul"] = flux_points.table["ts"] < 4
 ax = flux_points.plot(
     energy_power=2, flux_unit="erg-1 cm-2 s-1", color="darkorange"
 )
-flux_points.to_sed_type("e2dnde").plot_ts_profiles(ax=ax)
+flux_points.to_sed_type("e2dnde").plot_ts_profiles(ax=ax);
 
 
 # The final plot with the best fit model, flux points and residuals can be quickly made like this: 
@@ -376,8 +375,7 @@ flux_points_dataset = FluxPointsDataset(
 # In[ ]:
 
 
-plt.figure(figsize=(8, 6))
-flux_points_dataset.peek();
+flux_points_dataset.plot_fit();
 
 
 # ## Stack observations

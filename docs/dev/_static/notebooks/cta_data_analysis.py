@@ -349,8 +349,7 @@ flux_points_dataset = FluxPointsDataset(data=flux_points, models=model)
 # In[ ]:
 
 
-plt.figure(figsize=(8, 6))
-flux_points_dataset.peek();
+flux_points_dataset.plot_fit();
 
 
 # ## Exercises

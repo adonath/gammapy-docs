@@ -206,7 +206,7 @@ get_ipython().run_cell_magic('time', '', 'fit = Fit([dataset])\nresult = fit.run
 # In[ ]:
 
 
-dataset.plot_residuals(method="diff/sqrt(model)", vmin=-0.5, vmax=0.5);
+dataset.plot_residuals_spatial(method="diff/sqrt(model)", vmin=-0.5, vmax=0.5)
 
 
 # Compare the injected and fitted models: 
