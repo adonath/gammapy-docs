@@ -1,20 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# 
-# <div class="alert alert-info">
-# 
-# **This is a fixed-text formatted version of a Jupyter notebook**
-# 
-# - Try online [![Binder](https://static.mybinder.org/badge.svg)](https://mybinder.org/v2/gh/gammapy/gammapy-webpage/v0.18?urlpath=lab/tree/analysis_mwl.ipynb)
-# - You can contribute with your own notebooks in this
-# [GitHub repository](https://github.com/gammapy/gammapy/tree/master/docs/tutorials).
-# - **Source files:**
-# [analysis_mwl.ipynb](../_static/notebooks/analysis_mwl.ipynb) |
-# [analysis_mwl.py](../_static/notebooks/analysis_mwl.py)
-# </div>
-# 
-
 # # Joint modeling, fitting, and serialization
 # 
 

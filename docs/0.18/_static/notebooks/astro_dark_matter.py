@@ -1,20 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# 
-# <div class="alert alert-info">
-# 
-# **This is a fixed-text formatted version of a Jupyter notebook**
-# 
-# - Try online [![Binder](https://static.mybinder.org/badge.svg)](https://mybinder.org/v2/gh/gammapy/gammapy-webpage/v0.18?urlpath=lab/tree/astro_dark_matter.ipynb)
-# - You can contribute with your own notebooks in this
-# [GitHub repository](https://github.com/gammapy/gammapy/tree/master/docs/tutorials).
-# - **Source files:**
-# [astro_dark_matter.ipynb](../_static/notebooks/astro_dark_matter.ipynb) |
-# [astro_dark_matter.py](../_static/notebooks/astro_dark_matter.py)
-# </div>
-# 
-
 # # Dark matter utilities
 # 
 # ## Introduction 

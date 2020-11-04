@@ -1,20 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# 
-# <div class="alert alert-info">
-# 
-# **This is a fixed-text formatted version of a Jupyter notebook**
-# 
-# - Try online [![Binder](https://static.mybinder.org/badge.svg)](https://mybinder.org/v2/gh/gammapy/gammapy-webpage/v0.18?urlpath=lab/tree/analysis_1.ipynb)
-# - You can contribute with your own notebooks in this
-# [GitHub repository](https://github.com/gammapy/gammapy/tree/master/docs/tutorials).
-# - **Source files:**
-# [analysis_1.ipynb](../_static/notebooks/analysis_1.ipynb) |
-# [analysis_1.py](../_static/notebooks/analysis_1.py)
-# </div>
-# 
-
 # # First analysis with gammapy high level interface
 # 
 # ## Prerequisites:
