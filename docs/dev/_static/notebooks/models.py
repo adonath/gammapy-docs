@@ -12,7 +12,7 @@
 # 
 # 1. [Spectral Models](#Spectral-Models)
 # 1. [Spatial Models](#Spatial-Models)
-# 1. [SkyModel and SkyDiffuseCube](#SkyModel-and-SkyDiffuseCube)
+# 1. [SkyModel](#SkyModel)
 # 1. [Model Lists and Serialisation](#Model-Lists-and-Serialisation)
 # 1. [Implementing as Custom Model](#Implementing-a-Custom-Model)
 # 
@@ -105,10 +105,10 @@ print(dnde)
 # In[ ]:
 
 
-flux = pwl.integral(emin=1 * u.TeV, emax=10 * u.TeV)
+flux = pwl.integral(energy_min=1 * u.TeV, energy_max=10 * u.TeV)
 print(flux)
 
-eflux = pwl.energy_flux(emin=1 * u.TeV, emax=10 * u.TeV)
+eflux = pwl.energy_flux(energy_min=1 * u.TeV, energy_max=10 * u.TeV)
 print(eflux)
 
 
@@ -118,7 +118,7 @@ print(eflux)
 
 
 energy = [1, 3, 10, 30] * u.TeV
-flux = pwl.integral(emin=energy[:-1], emax=energy[1:])
+flux = pwl.integral(energy_min=energy[:-1], energy_max=energy[1:])
 print(flux)
 
 
@@ -609,7 +609,7 @@ sky_model = SkyModel(
 
 
 energy_axis = MapAxis.from_energy_bounds(
-    emin=0.1 * u.TeV, emax=10.0 * u.TeV, nbin=3, name="energy_true"
+    energy_min=0.1 * u.TeV, energy_max=10.0 * u.TeV, nbin=3, name="energy_true"
 )
 geom = WcsGeom.create(
     skydir=(0, 0), width=5.0 * u.deg, binsz=0.1, axes=[energy_axis]

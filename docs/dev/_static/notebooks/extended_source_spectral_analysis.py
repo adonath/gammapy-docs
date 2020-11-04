@@ -167,7 +167,13 @@ safe_mask_maker = SafeMaskMaker(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'spectrum_datasets = []\n\nfor obs in observations:\n    # A MapDataset is filled in this geometry\n    dataset = maker.run(stacked, obs)\n    # To make images, the resulting dataset cutout is stacked onto the final one\n    stacked.stack(dataset)\n\n    # Extract 1D spectrum\n    spectrum_dataset = dataset.to_spectrum_dataset(on_region)\n    # Compute OFF\n    spectrum_dataset = bkg_maker.run(spectrum_dataset, obs)\n    # Define safe mask\n    spectrum_dataset = safe_mask_maker.run(spectrum_dataset, obs)\n    # Append dataset to the list\n    spectrum_datasets.append(spectrum_dataset)\n\ndatasets = Datasets(spectrum_datasets)')
+get_ipython().run_cell_magic('time', '', 'datasets = Datasets()\n\nfor obs in observations:\n    # A MapDataset is filled in this geometry\n    dataset = maker.run(stacked, obs)\n    # To make images, the resulting dataset cutout is stacked onto the final one\n    stacked.stack(dataset)\n\n    # Extract 1D spectrum\n    spectrum_dataset = dataset.to_spectrum_dataset(\n        on_region, name=f"obs-{obs.obs_id}"\n    )\n    # Compute OFF\n    spectrum_dataset = bkg_maker.run(spectrum_dataset, obs)\n    # Define safe mask\n    spectrum_dataset = safe_mask_maker.run(spectrum_dataset, obs)\n    # Append dataset to the list\n    datasets.append(spectrum_dataset)')
+
+
+# In[ ]:
+
+
+datasets.meta_table
 
 
 # ## Explore the results
@@ -240,10 +246,9 @@ plt.ylabel("Sqrt(TS)");
 spectral_model = PowerLawSpectralModel(
     index=2, amplitude=2e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV
 )
-model = SkyModel(spectral_model=spectral_model)
+model = SkyModel(spectral_model=spectral_model, name="RXJ 1713")
 
-for dataset in datasets:
-    dataset.models = model
+datasets.models = [model]
 
 
 # Now we can run the fit
@@ -278,4 +283,10 @@ reduced = datasets.stack_reduce()
 reduced.models = model
 # Plot the result
 reduced.plot_fit();
+
+
+# In[ ]:
+
+
+
 

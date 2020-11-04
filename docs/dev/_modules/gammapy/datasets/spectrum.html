@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.datasets.spectrum &mdash; gammapy v0.18.dev1126+gf1573d831</title>
+  <title>gammapy.datasets.spectrum &mdash; gammapy v0.18.dev1207+g1337a59ea</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev1126+gf1573d831
+                0.18.dev1207+g1337a59ea
               </div>
             
           
@@ -1147,25 +1147,18 @@
             
   <h1>Source code for gammapy.datasets.spectrum</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="kn">import</span> <span class="n">fits</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span>
 <span class="kn">from</span> <span class="nn">gammapy.data</span> <span class="kn">import</span> <span class="n">GTI</span>
 <span class="kn">from</span> <span class="nn">gammapy.irf</span> <span class="kn">import</span> <span class="n">EDispKernel</span><span class="p">,</span> <span class="n">EDispKernelMap</span>
 <span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">RegionNDMap</span>
-<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">Models</span>
-<span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">WStatCountsStatistic</span><span class="p">,</span>
-    <span class="n">cash</span><span class="p">,</span>
-    <span class="n">wstat</span><span class="p">,</span>
-    <span class="n">get_wstat_mu_bkg</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">gammapy.stats</span> <span class="kn">import</span> <span class="n">WStatCountsStatistic</span><span class="p">,</span> <span class="n">cash</span><span class="p">,</span> <span class="n">get_wstat_mu_bkg</span><span class="p">,</span> <span class="n">wstat</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.random</span> <span class="kn">import</span> <span class="n">get_random_state</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.scripts</span> <span class="kn">import</span> <span class="n">make_name</span><span class="p">,</span> <span class="n">make_path</span>
-<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">BackgroundModel</span>
 <span class="kn">from</span> <span class="nn">.map</span> <span class="kn">import</span> <span class="n">MapDataset</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;SpectrumDatasetOnOff&quot;</span><span class="p">,</span> <span class="s2">&quot;SpectrumDataset&quot;</span><span class="p">]</span>
@@ -1224,11 +1217,13 @@
         <span class="n">meta_table</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">make_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_evaluators</span> <span class="o">=</span> <span class="p">{}</span>
+
         <span class="k">if</span> <span class="n">mask_fit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">mask_fit</span><span class="o">.</span><span class="n">dtype</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="s2">&quot;bool&quot;</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;mask data must have dtype bool&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">=</span> <span class="n">counts</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">mask_fit</span> <span class="o">=</span> <span class="n">mask_fit</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">=</span> <span class="n">exposure</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span> <span class="o">=</span> <span class="n">edisp</span>
@@ -1236,8 +1231,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="o">=</span> <span class="n">mask_safe</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">gti</span> <span class="o">=</span> <span class="n">gti</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">meta_table</span> <span class="o">=</span> <span class="n">meta_table</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">make_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="n">models</span>
 
     <span class="nd">@property</span>
@@ -1305,16 +1298,16 @@
     <span class="k">def</span> <span class="nf">energy_range</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Energy range defined by the safe mask&quot;&quot;&quot;</span>
         <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span>
-        <span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span> <span class="o">=</span> <span class="n">energy</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">energy</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="n">energy_min</span><span class="p">,</span> <span class="n">energy_max</span> <span class="o">=</span> <span class="n">energy</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">energy</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-                <span class="n">e_min</span> <span class="o">=</span> <span class="n">e_min</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
-                <span class="n">e_max</span> <span class="o">=</span> <span class="n">e_max</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+                <span class="n">energy_min</span> <span class="o">=</span> <span class="n">energy_min</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
+                <span class="n">energy_max</span> <span class="o">=</span> <span class="n">energy_max</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
 
-        <span class="k">return</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">([</span><span class="n">e_min</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">e_max</span><span class="o">.</span><span class="n">max</span><span class="p">()])</span>
+        <span class="k">return</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">([</span><span class="n">energy_min</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">energy_max</span><span class="o">.</span><span class="n">max</span><span class="p">()])</span>
 
 <div class="viewcode-block" id="SpectrumDataset.plot_fit"><a class="viewcode-back" href="../../../api/gammapy.datasets.SpectrumDataset.html#gammapy.datasets.SpectrumDataset.plot_fit">[docs]</a>    <span class="k">def</span> <span class="nf">plot_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Plot counts and residuals in two panels.</span>
@@ -1336,14 +1329,14 @@
         <span class="k">return</span> <span class="n">ax_spectrum</span><span class="p">,</span> <span class="n">ax_residuals</span></div>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">_e_unit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_energy_unit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
 
     <span class="k">def</span> <span class="nf">_plot_energy_range</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="p">):</span>
-        <span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_range</span>
+        <span class="n">energy_min</span><span class="p">,</span> <span class="n">energy_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_range</span>
         <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;color&quot;</span><span class="p">:</span> <span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="s2">&quot;linestyle&quot;</span><span class="p">:</span> <span class="s2">&quot;dashed&quot;</span><span class="p">}</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">e_min</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_e_unit</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;fit range&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">e_max</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_e_unit</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">energy_min</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_energy_unit</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;fit range&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">energy_max</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_energy_unit</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
 <div class="viewcode-block" id="SpectrumDataset.plot_counts"><a class="viewcode-back" href="../../../api/gammapy.datasets.SpectrumDataset.html#gammapy.datasets.SpectrumDataset.plot_counts">[docs]</a>    <span class="k">def</span> <span class="nf">plot_counts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Plot predicted and detected counts.</span>
@@ -1404,7 +1397,7 @@
         <span class="n">residuals</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">yerr</span><span class="o">=</span><span class="n">yerr</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;black&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Energy [</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_e_unit</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Energy [</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_energy_unit</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Residuals (</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s2">&quot;linear&quot;</span><span class="p">)</span>
 
@@ -1454,7 +1447,9 @@
         <span class="n">name</span> <span class="o">=</span> <span class="n">make_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
         <span class="n">counts</span> <span class="o">=</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">e_reco</span><span class="p">])</span>
         <span class="n">background</span> <span class="o">=</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">e_reco</span><span class="p">])</span>
-        <span class="n">exposure</span> <span class="o">=</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">e_true</span><span class="p">],</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;cm2 s&quot;</span><span class="p">)</span>
+        <span class="n">exposure</span> <span class="o">=</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+            <span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">e_true</span><span class="p">],</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;cm2 s&quot;</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;livetime&quot;</span><span class="p">:</span> <span class="mi">0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">s</span><span class="p">}</span>
+        <span class="p">)</span>
         <span class="n">edisp</span> <span class="o">=</span> <span class="n">EDispKernelMap</span><span class="o">.</span><span class="n">from_diagonal_response</span><span class="p">(</span><span class="n">e_reco</span><span class="p">,</span> <span class="n">e_true</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
         <span class="n">mask_safe</span> <span class="o">=</span> <span class="n">RegionNDMap</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&quot;bool&quot;</span><span class="p">)</span>
         <span class="n">gti</span> <span class="o">=</span> <span class="n">GTI</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">([],</span> <span class="s2">&quot;s&quot;</span><span class="p">),</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">([],</span> <span class="s2">&quot;s&quot;</span><span class="p">),</span> <span class="n">reference_time</span><span class="p">)</span>
@@ -1473,7 +1468,7 @@
         <span class="sd">&quot;&quot;&quot;Quick-look summary plots.&quot;&quot;&quot;</span>
         <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
-        <span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_range</span>
+        <span class="n">energy_min</span><span class="p">,</span> <span class="n">energy_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">energy_range</span>
 
         <span class="n">_</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">,</span> <span class="n">ax3</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ncols</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
 
@@ -1486,15 +1481,21 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">plot_hist</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;n_on&quot;</span><span class="p">)</span>
 
-        <span class="n">e_unit</span> <span class="o">=</span> <span class="n">e_min</span><span class="o">.</span><span class="n">unit</span>
-        <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mf">0.7</span> <span class="o">*</span> <span class="n">e_min</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="n">e_unit</span><span class="p">),</span> <span class="mf">1.3</span> <span class="o">*</span> <span class="n">e_max</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="n">e_unit</span><span class="p">))</span>
+        <span class="n">energy_unit</span> <span class="o">=</span> <span class="n">energy_min</span><span class="o">.</span><span class="n">unit</span>
+        <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span>
+            <span class="mf">0.7</span> <span class="o">*</span> <span class="n">energy_min</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="n">energy_unit</span><span class="p">),</span>
+            <span class="mf">1.3</span> <span class="o">*</span> <span class="n">energy_max</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="n">energy_unit</span><span class="p">),</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_plot_energy_range</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax1</span><span class="p">)</span>
         <span class="n">ax1</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">numpoints</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
         <span class="n">ax2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Exposure&quot;</span><span class="p">)</span>
-        <span class="n">e_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
+        <span class="n">energy_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax2</span><span class="p">)</span>
-        <span class="n">ax2</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mf">0.7</span> <span class="o">*</span> <span class="n">e_min</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="n">e_unit</span><span class="p">),</span> <span class="mf">1.3</span> <span class="o">*</span> <span class="n">e_max</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="n">e_unit</span><span class="p">))</span>
+        <span class="n">ax2</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span>
+            <span class="mf">0.7</span> <span class="o">*</span> <span class="n">energy_min</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="n">energy_unit</span><span class="p">),</span>
+            <span class="mf">1.3</span> <span class="o">*</span> <span class="n">energy_max</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="n">energy_unit</span><span class="p">),</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_plot_energy_range</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax2</span><span class="p">)</span>
 
         <span class="n">ax3</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Energy Dispersion&quot;</span><span class="p">)</span>
@@ -1567,6 +1568,7 @@
     <span class="p">):</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">make_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_evaluators</span> <span class="o">=</span> <span class="p">{}</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">=</span> <span class="n">counts</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">counts_off</span> <span class="o">=</span> <span class="n">counts_off</span>
@@ -1999,17 +2001,17 @@
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">kernel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp</span><span class="o">.</span><span class="n">get_edisp_kernel</span><span class="p">()</span>
-            <span class="n">kernel</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
-                <span class="n">outdir</span> <span class="o">/</span> <span class="n">rmffile</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">,</span> <span class="n">use_sherpa</span><span class="o">=</span><span class="n">use_sherpa</span>
-            <span class="p">)</span></div>
+            <span class="n">kernel</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">outdir</span> <span class="o">/</span> <span class="n">rmffile</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">,</span> <span class="n">use_sherpa</span><span class="o">=</span><span class="n">use_sherpa</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">_ogip_meta</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Meta info for the OGIP data format&quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">livetime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s2">&quot;livetime&quot;</span><span class="p">]</span>
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Storing in ogip format require the livetime &quot;</span>
-                             <span class="s2">&quot;to be defined in the exposure meta data&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Storing in ogip format require the livetime &quot;</span>
+                <span class="s2">&quot;to be defined in the exposure meta data&quot;</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;SPECTRUM&quot;</span><span class="p">,</span>
             <span class="s2">&quot;hduclass&quot;</span><span class="p">:</span> <span class="s2">&quot;OGIP&quot;</span><span class="p">,</span>
@@ -2156,9 +2158,7 @@
         <span class="n">info</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">alpha</span>
 
         <span class="n">info</span><span class="p">[</span><span class="s2">&quot;sqrt_ts&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">WStatCountsStatistic</span><span class="p">(</span>
-            <span class="n">info</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">],</span>
-            <span class="n">info</span><span class="p">[</span><span class="s2">&quot;counts_off&quot;</span><span class="p">],</span>
-            <span class="n">acceptance</span> <span class="o">/</span> <span class="n">acceptance_off</span><span class="p">,</span>
+            <span class="n">info</span><span class="p">[</span><span class="s2">&quot;counts&quot;</span><span class="p">],</span> <span class="n">info</span><span class="p">[</span><span class="s2">&quot;counts_off&quot;</span><span class="p">],</span> <span class="n">acceptance</span> <span class="o">/</span> <span class="n">acceptance_off</span><span class="p">,</span>
         <span class="p">)</span><span class="o">.</span><span class="n">sqrt_ts</span>
         <span class="n">info</span><span class="p">[</span><span class="s2">&quot;stat_sum&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stat_sum</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">info</span></div>
@@ -2275,7 +2275,7 @@
             <span class="n">mask_fit</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_fit</span><span class="p">,</span>
             <span class="n">mask_safe</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe</span><span class="p">,</span>
             <span class="n">meta_table</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">meta_table</span><span class="p">,</span>
-            <span class="n">background</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">background</span>
+            <span class="n">background</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">background</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="SpectrumDatasetOnOff.slice_by_idx"><a class="viewcode-back" href="../../../api/gammapy.datasets.SpectrumDatasetOnOff.html#gammapy.datasets.SpectrumDatasetOnOff.slice_by_idx">[docs]</a>    <span class="k">def</span> <span class="nf">slice_by_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slices</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
@@ -2379,7 +2379,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 30 Oct 2020.
+        Last updated on 04 Nov 2020.
       </span>
 
     </p>

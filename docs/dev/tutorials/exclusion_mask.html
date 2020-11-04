@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Creating exclusion masks &mdash; gammapy v0.18.dev1126+gf1573d831</title>
+  <title>Creating exclusion masks &mdash; gammapy v0.18.dev1207+g1337a59ea</title>
   
 
   
@@ -76,7 +76,7 @@
             
             
               <div class="version">
-                0.18.dev1126+gf1573d831
+                0.18.dev1207+g1337a59ea
               </div>
             
           
@@ -1463,6 +1463,7 @@ div.rendered_html tbody tr:hover {
 <span class="kn">from</span> <span class="nn">gammapy.catalog</span> <span class="kn">import</span> <span class="n">CATALOG_REGISTRY</span>
 <span class="kn">from</span> <span class="nn">gammapy.datasets</span> <span class="kn">import</span> <span class="n">Datasets</span>
 <span class="kn">from</span> <span class="nn">gammapy.estimators</span> <span class="kn">import</span> <span class="n">ExcessMapEstimator</span>
+<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">FoVBackgroundModel</span>
 </pre></div>
 </div>
 </div>
@@ -1679,34 +1680,38 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">datasets</span> <span class="o">=</span> <span class="n">Datasets</span><span class="o">.</span><span class="n">read</span><span class="p">(</span>
-    <span class="s2">&quot;$GAMMAPY_DATA/fermi-3fhl-crab/&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;Fermi-LAT-3FHL_datasets.yaml&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;Fermi-LAT-3FHL_models.yaml&quot;</span><span class="p">,</span>
-<span class="p">)</span>
+<span></span><span class="n">filename</span> <span class="o">=</span> <span class="s2">&quot;$GAMMAPY_DATA/fermi-3fhl-crab/Fermi-LAT-3FHL_datasets.yaml&quot;</span>
+<span class="n">datasets</span> <span class="o">=</span> <span class="n">Datasets</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<p>We want to compute the significance per pixels for the data integrated over energy. We reduce the dataset to a simple image.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">dataset</span> <span class="o">=</span> <span class="n">datasets</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span>
+<span></span><span class="n">datasets</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">FoVBackgroundModel</span><span class="p">(</span><span class="n">dataset_name</span><span class="o">=</span><span class="s2">&quot;Fermi-LAT&quot;</span><span class="p">)]</span>
 </pre></div>
 </div>
 </div>
 <p>We now apply a significance estimation. We integrate the counts using a correlation radius of 0.4 degree and apply regular significance estimate.</p>
-<div class="nbinput nblast docutils container">
+<div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">estimator</span> <span class="o">=</span> <span class="n">ExcessMapEstimator</span><span class="p">(</span><span class="s2">&quot;0.4 deg&quot;</span><span class="p">,</span> <span class="n">selection_optional</span><span class="o">=</span><span class="p">[])</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">estimator</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">estimator</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">datasets</span><span class="p">[</span><span class="s2">&quot;Fermi-LAT&quot;</span><span class="p">])</span>
 </pre></div>
 </div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+HDU &#39;MASK_FIT&#39; not found
+</pre></div></div>
 </div>
 <p>Finally, we create the mask map by applying a threshold of 5 sigma to remove pixels.</p>
 <div class="nbinput nblast docutils container">
@@ -1723,7 +1728,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">mask_map_significance</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span></span><span class="n">mask_map_significance</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
 </pre></div>
 </div>
 </div>
@@ -1742,7 +1747,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/tutorials_exclusion_mask_34_1.png" src="../_images/tutorials_exclusion_mask_34_1.png" />
+<img alt="../_images/tutorials_exclusion_mask_33_1.png" src="../_images/tutorials_exclusion_mask_33_1.png" />
 </div>
 </div>
 <p>This method frequently yields isolated pixels or weakly significant features if one places the threshold too low.</p>
@@ -1801,7 +1806,7 @@ div.rendered_html tbody tr:hover {
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 30 Oct 2020.
+        Last updated on 04 Nov 2020.
       </span>
 
     </p>

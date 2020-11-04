@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.datasets.core &mdash; gammapy v0.18.dev1126+gf1573d831</title>
+  <title>gammapy.datasets.core &mdash; gammapy v0.18.dev1207+g1337a59ea</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev1126+gf1573d831
+                0.18.dev1207+g1337a59ea
               </div>
             
           
@@ -1150,15 +1150,14 @@
 <span class="kn">import</span> <span class="nn">abc</span>
 <span class="kn">import</span> <span class="nn">collections.abc</span>
 <span class="kn">import</span> <span class="nn">copy</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">vstack</span><span class="p">,</span> <span class="n">Table</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
-<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">Models</span><span class="p">,</span> <span class="n">ProperModels</span><span class="p">,</span> <span class="n">FoVBackgroundModel</span>
+<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span><span class="p">,</span> <span class="n">vstack</span>
+<span class="kn">from</span> <span class="nn">gammapy.data</span> <span class="kn">import</span> <span class="n">GTI</span>
+<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">DatasetModels</span><span class="p">,</span> <span class="n">Models</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.scripts</span> <span class="kn">import</span> <span class="n">make_name</span><span class="p">,</span> <span class="n">make_path</span><span class="p">,</span> <span class="n">read_yaml</span><span class="p">,</span> <span class="n">write_yaml</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.table</span> <span class="kn">import</span> <span class="n">table_from_row_data</span>
-<span class="kn">from</span> <span class="nn">gammapy.data</span> <span class="kn">import</span> <span class="n">GTI</span>
-
 
 <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -1288,7 +1287,24 @@
 <span class="sd">        Duplicate model objects have been removed.</span>
 <span class="sd">        The order of the unique models remains.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">ProperModels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">models</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">models</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
+                    <span class="n">models</span><span class="p">[</span><span class="n">model</span><span class="p">]</span> <span class="o">=</span> <span class="n">model</span>
+
+        <span class="k">return</span> <span class="n">DatasetModels</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+
+    <span class="nd">@models</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">models</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">models</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Unique models (`~gammapy.modeling.Models`).</span>
+
+<span class="sd">        Duplicate model objects have been removed.</span>
+<span class="sd">        The order of the unique models remains.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="n">models</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1352,12 +1368,12 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">datasets</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Datasets.slice_energy"><a class="viewcode-back" href="../../../api/gammapy.datasets.Datasets.html#gammapy.datasets.Datasets.slice_energy">[docs]</a>    <span class="k">def</span> <span class="nf">slice_energy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span><span class="p">):</span>
+<div class="viewcode-block" id="Datasets.slice_by_energy"><a class="viewcode-back" href="../../../api/gammapy.datasets.Datasets.html#gammapy.datasets.Datasets.slice_by_energy">[docs]</a>    <span class="k">def</span> <span class="nf">slice_by_energy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">energy_min</span><span class="p">,</span> <span class="n">energy_max</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Select and slice datasets in energy range</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        e_min, e_max : `~astropy.units.Quantity`</span>
+<span class="sd">        energy_min, energy_max : `~astropy.units.Quantity`</span>
 <span class="sd">            Energy bounds to compute the flux point for.</span>
 
 <span class="sd">        Returns</span>
@@ -1369,34 +1385,16 @@
         <span class="n">datasets</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
-            <span class="c1"># TODO: implement slice_by_coord() and simplify?</span>
-            <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">group</span> <span class="o">=</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">group_table</span><span class="p">(</span><span class="n">edges</span><span class="o">=</span><span class="p">[</span><span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span><span class="p">])</span>
+                <span class="n">dataset_sliced</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">slice_by_energy</span><span class="p">(</span>
+                    <span class="n">energy_min</span><span class="o">=</span><span class="n">energy_min</span><span class="p">,</span> <span class="n">energy_max</span><span class="o">=</span><span class="n">energy_max</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="p">)</span>
             <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-                <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> does not contribute in the energy range&quot;</span><span class="p">)</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Dataset </span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> does not contribute in the energy range&quot;</span>
+                <span class="p">)</span>
                 <span class="k">continue</span>
 
-            <span class="n">is_normal</span> <span class="o">=</span> <span class="n">group</span><span class="p">[</span><span class="s2">&quot;bin_type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;normal   &quot;</span>
-            <span class="n">group</span> <span class="o">=</span> <span class="n">group</span><span class="p">[</span><span class="n">is_normal</span><span class="p">]</span>
-
-            <span class="n">slices</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;energy&quot;</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span>
-                <span class="nb">int</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s2">&quot;idx_min&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span>
-                <span class="nb">int</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="s2">&quot;idx_max&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-            <span class="p">}</span>
-
-            <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">e_min</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">e_max</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="n">dataset_sliced</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">(</span><span class="n">slices</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
-            <span class="c1"># TODO: Simplify model handling!!!!</span>
-            <span class="n">models</span> <span class="o">=</span> <span class="p">[]</span>
-
-            <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="n">dataset</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">FoVBackgroundModel</span><span class="p">):</span>
-                    <span class="n">models</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataset_sliced</span><span class="o">.</span><span class="n">background_model</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">models</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-
-            <span class="n">dataset_sliced</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="n">models</span>
             <span class="n">datasets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataset_sliced</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">datasets</span><span class="o">=</span><span class="n">datasets</span><span class="p">)</span></div>
@@ -1411,18 +1409,18 @@
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        e_min, e_max : `~astropy.units.Quantity`</span>
+<span class="sd">        energy_min, energy_max : `~astropy.units.Quantity`</span>
 <span class="sd">            Energy range.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">e_mins</span><span class="p">,</span> <span class="n">e_maxs</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="n">energy_mins</span><span class="p">,</span> <span class="n">energy_maxs</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
 
         <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
             <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span>
-            <span class="n">e_mins</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="n">e_maxs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">energy_mins</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">energy_maxs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
 
-        <span class="k">return</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">e_mins</span><span class="p">),</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">e_maxs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">energy_mins</span><span class="p">),</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">energy_maxs</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">str_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
@@ -1437,7 +1435,11 @@
             <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
                 <span class="n">instrument</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
             <span class="n">str_</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Instrument : </span><span class="si">{</span><span class="n">instrument</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span>
-            <span class="n">str_</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Models     : </span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">names</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">models</span><span class="p">:</span>
+                <span class="n">names</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">names</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">names</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">str_</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Models     : </span><span class="si">{</span><span class="n">names</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
 
         <span class="k">return</span> <span class="n">str_</span><span class="o">.</span><span class="n">expandtabs</span><span class="p">(</span><span class="n">tabsize</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
@@ -1446,22 +1448,19 @@
         <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Datasets.read"><a class="viewcode-back" href="../../../api/gammapy.datasets.Datasets.html#gammapy.datasets.Datasets.read">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">filedata</span><span class="o">=</span><span class="s2">&quot;_datasets.yaml&quot;</span><span class="p">,</span> <span class="n">filemodel</span><span class="o">=</span><span class="s2">&quot;_models.yaml&quot;</span><span class="p">,</span> <span class="n">lazy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">filename_models</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lazy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;De-serialize datasets from YAML and FITS files.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        path : str, Path</span>
-<span class="sd">            Base directory of the datasets files.</span>
-<span class="sd">        filedata : str</span>
-<span class="sd">            file path or name of yaml datasets file</span>
-<span class="sd">        filemodel : str</span>
-<span class="sd">            file path or name of yaml models file</span>
+<span class="sd">        filename : str or `Path`</span>
+<span class="sd">            File path or name of datasets yaml file</span>
+<span class="sd">        filename_models : str or `Path`</span>
+<span class="sd">            File path or name of models fyaml ile</span>
 <span class="sd">        lazy : bool</span>
 <span class="sd">            Whether to lazy load data into memory</span>
 <span class="sd">        cache : bool</span>
 <span class="sd">            Whether to cache the data after loading.</span>
-
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1470,61 +1469,59 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">DATASET_REGISTRY</span>
 
-        <span class="n">path</span> <span class="o">=</span> <span class="n">make_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="p">(</span><span class="n">path</span> <span class="o">/</span> <span class="n">filedata</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
-            <span class="n">filedata</span> <span class="o">=</span> <span class="n">path</span> <span class="o">/</span> <span class="n">filedata</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">filedata</span> <span class="o">=</span> <span class="n">make_path</span><span class="p">(</span><span class="n">filedata</span><span class="p">)</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">path</span> <span class="o">/</span> <span class="n">filemodel</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
-            <span class="n">filemodel</span> <span class="o">=</span> <span class="n">path</span> <span class="o">/</span> <span class="n">filemodel</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">filemodel</span> <span class="o">=</span> <span class="n">make_path</span><span class="p">(</span><span class="n">filemodel</span><span class="p">)</span>
-
-        <span class="n">models</span> <span class="o">=</span> <span class="n">Models</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filemodel</span><span class="p">)</span>
-        <span class="n">data_list</span> <span class="o">=</span> <span class="n">read_yaml</span><span class="p">(</span><span class="n">filedata</span><span class="p">)</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">make_path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="n">data_list</span> <span class="o">=</span> <span class="n">read_yaml</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
 
         <span class="n">datasets</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">data_list</span><span class="p">[</span><span class="s2">&quot;datasets&quot;</span><span class="p">]:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">filename</span><span class="o">.</span><span class="n">parent</span>
+
             <span class="k">if</span> <span class="p">(</span><span class="n">path</span> <span class="o">/</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;filename&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
                 <span class="n">data</span><span class="p">[</span><span class="s2">&quot;filename&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">make_path</span><span class="p">(</span><span class="n">path</span> <span class="o">/</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;filename&quot;</span><span class="p">]))</span>
 
             <span class="n">dataset_cls</span> <span class="o">=</span> <span class="n">DATASET_REGISTRY</span><span class="o">.</span><span class="n">get_cls</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">])</span>
             <span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset_cls</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">lazy</span><span class="o">=</span><span class="n">lazy</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
-            <span class="n">dataset</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="n">models</span>
             <span class="n">datasets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">datasets</span><span class="p">)</span></div>
+        <span class="n">datasets</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">datasets</span><span class="p">)</span>
 
-<div class="viewcode-block" id="Datasets.write"><a class="viewcode-back" href="../../../api/gammapy.datasets.Datasets.html#gammapy.datasets.Datasets.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_covariance</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">filename_models</span><span class="p">:</span>
+            <span class="n">datasets</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="n">Models</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">filename_models</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">datasets</span></div>
+
+<div class="viewcode-block" id="Datasets.write"><a class="viewcode-back" href="../../../api/gammapy.datasets.Datasets.html#gammapy.datasets.Datasets.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">filename_models</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">write_covariance</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Serialize datasets to YAML and FITS files.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        path : `pathlib.Path`</span>
-<span class="sd">            path to write files</span>
-<span class="sd">        prefix : str</span>
-<span class="sd">            common prefix of file names</span>
+<span class="sd">        filename : str or `Path`</span>
+<span class="sd">            File path or name of datasets yaml file</span>
+<span class="sd">        filename_models : str or `Path`</span>
+<span class="sd">            File path or name of models fyaml ile</span>
 <span class="sd">        overwrite : bool</span>
 <span class="sd">            overwrite datasets FITS files</span>
 <span class="sd">        write_covariance : bool</span>
 <span class="sd">            save covariance or not</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">make_path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
 
-        <span class="n">path</span> <span class="o">=</span> <span class="n">make_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
-        <span class="n">datasets_dictlist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;datasets&quot;</span><span class="p">:</span> <span class="p">[]}</span>
+
         <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_datasets</span><span class="p">:</span>
-            <span class="n">filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">_data_</span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">.fits&quot;</span>
-            <span class="n">dataset</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">path</span> <span class="o">/</span> <span class="n">filename</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">)</span>
-            <span class="n">datasets_dictlist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">))</span>
-        <span class="n">datasets_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;datasets&quot;</span><span class="p">:</span> <span class="n">datasets_dictlist</span><span class="p">}</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">.fits&quot;</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="n">filename</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">&quot;datasets&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">))</span>
 
-        <span class="n">write_yaml</span><span class="p">(</span><span class="n">datasets_dict</span><span class="p">,</span> <span class="n">path</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">_datasets.yaml&quot;</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
-            <span class="n">path</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">_models.yaml&quot;</span><span class="p">,</span>
-            <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">,</span>
-            <span class="n">write_covariance</span><span class="o">=</span><span class="n">write_covariance</span><span class="p">,</span>
-        <span class="p">)</span></div>
+        <span class="n">write_yaml</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">filename_models</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">write</span><span class="p">(</span>
+                <span class="n">filename_models</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">,</span> <span class="n">write_covariance</span><span class="o">=</span><span class="n">write_covariance</span><span class="p">,</span>
+            <span class="p">)</span></div>
 
 <div class="viewcode-block" id="Datasets.stack_reduce"><a class="viewcode-back" href="../../../api/gammapy.datasets.Datasets.html#gammapy.datasets.Datasets.stack_reduce">[docs]</a>    <span class="k">def</span> <span class="nf">stack_reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Reduce the Datasets to a unique Dataset by stacking them together.</span>
@@ -1654,7 +1651,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 30 Oct 2020.
+        Last updated on 04 Nov 2020.
       </span>
 
     </p>

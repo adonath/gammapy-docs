@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.makers.background.fov &mdash; gammapy v0.18.dev1126+gf1573d831</title>
+  <title>gammapy.makers.background.fov &mdash; gammapy v0.18.dev1207+g1337a59ea</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev1126+gf1573d831
+                0.18.dev1207+g1337a59ea
               </div>
             
           
@@ -1149,8 +1149,10 @@
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
 <span class="sd">&quot;&quot;&quot;FoV background estimation.&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">gammapy.datasets</span> <span class="kn">import</span> <span class="n">Datasets</span>
 <span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">Map</span>
-<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">SPECTRAL_MODEL_REGISTRY</span><span class="p">,</span> <span class="n">FoVBackgroundModel</span>
+<span class="kn">from</span> <span class="nn">gammapy.modeling</span> <span class="kn">import</span> <span class="n">Fit</span>
+<span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">FoVBackgroundModel</span><span class="p">,</span> <span class="n">Model</span>
 <span class="kn">from</span> <span class="nn">..core</span> <span class="kn">import</span> <span class="n">Maker</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;FoVBackgroundMaker&quot;</span><span class="p">]</span>
@@ -1175,17 +1177,56 @@
 <span class="sd">        the normalization method to be applied. Default &#39;scale&#39;.</span>
 <span class="sd">    exclusion_mask : `~gammapy.maps.WcsNDMap`</span>
 <span class="sd">        Exclusion mask</span>
+<span class="sd">    spectral_model_tag : str</span>
+<span class="sd">        Default norm spectral model to use for the `FoVBackgroundModel`, if none is defined</span>
+<span class="sd">        on the dataset.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">tag</span> <span class="o">=</span> <span class="s2">&quot;FoVBackgroundMaker&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;scale&quot;</span><span class="p">,</span> <span class="n">exclusion_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;scale&quot;</span><span class="p">,</span> <span class="n">exclusion_mask</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">spectral_model_tag</span><span class="o">=</span><span class="s2">&quot;pl-norm&quot;</span>
+    <span class="p">):</span>
         <span class="k">if</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;fit&quot;</span><span class="p">,</span> <span class="s2">&quot;scale&quot;</span><span class="p">]:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not a valid method for FoVBackgroundMaker: </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_mask</span> <span class="o">=</span> <span class="n">exclusion_mask</span>
+
+        <span class="k">if</span> <span class="s2">&quot;norm&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spectral_model_tag</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Spectral model must be a norm spectral model&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">spectral_model_tag</span> <span class="o">=</span> <span class="n">spectral_model_tag</span>
+
+<div class="viewcode-block" id="FoVBackgroundMaker.make_default_fov_background_model"><a class="viewcode-back" href="../../../../api/gammapy.makers.FoVBackgroundMaker.html#gammapy.makers.FoVBackgroundMaker.make_default_fov_background_model">[docs]</a>    <span class="k">def</span> <span class="nf">make_default_fov_background_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add fov background model to the model definition</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        dataset : `~gammapy.datasets.MapDataset`</span>
+<span class="sd">            Input map dataset.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dataset : `~gammapy.datasets.MapDataset`</span>
+<span class="sd">            Map dataset including</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">spectral_model</span> <span class="o">=</span> <span class="n">Model</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+            <span class="n">tag</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">spectral_model_tag</span><span class="p">,</span> <span class="n">model_type</span><span class="o">=</span><span class="s2">&quot;spectral&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">bkg_model</span> <span class="o">=</span> <span class="n">FoVBackgroundModel</span><span class="p">(</span>
+            <span class="n">dataset_name</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">spectral_model</span><span class="o">=</span><span class="n">spectral_model</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">models</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="n">bkg_model</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">models</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">models</span> <span class="o">+</span> <span class="n">bkg_model</span>
+
+        <span class="k">return</span> <span class="n">dataset</span></div>
 
 <div class="viewcode-block" id="FoVBackgroundMaker.run"><a class="viewcode-back" href="../../../../api/gammapy.makers.FoVBackgroundMaker.html#gammapy.makers.FoVBackgroundMaker.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">observation</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Run FoV background maker.</span>
@@ -1200,6 +1241,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">mask_fit</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">mask_fit</span>
         <span class="n">dataset</span><span class="o">.</span><span class="n">mask_fit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reproject_exclusion_mask</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">background_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_default_fov_background_model</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;fit&quot;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_fit_bkg</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
@@ -1224,9 +1268,6 @@
 
     <span class="k">def</span> <span class="nf">_fit_bkg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Fit the FoV background model on the dataset counts data&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">gammapy.modeling</span> <span class="kn">import</span> <span class="n">Fit</span>
-        <span class="kn">from</span> <span class="nn">gammapy.datasets</span> <span class="kn">import</span> <span class="n">Datasets</span>
-
         <span class="c1"># freeze all model components not related to background model</span>
         <span class="n">datasets</span> <span class="o">=</span> <span class="n">Datasets</span><span class="p">([</span><span class="n">dataset</span><span class="p">])</span>
 
@@ -1277,7 +1318,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 30 Oct 2020.
+        Last updated on 04 Nov 2020.
       </span>
 
     </p>

@@ -66,6 +66,7 @@ from gammapy.modeling.models import (
     PointSpatialModel,
     GaussianSpatialModel,
     TemplateSpatialModel,
+    FoVBackgroundModel,
 )
 from regions import CircleSkyRegion
 
@@ -81,12 +82,12 @@ from regions import CircleSkyRegion
 # In[ ]:
 
 
-IRF_FILE = (
+filename = (
     "$GAMMAPY_DATA/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits"
 )
 
-POINTING = SkyCoord(0.0, 0.0, frame="galactic", unit="deg")
-LIVETIME = 1 * u.hr
+pointing = SkyCoord(0.0, 0.0, frame="galactic", unit="deg")
+livetime = 1 * u.hr
 
 
 # Now you can create the observation:
@@ -94,9 +95,9 @@ LIVETIME = 1 * u.hr
 # In[ ]:
 
 
-irfs = load_cta_irfs(IRF_FILE)
+irfs = load_cta_irfs(filename)
 observation = Observation.create(
-    obs_id=1001, pointing=POINTING, livetime=LIVETIME, irfs=irfs
+    obs_id=1001, pointing=pointing, livetime=livetime, irfs=irfs
 )
 
 
@@ -111,22 +112,22 @@ observation = Observation.create(
 # In[ ]:
 
 
-ENERGY_AXIS = MapAxis.from_energy_bounds(
+energy_axis = MapAxis.from_energy_bounds(
     "0.1 TeV", "100 TeV", nbin=10, per_decade=True
 )
-ENERGY_AXIS_TRUE = MapAxis.from_energy_bounds(
+energy_axis_true = MapAxis.from_energy_bounds(
     "0.03 TeV", "300 TeV", nbin=20, per_decade=True, name="energy_true"
 )
-MIGRA_AXIS = MapAxis.from_bounds(
+migra_axis = MapAxis.from_bounds(
     0.5, 2, nbin=150, node_type="edges", name="migra"
 )
 
-WCS_GEOM = WcsGeom.create(
-    skydir=POINTING,
+geom = WcsGeom.create(
+    skydir=pointing,
     width=(2, 2),
     binsz=0.02,
     frame="galactic",
-    axes=[ENERGY_AXIS],
+    axes=[energy_axis],
 )
 
 
@@ -135,7 +136,7 @@ WCS_GEOM = WcsGeom.create(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'empty = MapDataset.create(\n    WCS_GEOM, energy_axis_true=ENERGY_AXIS_TRUE, migra_axis=MIGRA_AXIS\n)\nmaker = MapDatasetMaker(selection=["exposure", "background", "psf", "edisp"])\ndataset = maker.run(empty, observation)\n\nPath("event_sampling").mkdir(exist_ok=True)\ndataset.write("./event_sampling/dataset.fits", overwrite=True)')
+get_ipython().run_cell_magic('time', '', 'empty = MapDataset.create(\n    geom,\n    energy_axis_true=energy_axis_true,\n    migra_axis=migra_axis,\n    name="my-dataset",\n)\nmaker = MapDatasetMaker(selection=["exposure", "background", "psf", "edisp"])\ndataset = maker.run(empty, observation)\n\nPath("event_sampling").mkdir(exist_ok=True)\ndataset.write("./event_sampling/dataset.fits", overwrite=True)')
 
 
 # ### Define the Sky model: a point-like source
@@ -151,16 +152,19 @@ spectral_model_pwl = PowerLawSpectralModel(
 spatial_model_point = PointSpatialModel(
     lon_0="0 deg", lat_0="0.5 deg", frame="galactic"
 )
+
 sky_model_pntpwl = SkyModel(
     spectral_model=spectral_model_pwl,
     spatial_model=spatial_model_point,
     name="point-pwl",
 )
 
-models_pntpwl = Models([sky_model_pntpwl])
+bkg_model = FoVBackgroundModel(dataset_name="my-dataset")
+
+models = Models([sky_model_pntpwl, bkg_model])
 
 file_model = "./event_sampling/point-pwl.yaml"
-models_pntpwl.write(file_model, overwrite=True)
+models.write(file_model, overwrite=True)
 
 
 # ### Sampling the source and background events
@@ -170,7 +174,7 @@ models_pntpwl.write(file_model, overwrite=True)
 # In[ ]:
 
 
-dataset.models.extend(models_pntpwl)
+dataset.models = models
 print(dataset.models)
 
 
@@ -187,7 +191,7 @@ get_ipython().run_cell_magic('time', '', 'sampler = MapDatasetEventSampler(rando
 # In[ ]:
 
 
-print(f"Source events: {(events.table['MC_ID'] == 2).sum()}")
+print(f"Source events: {(events.table['MC_ID'] == 1).sum()}")
 print(f"Background events: {(events.table['MC_ID'] == 0).sum()}")
 
 
@@ -204,7 +208,7 @@ events.select_offset([0, 1] * u.deg).peek()
 # In[ ]:
 
 
-events.table.meta["OBJECT"] = dataset.models[1].name
+events.table.meta["OBJECT"] = dataset.models[0].name
 
 
 # Let's write the event list and its GTI extension to a FITS file. We make use of `fits` library in `astropy`:
@@ -239,14 +243,13 @@ counts.plot(add_cbar=True);
 # In[ ]:
 
 
-dataset = MapDataset.read("./event_sampling/dataset.fits")
-models_sim_point = Models.read("./event_sampling/point-pwl.yaml")
+models_fit = Models.read("./event_sampling/point-pwl.yaml")
 
-counts = Map.from_geom(WCS_GEOM)
+counts = Map.from_geom(geom)
 counts.fill_events(events)
 
 dataset.counts = counts
-dataset.models.extend(models_sim_point)
+dataset.models = models_fit
 
 
 # Let's fit the data and look at the results:
@@ -274,11 +277,19 @@ result.parameters.to_table()
 # In[ ]:
 
 
-diffuse_cube = TemplateSpatialModel.read(
+template_model = TemplateSpatialModel.read(
     "$GAMMAPY_DATA/fermi-3fhl-gc/gll_iem_v06_gc.fits.gz", normalize=False
 )
-diffuse = SkyModel(PowerLawNormSpectralModel(), diffuse_cube)
-models_diffuse = Models([diffuse])
+# we make the model brighter artificially so that it becomes visible over the background
+diffuse = SkyModel(
+    spectral_model=PowerLawNormSpectralModel(norm=5),
+    spatial_model=template_model,
+    name="template-model",
+)
+
+bkg_model = FoVBackgroundModel(dataset_name="my-dataset")
+
+models_diffuse = Models([diffuse, bkg_model])
 
 file_model = "./event_sampling/diffuse.yaml"
 models_diffuse.write(file_model, overwrite=True)
@@ -287,8 +298,7 @@ models_diffuse.write(file_model, overwrite=True)
 # In[ ]:
 
 
-dataset = MapDataset.read("./event_sampling/dataset.fits")
-dataset.models.extend(models_diffuse)
+dataset.models = models_diffuse
 print(dataset.models)
 
 
@@ -320,24 +330,7 @@ livetimes = [1, 1, 1] * u.hr
 # In[ ]:
 
 
-for idx, tstart in enumerate(tstarts):
-
-    observation = Observation.create(
-        obs_id=idx,
-        pointing=POINTING,
-        tstart=tstart,
-        livetime=livetimes[idx],
-        irfs=irfs,
-    )
-
-    dataset = maker.run(empty, observation)
-    dataset.models.extend(models_pntpwl)
-
-    sampler = MapDatasetEventSampler(random_state=idx)
-    events = sampler.run(dataset, observation)
-    events.table.write(
-        f"./event_sampling/events_{idx:04d}.fits", overwrite=True
-    )
+get_ipython().run_cell_magic('time', '', 'for idx, tstart in enumerate(tstarts):\n\n    observation = Observation.create(\n        obs_id=idx,\n        pointing=pointing,\n        tstart=tstart,\n        livetime=livetimes[idx],\n        irfs=irfs,\n    )\n\n    dataset = maker.run(empty, observation)\n    dataset.models = models\n\n    sampler = MapDatasetEventSampler(random_state=idx)\n    events = sampler.run(dataset, observation)\n    events.table.write(\n        f"./event_sampling/events_{idx:04d}.fits", overwrite=True\n    )')
 
 
 # You can now load the event list with `Datastore.from_events_files()` and make your own analysis following the instructions in the [`analysis_2`](analysis_2.ipynb) tutorial.

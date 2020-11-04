@@ -219,7 +219,9 @@ for dataset in datasets:
 # In[ ]:
 
 
-lc_maker_1d = LightCurveEstimator(e_edges=[0.7, 20] * u.TeV, source="pks2155")
+lc_maker_1d = LightCurveEstimator(
+    energy_edges=[0.7, 20] * u.TeV, source="pks2155"
+)
 
 
 # We can now perform the light curve extraction itself. To compare with the [reference paper](https://ui.adsabs.harvard.edu/abs/2009A%26A...502..749A/abstract), we select the 0.7-20 TeV range.

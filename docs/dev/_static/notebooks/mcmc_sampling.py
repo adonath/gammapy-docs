@@ -58,6 +58,8 @@ from gammapy.modeling.models import (
     ExpCutoffPowerLawSpectralModel,
     GaussianSpatialModel,
     SkyModel,
+    Models,
+    FoVBackgroundModel,
 )
 from gammapy.datasets import MapDataset
 from gammapy.makers import MapDatasetMaker
@@ -99,6 +101,23 @@ observation = Observation.create(
 # In[ ]:
 
 
+# Define map geometry
+axis = MapAxis.from_edges(
+    np.logspace(-1, 2, 15), unit="TeV", name="energy", interp="log"
+)
+
+geom = WcsGeom.create(
+    skydir=(0, 0), binsz=0.05, width=(2, 2), frame="galactic", axes=[axis]
+)
+
+empty_dataset = MapDataset.create(geom=geom, name="dataset-mcmc")
+maker = MapDatasetMaker(selection=["background", "edisp", "psf", "exposure"])
+dataset = maker.run(empty_dataset, observation)
+
+
+# In[ ]:
+
+
 # Define sky model to simulate the data
 spatial_model = GaussianSpatialModel(
     lon_0="0 deg", lat_0="0 deg", sigma="0.2 deg", frame="galactic"
@@ -114,24 +133,16 @@ spectral_model = ExpCutoffPowerLawSpectralModel(
 sky_model_simu = SkyModel(
     spatial_model=spatial_model, spectral_model=spectral_model, name="source"
 )
-print(sky_model_simu)
+
+bkg_model = FoVBackgroundModel(dataset_name="dataset-mcmc")
+models = Models([sky_model_simu, bkg_model])
+print(models)
 
 
 # In[ ]:
 
 
-# Define map geometry
-axis = MapAxis.from_edges(
-    np.logspace(-1, 2, 30), unit="TeV", name="energy", interp="log"
-)
-geom = WcsGeom.create(
-    skydir=(0, 0), binsz=0.05, width=(2, 2), frame="galactic", axes=[axis]
-)
-
-empty_dataset = MapDataset.create(geom=geom, name="dataset-mcmc")
-maker = MapDatasetMaker(selection=["background", "edisp", "psf", "exposure"])
-dataset = maker.run(empty_dataset, observation)
-dataset.models.append(sky_model_simu)
+dataset.models = models
 dataset.fake()
 
 

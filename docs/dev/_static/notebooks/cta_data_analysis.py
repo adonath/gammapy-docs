@@ -47,7 +47,6 @@ from gammapy.modeling.models import (
     PowerLawSpectralModel,
     SkyModel,
     GaussianSpatialModel,
-    PointSpatialModel,
 )
 from gammapy.maps import MapAxis, WcsNDMap, WcsGeom
 from gammapy.makers import (
@@ -164,14 +163,6 @@ get_ipython().run_cell_magic('time', '', 'stacked = MapDataset.create(geom=geom)
 # Let's also make some images:
 dataset_image = stacked.to_image()
 
-images = {
-    "counts": dataset_image.counts,
-    "exposure": dataset_image.exposure,
-    "background": dataset_image.background,
-}
-
-images["excess"] = images["counts"] - images["background"]
-
 
 # ### Show images
 # 
@@ -180,19 +171,19 @@ images["excess"] = images["counts"] - images["background"]
 # In[ ]:
 
 
-images["counts"].smooth(2).plot(vmax=5);
+dataset_image.counts.smooth(2).plot(vmax=5);
 
 
 # In[ ]:
 
 
-images["background"].plot(vmax=5);
+dataset_image.background.plot(vmax=5);
 
 
 # In[ ]:
 
 
-images["excess"].smooth(3).plot(vmax=2);
+dataset_image.excess.smooth(3).plot(vmax=2);
 
 
 # ## Source Detection
@@ -216,6 +207,7 @@ ts_image_estimator = TSMapEstimator(
     selection_optional=[],
     downsampling_factor=2,
     sum_over_energy_groups=False,
+    energy_edges=[0.1, 10] * u.TeV,
 )
 
 
@@ -296,14 +288,14 @@ safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'datasets = []\n\nfor observation in observations:\n    dataset = dataset_maker.run(\n        dataset_empty.copy(name=f"obs-{observation.obs_id}"), observation\n    )\n    dataset_on_off = bkg_maker.run(dataset, observation)\n    dataset_on_off = safe_mask_masker.run(dataset_on_off, observation)\n    datasets.append(dataset_on_off)')
+get_ipython().run_cell_magic('time', '', 'datasets = Datasets()\n\nfor observation in observations:\n    dataset = dataset_maker.run(\n        dataset_empty.copy(name=f"obs-{observation.obs_id}"), observation\n    )\n    dataset_on_off = bkg_maker.run(dataset, observation)\n    dataset_on_off = safe_mask_masker.run(dataset_on_off, observation)\n    datasets.append(dataset_on_off)')
 
 
 # In[ ]:
 
 
 plt.figure(figsize=(8, 8))
-_, ax, _ = images["counts"].smooth("0.03 deg").plot(vmax=8)
+_, ax, _ = dataset_image.counts.smooth("0.03 deg").plot(vmax=8)
 
 on_region.to_pixel(ax.wcs).plot(ax=ax, edgecolor="white")
 plot_spectrum_datasets_off_regions(datasets, ax=ax)
@@ -316,7 +308,7 @@ plot_spectrum_datasets_off_regions(datasets, ax=ax)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'spectral_model = PowerLawSpectralModel(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\nmodel = SkyModel(spectral_model=spectral_model, name="source-gc")\nfor dataset in datasets:\n    dataset.models = model\n\nfit = Fit(datasets)\nresult = fit.run()\nprint(result)')
+get_ipython().run_cell_magic('time', '', 'spectral_model = PowerLawSpectralModel(\n    index=2, amplitude=1e-11 * u.Unit("cm-2 s-1 TeV-1"), reference=1 * u.TeV\n)\n\nmodel = SkyModel(spectral_model=spectral_model, name="source-gc")\n\ndatasets.models = model\n\nfit = Fit(datasets)\nresult = fit.run()\nprint(result)')
 
 
 # ### Spectral points
@@ -327,7 +319,7 @@ get_ipython().run_cell_magic('time', '', 'spectral_model = PowerLawSpectralModel
 
 
 # Flux points are computed on stacked observation
-stacked_dataset = Datasets(datasets).stack_reduce(name="stacked")
+stacked_dataset = datasets.stack_reduce(name="stacked")
 
 print(stacked_dataset)
 
@@ -335,11 +327,11 @@ print(stacked_dataset)
 # In[ ]:
 
 
-e_edges = MapAxis.from_energy_bounds("1 TeV", "30 TeV", nbin=5).edges
+energy_edges = MapAxis.from_energy_bounds("1 TeV", "30 TeV", nbin=5).edges
 
 stacked_dataset.models = model
 
-fpe = FluxPointsEstimator(e_edges=e_edges, source="source-gc")
+fpe = FluxPointsEstimator(energy_edges=energy_edges, source="source-gc")
 flux_points = fpe.run(datasets=[stacked_dataset])
 flux_points.table_formatted
 

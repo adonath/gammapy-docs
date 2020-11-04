@@ -32,6 +32,7 @@
 from astropy import units as u
 import matplotlib.pyplot as plt
 from gammapy.modeling import Fit
+from gammapy.modeling.models import Models
 from gammapy.datasets import Datasets, FluxPointsDataset, SpectrumDatasetOnOff
 from gammapy.estimators import FluxPoints, FluxPointsEstimator
 from gammapy.maps import MapAxis
@@ -44,92 +45,22 @@ from pathlib import Path
 # The datasets serialization produce YAML files listing the datasets and models. In the following cells we show an example containning only the Fermi-LAT dataset and the Crab model. 
 # 
 # Fermi-LAT-3FHL_datasets.yaml:
-# 
-# ```yaml
-# datasets:
-# - name: Fermi-LAT
-#   type: MapDataset
-#   likelihood: cash
-#   models:
-# - Crab Nebula
-#   background: background
-#   filename: $GAMMAPY_DATA/fermi-3fhl-crab/Fermi-LAT-3FHL_data_Fermi-LAT.fits
-# ```
-# 
+
+# In[ ]:
+
+
+get_ipython().system('cat $GAMMAPY_DATA/fermi-3fhl-crab/Fermi-LAT-3FHL_datasets.yaml')
+
+
 # We used as model a point source with a log-parabola spectrum. The initial parameters were taken from the latest Fermi-LAT catalog [4FGL](https://arxiv.org/abs/1902.10045), then we have re-optimized the spectral parameters for our dataset in the 10 GeV - 2 TeV energy range (fixing the source position).
 # 
 # Fermi-LAT-3FHL_models.yaml:
-# 
-# ```yaml
-# components:
-# - name: Crab Nebula
-#   type: SkyModel
-#   spatial:
-#     type: PointSpatialModel
-#     frame: icrs
-#     parameters:
-#     - name: lon_0
-#       value: 83.63310241699219
-#       unit: deg
-#       min: .nan
-#       max: .nan
-#       frozen: true
-#     - name: lat_0
-#       value: 22.019899368286133
-#       unit: deg
-#       min: -90.0
-#       max: 90.0
-#       frozen: true
-#   spectral:
-#     type: LogParabolaSpectralModel
-#     parameters:
-#     - name: amplitude
-#       value: 0.3415498620816483
-#       unit: cm-2 s-1 TeV-1
-#       min: .nan
-#       max: .nan
-#       frozen: false
-#     - name: reference
-#       value: 5.054833602905273e-05
-#       unit: TeV
-#       min: .nan
-#       max: .nan
-#       frozen: true
-#     - name: alpha
-#       value: 2.510798031388936
-#       unit: ''
-#       min: .nan
-#       max: .nan
-#       frozen: false
-#     - name: beta
-#       value: -0.022476498188855533
-#       unit: ''
-#       min: .nan
-#       max: .nan
-#       frozen: false
-# - name: background
-#   type: BackgroundModel
-#   parameters:
-#   - name: norm
-#     value: 0.9544383244743555
-#     unit: ''
-#     min: 0.0
-#     max: .nan
-#     frozen: false
-#   - name: tilt
-#     value: 0.0
-#     unit: ''
-#     min: .nan
-#     max: .nan
-#     frozen: true
-#   - name: reference
-#     value: 1.0
-#     unit: TeV
-#     min: .nan
-#     max: .nan
-#     frozen: true
-# 
-# ```
+
+# In[ ]:
+
+
+get_ipython().system('cat $GAMMAPY_DATA/fermi-3fhl-crab/Fermi-LAT-3FHL_models.yaml')
+
 
 # ## Reading  different datasets
 # 
@@ -141,16 +72,16 @@ from pathlib import Path
 
 
 path = Path("$GAMMAPY_DATA/fermi-3fhl-crab")
-filedata = "Fermi-LAT-3FHL_datasets.yaml"
-filemodel = "Fermi-LAT-3FHL_models.yaml"
-datasets = Datasets.read(path, filedata=filedata, filemodel=filemodel)
-dataset_fermi = datasets[0]
+filename = path / "Fermi-LAT-3FHL_datasets.yaml"
+
+datasets = Datasets.read(filename=filename)
 
 
 # In[ ]:
 
 
-print(datasets[0].models)
+models = Models.read(path / "Fermi-LAT-3FHL_models.yaml")
+print(models)
 
 
 # We get the Crab model in order to share it with the other datasets
@@ -158,9 +89,7 @@ print(datasets[0].models)
 # In[ ]:
 
 
-crab_model = dataset_fermi.models["Crab Nebula"]
-crab_spec = crab_model.spectral_model
-print(crab_spec)
+print(models["Crab Nebula"])
 
 
 # ### HESS-DL3: 1D ON/OFF dataset for spectral fitting
@@ -172,16 +101,23 @@ print(crab_spec)
 # In[ ]:
 
 
-datasets = []
+datasets_hess = Datasets()
 
 for obs_id in [23523, 23526]:
     dataset = SpectrumDatasetOnOff.from_ogip_files(
         f"$GAMMAPY_DATA/joint-crab/spectra/hess/pha_obs{obs_id}.fits"
     )
-    datasets.append(dataset)
+    datasets_hess.append(dataset)
 
-dataset_hess = Datasets(datasets).stack_reduce(name="HESS")
-dataset_hess.models = crab_model
+dataset_hess = datasets_hess.stack_reduce(name="HESS")
+
+datasets.append(dataset_hess)
+
+
+# In[ ]:
+
+
+print(datasets)
 
 
 # ### HAWC: 1D dataset for flux point fitting
@@ -195,7 +131,15 @@ dataset_hess.models = crab_model
 # read flux points from https://arxiv.org/pdf/1905.12518.pdf
 filename = "$GAMMAPY_DATA/hawc_crab/HAWC19_flux_points.fits"
 flux_points_hawc = FluxPoints.read(filename)
-dataset_hawc = FluxPointsDataset(crab_model, flux_points_hawc, name="HAWC")
+dataset_hawc = FluxPointsDataset(data=flux_points_hawc, name="HAWC")
+
+datasets.append(dataset_hawc)
+
+
+# In[ ]:
+
+
+print(datasets)
 
 
 # ## Datasets serialization
@@ -206,26 +150,31 @@ dataset_hawc = FluxPointsDataset(crab_model, flux_points_hawc, name="HAWC")
 # In[ ]:
 
 
-datasets = Datasets([dataset_fermi, dataset_hess, dataset_hawc])
 path = Path("crab-3datasets")
 path.mkdir(exist_ok=True)
 
-datasets.write(path=path, prefix="crab_10GeV_100TeV", overwrite=True)
-filedata = "crab_10GeV_100TeV_datasets.yaml"
-filemodel = "crab_10GeV_100TeV_models.yaml"
-datasets = Datasets.read(path, filedata=filedata, filemodel=filemodel)
+filename = path / "crab_10GeV_100TeV_datasets.yaml"
+
+datasets.write(filename, overwrite=True)
+
+
+# In[ ]:
+
+
+get_ipython().system('cat crab-3datasets/crab_10GeV_100TeV_datasets.yaml')
+
+
+# In[ ]:
+
+
+datasets = Datasets.read(filename)
+datasets.models = models
 
 
 # In[ ]:
 
 
 print(datasets)
-
-
-# In[ ]:
-
-
-print(datasets["HESS"].models)
 
 
 # ## Joint analysis
@@ -236,7 +185,7 @@ print(datasets["HESS"].models)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'fit_joint = Fit(datasets)\nresults_joint = fit_joint.run()\nprint(results_joint)\nprint(results_joint.parameters.to_table())')
+get_ipython().run_cell_magic('time', '', 'fit_joint = Fit(datasets)\nresults_joint = fit_joint.run()\nprint(results_joint)')
 
 
 # Let's display only the parameters of the Crab spectral model
@@ -253,24 +202,20 @@ print(crab_spec)
 # In[ ]:
 
 
-dataset_fermi.counts.geom.axes[0]
-
-
-# In[ ]:
-
-
 # compute Fermi-LAT and HESS flux points
-e_edges = MapAxis.from_energy_bounds("10 GeV", "2 TeV", nbin=5).edges
+energy_edges = MapAxis.from_energy_bounds("10 GeV", "2 TeV", nbin=5).edges
 
 flux_points_fermi = FluxPointsEstimator(
-    e_edges=e_edges, source="Crab Nebula"
-).run([dataset_fermi])
+    energy_edges=energy_edges, source="Crab Nebula"
+).run([datasets["Fermi-LAT"]])
 
 
-e_edges = MapAxis.from_bounds(1, 15, nbin=6, interp="log", unit="TeV").edges
+energy_edges = MapAxis.from_bounds(
+    1, 15, nbin=6, interp="log", unit="TeV"
+).edges
 flux_points_hess = FluxPointsEstimator(
-    e_edges=e_edges, source="Crab Nebula"
-).run([dataset_hess])
+    energy_edges=energy_edges, source="Crab Nebula"
+).run([datasets["HESS"]])
 
 
 # Now, Let's plot the Crab spectrum fitted and the flux points of each instrument.

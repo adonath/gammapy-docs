@@ -116,6 +116,7 @@ spectral_model = PowerLawSpectralModel(
     index=3, amplitude="1e-11 cm-2 s-1 TeV-1", reference="1 TeV"
 )
 temporal_model = ExpDecayTemporalModel(t0="6 h", t_ref=gti_t0.mjd * u.d)
+
 model_simu = SkyModel(
     spectral_model=spectral_model,
     temporal_model=temporal_model,
@@ -202,13 +203,14 @@ for dataset in datasets:
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'lc_maker_1d = LightCurveEstimator(\n    e_edges=[energy_axis.edges[0], energy_axis.edges[-1]],\n    source="model-fit",\n    reoptimize=False,\n)\nlc_1d = lc_maker_1d.run(datasets)')
+get_ipython().run_cell_magic('time', '', 'lc_maker_1d = LightCurveEstimator(\n    energy_edges=[energy_axis.edges[0], energy_axis.edges[-1]],\n    source="model-fit",\n)\nlc_1d = lc_maker_1d.run(datasets)')
 
 
 # In[ ]:
 
 
 ax = lc_1d.plot(marker="o", label="3D")
+plt.ylim(0, 4e-11)
 
 
 # We have the reconstructed lightcurve at this point. Further standard analyis might involve modeling the temporal profiles with an analytical or theoretical model. You may do this using your favourite fitting package, one possible option being `curve_fit` inside `scipy.optimize`.
@@ -223,11 +225,11 @@ ax = lc_1d.plot(marker="o", label="3D")
 
 
 # Define the model:
-
 spectral_model1 = PowerLawSpectralModel(
     index=2.0, amplitude="1e-12 cm-2 s-1 TeV-1", reference="1 TeV"
 )
 temporal_model1 = ExpDecayTemporalModel(t0="10 h", t_ref=gti_t0.mjd * u.d)
+
 model = SkyModel(
     spectral_model=spectral_model1,
     temporal_model=temporal_model1,
@@ -244,8 +246,7 @@ model.parameters.to_table()
 # In[ ]:
 
 
-for dataset in datasets:
-    dataset.models = model
+datasets.models = model
 
 
 # In[ ]:

@@ -296,7 +296,7 @@ emin_fit, emax_fit = (0.04 * u.TeV, 0.4 * u.TeV)
 for dataset in datasets:
     dataset.models = model
     geom = dataset.counts.geom
-    data = geom.energy_mask(emin=emin_fit, emax=emax_fit)
+    data = geom.energy_mask(energy_min=emin_fit, energy_max=emax_fit)
     dataset.mask_fit = Map.from_geom(geom=geom, data=data)
 
 joint_fit = Fit(datasets)
@@ -311,13 +311,13 @@ print(joint_result)
 # In[ ]:
 
 
-e_edges = np.logspace(np.log10(0.04), np.log10(0.4), 7) * u.TeV
+energy_edges = np.logspace(np.log10(0.04), np.log10(0.4), 7) * u.TeV
 
 dataset = Datasets(datasets).stack_reduce()
 
 dataset.models = model
 
-fpe = FluxPointsEstimator(e_edges=e_edges, source="vela psr")
+fpe = FluxPointsEstimator(energy_edges=energy_edges, source="vela psr")
 
 flux_points = fpe.run(datasets=[dataset])
 flux_points.table["is_ul"] = flux_points.table["ts"] < 1

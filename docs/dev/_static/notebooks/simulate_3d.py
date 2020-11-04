@@ -46,6 +46,8 @@ from gammapy.modeling.models import (
     PowerLawSpectralModel,
     GaussianSpatialModel,
     SkyModel,
+    Models,
+    FoVBackgroundModel,
 )
 from gammapy.makers import MapDatasetMaker, SafeMaskMaker
 from gammapy.modeling import Fit
@@ -99,6 +101,8 @@ energy_true = MapAxis.from_edges(
     np.logspace(-1.5, 1.5, 30), unit="TeV", name="energy", interp="log"
 )
 
+empty = MapDataset.create(geom, name="dataset-simu")
+
 
 # In[ ]:
 
@@ -116,7 +120,11 @@ model_simu = SkyModel(
     spectral_model=spectral_model,
     name="model-simu",
 )
-print(model_simu)
+
+bkg_model = FoVBackgroundModel(dataset_name="dataset-simu")
+
+models = Models([model_simu, bkg_model])
+print(models)
 
 
 # Now, comes the main part of dataset simulation. We create an in-memory observation and an empty dataset. We then predict the number of counts for the given model, and Poission fluctuate it using `fake()` to make a simulated counts maps. Keep in mind that it is important to specify the `selection` of the maps that you want to produce 
@@ -133,9 +141,10 @@ print(obs)
 
 
 # Make the MapDataset
-empty = MapDataset.create(geom, name="dataset-simu")
 maker = MapDatasetMaker(selection=["exposure", "background", "psf", "edisp"])
+
 maker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=4.0 * u.deg)
+
 dataset = maker.run(empty, obs)
 dataset = maker_safe_mask.run(dataset, obs)
 print(dataset)
@@ -145,7 +154,7 @@ print(dataset)
 
 
 # Add the model on the dataset and Poission fluctuate
-dataset.models.append(model_simu)
+dataset.models = models
 dataset.fake()
 # Do a print on the dataset - there is now a counts maps
 print(dataset)
@@ -170,64 +179,34 @@ dataset.counts.smooth(0.05 * u.deg).plot_interactive(
 # In[ ]:
 
 
-# Make a copy of the dataset
-dataset_fit = dataset.copy(name="dataset-fit")
-
-
-# In[ ]:
-
-
-print(dataset_fit.models)
-
-
-# In[ ]:
-
-
-# Define sky model to fit the data
-spatial_model1 = GaussianSpatialModel(
-    lon_0="0.1 deg", lat_0="0.1 deg", sigma="0.5 deg", frame="galactic"
-)
-spectral_model1 = PowerLawSpectralModel(
-    index=2, amplitude="1e-11 cm-2 s-1 TeV-1", reference="1 TeV"
-)
-model_fit = SkyModel(
-    spatial_model=spatial_model1,
-    spectral_model=spectral_model1,
-    name="model-fit",
-)
-
-dataset_fit.models = [model_fit, dataset_fit.models[0]]
-print(dataset_fit.models)
+models_fit = models.copy()
 
 
 # In[ ]:
 
 
 # We do not want to fit the background in this case, so we will freeze the parameters
-background_model = dataset_fit.background_model
-background_model.parameters["norm"].value = 1.0
-background_model.parameters["norm"].frozen = True
-background_model.parameters["tilt"].frozen = True
-
-print(background_model)
+models_fit["dataset-simu-bkg"].spectral_model.norm.frozen = True
+models_fit["dataset-simu-bkg"].spectral_model.tilt.frozen = True
 
 
 # In[ ]:
 
 
-print(dataset_fit)
+dataset.models = models_fit
+print(dataset.models)
 
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'fit = Fit([dataset_fit])\nresult = fit.run(optimize_opts={"print_level": 1})')
+get_ipython().run_cell_magic('time', '', 'fit = Fit([dataset])\nresult = fit.run(optimize_opts={"print_level": 1})')
 
 
 # In[ ]:
 
 
-dataset_fit.plot_residuals(method="diff/sqrt(model)", vmin=-0.5, vmax=0.5)
+dataset.plot_residuals(method="diff/sqrt(model)", vmin=-0.5, vmax=0.5);
 
 
 # Compare the injected and fitted models: 
@@ -235,7 +214,12 @@ dataset_fit.plot_residuals(method="diff/sqrt(model)", vmin=-0.5, vmax=0.5)
 # In[ ]:
 
 
-print("True model: \n", model_simu, "\n\n Fitted model: \n", model_fit)
+print(
+    "True model: \n",
+    model_simu,
+    "\n\n Fitted model: \n",
+    models_fit["model-simu"],
+)
 
 
 # Get the errors on the fitted parameters from the parameter table
@@ -244,4 +228,10 @@ print("True model: \n", model_simu, "\n\n Fitted model: \n", model_fit)
 
 
 result.parameters.to_table()
+
+
+# In[ ]:
+
+
+
 

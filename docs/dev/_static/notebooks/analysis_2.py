@@ -71,6 +71,7 @@ from gammapy.modeling.models import (
     SkyModel,
     PowerLawSpectralModel,
     PointSpatialModel,
+    FoVBackgroundModel,
 )
 from gammapy.modeling import Fit
 from gammapy.estimators import FluxPointsEstimator
@@ -192,7 +193,7 @@ print(stacked)
 
 stacked.counts.sum_over_axes().smooth(0.05 * u.deg).plot(
     stretch="sqrt", add_cbar=True
-)
+);
 
 
 # ## Save dataset to disk
@@ -236,13 +237,15 @@ sky_model = SkyModel(
     spatial_model=spatial_model, spectral_model=spectral_model, name="crab"
 )
 
+bkg_model = FoVBackgroundModel(dataset_name="crab-stacked")
+
 
 # Now we assign this model to our reduced dataset:
 
 # In[ ]:
 
 
-stacked.models.append(sky_model)
+stacked.models = [sky_model, bkg_model]
 
 
 # ## Fit the model
@@ -272,7 +275,7 @@ result.parameters.to_table()
 # In[ ]:
 
 
-stacked.plot_residuals(method="diff/sqrt(model)", vmin=-0.5, vmax=0.5)
+stacked.plot_residuals(method="diff/sqrt(model)", vmin=-0.5, vmax=0.5);
 
 
 # In addition we can aslo specify a region in the map to show the spectral residuals:
@@ -290,7 +293,7 @@ region = CircleSkyRegion(
 
 stacked.plot_residuals(
     region=region, method="diff/sqrt(model)", vmin=-0.5, vmax=0.5
-)
+);
 
 
 # We can also directly access the `.residuals()` to get a map, that we can plot interactively:
@@ -300,8 +303,8 @@ stacked.plot_residuals(
 
 residuals = stacked.residuals(method="diff")
 residuals.smooth("0.08 deg").plot_interactive(
-    cmap="coolwarm", vmin=-0.1, vmax=0.1, stretch="linear", add_cbar=True
-)
+    cmap="coolwarm", vmin=-0.2, vmax=0.2, stretch="linear", add_cbar=True
+);
 
 
 # ## Plot the fitted spectrum
@@ -335,8 +338,8 @@ ax = spec.plot_error(energy_range=energy_range, energy_power=2)
 # In[ ]:
 
 
-e_edges = [1, 2, 4, 10] * u.TeV
-fpe = FluxPointsEstimator(e_edges=e_edges, source="crab")
+energy_edges = [1, 2, 4, 10] * u.TeV
+fpe = FluxPointsEstimator(energy_edges=energy_edges, source="crab")
 
 
 # In[ ]:

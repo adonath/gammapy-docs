@@ -37,6 +37,8 @@ from gammapy.modeling.models import (
     SkyModel,
     ExpCutoffPowerLawSpectralModel,
     PointSpatialModel,
+    FoVBackgroundModel,
+    Models,
 )
 from gammapy.modeling import Fit
 from gammapy.maps import Map
@@ -177,9 +179,7 @@ dataset_stacked.background.plot_interactive(add_cbar=True)
 
 
 # You can also get an excess image with a few lines of code:
-counts = dataset_stacked.counts.sum_over_axes()
-background = dataset_stacked.background.sum_over_axes()
-excess = counts - background
+excess = dataset_stacked.excess.sum_over_axes()
 excess.smooth("0.06 deg").plot(stretch="sqrt", add_cbar=True);
 
 
@@ -220,8 +220,12 @@ model = SkyModel(
     name="gc-source",
 )
 
-dataset_stacked.models.append(model)
-dataset_stacked.background_model.spectral_model.norm.value = 1.3
+bkg_model = FoVBackgroundModel(dataset_name="stacked")
+bkg_model.spectral_model.norm.value = 1.3
+
+models_stacked = Models([model, bkg_model])
+
+dataset_stacked.models = models_stacked
 
 
 # In[ ]:
@@ -253,7 +257,7 @@ result.parameters.to_table()
 # In[ ]:
 
 
-dataset_stacked.plot_residuals(method="diff/sqrt(model)", vmin=-1, vmax=1)
+dataset_stacked.plot_residuals(method="diff/sqrt(model)", vmin=-1, vmax=1);
 
 
 # The same function can also extract and display spectral residuals, in case a region (used for the spectral extraction) is passed:
@@ -265,7 +269,7 @@ region = CircleSkyRegion(spatial_model.position, radius=0.15 * u.deg)
 
 dataset_stacked.plot_residuals(
     method="diff/sqrt(model)", vmin=-1, vmax=1, region=region
-)
+);
 
 
 # This way of accessing residuals is quick and handy, but comes with limitations. For example:
@@ -277,15 +281,17 @@ dataset_stacked.plot_residuals(
 # In[ ]:
 
 
-# TODO: clean this up
 estimator = ExcessMapEstimator(
-    correlation_radius="0.1 deg", selection_optional=[]
+    correlation_radius="0.1 deg",
+    selection_optional=[],
+    energy_edges=[0.1, 1, 10] * u.TeV,
 )
-dataset_image = dataset_stacked.to_image()
-estimator_dict = estimator.run(dataset_image)
 
-residuals_significance = estimator_dict["sqrt_ts"]
-residuals_significance.sum_over_axes().plot(cmap="coolwarm", add_cbar=True)
+result = estimator.run(dataset_stacked)
+
+result["sqrt_ts"].plot_grid(
+    figsize=(12, 4), cmap="coolwarm", add_cbar=True, vmin=-5, vmax=5, ncols=2
+);
 
 
 # Distribution of residuals significance in the full map geometry:
@@ -294,21 +300,22 @@ residuals_significance.sum_over_axes().plot(cmap="coolwarm", add_cbar=True)
 
 
 # TODO: clean this up
-significance_data = residuals_significance.data
+significance_data = result["sqrt_ts"].data
 
 # #Remove bins that are inside an exclusion region, that would create an artificial peak at significance=0.
 # #For now these lines are useless, because to_image() drops the mask fit
 # mask_data = dataset_image.mask_fit.sum_over_axes().data
 # excluded = mask_data == 0
 # significance_data = significance_data[~excluded]
-significance_data = significance_data.flatten()
+selection = np.isfinite(significance_data) & ~(significance_data == 0)
+significance_data = significance_data[selection]
 
-plt.hist(significance_data, density=True, alpha=0.9, color="red", bins=30)
+plt.hist(significance_data, density=True, alpha=0.9, color="red", bins=40)
 mu, std = norm.fit(significance_data)
-x = np.linspace(
-    np.min(significance_data) - 1, np.max(significance_data) + 1, 50
-)
+
+x = np.linspace(-5, 5, 100)
 p = norm.pdf(x, mu, std)
+
 plt.plot(
     x,
     p,
@@ -317,7 +324,7 @@ plt.plot(
     label=r"$\mu$ = {:.2f}, $\sigma$ = {:.2f}".format(mu, std),
 )
 plt.legend(fontsize=17)
-plt.xlim(-6, 10)
+plt.xlim(-5, 5)
 
 
 # ## Joint analysis
@@ -358,11 +365,23 @@ analysis_joint.datasets.info_table()
 # In[ ]:
 
 
-# Add the model on each of the datasets
+models_joint = Models()
+
 model_joint = model.copy(name="source-joint")
+models_joint.append(model_joint)
+
 for dataset in analysis_joint.datasets:
-    dataset.models.append(model_joint)
-    dataset.background_model.spectral_model.norm.value = 1.1
+    bkg_model = FoVBackgroundModel(dataset_name=dataset.name)
+    models_joint.append(bkg_model)
+
+print(models_joint)
+
+
+# In[ ]:
+
+
+# and set the new model
+analysis_joint.datasets.models = models_joint
 
 
 # In[ ]:
@@ -386,16 +405,7 @@ print(result_joint)
 # In[ ]:
 
 
-result_joint.parameters.to_table()
-
-
-# The information on which parameter belongs to which dataset is not listed explicitly in the table (yet), but the order of parameters is conserved. You can always access the underlying object tree as well to get specific parameter values:
-
-# In[ ]:
-
-
-for dataset in analysis_joint.datasets:
-    print(dataset.background_model.spectral_model.norm.value)
+print(models_joint)
 
 
 # Since the joint dataset is made of multiple datasets, we can either:
@@ -415,6 +425,14 @@ stacked = MapDataset.from_geoms(**dataset_stacked.geoms)
 for dataset in analysis_joint.datasets:
     # TODO: Apply mask_fit before stacking
     stacked.stack(dataset)
+
+stacked.models = [model_joint]
+
+
+# In[ ]:
+
+
+stacked.plot_residuals(vmin=-1, vmax=1);
 
 
 # Then, we can access the stacked model residuals as previously shown in the section `Fit quality and model residuals for a MapDataset` in this notebook.

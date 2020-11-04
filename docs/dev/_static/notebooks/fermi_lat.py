@@ -45,9 +45,8 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from gammapy.data import EventList
 from gammapy.datasets import MapDataset
-from gammapy.datasets.map import MapEvaluator
 from gammapy.irf import EnergyDependentTablePSF, PSFMap, EDispMap
-from gammapy.maps import Map, MapAxis, WcsNDMap, WcsGeom
+from gammapy.maps import Map, MapAxis, WcsGeom
 from gammapy.modeling.models import (
     PowerLawSpectralModel,
     PointSpatialModel,
@@ -300,8 +299,8 @@ diffuse_iso = create_fermi_isotropic_diffuse_model(
 # In[ ]:
 
 
-erange = [50, 2000] * u.GeV
-diffuse_iso.spectral_model.plot(erange, flux_unit="1 / (cm2 MeV s)");
+energy_range = [50, 2000] * u.GeV
+diffuse_iso.spectral_model.plot(energy_range, flux_unit="1 / (cm2 MeV s)");
 
 
 # ## PSF
@@ -339,10 +338,10 @@ for energy in [100, 300, 1000] * u.GeV:
     psf_at_energy = psf_table.table_psf_at_energy(energy)
     psf_at_energy.plot_psf_vs_rad(label=f"PSF @ {energy:.0f}", lw=2)
 
-erange = [50, 2000] * u.GeV
+energy_range = [50, 2000] * u.GeV
 spectrum = PowerLawSpectralModel(index=2.3)
-psf_mean = psf_table.table_psf_in_energy_band(
-    energy_band=erange, spectrum=spectrum
+psf_mean = psf_table.table_psf_in_energy_range(
+    energy_range=energy_range, spectrum=spectrum
 )
 psf_mean.plot_psf_vs_rad(label="PSF Mean", lw=4, c="k", ls="--")
 

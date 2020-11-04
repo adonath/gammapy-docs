@@ -390,7 +390,9 @@ crab_3fhl_spec(100 * u.GeV).to("cm-2 s-1 GeV-1")
 # In[ ]:
 
 
-crab_3fhl_spec.integral(emin=10 * u.GeV, emax=2000 * u.GeV).to("cm-2 s-1")
+crab_3fhl_spec.integral(energy_min=10 * u.GeV, energy_max=2000 * u.GeV).to(
+    "cm-2 s-1"
+)
 
 
 # We can easily convince ourself, that it corresponds to the value given in the Fermi-LAT 3FHL catalog:
@@ -406,7 +408,7 @@ crab_3fhl.data["Flux"]
 # In[ ]:
 
 
-crab_3fhl_spec.energy_flux(emin=10 * u.GeV, emax=2000 * u.GeV).to(
+crab_3fhl_spec.energy_flux(energy_min=10 * u.GeV, energy_max=2000 * u.GeV).to(
     "erg cm-2 s-1"
 )
 

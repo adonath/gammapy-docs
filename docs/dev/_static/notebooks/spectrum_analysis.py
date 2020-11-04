@@ -330,7 +330,7 @@ ax_spectrum.set_ylim(0.1, 40)
 
 
 e_min, e_max = 0.7, 30
-e_edges = np.logspace(np.log10(e_min), np.log10(e_max), 11) * u.TeV
+energy_edges = np.logspace(np.log10(e_min), np.log10(e_max), 11) * u.TeV
 
 
 # Now we create an instance of the `~gammapy.estimators.FluxPointsEstimator`, by passing the dataset and the energy binning:
@@ -338,7 +338,7 @@ e_edges = np.logspace(np.log10(e_min), np.log10(e_max), 11) * u.TeV
 # In[ ]:
 
 
-fpe = FluxPointsEstimator(e_edges=e_edges, source="crab")
+fpe = FluxPointsEstimator(energy_edges=energy_edges, source="crab")
 flux_points = fpe.run(datasets=datasets)
 
 

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from gammapy.stats import CashCountsStatistic
 
 count_statistic = CashCountsStatistic(n_on=13, mu_bkg=5.5)
-excess = count_statistic.excess
+excess = count_statistic.n_sig
 
 # We compute the Cash statistic profile
 mu_signal = np.linspace(-1.5, 25, 100)
@@ -40,6 +40,10 @@ plt.hlines(
 )
 plt.vlines(0, ymin=ymin, ymax=count_statistic.stat_null, linestyle="dotted", color="k")
 
-plt.vlines(excess, ymin=count_statistic.stat_max, ymax=count_statistic.stat_null, color="r")
-plt.hlines(count_statistic.stat_null, xmin=0, xmax=excess, linestyle="dotted", color="r")
+plt.vlines(
+    excess, ymin=count_statistic.stat_max, ymax=count_statistic.stat_null, color="r"
+)
+plt.hlines(
+    count_statistic.stat_null, xmin=0, xmax=excess, linestyle="dotted", color="r"
+)
 plt.legend()

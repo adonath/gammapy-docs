@@ -164,9 +164,9 @@ plt.subplots_adjust(hspace=0.5)
 channel = "Z"
 massDM = 10 * u.TeV
 diff_flux = DarkMatterAnnihilationSpectralModel(mass=massDM, channel=channel)
-int_flux = (jfact * diff_flux.integral(emin=0.1 * u.TeV, emax=10 * u.TeV)).to(
-    "cm-2 s-1"
-)
+int_flux = (
+    jfact * diff_flux.integral(energy_min=0.1 * u.TeV, energy_max=10 * u.TeV)
+).to("cm-2 s-1")
 
 
 # In[ ]:

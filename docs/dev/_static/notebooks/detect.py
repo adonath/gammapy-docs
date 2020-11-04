@@ -105,7 +105,7 @@ dataset = MapDataset(
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'scales = u.Quantity(np.arange(0.05, 1, 0.05), unit="deg")\nsmooth = ASmoothMapEstimator(\n    threshold=3, scales=scales, e_edges=[10, 500] * u.GeV\n)\nimages = smooth.run(dataset)')
+get_ipython().run_cell_magic('time', '', 'scales = u.Quantity(np.arange(0.05, 1, 0.05), unit="deg")\nsmooth = ASmoothMapEstimator(\n    threshold=3, scales=scales, energy_edges=[10, 500] * u.GeV\n)\nimages = smooth.run(dataset)')
 
 
 # In[ ]:
@@ -133,7 +133,7 @@ model = SkyModel(spatial_model=spatial_model, spectral_model=spectral_model)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'estimator = TSMapEstimator(\n    model,\n    kernel_width="1 deg",\n    selection_optional=[],\n    e_edges=[10, 500] * u.GeV,\n)\nmaps = estimator.run(dataset)')
+get_ipython().run_cell_magic('time', '', 'estimator = TSMapEstimator(\n    model,\n    kernel_width="1 deg",\n    selection_optional=[],\n    energy_edges=[10, 500] * u.GeV,\n)\nmaps = estimator.run(dataset)')
 
 
 # ### Plot resulting images

@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.irf.edisp_map &mdash; gammapy v0.18.dev1126+gf1573d831</title>
+  <title>gammapy.irf.edisp_map &mdash; gammapy v0.18.dev1207+g1337a59ea</title>
   
 
   
@@ -74,7 +74,7 @@
             
             
               <div class="version">
-                0.18.dev1126+gf1573d831
+                0.18.dev1207+g1337a59ea
               </div>
             
           
@@ -1149,7 +1149,7 @@
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">interp1d</span>
-<span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">Map</span><span class="p">,</span> <span class="n">MapAxis</span><span class="p">,</span> <span class="n">MapCoord</span><span class="p">,</span> <span class="n">WcsGeom</span><span class="p">,</span> <span class="n">RegionGeom</span>
+<span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">Map</span><span class="p">,</span> <span class="n">MapAxis</span><span class="p">,</span> <span class="n">MapCoord</span><span class="p">,</span> <span class="n">RegionGeom</span><span class="p">,</span> <span class="n">WcsGeom</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.random</span> <span class="kn">import</span> <span class="n">InverseCDFSampler</span><span class="p">,</span> <span class="n">get_random_state</span>
 <span class="kn">from</span> <span class="nn">.edisp_kernel</span> <span class="kn">import</span> <span class="n">EDispKernel</span>
 <span class="kn">from</span> <span class="nn">.irf_map</span> <span class="kn">import</span> <span class="n">IRFMap</span>
@@ -1217,8 +1217,8 @@
 
 <span class="sd">        # Get an Energy Dispersion (1D) at any position in the image</span>
 <span class="sd">        pos = SkyCoord(2.0, 2.5, unit=&quot;deg&quot;)</span>
-<span class="sd">        e_reco = np.logspace(-1.0, 1.0, 10) * u.TeV</span>
-<span class="sd">        edisp = edisp_map.get_edisp_kernel(pos=pos, e_reco=e_reco)</span>
+<span class="sd">        energy = np.logspace(-1.0, 1.0, 10) * u.TeV</span>
+<span class="sd">        edisp = edisp_map.get_edisp_kernel(pos=pos, energy=energy)</span>
 
 <span class="sd">        # Write map to disk</span>
 <span class="sd">        edisp_map.write(&quot;edisp_map.fits&quot;)</span>
@@ -1281,12 +1281,12 @@
 
         <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
 
-        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">e_true</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">energy_axis_true</span><span class="o">.</span><span class="n">center</span><span class="p">):</span>
-            <span class="c1"># migration value of e_reco bounds</span>
-            <span class="n">migra</span> <span class="o">=</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span> <span class="o">/</span> <span class="n">e_true</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">energy_true</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">energy_axis_true</span><span class="o">.</span><span class="n">center</span><span class="p">):</span>
+            <span class="c1"># migration value of energy bounds</span>
+            <span class="n">migra</span> <span class="o">=</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span> <span class="o">/</span> <span class="n">energy_true</span>
 
             <span class="n">cumsum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">edisp_values</span><span class="p">[:,</span> <span class="n">idx</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()</span>
-            <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
                 <span class="n">cumsum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">cumsum</span> <span class="o">/</span> <span class="n">cumsum</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
 
             <span class="n">f</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span>
@@ -1297,12 +1297,14 @@
                 <span class="n">fill_value</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
             <span class="p">)</span>
 
-            <span class="c1"># We compute the difference between 2 successive bounds in e_reco</span>
+            <span class="c1"># We compute the difference between 2 successive bounds in energy</span>
             <span class="c1"># to get integral over reco energy bin</span>
             <span class="n">integral</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">f</span><span class="p">(</span><span class="n">migra</span><span class="p">),</span> <span class="n">a_min</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">a_max</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
             <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">integral</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">EDispKernel</span><span class="p">(</span><span class="n">e_true</span><span class="o">=</span><span class="n">energy_axis_true</span><span class="p">,</span> <span class="n">e_reco</span><span class="o">=</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">EDispKernel</span><span class="p">(</span>
+            <span class="n">energy_axis_true</span><span class="o">=</span><span class="n">energy_axis_true</span><span class="p">,</span> <span class="n">energy_axis</span><span class="o">=</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span>
+        <span class="p">)</span></div>
 
 <div class="viewcode-block" id="EDispMap.from_geom"><a class="viewcode-back" href="../../../api/gammapy.irf.EDispMap.html#gammapy.irf.EDispMap.from_geom">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_geom</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">geom</span><span class="p">):</span>
@@ -1406,7 +1408,7 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        e_reco : `~gammapy.maps.MapAxis`</span>
+<span class="sd">        energy : `~gammapy.maps.MapAxis`</span>
 <span class="sd">            Reconstructed enrgy axis.</span>
 
 <span class="sd">        Returns</span>
@@ -1420,14 +1422,16 @@
 
         <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
 
-        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">e_true</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">energy_axis_true</span><span class="o">.</span><span class="n">center</span><span class="p">):</span>
-            <span class="c1"># migration value of e_reco bounds</span>
-            <span class="n">migra</span> <span class="o">=</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span> <span class="o">/</span> <span class="n">e_true</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">energy_true</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">energy_axis_true</span><span class="o">.</span><span class="n">center</span><span class="p">):</span>
+            <span class="c1"># migration value of energy bounds</span>
+            <span class="n">migra</span> <span class="o">=</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span> <span class="o">/</span> <span class="n">energy_true</span>
 
-            <span class="n">edisp_e_true</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp_map</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">({</span><span class="s2">&quot;energy_true&quot;</span><span class="p">:</span> <span class="n">idx</span><span class="p">})</span>
+            <span class="n">edisp_energy_true</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp_map</span><span class="o">.</span><span class="n">slice_by_idx</span><span class="p">({</span><span class="s2">&quot;energy_true&quot;</span><span class="p">:</span> <span class="n">idx</span><span class="p">})</span>
 
-            <span class="n">cumsum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">edisp_e_true</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
-            <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
+            <span class="n">cumsum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">edisp_energy_true</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span>
+                <span class="n">axis</span><span class="o">=</span><span class="n">axis</span>
+            <span class="p">)</span>
+            <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
                 <span class="n">cumsum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">cumsum</span> <span class="o">/</span> <span class="n">cumsum</span><span class="p">[</span><span class="nb">slice</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)])</span>
 
             <span class="n">f</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span>
@@ -1473,6 +1477,7 @@
 <span class="sd">        Associated exposure map. Needs to have a consistent map geometry.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">tag</span> <span class="o">=</span> <span class="s2">&quot;edisp_kernel_map&quot;</span>
     <span class="n">_hdu_name</span> <span class="o">=</span> <span class="s2">&quot;edisp&quot;</span>
 
@@ -1556,9 +1561,9 @@
             <span class="n">kernel_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edisp_map</span><span class="o">.</span><span class="n">to_region_nd_map</span><span class="p">(</span><span class="n">region</span><span class="o">=</span><span class="n">position</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">EDispKernel</span><span class="p">(</span>
-            <span class="n">e_true</span><span class="o">=</span><span class="n">kernel_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy_true&quot;</span><span class="p">],</span>
-            <span class="n">e_reco</span><span class="o">=</span><span class="n">kernel_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">],</span>
-            <span class="n">data</span><span class="o">=</span><span class="n">kernel_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="n">energy_axis_true</span><span class="o">=</span><span class="n">kernel_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy_true&quot;</span><span class="p">],</span>
+            <span class="n">energy_axis</span><span class="o">=</span><span class="n">kernel_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">],</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">kernel_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="EDispKernelMap.from_diagonal_response"><a class="viewcode-back" href="../../../api/gammapy.irf.EDispKernelMap.html#gammapy.irf.EDispKernelMap.from_diagonal_response">[docs]</a>    <span class="nd">@classmethod</span>
@@ -1606,7 +1611,9 @@
 <span class="sd">        edisp_map : `EDispKernelMap`</span>
 <span class="sd">            Energy dispersion kernel map.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">edisp_map</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_diagonal_response</span><span class="p">(</span><span class="n">edisp</span><span class="o">.</span><span class="n">e_reco</span><span class="p">,</span> <span class="n">edisp</span><span class="o">.</span><span class="n">e_true</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="n">geom</span><span class="p">)</span>
+        <span class="n">edisp_map</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_diagonal_response</span><span class="p">(</span>
+            <span class="n">edisp</span><span class="o">.</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">edisp</span><span class="o">.</span><span class="n">energy_axis_true</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="n">geom</span>
+        <span class="p">)</span>
         <span class="n">edisp_map</span><span class="o">.</span><span class="n">edisp_map</span><span class="o">.</span><span class="n">data</span> <span class="o">*=</span> <span class="mi">0</span>
         <span class="n">edisp_map</span><span class="o">.</span><span class="n">edisp_map</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="p">:,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">edisp</span><span class="o">.</span><span class="n">pdf_matrix</span><span class="p">[</span>
             <span class="p">:,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span>
@@ -1634,8 +1641,8 @@
 <span class="sd">            Energy dispersion kernel map.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kernel</span> <span class="o">=</span> <span class="n">EDispKernel</span><span class="o">.</span><span class="n">from_gauss</span><span class="p">(</span>
-            <span class="n">e_reco</span><span class="o">=</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">,</span>
-            <span class="n">e_true</span><span class="o">=</span><span class="n">energy_axis_true</span><span class="o">.</span><span class="n">edges</span><span class="p">,</span>
+            <span class="n">energy</span><span class="o">=</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">edges</span><span class="p">,</span>
+            <span class="n">energy_true</span><span class="o">=</span><span class="n">energy_axis_true</span><span class="o">.</span><span class="n">edges</span><span class="p">,</span>
             <span class="n">sigma</span><span class="o">=</span><span class="n">sigma</span><span class="p">,</span>
             <span class="n">bias</span><span class="o">=</span><span class="n">bias</span><span class="p">,</span>
             <span class="n">pdf_threshold</span><span class="o">=</span><span class="n">pdf_threshold</span><span class="p">,</span>
@@ -1689,7 +1696,6 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
             <span class="n">edisp_kernel_map</span><span class="o">=</span><span class="n">new_edisp_map</span><span class="p">,</span> <span class="n">exposure_map</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span>
         <span class="p">)</span></div></div>
-
 </pre></div>
 
            </div>
@@ -1705,7 +1711,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 30 Oct 2020.
+        Last updated on 04 Nov 2020.
       </span>
 
     </p>

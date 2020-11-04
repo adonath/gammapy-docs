@@ -47,6 +47,7 @@ from gammapy.utils.regions import make_region
 from gammapy.catalog import CATALOG_REGISTRY
 from gammapy.datasets import Datasets
 from gammapy.estimators import ExcessMapEstimator
+from gammapy.modeling.models import FoVBackgroundModel
 
 
 # ## Create the mask from a list of regions
@@ -169,19 +170,14 @@ mask_map.plot()
 # In[ ]:
 
 
-datasets = Datasets.read(
-    "$GAMMAPY_DATA/fermi-3fhl-crab/",
-    "Fermi-LAT-3FHL_datasets.yaml",
-    "Fermi-LAT-3FHL_models.yaml",
-)
+filename = "$GAMMAPY_DATA/fermi-3fhl-crab/Fermi-LAT-3FHL_datasets.yaml"
+datasets = Datasets.read(filename=filename)
 
-
-# We want to compute the significance per pixels for the data integrated over energy. We reduce the dataset to a simple image. 
 
 # In[ ]:
 
 
-dataset = datasets[0].to_image()
+datasets.models = [FoVBackgroundModel(dataset_name="Fermi-LAT")]
 
 
 # We now apply a significance estimation. We integrate the counts using a correlation radius of 0.4 degree and apply regular significance estimate. 
@@ -190,7 +186,7 @@ dataset = datasets[0].to_image()
 
 
 estimator = ExcessMapEstimator("0.4 deg", selection_optional=[])
-result = estimator.run(dataset)
+result = estimator.run(datasets["Fermi-LAT"])
 
 
 # Finally, we create the mask map by applying a threshold of 5 sigma to remove pixels.
@@ -204,7 +200,7 @@ mask_map_significance = result["sqrt_ts"] < 5.0
 # In[ ]:
 
 
-mask_map_significance.sum_over_axes().plot()
+mask_map_significance.sum_over_axes().plot();
 
 
 # This method frequently yields isolated pixels or weakly significant features if one places the threshold too low. 
