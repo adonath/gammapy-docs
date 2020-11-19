@@ -197,6 +197,15 @@ result = estimator.run(datasets["Fermi-LAT"])
 mask_map_significance = result["sqrt_ts"] < 5.0
 
 
+# Because the `ExcessMapEstimator` returns NaN for masked pixels, we need to put the NaN values to `True` to avoid incorrectly excluding them. 
+
+# In[ ]:
+
+
+invalid_pixels = np.isnan(result["sqrt_ts"].data)
+mask_map_significance.data[invalid_pixels] = True
+
+
 # In[ ]:
 
 

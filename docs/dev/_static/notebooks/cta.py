@@ -248,9 +248,7 @@ psf.plot_containment_vs_energy()
 # In[ ]:
 
 
-# TODO: add plot method to `Background3D`.
-# FIXME: Background2D.peek` is broken.
-irfs["bkg"].to_2d().plot()
+irfs["bkg"].peek()
 
 
 # In[ ]:

@@ -220,7 +220,9 @@ for dataset in datasets:
 
 
 lc_maker_1d = LightCurveEstimator(
-    energy_edges=[0.7, 20] * u.TeV, source="pks2155"
+    energy_edges=[0.7, 20] * u.TeV,
+    source="pks2155",
+    time_intervals=time_intervals,
 )
 
 
