@@ -1,20 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# 
-# <div class="alert alert-info">
-# 
-# **This is a fixed-text formatted version of a Jupyter notebook**
-# 
-# - Try online [![Binder](https://static.mybinder.org/badge.svg)](https://mybinder.org/v2/gh/gammapy/gammapy-webpage/master?urlpath=lab/tree/analysis_3d.ipynb)
-# - You can contribute with your own notebooks in this
-# [GitHub repository](https://github.com/gammapy/gammapy/tree/master/docs/tutorials).
-# - **Source files:**
-# [analysis_3d.ipynb](../_static/notebooks/analysis_3d.ipynb) |
-# [analysis_3d.py](../_static/notebooks/analysis_3d.py)
-# </div>
-# 
-
 # # 3D analysis
 # 
 # This tutorial does a 3D map based analsis on the galactic center, using simulated observations from the CTA-1DC. We will use the high level interface for the data reduction, and then do a detailed modelling. This will be done in two different ways:

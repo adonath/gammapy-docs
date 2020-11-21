@@ -1,20 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# 
-# <div class="alert alert-info">
-# 
-# **This is a fixed-text formatted version of a Jupyter notebook**
-# 
-# - Try online [![Binder](https://static.mybinder.org/badge.svg)](https://mybinder.org/v2/gh/gammapy/gammapy-webpage/master?urlpath=lab/tree/spectrum_analysis.ipynb)
-# - You can contribute with your own notebooks in this
-# [GitHub repository](https://github.com/gammapy/gammapy/tree/master/docs/tutorials).
-# - **Source files:**
-# [spectrum_analysis.ipynb](../_static/notebooks/spectrum_analysis.ipynb) |
-# [spectrum_analysis.py](../_static/notebooks/spectrum_analysis.py)
-# </div>
-# 
-
 # # Spectral analysis with Gammapy
 
 # ## Prerequisites 
