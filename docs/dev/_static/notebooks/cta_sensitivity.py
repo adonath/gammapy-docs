@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Estimation of the CTA point source sensitivity
-
+# # Point source sensitivity
 # ## Introduction
 # 
-# This notebook explains how to estimate the CTA sensitivity for a point-like IRF at a fixed zenith angle and fixed offset using the full containement IRFs distributed for the CTA 1DC. The significativity is computed for a 1D analysis (On-OFF regions) and the LiMa formula. 
+# This notebook explains how to estimate the CTA sensitivity for a point-like IRF at a fixed zenith angle and fixed offset using the full containment IRFs distributed for the CTA 1DC. The significance is computed for a 1D analysis (On-OFF regions) and the LiMa formula.
 # 
 # We use here an approximate approach with an energy dependent integration radius to take into account the variation of the PSF. We will first determine the 1D IRFs including a containment correction. 
 # 
@@ -29,14 +28,13 @@ import numpy as np
 
 import astropy.units as u
 from astropy.coordinates import Angle, SkyCoord
-from regions import CircleSkyRegion
 
 from gammapy.irf import load_cta_irfs
 from gammapy.makers import SpectrumDatasetMaker
 from gammapy.data import Observation
 from gammapy.estimators import SensitivityEstimator
 from gammapy.datasets import SpectrumDataset, SpectrumDatasetOnOff
-from gammapy.maps import MapAxis
+from gammapy.maps import MapAxis, RegionGeom
 
 
 # ## Define analysis region and energy binning
@@ -46,16 +44,15 @@ from gammapy.maps import MapAxis
 # In[ ]:
 
 
-center = SkyCoord("0 deg", "0.5 deg")
-region = CircleSkyRegion(center=center, radius=0.1 * u.deg)
-
-e_reco = MapAxis.from_energy_bounds("0.03 TeV", "30 TeV", nbin=20)
-e_true = MapAxis.from_energy_bounds(
+energy_axis = MapAxis.from_energy_bounds("0.03 TeV", "30 TeV", nbin=20)
+energy_axis_true = MapAxis.from_energy_bounds(
     "0.01 TeV", "100 TeV", nbin=100, name="energy_true"
 )
 
+geom = RegionGeom.create("icrs;circle(0, 0.5, 0.1)", axes=[energy_axis])
+
 empty_dataset = SpectrumDataset.create(
-    e_reco=e_reco, e_true=e_true, region=region
+    geom=geom, energy_axis_true=energy_axis_true
 )
 
 
@@ -95,9 +92,9 @@ dataset.exposure *= containment
 
 # correct background estimation
 on_radii = obs.psf.containment_radius(
-    energy=e_reco.center, theta=0.5 * u.deg, fraction=containment
+    energy=energy_axis.center, theta=0.5 * u.deg, fraction=containment
 )[0]
-factor = (1 - np.cos(on_radii)) / (1 - np.cos(region.radius))
+factor = (1 - np.cos(on_radii)) / (1 - np.cos(geom.region.radius))
 dataset.background *= factor.value.reshape((-1, 1, 1))
 
 

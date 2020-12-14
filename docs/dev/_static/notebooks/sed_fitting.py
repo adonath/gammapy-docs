@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Flux point fitting in Gammapy
+# # Flux point fitting
 # 
 # ## Prerequisites
 # 

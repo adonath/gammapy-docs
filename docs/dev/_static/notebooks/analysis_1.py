@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # First analysis with gammapy high level interface
+# # High-level interface
 # 
 # ## Prerequisites:
 # 

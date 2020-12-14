@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Fermi-LAT data with Gammapy
+# # Fermi-LAT with Gammapy
 # 
 # ## Introduction
 # 

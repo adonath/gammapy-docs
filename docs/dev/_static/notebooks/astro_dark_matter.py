@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Dark matter utilities
+# # Dark matter spatial and spectral models
 # 
 # ## Introduction 
 # 

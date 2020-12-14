@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Binned light curve simulation and fitting
+# # Simulating and fitting a time varying source
 # 
 # ## Prerequisites:
 # 
@@ -40,9 +40,8 @@ get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 import numpy as np
 import astropy.units as u
-from astropy.coordinates import SkyCoord, Angle
+from astropy.coordinates import SkyCoord
 from astropy.time import Time
-from regions import CircleSkyRegion
 
 import logging
 
@@ -62,7 +61,7 @@ from gammapy.modeling.models import (
     ExpDecayTemporalModel,
     SkyModel,
 )
-from gammapy.maps import MapAxis
+from gammapy.maps import MapAxis, RegionGeom
 from gammapy.estimators import LightCurveEstimator
 from gammapy.makers import SpectrumDatasetMaker
 from gammapy.modeling import Fit
@@ -85,7 +84,6 @@ irfs = load_cta_irfs(
 
 
 # Reconstructed and true energy axis
-center = SkyCoord(0.0, 0.0, unit="deg", frame="galactic")
 energy_axis = MapAxis.from_edges(
     np.logspace(-0.5, 1.0, 10), unit="TeV", name="energy", interp="log"
 )
@@ -93,8 +91,7 @@ energy_axis_true = MapAxis.from_edges(
     np.logspace(-1.2, 2.0, 31), unit="TeV", name="energy_true", interp="log"
 )
 
-on_region_radius = Angle("0.11 deg")
-on_region = CircleSkyRegion(center=center, radius=on_region_radius)
+geom = RegionGeom.create("galactic;circle(0, 0, 0.11)", axes=[energy_axis])
 
 
 # In[ ]:
@@ -149,7 +146,7 @@ lvtm = [55, 25, 26, 40, 40, 50, 40, 52, 43, 47] * u.min
 datasets = Datasets()
 
 empty = SpectrumDataset.create(
-    e_reco=energy_axis, e_true=energy_axis_true, region=on_region, name="empty"
+    geom=geom, energy_axis_true=energy_axis_true, name="empty"
 )
 
 maker = SpectrumDatasetMaker(selection=["exposure", "background", "edisp"])
@@ -195,15 +192,14 @@ model_fit = SkyModel(spectral_model=spectral_model, name="model-fit")
 # In[ ]:
 
 
-# Attach model to each dataset
-for dataset in datasets:
-    dataset.models = model_fit
+# Attach model to all datasets
+datasets.models = model_fit
 
 
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'lc_maker_1d = LightCurveEstimator(\n    energy_edges=[energy_axis.edges[0], energy_axis.edges[-1]],\n    source="model-fit",\n)\nlc_1d = lc_maker_1d.run(datasets)')
+get_ipython().run_cell_magic('time', '', 'lc_maker_1d = LightCurveEstimator(\n    energy_edges=[0.3, 10] * u.TeV,\n    source="model-fit",\n    selection_optional=["ul"],\n)\nlc_1d = lc_maker_1d.run(datasets)')
 
 
 # In[ ]:

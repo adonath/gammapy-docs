@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Getting started with Gammapy
+# # Data structures
 # 
 # ## Introduction
 # 

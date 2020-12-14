@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Gammapy Maps
+# # Maps
 # 
 # ![Gammapy Maps Illustration](images/gammapy_maps.png)
 # 
@@ -15,7 +15,7 @@
 # 1. [Accessing and Modifying Data](#Accessing-and-Modifying-Data)
 # 1. [Reading and Writing](#Reading-and-Writing)
 # 1. [Visualizing and Plotting](#Visualizing-and-Plotting)
-# 1. [Interpolating and Miscellaneous](#Reprojecting,-Interpolating-and-Miscellaneous)
+# 1. [Interpolating and Miscellaneous](#Interpolating-and-Miscellaneous)
 # 
 # Make sure you have worked through the [Gammapy overview](overview.ipynb), because a solid knowledge about working with `SkyCoord` and `Quantity` objects as well as [Numpy](http://www.numpy.org/) is required for this tutorial.
 # 

@@ -244,7 +244,7 @@ flux_points.plot()
 
 # ## Lightcurves
 # 
-# The Fermi catalogs contain lightcurves for each source. It is available via the `source.lightcurve` property as a `~gammapy.time.LightCurve` object.
+# The Fermi catalogs contain lightcurves for each source. It is available via the `source.lightcurve` property as a `~gammapy.estimators.LightCurve` object.
 
 # In[ ]:
 

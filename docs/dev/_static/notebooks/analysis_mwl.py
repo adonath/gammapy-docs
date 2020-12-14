@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Joint modeling, fitting, and serialization
+# # Multi instrument joint 3D and 1D analysis
 # 
-
 # ## Prerequisites
 # 
 # - Handling of Fermi-LAT data with gammapy [see the corresponding tutorial](fermi_lat.ipynb)
@@ -104,7 +103,7 @@ print(models["Crab Nebula"])
 datasets_hess = Datasets()
 
 for obs_id in [23523, 23526]:
-    dataset = SpectrumDatasetOnOff.from_ogip_files(
+    dataset = SpectrumDatasetOnOff.read(
         f"$GAMMAPY_DATA/joint-crab/spectra/hess/pha_obs{obs_id}.fits"
     )
     datasets_hess.append(dataset)

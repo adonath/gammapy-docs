@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Pulsar analysis with Gammapy
+# # Pulsar analysis
 
 # ## Introduction
 
@@ -33,7 +33,7 @@ from gammapy.makers import (
     PhaseBackgroundMaker,
     SpectrumDatasetMaker,
 )
-from gammapy.maps import Map, WcsGeom, MapAxis
+from gammapy.maps import Map, WcsGeom, MapAxis, RegionGeom
 from gammapy.data import DataStore
 from gammapy.datasets import Datasets, SpectrumDataset, FluxPointsDataset
 from gammapy.modeling.models import PowerLawSpectralModel, SkyModel
@@ -253,9 +253,11 @@ e_true = MapAxis.from_energy_bounds(
 )
 e_reco = MapAxis.from_energy_bounds(0.01, 10, 30, unit="TeV", name="energy")
 
-dataset_empty = SpectrumDataset.create(
-    e_reco=e_reco, e_true=e_true, region=on_region
-)
+
+geom = RegionGeom.create(region=on_region, axes=[e_reco])
+
+dataset_empty = SpectrumDataset.create(geom=geom, energy_axis_true=e_true)
+
 dataset_maker = SpectrumDatasetMaker()
 phase_bkg_maker = PhaseBackgroundMaker(
     on_phase=on_phase_range, off_phase=off_phase_range
@@ -292,12 +294,12 @@ spectral_model = PowerLawSpectralModel(
 model = SkyModel(spectral_model=spectral_model, name="vela psr")
 emin_fit, emax_fit = (0.04 * u.TeV, 0.4 * u.TeV)
 
+data = geom.energy_mask(energy_min=emin_fit, energy_max=emax_fit)
+mask_fit = Map.from_geom(geom=geom, data=data)
 
 for dataset in datasets:
     dataset.models = model
-    geom = dataset.counts.geom
-    data = geom.energy_mask(energy_min=emin_fit, energy_max=emax_fit)
-    dataset.mask_fit = Map.from_geom(geom=geom, data=data)
+    dataset.mask_fit = mask_fit
 
 joint_fit = Fit(datasets)
 joint_result = joint_fit.run()

@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # First analysis with gammapy library API
+# # Low level API
 # 
 # ## Prerequisites:
 # 
 # - Understanding the gammapy data workflow, in particular what are DL3 events and intrument response functions (IRF).
-# - Understanding of the data reduction and modeling fitting process as shown in the [first gammapy analysis with the high level interface tutorial](analysis_1.ipynb)
+# - Understanding of the data reduction and modeling fitting process as shown in the [analysis with the high level interface tutorial](analysis_1.ipynb)
 # 
 # ## Context
 # 
@@ -167,8 +167,7 @@ maker_safe_mask = SafeMaskMaker(methods=["offset-max"], offset_max=offset_max)
 circle = CircleSkyRegion(
     center=SkyCoord("83.63 deg", "22.14 deg"), radius=0.2 * u.deg
 )
-data = geom.region_mask(regions=[circle], inside=False)
-exclusion_mask = Map.from_geom(geom=geom, data=data)
+exclusion_mask = geom.region_mask(regions=[circle], inside=False)
 maker_fov = FoVBackgroundMaker(method="fit", exclusion_mask=exclusion_mask)
 
 

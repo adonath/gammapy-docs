@@ -15,7 +15,7 @@
 # This is a hands-on tutorial to `~gammapy.modeling`, showing how the model, dataset and fit classes work together. As an example we are going to work with HESS data of the Crab Nebula and show in particular how to :
 # - perform a spectral analysis
 # - use different fitting backends
-# - acces covariance matrix informations and parameter errors
+# - access covariance matrix information and parameter errors
 # - compute likelihood profile
 # - compute confidence contours
 # 
@@ -65,7 +65,7 @@ crab_model = SkyModel(spectral_model=crab_spectrum, name="crab")
 
 datasets = []
 for obs_id in [23523, 23526]:
-    dataset = SpectrumDatasetOnOff.from_ogip_files(
+    dataset = SpectrumDatasetOnOff.read(
         f"$GAMMAPY_DATA/joint-crab/spectra/hess/pha_obs{obs_id}.fits"
     )
     datasets.append(dataset)

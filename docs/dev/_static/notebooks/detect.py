@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Source detection with Gammapy
+# # Source detection and significance maps
 # 
 # ## Context
 # 
@@ -167,8 +167,7 @@ maps["niter"].plot(add_cbar=True);
 # In[ ]:
 
 
-sqrt_ts_image = maps["sqrt_ts"].get_image_by_idx((0,))
-sources = find_peaks(sqrt_ts_image, threshold=5, min_distance="0.25 deg")
+sources = find_peaks(maps["sqrt_ts"], threshold=5, min_distance="0.25 deg")
 nsou = len(sources)
 sources
 

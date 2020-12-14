@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Make template background model
+# # Create a template background model
 # 
 # ## Context
 # 

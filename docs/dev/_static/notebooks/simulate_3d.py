@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # 3D simulation and fitting
+# # 3D map simulation
 # 
 # ## Prerequisites
 # 

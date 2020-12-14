@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Creating exclusion masks
+# # Create an exclusion mask
 # 
 # ## Introduction
 # 
@@ -97,8 +97,7 @@ print(regions)
 # In[ ]:
 
 
-mask_data = geom.region_mask(regions, inside=False)
-mask_map = Map.from_geom(geom, data=mask_data)
+mask_map = geom.region_mask(regions, inside=False)
 
 
 # In[ ]:
@@ -140,8 +139,7 @@ regions = [CircleSkyRegion(fgl[i].position, exclusion_radius) for i in idx]
 # In[ ]:
 
 
-mask_data = geom.region_mask(regions, inside=False)
-mask_map_catalog = Map.from_geom(geom, data=mask_data)
+mask_map_catalog = geom.region_mask(regions, inside=False)
 
 
 # In[ ]:

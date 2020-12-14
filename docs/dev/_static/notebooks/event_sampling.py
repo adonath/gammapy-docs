@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Event Sampling
-
+# # Event sampling
+# 
 # ## Prerequisites 
-
+# 
 # To understand how to generate a Model and a MapDataset, and how to fit the data, please refer to the `~gammapy.modeling.models.SkyModel` and [simulate_3d](simulate_3d.ipynb).
 
 # ## Context 

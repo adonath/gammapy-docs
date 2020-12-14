@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # CTA data analysis with Gammapy
+# # Basic image exploration and fitting
 # 
 # ## Introduction
 # 
@@ -48,7 +48,7 @@ from gammapy.modeling.models import (
     SkyModel,
     GaussianSpatialModel,
 )
-from gammapy.maps import MapAxis, WcsNDMap, WcsGeom
+from gammapy.maps import MapAxis, WcsNDMap, WcsGeom, RegionGeom
 from gammapy.makers import (
     MapDatasetMaker,
     SafeMaskMaker,
@@ -131,24 +131,6 @@ geom
 
 
 # ### Compute images
-# 
-# Exclusion mask currently unused. Remove here or move to later in the tutorial?
-
-# In[ ]:
-
-
-target_position = SkyCoord(0, 0, unit="deg", frame="galactic")
-on_radius = 0.2 * u.deg
-on_region = CircleSkyRegion(center=target_position, radius=on_radius)
-
-
-# In[ ]:
-
-
-exclusion_mask = geom.to_image().region_mask([on_region], inside=False)
-exclusion_mask = WcsNDMap(geom.to_image(), exclusion_mask)
-exclusion_mask.plot();
-
 
 # In[ ]:
 
@@ -221,7 +203,7 @@ get_ipython().run_cell_magic('time', '', 'images_ts = ts_image_estimator.run(sta
 
 
 sources = find_peaks(
-    images_ts["sqrt_ts"].get_image_by_idx((0,)),
+    images_ts["sqrt_ts"],
     threshold=5,
     min_distance="0.2 deg",
 )
@@ -265,13 +247,31 @@ plt.gca().scatter(
 # In[ ]:
 
 
-e_reco = MapAxis.from_energy_bounds(0.1, 40, 40, unit="TeV", name="energy")
-e_true = MapAxis.from_energy_bounds(
+target_position = SkyCoord(0, 0, unit="deg", frame="galactic")
+on_radius = 0.2 * u.deg
+on_region = CircleSkyRegion(center=target_position, radius=on_radius)
+
+
+# In[ ]:
+
+
+exclusion_mask = geom.to_image().region_mask([on_region], inside=False)
+exclusion_mask.plot();
+
+
+# In[ ]:
+
+
+energy_axis = MapAxis.from_energy_bounds(
+    0.1, 40, 40, unit="TeV", name="energy"
+)
+energy_axis_true = MapAxis.from_energy_bounds(
     0.05, 100, 200, unit="TeV", name="energy_true"
 )
 
+geom = RegionGeom.create(region=on_region, axes=[energy_axis])
 dataset_empty = SpectrumDataset.create(
-    e_reco=e_reco, e_true=e_true, region=on_region
+    geom=geom, energy_axis_true=energy_axis_true
 )
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Light curve - Flare
+# # Light curves for flares 
 # 
 # ## Prerequisites:
 # 
@@ -57,9 +57,9 @@ log = logging.getLogger(__name__)
 
 
 from gammapy.data import DataStore
-from gammapy.datasets import SpectrumDataset
+from gammapy.datasets import SpectrumDataset, Datasets
 from gammapy.modeling.models import PowerLawSpectralModel, SkyModel
-from gammapy.maps import MapAxis
+from gammapy.maps import MapAxis, RegionGeom
 from gammapy.estimators import LightCurveEstimator
 from gammapy.makers import (
     SpectrumDatasetMaker,
@@ -151,11 +151,15 @@ print(short_observations[1].gti)
 
 
 # Target definition
-e_reco = MapAxis.from_energy_bounds(0.4, 20, 10, "TeV")
-e_true = MapAxis.from_energy_bounds(0.1, 40, 20, "TeV", name="energy_true")
+energy_axis = MapAxis.from_energy_bounds("0.4 TeV", "20 TeV", nbin=10)
+energy_axis_true = MapAxis.from_energy_bounds(
+    "0.1 TeV", "40 TeV", nbin=20, name="energy_true"
+)
 
 on_region_radius = Angle("0.11 deg")
 on_region = CircleSkyRegion(center=target_position, radius=on_region_radius)
+
+geom = RegionGeom.create(region=on_region, axes=[energy_axis])
 
 
 # ### Creation of the data reduction makers
@@ -179,7 +183,7 @@ safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
 # In[ ]:
 
 
-get_ipython().run_cell_magic('time', '', 'datasets = []\n\ndataset_empty = SpectrumDataset.create(\n    e_reco=e_reco, e_true=e_true, region=on_region\n)\n\nfor obs in short_observations:\n    dataset = dataset_maker.run(dataset_empty.copy(), obs)\n\n    dataset_on_off = bkg_maker.run(dataset, obs)\n    dataset_on_off = safe_mask_masker.run(dataset_on_off, obs)\n    datasets.append(dataset_on_off)')
+get_ipython().run_cell_magic('time', '', 'datasets = Datasets()\n\ndataset_empty = SpectrumDataset.create(\n    geom=geom, energy_axis_true=energy_axis_true\n)\n\nfor obs in short_observations:\n    dataset = dataset_maker.run(dataset_empty.copy(), obs)\n\n    dataset_on_off = bkg_maker.run(dataset, obs)\n    dataset_on_off = safe_mask_masker.run(dataset_on_off, obs)\n    datasets.append(dataset_on_off)')
 
 
 # ## Define the Model
@@ -208,13 +212,12 @@ sky_model = SkyModel(
 # In[ ]:
 
 
-for dataset in datasets:
-    dataset.models = sky_model
+datasets.models = sky_model
 
 
 # ## Extract the light curve
 # 
-# We first create the `~gammapy.time.LightCurveEstimator` for the list of datasets we just produced. We give the estimator the name of the source component to be fitted.
+# We first create the `~gammapy.estimators.LightCurveEstimator` for the list of datasets we just produced. We give the estimator the name of the source component to be fitted.
 
 # In[ ]:
 
@@ -223,6 +226,7 @@ lc_maker_1d = LightCurveEstimator(
     energy_edges=[0.7, 20] * u.TeV,
     source="pks2155",
     time_intervals=time_intervals,
+    selection_optional=None,
 )
 
 

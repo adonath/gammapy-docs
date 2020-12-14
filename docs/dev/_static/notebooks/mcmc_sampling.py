@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Fitting and error estimation with MCMC
+# # MCMC sampling using the emcee package
 # 
 # ## Introduction
 # 
@@ -44,6 +44,9 @@
 
 get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
+import warnings
+
+warnings.filterwarnings("ignore")
 
 
 # In[ ]:
@@ -70,6 +73,7 @@ from gammapy.modeling.sampling import (
     plot_corner,
     plot_trace,
 )
+from gammapy.modeling import Fit
 
 
 # In[ ]:
@@ -156,7 +160,6 @@ dataset.counts.sum_over_axes().plot(add_cbar=True);
 
 
 # If you want to fit the data for comparison with MCMC later
-
 # fit = Fit(dataset)
 # result = fit.run(optimize_opts={"print_level": 1})
 

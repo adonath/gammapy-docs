@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Modeling and fitting 2D images using Gammapy
+# # 2D map fitting
 # 
 # ## Prerequisites:
 #  - To understand how a generel modelling and fiiting works in gammapy, please refer to the [analysis_3d tutorial](analysis_3d.ipynb)
@@ -115,19 +115,27 @@ print(analysis.datasets["stacked"])
 # In[ ]:
 
 
-print(analysis.datasets["stacked"].counts)
+analysis.datasets["stacked"].counts
 
 
 # In[ ]:
 
 
-print(analysis.datasets["stacked"].background)
+analysis.datasets["stacked"].background
 
 
 # In[ ]:
 
 
-print(analysis.datasets["stacked"].exposure)
+analysis.datasets["stacked"].exposure
+
+
+# We can have a quick look of these maps in the following way:
+
+# In[ ]:
+
+
+analysis.datasets["stacked"].counts.reduce_over_axes().plot(vmax=5)
 
 
 # ## Modelling

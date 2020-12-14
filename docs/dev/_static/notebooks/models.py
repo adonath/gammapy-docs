@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Gammapy Models
+# # Models
 # 
 # 
 # This is an introduction and overview on how to work with models in Gammapy. 
@@ -23,7 +23,7 @@
 # 
 # 
 
-# # Setup
+# ## Setup
 
 # In[ ]:
 
@@ -40,7 +40,7 @@ from astropy import units as u
 from gammapy.maps import Map, WcsGeom, MapAxis
 
 
-# # Spectral Models
+# ## Spectral models
 # 
 # All models are imported from the `~gammapy.modeling.models` namespace. Let's start with a `PowerLawSpectralModel`:
 
@@ -140,7 +140,7 @@ print(energy)
 pwl.plot(energy_range=[1, 100] * u.TeV)
 
 
-# # Spatial Models
+# ## Spatial models
 
 # Spatial models are imported from the same `~gammapy.modeling.models` namespace, let's start with a `GaussianSpatialModel`:
 
@@ -261,7 +261,7 @@ write_ds9(regions, filename, coordsys="galactic", fmt=".4f", radunit="deg")
 get_ipython().system('cat regions.reg')
 
 
-# # SkyModel
+# ## SkyModel
 
 # The `~gammapy.modeling.models.SkyModel` class combines a spectral and a spatial model. It can be created
 # from existing spatial and spectral model components:
@@ -338,7 +338,7 @@ print(diffuse)
 
 # Note that if the spatial model is not normalized over the sky it has to be combined with a normalized spectral model, for example `~gammapy.modeling.models.PowerLawNormSpectralModel`. This is the only case in `gammapy.models.SkyModel` where the unit is fully attached to the spatial model.
 
-# # Model Lists and Serialisation
+# ## Model lists and serialisation
 # 
 # In a typical analysis scenario a model consists of mutiple model components, or a "catalog" or "source library". To handle this list of multiple model components, Gammapy has a `Models` class:
 
@@ -413,7 +413,7 @@ models_read = Models.read("models.yaml")
 
 # Additionally the models can exported and imported togeter with the data using the `Datasets.read()` and `Datasets.write()` methods as shown in the [analysis_mwl](analysis_mwl.ipynb) notebook.
 
-# # Implementing a Custom Model
+# ## Implementing a custom model
 # 
 # In order to add a user defined spectral model you have to create a SpectralModel subclass.
 # This new model class should include:
@@ -517,7 +517,7 @@ get_ipython().system('cat my-custom-models.yaml')
 
 # Similarly you can also create custom spatial models and add them to the `SPATIAL_MODELS` registry. In that case gammapy assumes that the evaluate function return a normalized quantity in "sr-1" such as the model integral over the whole sky is one.
 
-# # Models with Energy dependent morphology
+# ## Models with energy dependent morphology
 # 
 # A common science case in the study of extended sources is to probe for energy dependent morphology, in Supernova Remnants or Pulsar Wind Nebulae. Traditionally, this has been done by splitting the data into energy bands and doing individual fits of the morphology in these energy bands.
 # 

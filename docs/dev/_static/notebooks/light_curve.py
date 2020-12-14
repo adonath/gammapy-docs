@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Light curve estimation
+# # Light curves
 # 
 # ## Prerequisites
 # 
@@ -14,7 +14,7 @@
 # 
 # Cherenkov telescopes usually work with observing runs and distribute data according to this basic time interval. A typical use case is to look for variability of a source on various time binnings: observation run-wise binning, nightly, weekly etc.
 # 
-# **Objective: The Crab nebula is not known to be variable at TeV energies, so we expect constant brightness within statistical and systematic errors. Compute per-observation and nightly fluxes of the four Crab nebula observations from the [H.E.S.S. first public test data release](https://www.mpi-hd.mpg.de/hfm/HESS/pages/dl3-dr1/) to check it.**
+# **Objective: The Crab nebula is not known to be variable at TeV energies, so we expect constant brightness within statistical and systematic errors. Compute per-observation and nightly fluxes of the four Crab nebula observations from the H.E.S.S. first public test data release [o](https://www.mpi-hd.mpg.de/hfm/HESS/pages/dl3-dr1/) to check it.**
 # 
 # ## Proposed approach
 # 
@@ -162,7 +162,7 @@ analysis_3d.set_models(models)
 # We pass it the list of datasets and the name of the model component for which we want to build the light curve. 
 # We can optionally ask for parameters reoptimization during fit, that is most of the time to fit background normalization in each time bin. 
 # 
-# If we don't set any time interval, the `~gammapy.time.LightCurveEstimator` is determines the flux of each dataset and places it at the corresponding time in the light curve. 
+# If we don't set any time interval, the `~gammapy.estimators.LightCurveEstimator` is determines the flux of each dataset and places it at the corresponding time in the light curve. 
 # Here one dataset equals to one observing run.
 
 # In[ ]:

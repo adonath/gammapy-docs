@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Spectrum simulation
+# # 1D spectrum simulation
 # 
 # ## Prerequisites
 # 
@@ -52,7 +52,7 @@ from gammapy.modeling.models import (
 )
 from gammapy.irf import load_cta_irfs
 from gammapy.data import Observation
-from gammapy.maps import MapAxis
+from gammapy.maps import MapAxis, RegionGeom
 
 
 # ## Simulation of a single spectrum
@@ -119,8 +119,10 @@ print(obs)
 
 
 # Make the SpectrumDataset
+geom = RegionGeom.create(region=on_region, axes=[energy_axis])
+
 dataset_empty = SpectrumDataset.create(
-    e_reco=energy_axis, e_true=energy_axis_true, region=on_region, name="obs-0"
+    geom=geom, energy_axis_true=energy_axis_true, name="obs-0"
 )
 maker = SpectrumDatasetMaker(selection=["exposure", "edisp", "background"])
 

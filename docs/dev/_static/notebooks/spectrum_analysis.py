@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Spectral analysis with Gammapy
+# # Spectral analysis
 
 # ## Prerequisites 
 # 
@@ -81,7 +81,7 @@ from pathlib import Path
 import astropy.units as u
 from astropy.coordinates import SkyCoord, Angle
 from regions import CircleSkyRegion
-from gammapy.maps import Map, MapAxis
+from gammapy.maps import Map, MapAxis, RegionGeom
 from gammapy.modeling import Fit
 from gammapy.data import DataStore
 from gammapy.datasets import (
@@ -151,7 +151,7 @@ exclusion_mask = Map.create(
 )
 
 mask = exclusion_mask.geom.region_mask([exclusion_region], inside=False)
-exclusion_mask.data = mask
+exclusion_mask.data = mask.data
 exclusion_mask.plot();
 
 
@@ -162,12 +162,16 @@ exclusion_mask.plot();
 # In[ ]:
 
 
-e_reco = MapAxis.from_energy_bounds(0.1, 40, 40, unit="TeV", name="energy")
-e_true = MapAxis.from_energy_bounds(
+energy_axis = MapAxis.from_energy_bounds(
+    0.1, 40, 40, unit="TeV", name="energy"
+)
+energy_axis_true = MapAxis.from_energy_bounds(
     0.05, 100, 200, unit="TeV", name="energy_true"
 )
+
+geom = RegionGeom.create(region=on_region, axes=[energy_axis])
 dataset_empty = SpectrumDataset.create(
-    e_reco=e_reco, e_true=e_true, region=on_region
+    geom=geom, energy_axis_true=energy_axis_true
 )
 
 
@@ -250,7 +254,9 @@ path.mkdir(exist_ok=True)
 
 
 for dataset in datasets:
-    dataset.to_ogip_files(outdir=path, overwrite=True)
+    dataset.write(
+        filename=path / f"obs_{dataset.name}.fits.gz", overwrite=True
+    )
 
 
 # If you want to read back the datasets from disk you can use:
@@ -259,9 +265,10 @@ for dataset in datasets:
 
 
 datasets = Datasets()
+
 for obs_id in obs_ids:
-    filename = path / f"pha_obs{obs_id}.fits"
-    datasets.append(SpectrumDatasetOnOff.from_ogip_files(filename))
+    filename = path / f"obs_{obs_id}.fits.gz"
+    datasets.append(SpectrumDatasetOnOff.read(filename))
 
 
 # ## Fit spectrum
@@ -276,8 +283,8 @@ spectral_model = PowerLawSpectralModel(
 )
 model = SkyModel(spectral_model=spectral_model, name="crab")
 
-for dataset in datasets:
-    dataset.models = model
+
+datasets.models = [model]
 
 fit_joint = Fit(datasets)
 result_joint = fit_joint.run()
@@ -315,7 +322,7 @@ ax_spectrum.set_ylim(0.1, 40)
 
 
 e_min, e_max = 0.7, 30
-energy_edges = np.logspace(np.log10(e_min), np.log10(e_max), 11) * u.TeV
+energy_edges = np.geomspace(e_min, e_max, 11) * u.TeV
 
 
 # Now we create an instance of the `~gammapy.estimators.FluxPointsEstimator`, by passing the dataset and the energy binning:

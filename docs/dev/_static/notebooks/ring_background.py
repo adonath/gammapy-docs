@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Ring Background Estimation
+# # Ring background map 
 # 
 # ## Context:
 # One of the challenges of IACT analysis is accounting for the large residual hadronic emission. An excess map, assumed to be a map of only gamma-ray events, requires a good estimate of the background.  However, in the absence of a solid template bkg model it is not possible to obtain reliable background model a priori. It was often found necessary in classical cherenkov astronomy to perform a local renormalization of the existing templates, usually with a ring kernel. This assumes that most of the events are background and requires to have an exclusion mask to remove regions with bright signal from the estimation. To read more about this method, see [here.](https://arxiv.org/abs/astro-ph/0610959)
@@ -143,8 +143,7 @@ geom_image = geom.to_image().to_cube([energy_axis.squash()])
 
 # Make the exclusion mask
 regions = CircleSkyRegion(center=source_pos, radius=0.3 * u.deg)
-exclusion_mask = Map.from_geom(geom_image)
-exclusion_mask.data = geom_image.region_mask([regions], inside=False)
+exclusion_mask = geom_image.region_mask([regions], inside=False)
 exclusion_mask.sum_over_axes().plot();
 
 
