@@ -294,8 +294,7 @@ spectral_model = PowerLawSpectralModel(
 model = SkyModel(spectral_model=spectral_model, name="vela psr")
 emin_fit, emax_fit = (0.04 * u.TeV, 0.4 * u.TeV)
 
-data = geom.energy_mask(energy_min=emin_fit, energy_max=emax_fit)
-mask_fit = Map.from_geom(geom=geom, data=data)
+mask_fit = geom.energy_mask(energy_min=emin_fit, energy_max=emax_fit)
 
 for dataset in datasets:
     dataset.models = model

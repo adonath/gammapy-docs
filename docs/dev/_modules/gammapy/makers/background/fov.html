@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.makers.background.fov &mdash; gammapy v0.18.3.dev181+gb59258698</title>
+  <title>gammapy.makers.background.fov &mdash; gammapy v0.18.3.dev238+g85d0f3c30</title>
   
 
   
@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="../../../../_static/gallery.css" type="text/css" />
   <link rel="stylesheet" href="../../../../_static/gallery-binder.css" type="text/css" />
   <link rel="stylesheet" href="../../../../_static/gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/gallery-rendered-html.css" type="text/css" />
 
   
   
@@ -44,7 +45,7 @@
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
-        <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+        <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.0/dist/embed-amd.js"></script>
     
     <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
 
@@ -74,7 +75,7 @@
             
             
               <div class="version">
-                0.18.3.dev181+gb59258698
+                0.18.3.dev238+g85d0f3c30
               </div>
             
           
@@ -408,6 +409,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../maps/index.html#using-gammapy-maps">Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.maps</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../../maps/hpxmap.html">HEALPix-based Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../maps/regionmap.html">RegionGeom and RegionNDMap</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../maps/index.html#reference-api">Reference/API</a><ul>
@@ -703,7 +705,10 @@
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">mask_fit</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">mask_fit</span>
-        <span class="n">dataset</span><span class="o">.</span><span class="n">mask_fit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reproject_exclusion_mask</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_mask</span><span class="p">:</span>
+            <span class="n">geom</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span>
+            <span class="n">dataset</span><span class="o">.</span><span class="n">mask_fit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_mask</span><span class="o">.</span><span class="n">interp_to_geom</span><span class="p">(</span><span class="n">geom</span><span class="o">=</span><span class="n">geom</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">dataset</span><span class="o">.</span><span class="n">background_model</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_default_fov_background_model</span><span class="p">(</span><span class="n">dataset</span><span class="p">)</span>
@@ -716,18 +721,6 @@
 
         <span class="n">dataset</span><span class="o">.</span><span class="n">mask_fit</span> <span class="o">=</span> <span class="n">mask_fit</span>
         <span class="k">return</span> <span class="n">dataset</span></div>
-
-    <span class="k">def</span> <span class="nf">_reproject_exclusion_mask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Reproject the exclusion on the dataset geometry&quot;&quot;&quot;</span>
-        <span class="n">mask_map</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_mask</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">coords</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span>
-            <span class="n">vals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exclusion_mask</span><span class="o">.</span><span class="n">get_by_coord</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
-            <span class="n">mask_map</span><span class="o">.</span><span class="n">data</span> <span class="o">+=</span> <span class="n">vals</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">mask_map</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-
-        <span class="k">return</span> <span class="n">mask_map</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;bool&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_fit_bkg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Fit the FoV background model on the dataset counts data&quot;&quot;&quot;</span>
@@ -781,7 +774,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 14 Dec 2020.
+        Last updated on 29 Dec 2020.
       </span>
 
     </p>

@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.maps.geom &mdash; gammapy v0.18.3.dev181+gb59258698</title>
+  <title>gammapy.maps.geom &mdash; gammapy v0.18.3.dev238+g85d0f3c30</title>
   
 
   
@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="../../../_static/gallery.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/gallery-binder.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/gallery-rendered-html.css" type="text/css" />
 
   
   
@@ -44,7 +45,7 @@
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
-        <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+        <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.0/dist/embed-amd.js"></script>
     
     <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
@@ -74,7 +75,7 @@
             
             
               <div class="version">
-                0.18.3.dev181+gb59258698
+                0.18.3.dev238+g85d0f3c30
               </div>
             
           
@@ -408,6 +409,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../maps/index.html#using-gammapy-maps">Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.maps</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../maps/hpxmap.html">HEALPix-based Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../maps/regionmap.html">RegionGeom and RegionNDMap</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../maps/index.html#reference-api">Reference/API</a><ul>
@@ -1941,12 +1943,10 @@
 <span class="sd">            Table HDU</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">table</span> <span class="o">=</span> <span class="n">Table</span><span class="p">()</span>
+        <span class="n">edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges</span>
 
         <span class="k">if</span> <span class="nb">format</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ogip&quot;</span><span class="p">,</span> <span class="s2">&quot;ogip-sherpa&quot;</span><span class="p">]:</span>
-            <span class="k">if</span> <span class="s2">&quot;energy&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Only energy axes can be converted to HDU&quot;</span><span class="p">)</span>
-
-            <span class="n">edges</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assert_name</span><span class="p">(</span><span class="s2">&quot;energy&quot;</span><span class="p">)</span>
 
             <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;ogip-sherpa&quot;</span><span class="p">:</span>
                 <span class="n">edges</span> <span class="o">=</span> <span class="n">edges</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;keV&quot;</span><span class="p">)</span>
@@ -1954,6 +1954,14 @@
             <span class="n">table</span><span class="p">[</span><span class="s2">&quot;CHANNEL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nbin</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">)</span>
             <span class="n">table</span><span class="p">[</span><span class="s2">&quot;E_MIN&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
             <span class="n">table</span><span class="p">[</span><span class="s2">&quot;E_MAX&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">elif</span> <span class="nb">format</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ogip-arf&quot;</span><span class="p">,</span> <span class="s2">&quot;ogip-arf-sherpa&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">assert_name</span><span class="p">(</span><span class="s2">&quot;energy_true&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;ogip-arf-sherpa&quot;</span><span class="p">:</span>
+                <span class="n">edges</span> <span class="o">=</span> <span class="n">edges</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;keV&quot;</span><span class="p">)</span>
+
+            <span class="n">table</span><span class="p">[</span><span class="s2">&quot;ENERG_LO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">table</span><span class="p">[</span><span class="s2">&quot;ENERG_HI&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
         <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;gadf-dl3&quot;</span><span class="p">:</span>
             <span class="kn">from</span> <span class="nn">gammapy.irf.io</span> <span class="kn">import</span> <span class="n">IRF_DL3_AXES_SPECIFICATION</span>
 
@@ -1965,7 +1973,7 @@
                         <span class="k">break</span>
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_type</span> <span class="o">==</span> <span class="s2">&quot;edges&quot;</span><span class="p">:</span>
-                <span class="n">edges_hi</span><span class="p">,</span> <span class="n">edges_lo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+                <span class="n">edges_hi</span><span class="p">,</span> <span class="n">edges_lo</span> <span class="o">=</span> <span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">edges_hi</span><span class="p">,</span> <span class="n">edges_lo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span>
 
@@ -2646,6 +2654,13 @@
         <span class="n">energy_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;energy_true&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span><span class="o">.</span><span class="n">to_cube</span><span class="p">([</span><span class="n">energy_axis</span><span class="p">])</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">has_energy_axis</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Whether geom has an energy axis&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="s2">&quot;energy&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">names</span><span class="p">)</span> <span class="o">^</span> <span class="p">(</span>
+            <span class="s2">&quot;energy_true&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">names</span>
+        <span class="p">)</span>
+
 <div class="viewcode-block" id="Geom.to_image"><a class="viewcode-back" href="../../../api/gammapy.maps.Geom.html#gammapy.maps.Geom.to_image">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
     <span class="k">def</span> <span class="nf">to_image</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Create 2D image geometry (drop non-spatial dimensions).</span>
@@ -2864,6 +2879,8 @@
 <span class="sd">        mask : `~numpy.ndarray`</span>
 <span class="sd">            Energy mask</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">Map</span>
+
         <span class="c1"># get energy axes and values</span>
         <span class="n">energy_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span>
 
@@ -2879,7 +2896,8 @@
         <span class="n">energy_max</span> <span class="o">=</span> <span class="n">energy_max</span> <span class="k">if</span> <span class="n">energy_max</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">energy_edges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
         <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">energy_edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">energy_min</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">energy_edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">&lt;=</span> <span class="n">energy_max</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data_shape</span><span class="p">)</span></div></div>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data_shape</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span></div></div>
 </pre></div>
 
            </div>
@@ -2895,7 +2913,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 14 Dec 2020.
+        Last updated on 29 Dec 2020.
       </span>
 
     </p>

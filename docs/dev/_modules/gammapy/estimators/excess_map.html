@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.estimators.excess_map &mdash; gammapy v0.18.3.dev181+gb59258698</title>
+  <title>gammapy.estimators.excess_map &mdash; gammapy v0.18.3.dev238+g85d0f3c30</title>
   
 
   
@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="../../../_static/gallery.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/gallery-binder.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/gallery-rendered-html.css" type="text/css" />
 
   
   
@@ -44,7 +45,7 @@
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
-        <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+        <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.0/dist/embed-amd.js"></script>
     
     <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
@@ -74,7 +75,7 @@
             
             
               <div class="version">
-                0.18.3.dev181+gb59258698
+                0.18.3.dev238+g85d0f3c30
               </div>
             
           
@@ -408,6 +409,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../maps/index.html#using-gammapy-maps">Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.maps</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../maps/hpxmap.html">HEALPix-based Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../maps/regionmap.html">RegionGeom and RegionNDMap</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../maps/index.html#reference-api">Reference/API</a><ul>
@@ -629,7 +631,7 @@
 <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">convolved_map_dataset_counts_statistics</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">mask</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">convolved_map_dataset_counts_statistics</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">correlate_off</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return CountsDataset objects containing smoothed maps from the MapDataset&quot;&quot;&quot;</span>
     <span class="c1"># Kernel is modified later make a copy here</span>
     <span class="n">kernel</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">kernel</span><span class="p">)</span>
@@ -641,21 +643,22 @@
     <span class="n">n_on_conv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rint</span><span class="p">(</span><span class="n">n_on</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">array</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">MapDatasetOnOff</span><span class="p">):</span>
-        <span class="n">background</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">background</span> <span class="o">*</span> <span class="n">mask</span>
-        <span class="n">background</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">dataset</span><span class="o">.</span><span class="n">acceptance_off</span><span class="o">.</span><span class="n">data</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="n">n_off</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">counts_off</span> <span class="o">*</span> <span class="n">mask</span>
-
-        <span class="n">background_conv</span> <span class="o">=</span> <span class="n">background</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
-        <span class="n">n_off_conv</span> <span class="o">=</span> <span class="n">n_off</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
-
         <span class="n">npred_sig</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">npred_signal</span><span class="p">()</span> <span class="o">*</span> <span class="n">mask</span>
-        <span class="n">mu_sig</span> <span class="o">=</span> <span class="n">npred_sig</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
+        <span class="n">acceptance_on</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">acceptance</span> <span class="o">*</span> <span class="n">mask</span>
+        <span class="n">acceptance_off</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">acceptance_off</span> <span class="o">*</span> <span class="n">mask</span>
+
+        <span class="n">npred_sig_convolve</span> <span class="o">=</span> <span class="n">npred_sig</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
+        <span class="n">acceptance_on_convolve</span> <span class="o">=</span> <span class="n">acceptance_on</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">correlate_off</span><span class="p">:</span>
+            <span class="n">n_off</span> <span class="o">=</span> <span class="n">n_off</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
+            <span class="n">acceptance_off</span> <span class="o">=</span> <span class="n">acceptance_off</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">kernel</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
 
         <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">divide</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">):</span>
-            <span class="n">alpha_conv</span> <span class="o">=</span> <span class="n">background_conv</span> <span class="o">/</span> <span class="n">n_off_conv</span>
+            <span class="n">alpha</span> <span class="o">=</span> <span class="n">acceptance_on_convolve</span> <span class="o">/</span> <span class="n">acceptance_off</span>
 
         <span class="k">return</span> <span class="n">WStatCountsStatistic</span><span class="p">(</span>
-            <span class="n">n_on_conv</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">n_off_conv</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">alpha_conv</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">mu_sig</span><span class="o">.</span><span class="n">data</span>
+            <span class="n">n_on_conv</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">n_off</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">alpha</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">npred_sig_convolve</span><span class="o">.</span><span class="n">data</span>
         <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
 
@@ -669,6 +672,10 @@
 
 <span class="sd">    If a model is set on the dataset the excess map estimator will compute the excess taking into account</span>
 <span class="sd">    the predicted counts of the model.</span>
+
+<span class="sd">    Some background estimation techniques like ring background or adaptive ring background will provide already</span>
+<span class="sd">    correlated data for OFF. In the case of already correlated OFF data, the OFF data should not be correlated again,</span>
+<span class="sd">    and so the option correlate_off should set to False (default).</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -693,6 +700,8 @@
 <span class="sd">    apply_mask_fit : Bool</span>
 <span class="sd">        Apply a mask for the computation.</span>
 <span class="sd">        A `~gammapy.datasets.MapDataset.mask_fit` must be present on the input dataset</span>
+<span class="sd">    correlate_off : Bool</span>
+<span class="sd">        Correlate OFF events in the case of a MapDatasetOnOff</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">tag</span> <span class="o">=</span> <span class="s2">&quot;ExcessMapEstimator&quot;</span>
@@ -706,6 +715,7 @@
         <span class="n">selection_optional</span><span class="o">=</span><span class="s2">&quot;all&quot;</span><span class="p">,</span>
         <span class="n">energy_edges</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">apply_mask_fit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">correlate_off</span><span class="o">=</span><span class="kc">False</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">correlation_radius</span> <span class="o">=</span> <span class="n">correlation_radius</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_sigma</span> <span class="o">=</span> <span class="n">n_sigma</span>
@@ -713,6 +723,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">apply_mask_fit</span> <span class="o">=</span> <span class="n">apply_mask_fit</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">selection_optional</span> <span class="o">=</span> <span class="n">selection_optional</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">energy_edges</span> <span class="o">=</span> <span class="n">energy_edges</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">correlate_off</span> <span class="o">=</span> <span class="n">correlate_off</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">correlation_radius</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -795,7 +806,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">data_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
 
-        <span class="n">counts_stat</span> <span class="o">=</span> <span class="n">convolved_map_dataset_counts_statistics</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+        <span class="n">counts_stat</span> <span class="o">=</span> <span class="n">convolved_map_dataset_counts_statistics</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">kernel</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">correlate_off</span><span class="p">)</span>
 
         <span class="n">n_on</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">n_on</span><span class="p">)</span>
         <span class="n">bkg</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">counts_stat</span><span class="o">.</span><span class="n">n_on</span> <span class="o">-</span> <span class="n">counts_stat</span><span class="o">.</span><span class="n">n_sig</span><span class="p">)</span>
@@ -852,7 +863,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 14 Dec 2020.
+        Last updated on 29 Dec 2020.
       </span>
 
     </p>

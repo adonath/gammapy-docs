@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>gammapy.modeling.models.core &mdash; gammapy v0.18.3.dev181+gb59258698</title>
+  <title>gammapy.modeling.models.core &mdash; gammapy v0.18.3.dev238+g85d0f3c30</title>
   
 
   
@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="../../../../_static/gallery.css" type="text/css" />
   <link rel="stylesheet" href="../../../../_static/gallery-binder.css" type="text/css" />
   <link rel="stylesheet" href="../../../../_static/gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/gallery-rendered-html.css" type="text/css" />
 
   
   
@@ -44,7 +45,7 @@
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
-        <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+        <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.0/dist/embed-amd.js"></script>
     
     <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
 
@@ -74,7 +75,7 @@
             
             
               <div class="version">
-                0.18.3.dev181+gb59258698
+                0.18.3.dev238+g85d0f3c30
               </div>
             
           
@@ -408,6 +409,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../maps/index.html#using-gammapy-maps">Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.maps</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../../maps/hpxmap.html">HEALPix-based Maps</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../maps/regionmap.html">RegionGeom and RegionNDMap</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../maps/index.html#reference-api">Reference/API</a><ul>
@@ -610,6 +612,7 @@
             
   <h1>Source code for gammapy.modeling.models.core</h1><div class="highlight"><pre>
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
+<span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">collections.abc</span>
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">from</span> <span class="nn">os.path</span> <span class="kn">import</span> <span class="n">split</span>
@@ -620,6 +623,7 @@
 <span class="kn">from</span> <span class="nn">gammapy.modeling</span> <span class="kn">import</span> <span class="n">Covariance</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">Parameters</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.scripts</span> <span class="kn">import</span> <span class="n">make_name</span><span class="p">,</span> <span class="n">make_path</span>
 
+<span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">_set_link</span><span class="p">(</span><span class="n">shared_register</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
     <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
@@ -749,9 +753,15 @@
 
         <span class="n">par_data</span> <span class="o">=</span> <span class="p">[]</span>
 
-        <span class="k">for</span> <span class="n">par</span><span class="p">,</span> <span class="n">par_yaml</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">default_parameters</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]):</span>
+        <span class="n">input_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">_</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">]]</span>
+
+        <span class="k">for</span> <span class="n">par</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">default_parameters</span><span class="p">:</span>
             <span class="n">par_dict</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
-            <span class="n">par_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">par_yaml</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">index</span> <span class="o">=</span> <span class="n">input_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">par_dict</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span>
+                <span class="n">par_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;parameters&quot;</span><span class="p">][</span><span class="n">index</span><span class="p">])</span>
+            <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameter </span><span class="si">{</span><span class="n">par_dict</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> not defined. Using default value: </span><span class="si">{</span><span class="n">par_dict</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">par_dict</span><span class="p">[</span><span class="s1">&#39;unit&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="n">par_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">par_dict</span><span class="p">)</span>
 
         <span class="n">parameters</span> <span class="o">=</span> <span class="n">Parameters</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">par_data</span><span class="p">)</span>
@@ -1369,7 +1379,7 @@
         
         &copy; Copyright 2020, The Gammapy developers
       <span class="lastupdated">
-        Last updated on 14 Dec 2020.
+        Last updated on 29 Dec 2020.
       </span>
 
     </p>
