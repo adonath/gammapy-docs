@@ -7,4 +7,4 @@ region_map = RegionNDMap.create("icrs;circle(83.63, 22.01, 0.5)", axes=[energy_a
 
 # Fill the data along the energy axis and plot
 region_map.data = np.logspace(-2,3,12)
-region_map.plot()
+region_map.plot_hist()

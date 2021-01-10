@@ -541,7 +541,7 @@ coords = m_iem_10GeV.geom.get_coord()
 
 m_iem_10GeV.data = m_iem_gc.interp_by_coord(
     {"skycoord": coords.skycoord, "energy_true": 10 * u.GeV},
-    interp="linear",
+    method="linear",
     fill_value=np.nan,
 )
 m_iem_10GeV.plot(add_cbar=True, vmin=0, vmax=2.5e-9);

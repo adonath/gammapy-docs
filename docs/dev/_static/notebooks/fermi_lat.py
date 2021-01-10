@@ -263,7 +263,7 @@ template_diffuse.map.slice_by_idx({"energy_true": 0}).plot(add_cbar=True);
 energy = np.logspace(1, 3, 10) * u.GeV
 dnde = template_diffuse.map.interp_by_coord(
     {"skycoord": gc_pos, "energy_true": energy},
-    interp="linear",
+    method="linear",
     fill_value=None,
 )
 plt.plot(energy.value, dnde, "+")
