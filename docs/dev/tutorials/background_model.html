@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Create a template background model &mdash; gammapy v0.18.3.dev254+gf65ad6286</title>
+  <title>Create a template background model &mdash; gammapy v0.18.3.dev361+ge1744c61b</title>
   
 
   
@@ -80,7 +80,7 @@
             
             
               <div class="version">
-                0.18.3.dev254+gf65ad6286
+                0.18.3.dev361+ge1744c61b
               </div>
             
           
@@ -514,7 +514,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../utils/index.html#module-gammapy.utils.regions">gammapy.utils.regions Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../utils/index.html#module-gammapy.utils.scripts">gammapy.utils.scripts Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../utils/index.html#module-gammapy.utils.testing">gammapy.utils.testing Module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../utils/index.html#module-gammapy.utils.nddata">gammapy.utils.nddata Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../utils/index.html#module-gammapy.utils.time">gammapy.utils.time Module</a></li>
 </ul>
 </li>
@@ -996,6 +995,8 @@ Number of observations: 45
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="k">class</span> <span class="nc">BackgroundModelEstimator</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">offset</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">counts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_bkg2d</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_bkg2d</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;s MeV sr&quot;</span><span class="p">)</span>
@@ -1003,11 +1004,7 @@ Number of observations: 45
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">_make_bkg2d</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">unit</span><span class="p">):</span>
         <span class="n">shape</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">energy</span><span class="o">.</span><span class="n">center</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">offset</span><span class="o">.</span><span class="n">center</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Background2D</span><span class="p">(</span>
-            <span class="n">energy_axis</span><span class="o">=</span><span class="n">energy</span><span class="p">,</span>
-            <span class="n">offset_axis</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span>
-            <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="n">unit</span><span class="p">),</span>
-        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Background2D</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">energy</span><span class="p">,</span> <span class="n">offset</span><span class="p">],</span> <span class="n">unit</span><span class="o">=</span><span class="n">unit</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observations</span><span class="p">):</span>
         <span class="k">for</span> <span class="n">obs</span> <span class="ow">in</span> <span class="n">observations</span><span class="p">:</span>
@@ -1016,28 +1013,27 @@ Number of observations: 45
 
     <span class="k">def</span> <span class="nf">fill_counts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">):</span>
         <span class="n">events</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">events</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">energy_bins</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span>
+        <span class="n">offset_bins</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;offset&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span>
+
         <span class="n">counts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">histogram2d</span><span class="p">(</span>
             <span class="n">x</span><span class="o">=</span><span class="n">events</span><span class="o">.</span><span class="n">energy</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;MeV&quot;</span><span class="p">),</span>
             <span class="n">y</span><span class="o">=</span><span class="n">events</span><span class="o">.</span><span class="n">offset</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;deg&quot;</span><span class="p">),</span>
-            <span class="n">bins</span><span class="o">=</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span><span class="p">),</span>
+            <span class="n">bins</span><span class="o">=</span><span class="p">(</span><span class="n">energy_bins</span><span class="p">,</span> <span class="n">offset_bins</span><span class="p">),</span>
         <span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">data</span><span class="o">.</span><span class="n">data</span> <span class="o">+=</span> <span class="n">counts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="o">.</span><span class="n">data</span> <span class="o">+=</span> <span class="n">counts</span>
 
     <span class="k">def</span> <span class="nf">fill_exposure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obs</span><span class="p">):</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">data</span>
-        <span class="n">energy_width</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span><span class="p">)</span>
-        <span class="n">offset</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">center</span>
-        <span class="n">offset_width</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span><span class="p">)</span>
-        <span class="n">solid_angle</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">offset</span> <span class="o">*</span> <span class="n">offset_width</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">axes</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="s2">&quot;offset&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">center</span>
         <span class="n">time</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">observation_time_duration</span>
-        <span class="n">exposure</span> <span class="o">=</span> <span class="n">time</span> <span class="o">*</span> <span class="n">energy_width</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">solid_angle</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]</span>
-        <span class="n">data</span><span class="o">.</span><span class="n">data</span> <span class="o">+=</span> <span class="n">exposure</span>
+        <span class="n">exposure</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">offset</span> <span class="o">*</span> <span class="n">time</span> <span class="o">*</span> <span class="n">axes</span><span class="o">.</span><span class="n">bin_volume</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">quantity</span> <span class="o">+=</span> <span class="n">exposure</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">background_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">rate</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">counts</span><span class="p">)</span>
-        <span class="n">rate</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span> <span class="o">/=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">rate</span><span class="o">.</span><span class="n">quantity</span> <span class="o">/=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure</span><span class="o">.</span><span class="n">quantity</span>
         <span class="k">return</span> <span class="n">rate</span>
 </pre></div>
 </div>
@@ -1062,8 +1058,8 @@ Number of observations: 45
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-CPU times: user 2.12 s, sys: 34.6 ms, total: 2.15 s
-Wall time: 2.15 s
+CPU times: user 2.39 s, sys: 32.4 ms, total: 2.42 s
+Wall time: 2.42 s
 </pre></div></div>
 </div>
 <p>Let’s have a quick look at what we did …</p>
@@ -1212,8 +1208,8 @@ course good settings will depend on the way you plan to use the background model
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-CPU times: user 2.28 s, sys: 51.9 ms, total: 2.33 s
-Wall time: 2.34 s
+CPU times: user 2.55 s, sys: 56.5 ms, total: 2.61 s
+Wall time: 2.6 s
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -1253,11 +1249,11 @@ Wall time: 2.34 s
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">y</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">energy</span><span class="o">=</span><span class="n">energy</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="s2">&quot;0.5 deg&quot;</span><span class="p">)</span>
+<span></span><span class="n">y</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">energy</span><span class="o">=</span><span class="n">energy</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="s2">&quot;0.5 deg&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">energy</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;0 &lt; zen &lt; 20&quot;</span><span class="p">)</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">energy</span><span class="o">=</span><span class="n">energy</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="s2">&quot;0.5 deg&quot;</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">energy</span><span class="o">=</span><span class="n">energy</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="s2">&quot;0.5 deg&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">energy</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;20 &lt; zen &lt; 40&quot;</span><span class="p">)</span>
-<span class="n">y</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">energy</span><span class="o">=</span><span class="n">energy</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="s2">&quot;0.5 deg&quot;</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">models</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">energy</span><span class="o">=</span><span class="n">energy</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="s2">&quot;0.5 deg&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">energy</span><span class="o">.</span><span class="n">center</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;40 &lt; zen &lt; 90&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">()</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Energy (TeV)&quot;</span><span class="p">)</span>
@@ -1272,7 +1268,7 @@ Wall time: 2.34 s
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;matplotlib.legend.Legend at 0x7fc609af8710&gt;
+&lt;matplotlib.legend.Legend at 0x7fd0c127b240&gt;
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1343,7 +1339,7 @@ Wall time: 2.34 s
 </div>
 <div class="output_area rendered_html docutils container">
 <i>HDUIndexTable length=6</i>
-<table id="table140488544460248" class="table-striped table-bordered table-condensed">
+<table id="table140534576699432" class="table-striped table-bordered table-condensed">
 <thead><tr><th>OBS_ID</th><th>HDU_TYPE</th><th>HDU_CLASS</th><th>FILE_DIR</th><th>FILE_NAME</th><th>HDU_NAME</th><th>SIZE</th></tr></thead>
 <thead><tr><th>int64</th><th>str6</th><th>str9</th><th>str4</th><th>str36</th><th>str6</th><th>int64</th></tr></thead>
 <tr><td>20137</td><td>bkg</td><td>bkg_3d</td><td>data</td><td>hess_dl3_dr1_obs_id_020137.fits.gz</td><td>bkg</td><td>207360</td></tr>
@@ -1440,7 +1436,7 @@ Number of observations: 105
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># the events</span>
-<span class="n">obs</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span>
+<span class="n">obs</span><span class="o">.</span><span class="n">events</span><span class="o">.</span><span class="n">select_offset</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">)</span><span class="o">.</span><span class="n">peek</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -1475,7 +1471,7 @@ Number of observations: 105
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-/home/runner/work/gammapy-docs/gammapy-docs/gammapy/gammapy/irf/effective_area.py:533: MatplotlibDeprecationWarning: shading=&#39;flat&#39; when X and Y have the same dimensions as C is deprecated since 3.3.  Either specify the corners of the quadrilaterals with X and Y, or pass shading=&#39;auto&#39;, &#39;nearest&#39; or &#39;gouraud&#39;, or set rcParams[&#39;pcolor.shading&#39;].  This will become an error two minor releases later.
+/home/runner/work/gammapy-docs/gammapy-docs/gammapy/gammapy/irf/effective_area.py:468: MatplotlibDeprecationWarning: shading=&#39;flat&#39; when X and Y have the same dimensions as C is deprecated since 3.3.  Either specify the corners of the quadrilaterals with X and Y, or pass shading=&#39;auto&#39;, &#39;nearest&#39; or &#39;gouraud&#39;, or set rcParams[&#39;pcolor.shading&#39;].  This will become an error two minor releases later.
   caxes = ax.pcolormesh(energy.value, offset.value, aeff.value.T, **kwargs)
 /usr/share/miniconda/envs/gammapy-dev/lib/python3.7/site-packages/astropy/units/quantity.py:477: RuntimeWarning: invalid value encountered in true_divide
   result = super().__array_ufunc__(function, method, *arrays, **kwargs)
@@ -1544,7 +1540,7 @@ Number of observations: 105
     <p>
         &#169; Copyright 2021, The Gammapy developers.
       <span class="lastupdated">
-        Last updated on 10 Jan 2021.
+        Last updated on 15 Jan 2021.
       </span>
 
     </p>

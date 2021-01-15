@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>gammapy.irf.background &mdash; gammapy v0.18.3.dev254+gf65ad6286</title>
+  <title>gammapy.irf.background &mdash; gammapy v0.18.3.dev361+ge1744c61b</title>
   
 
   
@@ -78,7 +78,7 @@
             
             
               <div class="version">
-                0.18.3.dev254+gf65ad6286
+                0.18.3.dev361+ge1744c61b
               </div>
             
           
@@ -512,7 +512,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../utils/index.html#module-gammapy.utils.regions">gammapy.utils.regions Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../utils/index.html#module-gammapy.utils.scripts">gammapy.utils.scripts Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../utils/index.html#module-gammapy.utils.testing">gammapy.utils.testing Module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../utils/index.html#module-gammapy.utils.nddata">gammapy.utils.nddata Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../utils/index.html#module-gammapy.utils.time">gammapy.utils.time Module</a></li>
 </ul>
 </li>
@@ -620,33 +619,91 @@
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
-<span class="kn">from</span> <span class="nn">astropy.io</span> <span class="kn">import</span> <span class="n">fits</span>
-<span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span>
 <span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">MapAxes</span><span class="p">,</span> <span class="n">MapAxis</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.integrate</span> <span class="kn">import</span> <span class="n">trapz_loglog</span>
-<span class="kn">from</span> <span class="nn">gammapy.utils.nddata</span> <span class="kn">import</span> <span class="n">NDDataArray</span>
-<span class="kn">from</span> <span class="nn">gammapy.utils.scripts</span> <span class="kn">import</span> <span class="n">make_path</span>
+<span class="kn">from</span> <span class="nn">.core</span> <span class="kn">import</span> <span class="n">IRF</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Background3D&quot;</span><span class="p">,</span> <span class="s2">&quot;Background2D&quot;</span><span class="p">]</span>
 
 <span class="n">log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="Background3D"><a class="viewcode-back" href="../../../api/gammapy.irf.Background3D.html#gammapy.irf.Background3D">[docs]</a><span class="k">class</span> <span class="nc">Background3D</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">BackgroundIRF</span><span class="p">(</span><span class="n">IRF</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Background IRF base class&quot;&quot;&quot;</span>
+    <span class="n">default_interp_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">values_scale</span><span class="o">=</span><span class="s2">&quot;log&quot;</span>
+    <span class="p">)</span>
+    <span class="sd">&quot;&quot;&quot;Default Interpolation kwargs to extrapolate.&quot;&quot;&quot;</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_table</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf-dl3&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Read from `~astropy.table.Table`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        table : `~astropy.table.Table`</span>
+<span class="sd">            Table with background data</span>
+<span class="sd">        format : {&quot;gadf-dl3&quot;}</span>
+<span class="sd">            Format specification</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bkg : `Background2D` or `Background2D`</span>
+<span class="sd">            Background IRF class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="n">MapAxes</span><span class="o">.</span><span class="n">from_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)[</span><span class="bp">cls</span><span class="o">.</span><span class="n">required_axes</span><span class="p">]</span>
+        
+        <span class="c1"># Spec says key should be &quot;BKG&quot;, but there are files around</span>
+        <span class="c1"># (e.g. CTA 1DC) that use &quot;BGD&quot;. For now we support both</span>
+        <span class="k">if</span> <span class="s2">&quot;BKG&quot;</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+            <span class="n">bkg_name</span> <span class="o">=</span> <span class="s2">&quot;BKG&quot;</span>
+        <span class="k">elif</span> <span class="s2">&quot;BGD&quot;</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
+            <span class="n">bkg_name</span> <span class="o">=</span> <span class="s2">&quot;BGD&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid column names. Need &quot;BKG&quot; or &quot;BGD&quot;.&#39;</span><span class="p">)</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">bkg_name</span><span class="p">]</span><span class="o">.</span><span class="n">quantity</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">unit</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">unit</span><span class="p">,</span> <span class="n">u</span><span class="o">.</span><span class="n">UnrecognizedUnit</span><span class="p">):</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;s-1 MeV-1 sr-1&quot;</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Invalid unit found in background table! Assuming (s-1 MeV-1 sr-1)&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># TODO: The present HESS and CTA backgroundfits files</span>
+        <span class="c1">#  have a reverse order (lon, lat, E) than recommened in GADF(E, lat, lon)</span>
+        <span class="c1">#  For now, we suport both.</span>
+
+        <span class="k">if</span> <span class="n">axes</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">axes</span><span class="o">.</span><span class="n">shape</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Ambiguous axes order in Background fits files!&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">!=</span> <span class="n">axes</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Transposing background table on read&quot;</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+            <span class="n">meta</span><span class="o">=</span><span class="n">table</span><span class="o">.</span><span class="n">meta</span><span class="p">,</span>
+            <span class="n">unit</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">unit</span>
+        <span class="p">)</span>
+
+
+<div class="viewcode-block" id="Background3D"><a class="viewcode-back" href="../../../api/gammapy.irf.Background3D.html#gammapy.irf.Background3D">[docs]</a><span class="k">class</span> <span class="nc">Background3D</span><span class="p">(</span><span class="n">BackgroundIRF</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Background 3D.</span>
 
 <span class="sd">    Data format specification: :ref:`gadf:bkg_3d`</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    energy_axis : `MapAxis`</span>
-<span class="sd">        Energy axis</span>
-<span class="sd">    fov_lon_axis: `MapAxis`</span>
-<span class="sd">        FOV coordinate X-axis</span>
-<span class="sd">    fov_lat_axis : `MapAxis`</span>
-<span class="sd">        FOV coordinate Y-axis.</span>
-<span class="sd">    data : `~astropy.units.Quantity`</span>
-<span class="sd">        Background rate (usually: ``s^-1 MeV^-1 sr^-1``)</span>
+<span class="sd">    axes : list of `MapAxis` or `MapAxes` object</span>
+<span class="sd">        Required data axes: [&quot;energy&quot;, &quot;fov_lon&quot;, &quot;fov_lat&quot;] in the given order.</span>
+<span class="sd">    data : `~np.ndarray`</span>
+<span class="sd">        Data array.</span>
+<span class="sd">    unit : str or `~astropy.units.Unit`</span>
+<span class="sd">        Data unit usuually ``s^-1 MeV^-1 sr^-1``</span>
+<span class="sd">    meta : dict</span>
+<span class="sd">        Meta data</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
@@ -657,171 +714,17 @@
 <span class="sd">    &gt;&gt;&gt; bkg_3d = Background3D.read(filename, hdu=&#39;BACKGROUND&#39;)</span>
 <span class="sd">    &gt;&gt;&gt; print(bkg_3d)</span>
 <span class="sd">    Background3D</span>
-<span class="sd">    NDDataArray summary info</span>
-<span class="sd">    energy         : size =    21, min =  0.016 TeV, max = 158.489 TeV</span>
-<span class="sd">    fov_lon           : size =    36, min = -5.833 deg, max =  5.833 deg</span>
-<span class="sd">    fov_lat           : size =    36, min = -5.833 deg, max =  5.833 deg</span>
-<span class="sd">    Data           : size = 27216, min =  0.000 1 / (MeV s sr), max =  0.421 1 / (MeV s sr)</span>
+<span class="sd">    ------------</span>
+
+<span class="sd">      axes  : [&#39;energy&#39;, &#39;fov_lon&#39;, &#39;fov_lat&#39;]</span>
+<span class="sd">      shape : (21, 36, 36)</span>
+<span class="sd">      ndim  : 3</span>
+<span class="sd">      unit  : 1 / (MeV s sr)</span>
+<span class="sd">      dtype : &gt;f4</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
-
     <span class="n">tag</span> <span class="o">=</span> <span class="s2">&quot;bkg_3d&quot;</span>
-    <span class="n">default_interp_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-        <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">values_scale</span><span class="o">=</span><span class="s2">&quot;log&quot;</span>
-    <span class="p">)</span>
-    <span class="sd">&quot;&quot;&quot;Default Interpolation kwargs for `~gammapy.utils.nddata.NDDataArray`. Extrapolate.&quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">energy_axis</span><span class="p">,</span>
-        <span class="n">fov_lon_axis</span><span class="p">,</span>
-        <span class="n">fov_lat_axis</span><span class="p">,</span>
-        <span class="n">data</span><span class="p">,</span>
-        <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-        <span class="n">interp_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="k">if</span> <span class="n">interp_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">interp_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_interp_kwargs</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">NDDataArray</span><span class="p">(</span>
-            <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">fov_lon_axis</span><span class="p">,</span> <span class="n">fov_lat_axis</span><span class="p">],</span>
-            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
-            <span class="n">interp_kwargs</span><span class="o">=</span><span class="n">interp_kwargs</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">assert_names</span><span class="p">([</span><span class="s2">&quot;energy&quot;</span><span class="p">,</span> <span class="s2">&quot;fov_lon&quot;</span><span class="p">,</span> <span class="s2">&quot;fov_lat&quot;</span><span class="p">])</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">meta</span> <span class="ow">or</span> <span class="p">{}</span>
-
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">ss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
-        <span class="n">ss</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="k">return</span> <span class="n">ss</span>
-
-<div class="viewcode-block" id="Background3D.from_table"><a class="viewcode-back" href="../../../api/gammapy.irf.Background3D.html#gammapy.irf.Background3D.from_table">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_table</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">table</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Read from `~astropy.table.Table`.&quot;&quot;&quot;</span>
-        <span class="c1"># Spec says key should be &quot;BKG&quot;, but there are files around</span>
-        <span class="c1"># (e.g. CTA 1DC) that use &quot;BGD&quot;. For now we support both</span>
-        <span class="k">if</span> <span class="s2">&quot;BKG&quot;</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
-            <span class="n">bkg_name</span> <span class="o">=</span> <span class="s2">&quot;BKG&quot;</span>
-        <span class="k">elif</span> <span class="s2">&quot;BGD&quot;</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
-            <span class="n">bkg_name</span> <span class="o">=</span> <span class="s2">&quot;BGD&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid column names. Need &quot;BKG&quot; or &quot;BGD&quot;.&#39;</span><span class="p">)</span>
-
-        <span class="n">data_unit</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">bkg_name</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
-        <span class="k">if</span> <span class="n">data_unit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">data_unit</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="n">bkg_name</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span><span class="p">,</span> <span class="n">parse_strict</span><span class="o">=</span><span class="s2">&quot;silent&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data_unit</span><span class="p">,</span> <span class="n">u</span><span class="o">.</span><span class="n">UnrecognizedUnit</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">data_unit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
-            <span class="n">data_unit</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;s-1 MeV-1 sr-1&quot;</span><span class="p">)</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="s2">&quot;Invalid unit found in background table! Assuming (s-1 MeV-1 sr-1)&quot;</span>
-            <span class="p">)</span>
-
-        <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_table</span><span class="p">(</span>
-            <span class="n">table</span><span class="p">,</span> <span class="n">column_prefix</span><span class="o">=</span><span class="s2">&quot;ENERG&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf-dl3&quot;</span>
-        <span class="p">)</span>
-        <span class="n">fov_lon_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_table</span><span class="p">(</span>
-            <span class="n">table</span><span class="p">,</span> <span class="n">column_prefix</span><span class="o">=</span><span class="s2">&quot;DETX&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf-dl3&quot;</span>
-        <span class="p">)</span>
-        <span class="n">fov_lat_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_table</span><span class="p">(</span>
-            <span class="n">table</span><span class="p">,</span> <span class="n">column_prefix</span><span class="o">=</span><span class="s2">&quot;DETY&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf-dl3&quot;</span>
-        <span class="p">)</span>
-
-        <span class="c1"># TODO: The present HESS and CTA backgroundfits files</span>
-        <span class="c1">#  have a reverse order (lon, lat, E) than recommened in GADF(E, lat, lon)</span>
-        <span class="c1">#  For now, we suport both.</span>
-
-        <span class="n">data</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">bkg_name</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">data_unit</span>
-        <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">nbin</span><span class="p">,</span> <span class="n">fov_lon_axis</span><span class="o">.</span><span class="n">nbin</span><span class="p">,</span> <span class="n">fov_lat_axis</span><span class="o">.</span><span class="n">nbin</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">shape</span> <span class="o">==</span> <span class="n">shape</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Ambiguous axes order in Background fits files!&quot;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">!=</span> <span class="n">shape</span><span class="p">:</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Transposing background table on read&quot;</span><span class="p">)</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
-
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
-            <span class="n">energy_axis</span><span class="o">=</span><span class="n">energy_axis</span><span class="p">,</span>
-            <span class="n">fov_lon_axis</span><span class="o">=</span><span class="n">fov_lon_axis</span><span class="p">,</span>
-            <span class="n">fov_lat_axis</span><span class="o">=</span><span class="n">fov_lat_axis</span><span class="p">,</span>
-            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
-            <span class="n">meta</span><span class="o">=</span><span class="n">table</span><span class="o">.</span><span class="n">meta</span><span class="p">,</span>
-        <span class="p">)</span></div>
-
-<div class="viewcode-block" id="Background3D.from_hdulist"><a class="viewcode-back" href="../../../api/gammapy.irf.Background3D.html#gammapy.irf.Background3D.from_hdulist">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_hdulist</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;BACKGROUND&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Create from `~astropy.io.fits.HDUList`.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_table</span><span class="p">(</span><span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">hdulist</span><span class="p">[</span><span class="n">hdu</span><span class="p">]))</span></div>
-
-<div class="viewcode-block" id="Background3D.read"><a class="viewcode-back" href="../../../api/gammapy.irf.Background3D.html#gammapy.irf.Background3D.read">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;BACKGROUND&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Read from file.&quot;&quot;&quot;</span>
-        <span class="k">with</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">make_path</span><span class="p">(</span><span class="n">filename</span><span class="p">)),</span> <span class="n">memmap</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">hdulist</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="n">hdu</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="Background3D.to_table"><a class="viewcode-back" href="../../../api/gammapy.irf.Background3D.html#gammapy.irf.Background3D.to_table">[docs]</a>    <span class="k">def</span> <span class="nf">to_table</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Convert to `~astropy.table.Table`.&quot;&quot;&quot;</span>
-        <span class="c1"># TODO: fix axis order</span>
-        <span class="n">axes</span> <span class="o">=</span> <span class="n">MapAxes</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-        <span class="n">table</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">to_table</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf-dl3&quot;</span><span class="p">)</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s2">&quot;HDUCLAS2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;BKG&quot;</span>
-        <span class="n">table</span><span class="p">[</span><span class="s2">&quot;BKG&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">table</span></div>
-
-<div class="viewcode-block" id="Background3D.to_table_hdu"><a class="viewcode-back" href="../../../api/gammapy.irf.Background3D.html#gammapy.irf.Background3D.to_table_hdu">[docs]</a>    <span class="k">def</span> <span class="nf">to_table_hdu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;BACKGROUND&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Convert to `~astropy.io.fits.BinTableHDU`.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_table</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="Background3D.evaluate"><a class="viewcode-back" href="../../../api/gammapy.irf.Background3D.html#gammapy.irf.Background3D.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fov_lon</span><span class="p">,</span> <span class="n">fov_lat</span><span class="p">,</span> <span class="n">energy_reco</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Evaluate at given FOV position and energy.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        fov_lon, fov_lat : `~astropy.coordinates.Angle`</span>
-<span class="sd">            FOV coordinates expecting in AltAz frame.</span>
-<span class="sd">        energy_reco : `~astropy.units.Quantity`</span>
-<span class="sd">            energy on which you want to interpolate. Same dimension than fov_lat and fov_lat</span>
-<span class="sd">        method : str {&#39;linear&#39;, &#39;nearest&#39;}, optional</span>
-<span class="sd">            Interpolation method</span>
-<span class="sd">        kwargs : dict</span>
-<span class="sd">            option for interpolation for `~scipy.interpolate.RegularGridInterpolator`</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        array : `~astropy.units.Quantity`</span>
-<span class="sd">            Interpolated values, axis order is the same as for the NDData array</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
-            <span class="n">fov_lon</span><span class="o">=</span><span class="n">fov_lon</span><span class="p">,</span>
-            <span class="n">fov_lat</span><span class="o">=</span><span class="n">fov_lat</span><span class="p">,</span>
-            <span class="n">energy</span><span class="o">=</span><span class="n">energy_reco</span><span class="p">,</span>
-            <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="n">values</span></div>
-
-<div class="viewcode-block" id="Background3D.evaluate_integrate"><a class="viewcode-back" href="../../../api/gammapy.irf.Background3D.html#gammapy.irf.Background3D.evaluate_integrate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate_integrate</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">fov_lon</span><span class="p">,</span> <span class="n">fov_lat</span><span class="p">,</span> <span class="n">energy_reco</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Integrate in a given energy band.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        fov_lon, fov_lat : `~astropy.coordinates.Angle`</span>
-<span class="sd">            FOV coordinates expecting in AltAz frame.</span>
-<span class="sd">        energy_reco: `~astropy.units.Quantity`</span>
-<span class="sd">            Reconstructed energy edges.</span>
-<span class="sd">        method : {&#39;linear&#39;, &#39;nearest&#39;}, optional</span>
-<span class="sd">            Interpolation method</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        array : `~astropy.units.Quantity`</span>
-<span class="sd">            Returns 2D array with axes offset</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">fov_lon</span><span class="p">,</span> <span class="n">fov_lat</span><span class="p">,</span> <span class="n">energy_reco</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">trapz_loglog</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">energy_reco</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+    <span class="n">required_axes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">,</span> <span class="s2">&quot;fov_lon&quot;</span><span class="p">,</span> <span class="s2">&quot;fov_lat&quot;</span><span class="p">]</span>
 
 <div class="viewcode-block" id="Background3D.to_2d"><a class="viewcode-back" href="../../../api/gammapy.irf.Background3D.html#gammapy.irf.Background3D.to_2d">[docs]</a>    <span class="k">def</span> <span class="nf">to_2d</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Convert to `Background2D`.</span>
@@ -829,188 +732,42 @@
 <span class="sd">        This takes the values at Y = 0 and X &gt;= 0.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># TODO: this is incorrect as it misses the Jacobian?</span>
-        <span class="n">idx_lon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;fov_lon&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">coord_to_idx</span><span class="p">(</span><span class="mi">0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">idx_lat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;fov_lat&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">coord_to_idx</span><span class="p">(</span><span class="mi">0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="n">idx_lon</span><span class="p">:,</span> <span class="n">idx_lat</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">idx_lon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;fov_lon&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">coord_to_idx</span><span class="p">(</span><span class="mi">0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">idx_lat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;fov_lat&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">coord_to_idx</span><span class="p">(</span><span class="mi">0</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantity</span><span class="p">[:,</span> <span class="n">idx_lon</span><span class="p">:,</span> <span class="n">idx_lat</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
 
-        <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;fov_lon&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">idx_lon</span><span class="p">:]</span>
-
+        <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;fov_lon&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">idx_lon</span><span class="p">:]</span>
         <span class="n">offset_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_edges</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;offset&quot;</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">Background2D</span><span class="p">(</span>
-            <span class="n">energy_axis</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">],</span> <span class="n">offset_axis</span><span class="o">=</span><span class="n">offset_axis</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">],</span> <span class="n">offset_axis</span><span class="p">],</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">unit</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="Background3D.peek"><a class="viewcode-back" href="../../../api/gammapy.irf.Background3D.html#gammapy.irf.Background3D.peek">[docs]</a>    <span class="k">def</span> <span class="nf">peek</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">)):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_2d</span><span class="p">()</span><span class="o">.</span><span class="n">peek</span><span class="p">(</span><span class="n">figsize</span><span class="p">)</span></div></div>
 
 
-<div class="viewcode-block" id="Background2D"><a class="viewcode-back" href="../../../api/gammapy.irf.Background2D.html#gammapy.irf.Background2D">[docs]</a><span class="k">class</span> <span class="nc">Background2D</span><span class="p">:</span>
+<div class="viewcode-block" id="Background2D"><a class="viewcode-back" href="../../../api/gammapy.irf.Background2D.html#gammapy.irf.Background2D">[docs]</a><span class="k">class</span> <span class="nc">Background2D</span><span class="p">(</span><span class="n">BackgroundIRF</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Background 2D.</span>
 
 <span class="sd">    Data format specification: :ref:`gadf:bkg_2d`</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    energy_axis : `MapAxis`</span>
-<span class="sd">        Energy axis</span>
-<span class="sd">    offset_axis : `MapAxis`</span>
-<span class="sd">        FOV coordinate offset-axis</span>
-<span class="sd">    data : `~astropy.units.Quantity`</span>
-<span class="sd">        Background rate (usually: ``s^-1 MeV^-1 sr^-1``)</span>
+<span class="sd">    axes : list of `MapAxis` or `MapAxes` object</span>
+<span class="sd">        Required data axes: [&quot;energy&quot;, &quot;offset&quot;] in the given order.</span>
+<span class="sd">    data : `~np.ndarray`</span>
+<span class="sd">        Data array.</span>
+<span class="sd">    unit : str or `~astropy.units.Unit`</span>
+<span class="sd">        Data unit usually ``s^-1 MeV^-1 sr^-1``</span>
+<span class="sd">    meta : dict</span>
+<span class="sd">        Meta data</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">tag</span> <span class="o">=</span> <span class="s2">&quot;bkg_2d&quot;</span>
+    <span class="n">required_axes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">,</span> <span class="s2">&quot;offset&quot;</span><span class="p">]</span>
     <span class="n">default_interp_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-    <span class="sd">&quot;&quot;&quot;Default Interpolation kwargs for `~gammapy.utils.nddata.NDDataArray`. Extrapolate.&quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">energy_axis</span><span class="p">,</span> <span class="n">offset_axis</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">interp_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="k">if</span> <span class="n">interp_kwargs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">interp_kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_interp_kwargs</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">NDDataArray</span><span class="p">(</span>
-            <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">energy_axis</span><span class="p">,</span> <span class="n">offset_axis</span><span class="p">],</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">interp_kwargs</span><span class="o">=</span><span class="n">interp_kwargs</span>
-        <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">assert_names</span><span class="p">([</span><span class="s2">&quot;energy&quot;</span><span class="p">,</span> <span class="s2">&quot;offset&quot;</span><span class="p">])</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="n">meta</span> <span class="ow">or</span> <span class="p">{}</span>
-
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">ss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
-        <span class="n">ss</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="k">return</span> <span class="n">ss</span>
-
-<div class="viewcode-block" id="Background2D.from_table"><a class="viewcode-back" href="../../../api/gammapy.irf.Background2D.html#gammapy.irf.Background2D.from_table">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_table</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">table</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Read from `~astropy.table.Table`.&quot;&quot;&quot;</span>
-        <span class="c1"># Spec says key should be &quot;BKG&quot;, but there are files around</span>
-        <span class="c1"># (e.g. CTA 1DC) that use &quot;BGD&quot;. For now we support both</span>
-
-        <span class="k">if</span> <span class="s2">&quot;BKG&quot;</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
-            <span class="n">bkg_name</span> <span class="o">=</span> <span class="s2">&quot;BKG&quot;</span>
-        <span class="k">elif</span> <span class="s2">&quot;BGD&quot;</span> <span class="ow">in</span> <span class="n">table</span><span class="o">.</span><span class="n">colnames</span><span class="p">:</span>
-            <span class="n">bkg_name</span> <span class="o">=</span> <span class="s2">&quot;BGD&quot;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Invalid column names. Need &quot;BKG&quot; or &quot;BGD&quot;.&#39;</span><span class="p">)</span>
-
-        <span class="n">data_unit</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">bkg_name</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span>
-        <span class="k">if</span> <span class="n">data_unit</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">data_unit</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="n">data_unit</span><span class="p">,</span> <span class="n">parse_strict</span><span class="o">=</span><span class="s2">&quot;silent&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data_unit</span><span class="p">,</span> <span class="n">u</span><span class="o">.</span><span class="n">UnrecognizedUnit</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">data_unit</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
-            <span class="n">data_unit</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="s2">&quot;s-1 MeV-1 sr-1&quot;</span><span class="p">)</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="s2">&quot;Invalid unit found in background table! Assuming (s-1 MeV-1 sr-1)&quot;</span>
-            <span class="p">)</span>
-
-        <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_table</span><span class="p">(</span>
-            <span class="n">table</span><span class="p">,</span> <span class="n">column_prefix</span><span class="o">=</span><span class="s2">&quot;ENERG&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf-dl3&quot;</span>
-        <span class="p">)</span>
-        <span class="n">offset_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_table</span><span class="p">(</span>
-            <span class="n">table</span><span class="p">,</span> <span class="n">column_prefix</span><span class="o">=</span><span class="s2">&quot;THETA&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf-dl3&quot;</span>
-        <span class="p">)</span>
-
-        <span class="c1"># TODO: The present HESS and CTA backgroundfits files</span>
-        <span class="c1"># have a reverse order (theta, E) than recommened in GADF(E, theta)</span>
-        <span class="c1"># For now, we suport both.</span>
-
-        <span class="n">data</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">bkg_name</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">data_unit</span>
-        <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">nbin</span><span class="p">,</span> <span class="n">offset_axis</span><span class="o">.</span><span class="n">nbin</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">shape</span> <span class="o">==</span> <span class="n">shape</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Ambiguous axes order in Background fits files!&quot;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">!=</span> <span class="n">shape</span><span class="p">:</span>
-            <span class="n">log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Transposing background table on read&quot;</span><span class="p">)</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
-
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
-            <span class="n">energy_axis</span><span class="o">=</span><span class="n">energy_axis</span><span class="p">,</span>
-            <span class="n">offset_axis</span><span class="o">=</span><span class="n">offset_axis</span><span class="p">,</span>
-            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
-            <span class="n">meta</span><span class="o">=</span><span class="n">table</span><span class="o">.</span><span class="n">meta</span><span class="p">,</span>
-        <span class="p">)</span></div>
-
-<div class="viewcode-block" id="Background2D.from_hdulist"><a class="viewcode-back" href="../../../api/gammapy.irf.Background2D.html#gammapy.irf.Background2D.from_hdulist">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_hdulist</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;BACKGROUND&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Create from `~astropy.io.fits.HDUList`.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_table</span><span class="p">(</span><span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">hdulist</span><span class="p">[</span><span class="n">hdu</span><span class="p">]))</span></div>
-
-<div class="viewcode-block" id="Background2D.read"><a class="viewcode-back" href="../../../api/gammapy.irf.Background2D.html#gammapy.irf.Background2D.read">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="s2">&quot;BACKGROUND&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Read from file.&quot;&quot;&quot;</span>
-        <span class="k">with</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">make_path</span><span class="p">(</span><span class="n">filename</span><span class="p">)),</span> <span class="n">memmap</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">hdulist</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="n">hdu</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="Background2D.to_table"><a class="viewcode-back" href="../../../api/gammapy.irf.Background2D.html#gammapy.irf.Background2D.to_table">[docs]</a>    <span class="k">def</span> <span class="nf">to_table</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Convert to `~astropy.table.Table`.&quot;&quot;&quot;</span>
-        <span class="n">table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">to_table</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf-dl3&quot;</span><span class="p">)</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">meta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-
-        <span class="c1"># TODO: add other required meta data</span>
-        <span class="n">table</span><span class="o">.</span><span class="n">meta</span><span class="p">[</span><span class="s2">&quot;HDUCLAS2&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;BKG&quot;</span>
-        <span class="n">table</span><span class="p">[</span><span class="s2">&quot;BKG&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">T</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">table</span></div>
-
-<div class="viewcode-block" id="Background2D.to_table_hdu"><a class="viewcode-back" href="../../../api/gammapy.irf.Background2D.html#gammapy.irf.Background2D.to_table_hdu">[docs]</a>    <span class="k">def</span> <span class="nf">to_table_hdu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;BACKGROUND&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Convert to `~astropy.io.fits.BinTableHDU`.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_table</span><span class="p">(),</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="Background2D.evaluate"><a class="viewcode-back" href="../../../api/gammapy.irf.Background2D.html#gammapy.irf.Background2D.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fov_lon</span><span class="p">,</span> <span class="n">fov_lat</span><span class="p">,</span> <span class="n">energy_reco</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Evaluate at a given FOV position and energy.</span>
-
-<span class="sd">        The fov_lon, fov_lat, energy_reco has to have the same shape</span>
-<span class="sd">        since this is a set of points on which you want to evaluate.</span>
-
-<span class="sd">        To have the same API than background 3D for the</span>
-<span class="sd">        background evaluation, the offset is ``fov_altaz_lon``.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        fov_lon, fov_lat : `~astropy.coordinates.Angle`</span>
-<span class="sd">            FOV coordinates expecting in AltAz frame, same shape than energy_reco</span>
-<span class="sd">        energy_reco : `~astropy.units.Quantity`</span>
-<span class="sd">            Reconstructed energy, same dimension than fov_lat and fov_lat</span>
-<span class="sd">        method : str {&#39;linear&#39;, &#39;nearest&#39;}, optional</span>
-<span class="sd">            Interpolation method</span>
-<span class="sd">        kwargs : dict</span>
-<span class="sd">            option for interpolation for `~scipy.interpolate.RegularGridInterpolator`</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        array : `~astropy.units.Quantity`</span>
-<span class="sd">            Interpolated values, axis order is the same as for the NDData array</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">offset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">fov_lon</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">fov_lat</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
-            <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span> <span class="n">energy</span><span class="o">=</span><span class="n">energy_reco</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-        <span class="p">)</span></div>
-
-<div class="viewcode-block" id="Background2D.evaluate_integrate"><a class="viewcode-back" href="../../../api/gammapy.irf.Background2D.html#gammapy.irf.Background2D.evaluate_integrate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate_integrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fov_lon</span><span class="p">,</span> <span class="n">fov_lat</span><span class="p">,</span> <span class="n">energy_reco</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Evaluate at given FOV position and energy, by integrating over the energy range.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        fov_lon, fov_lat : `~astropy.coordinates.Angle`</span>
-<span class="sd">            FOV coordinates expecting in AltAz frame.</span>
-<span class="sd">        energy_reco: `~astropy.units.Quantity`</span>
-<span class="sd">            Reconstructed energy edges.</span>
-<span class="sd">        method : {&#39;linear&#39;, &#39;nearest&#39;}, optional</span>
-<span class="sd">            Interpolation method</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        array : `~astropy.units.Quantity`</span>
-<span class="sd">            Returns 2D array with axes offset</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">fov_lon</span><span class="p">,</span> <span class="n">fov_lat</span><span class="p">,</span> <span class="n">energy_reco</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">trapz_loglog</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">energy_reco</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="Background2D.to_3d"><a class="viewcode-back" href="../../../api/gammapy.irf.Background2D.html#gammapy.irf.Background2D.to_3d">[docs]</a>    <span class="k">def</span> <span class="nf">to_3d</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Convert to `Background3D`.</span>
-
-<span class="sd">        Fill in a radially symmetric way.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+    <span class="sd">&quot;&quot;&quot;Default Interpolation kwargs.&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="Background2D.plot"><a class="viewcode-back" href="../../../api/gammapy.irf.Background2D.html#gammapy.irf.Background2D.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">add_cbar</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Plot energy offset dependence of the background model.</span>
@@ -1020,9 +777,9 @@
 
         <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
 
-        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s2">&quot;TeV&quot;</span><span class="p">)</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;offset&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s2">&quot;deg&quot;</span><span class="p">)</span>
-        <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s2">&quot;TeV&quot;</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;offset&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span><span class="o">.</span><span class="n">to_value</span><span class="p">(</span><span class="s2">&quot;deg&quot;</span><span class="p">)</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantity</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">value</span>
 
         <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;cmap&quot;</span><span class="p">,</span> <span class="s2">&quot;GnBu&quot;</span><span class="p">)</span>
         <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;edgecolors&quot;</span><span class="p">,</span> <span class="s2">&quot;face&quot;</span><span class="p">)</span>
@@ -1036,18 +793,16 @@
         <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="n">xmin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">add_cbar</span><span class="p">:</span>
-            <span class="n">label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Background rate (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">)&quot;</span>
+            <span class="n">label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Background rate (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">)&quot;</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">caxes</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Background2D.plot_offset_dependence"><a class="viewcode-back" href="../../../api/gammapy.irf.Background2D.html#gammapy.irf.Background2D.plot_offset_dependence">[docs]</a>    <span class="k">def</span> <span class="nf">plot_offset_dependence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">energy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Background2D.plot_offset_dependence"><a class="viewcode-back" href="../../../api/gammapy.irf.Background2D.html#gammapy.irf.Background2D.plot_offset_dependence">[docs]</a>    <span class="k">def</span> <span class="nf">plot_offset_dependence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">energy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Plot background rate versus offset for a given energy.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        ax : `~matplotlib.axes.Axes`, optional</span>
 <span class="sd">            Axis</span>
-<span class="sd">        offset : `~astropy.coordinates.Angle`</span>
-<span class="sd">            Offset axis</span>
 <span class="sd">        energy : `~astropy.units.Quantity`</span>
 <span class="sd">            Energy</span>
 
@@ -1061,27 +816,26 @@
         <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
 
         <span class="k">if</span> <span class="n">energy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">energy_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span>
+            <span class="n">energy_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span>
             <span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">energy_axis</span><span class="o">.</span><span class="n">center</span><span class="o">.</span><span class="n">value</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
             <span class="n">energy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="n">e_min</span><span class="p">,</span> <span class="n">e_max</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="o">*</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">unit</span>
 
-        <span class="k">if</span> <span class="n">offset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;offset&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">center</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;offset&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">center</span>
 
         <span class="k">for</span> <span class="n">ee</span> <span class="ow">in</span> <span class="n">energy</span><span class="p">:</span>
-            <span class="n">bkg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span> <span class="n">energy</span><span class="o">=</span><span class="n">ee</span><span class="p">)</span>
+            <span class="n">bkg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span> <span class="n">energy</span><span class="o">=</span><span class="n">ee</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">bkg</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
                 <span class="k">continue</span>
             <span class="n">label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;energy = </span><span class="si">{</span><span class="n">ee</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span> <span class="n">bkg</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Offset (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Background rate (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Offset (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Background rate (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s2">&quot;log&quot;</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;upper right&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ax</span></div>
 
-<div class="viewcode-block" id="Background2D.plot_energy_dependence"><a class="viewcode-back" href="../../../api/gammapy.irf.Background2D.html#gammapy.irf.Background2D.plot_energy_dependence">[docs]</a>    <span class="k">def</span> <span class="nf">plot_energy_dependence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">energy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Background2D.plot_energy_dependence"><a class="viewcode-back" href="../../../api/gammapy.irf.Background2D.html#gammapy.irf.Background2D.plot_energy_dependence">[docs]</a>    <span class="k">def</span> <span class="nf">plot_energy_dependence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Plot background rate versus energy for a given offset.</span>
 
 <span class="sd">        Parameters</span>
@@ -1090,8 +844,6 @@
 <span class="sd">            Axis</span>
 <span class="sd">        offset : `~astropy.coordinates.Angle`</span>
 <span class="sd">            Offset</span>
-<span class="sd">        energy : `~astropy.units.Quantity`</span>
-<span class="sd">            Energy axis</span>
 <span class="sd">        kwargs : dict</span>
 <span class="sd">            Forwarded tp plt.plot()</span>
 
@@ -1105,22 +857,21 @@
         <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
 
         <span class="k">if</span> <span class="n">offset</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">offset_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;offset&quot;</span><span class="p">]</span>
+            <span class="n">offset_axis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;offset&quot;</span><span class="p">]</span>
             <span class="n">off_min</span><span class="p">,</span> <span class="n">off_max</span> <span class="o">=</span> <span class="n">offset_axis</span><span class="o">.</span><span class="n">center</span><span class="o">.</span><span class="n">value</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
             <span class="n">offset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">off_min</span><span class="p">,</span> <span class="n">off_max</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span> <span class="o">*</span> <span class="n">offset_axis</span><span class="o">.</span><span class="n">unit</span>
 
-        <span class="k">if</span> <span class="n">energy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">center</span>
+        <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">center</span>
 
         <span class="k">for</span> <span class="n">off</span> <span class="ow">in</span> <span class="n">offset</span><span class="p">:</span>
-            <span class="n">bkg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">offset</span><span class="o">=</span><span class="n">off</span><span class="p">,</span> <span class="n">energy</span><span class="o">=</span><span class="n">energy</span><span class="p">)</span>
+            <span class="n">bkg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">offset</span><span class="o">=</span><span class="n">off</span><span class="p">,</span> <span class="n">energy</span><span class="o">=</span><span class="n">energy</span><span class="p">)</span>
             <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;label&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;offset = </span><span class="si">{</span><span class="n">off</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">bkg</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="n">ax</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="s2">&quot;log&quot;</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s2">&quot;log&quot;</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Energy [</span><span class="si">{</span><span class="n">energy</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
-        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Background rate (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Background rate (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">energy</span><span class="o">.</span><span class="n">value</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">energy</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;best&quot;</span><span class="p">)</span>
 
@@ -1144,18 +895,18 @@
         <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 
         <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span> <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ax</span>
-        <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;offset&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span>
-        <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">center</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;offset&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">edges</span>
+        <span class="n">energy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">center</span>
 
         <span class="n">bkg</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">ee</span> <span class="ow">in</span> <span class="n">energy</span><span class="p">:</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span> <span class="n">energy</span><span class="o">=</span><span class="n">ee</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span> <span class="n">energy</span><span class="o">=</span><span class="n">ee</span><span class="p">)</span>
             <span class="n">val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">(</span><span class="n">trapz_loglog</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
             <span class="n">bkg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 
         <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">bkg</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;integrated spectrum&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-        <span class="n">unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">unit</span> <span class="o">*</span> <span class="n">offset</span><span class="o">.</span><span class="n">unit</span> <span class="o">*</span> <span class="n">offset</span><span class="o">.</span><span class="n">unit</span>
+        <span class="n">unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unit</span> <span class="o">*</span> <span class="n">offset</span><span class="o">.</span><span class="n">unit</span> <span class="o">**</span> <span class="mi">2</span>
 
         <span class="n">ax</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="s2">&quot;log&quot;</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s2">&quot;log&quot;</span><span class="p">)</span>
@@ -1163,7 +914,6 @@
         <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Background rate (</span><span class="si">{</span><span class="n">unit</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">energy</span><span class="o">.</span><span class="n">value</span><span class="p">),</span> <span class="nb">max</span><span class="p">(</span><span class="n">energy</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;best&quot;</span><span class="p">)</span>
-
         <span class="k">return</span> <span class="n">ax</span></div>
 
 <div class="viewcode-block" id="Background2D.peek"><a class="viewcode-back" href="../../../api/gammapy.irf.Background2D.html#gammapy.irf.Background2D.peek">[docs]</a>    <span class="k">def</span> <span class="nf">peek</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">)):</span>
@@ -1189,7 +939,7 @@
     <p>
         &#169; Copyright 2021, The Gammapy developers.
       <span class="lastupdated">
-        Last updated on 10 Jan 2021.
+        Last updated on 15 Jan 2021.
       </span>
 
     </p>

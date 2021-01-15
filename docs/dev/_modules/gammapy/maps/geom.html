@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>gammapy.maps.geom &mdash; gammapy v0.18.3.dev254+gf65ad6286</title>
+  <title>gammapy.maps.geom &mdash; gammapy v0.18.3.dev361+ge1744c61b</title>
   
 
   
@@ -78,7 +78,7 @@
             
             
               <div class="version">
-                0.18.3.dev254+gf65ad6286
+                0.18.3.dev361+ge1744c61b
               </div>
             
           
@@ -512,7 +512,6 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../utils/index.html#module-gammapy.utils.regions">gammapy.utils.regions Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../utils/index.html#module-gammapy.utils.scripts">gammapy.utils.scripts Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../utils/index.html#module-gammapy.utils.testing">gammapy.utils.testing Module</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../utils/index.html#module-gammapy.utils.nddata">gammapy.utils.nddata Module</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../utils/index.html#module-gammapy.utils.time">gammapy.utils.time Module</a></li>
 </ul>
 </li>
@@ -733,6 +732,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_axes</span> <span class="o">=</span> <span class="n">axes</span>
 
     <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">reverse</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Reverse axes order&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">MapAxes</span><span class="p">(</span><span class="bp">self</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">iter_with_reshape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Iterate by shape&quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">axis</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -948,6 +952,12 @@
                 <span class="k">if</span> <span class="n">ax</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">idx</span><span class="p">:</span>
                     <span class="k">return</span> <span class="n">ax</span>
             <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No axes: </span><span class="si">{</span><span class="n">idx</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">idx</span><span class="p">:</span>
+                <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="n">axes</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
 
@@ -1172,17 +1182,21 @@
 <span class="sd">        ----------</span>
 <span class="sd">        table : `~astropy.table.Table`</span>
 <span class="sd">            Bin table HDU</span>
-
+<span class="sd">        format : {&quot;gadf&quot;, &quot;gadf-dl3&quot;, &quot;fgst-ccube&quot;, &quot;fgst-template&quot;, &quot;fgst-bexcube&quot;, &quot;ogip-arf&quot;}</span>
+<span class="sd">            Format to use.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        axes : `MapAxes`</span>
 <span class="sd">            Map axes object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="nb">format</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;fgst-ccube&quot;</span><span class="p">,</span> <span class="s2">&quot;fgst-template&quot;</span><span class="p">,</span> <span class="s2">&quot;fgst-bexpcube&quot;</span><span class="p">]:</span>
-            <span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="n">MapAxis</span><span class="o">.</span><span class="n">from_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)]</span>
+        <span class="kn">from</span> <span class="nn">gammapy.irf.io</span> <span class="kn">import</span> <span class="n">IRF_DL3_AXES_SPECIFICATION</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># Formats that support only one energy axis</span>
+        <span class="k">if</span> <span class="nb">format</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;fgst-ccube&quot;</span><span class="p">,</span> <span class="s2">&quot;fgst-template&quot;</span><span class="p">,</span> <span class="s2">&quot;fgst-bexpcube&quot;</span><span class="p">,</span> <span class="s2">&quot;ogip&quot;</span><span class="p">,</span> <span class="s2">&quot;ogip-arf&quot;</span><span class="p">]:</span>
+            <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">MapAxis</span><span class="o">.</span><span class="n">from_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">))</span>
         <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;gadf&quot;</span><span class="p">:</span>
-            <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="c1"># This limits the max number of axes to 5</span>
             <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
                 <span class="n">axcols</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;AXCOLS</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
@@ -1190,6 +1204,13 @@
                     <span class="k">break</span>
 
                 <span class="n">axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="n">idx</span><span class="p">)</span>
+                <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;gadf-dl3&quot;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">column_prefix</span> <span class="ow">in</span> <span class="n">IRF_DL3_AXES_SPECIFICATION</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">,</span> <span class="n">column_prefix</span><span class="o">=</span><span class="n">column_prefix</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="k">continue</span>
                 <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported format: &#39;</span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
@@ -1389,6 +1410,14 @@
         <span class="sd">&quot;&quot;&quot;Return array of bin edges.&quot;&quot;&quot;</span>
         <span class="n">pix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nbin</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span>
         <span class="k">return</span> <span class="n">u</span><span class="o">.</span><span class="n">Quantity</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pix_to_coord</span><span class="p">(</span><span class="n">pix</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unit</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">as_xerr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return tuple of xerr to be used with plt.errorbar()&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">center</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="nd">@lazyproperty</span>
     <span class="k">def</span> <span class="nf">center</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -2022,7 +2051,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">header</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">Header</span><span class="p">()</span>
 
-        <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;ogip&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">format</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ogip&quot;</span><span class="p">,</span> <span class="s2">&quot;ogip-sherpa&quot;</span><span class="p">]:</span>
             <span class="n">header</span><span class="p">[</span><span class="s2">&quot;EXTNAME&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;EBOUNDS&quot;</span><span class="p">,</span> <span class="s2">&quot;Name of this binary table extension&quot;</span>
             <span class="n">header</span><span class="p">[</span><span class="s2">&quot;TELESCOP&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;DUMMY&quot;</span><span class="p">,</span> <span class="s2">&quot;Mission/satellite name&quot;</span>
             <span class="n">header</span><span class="p">[</span><span class="s2">&quot;INSTRUME&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;DUMMY&quot;</span><span class="p">,</span> <span class="s2">&quot;Instrument/detector&quot;</span>
@@ -2065,7 +2094,7 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        format : {&quot;ogip&quot;, &quot;ogip-sherpa&quot;, &quot;gadf-dl3&quot;}</span>
+<span class="sd">        format : {&quot;ogip&quot;, &quot;ogip-sherpa&quot;, &quot;gadf-dl3&quot;, &quot;gtpsf&quot;}</span>
 <span class="sd">            Format specification</span>
 
 <span class="sd">        Returns</span>
@@ -2110,6 +2139,14 @@
 
             <span class="n">table</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">column_prefix</span><span class="si">}</span><span class="s2">_LO&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_hi</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
             <span class="n">table</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">column_prefix</span><span class="si">}</span><span class="s2">_HI&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_lo</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;gtpsf&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;energy_true&quot;</span><span class="p">:</span>
+                <span class="n">table</span><span class="p">[</span><span class="s2">&quot;Energy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;MeV&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;rad&quot;</span><span class="p">:</span>
+                <span class="n">table</span><span class="p">[</span><span class="s2">&quot;Theta&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">center</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;deg&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Can only convert true energy or rad axis to&quot;</span>
+                                 <span class="sa">f</span><span class="s2">&quot;&#39;gtpsf&#39; format, got </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2"> is not a valid format&quot;</span><span class="p">)</span>
 
@@ -2124,7 +2161,7 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        format : {&quot;ogip&quot;, &quot;ogip-sherpa&quot;}</span>
+<span class="sd">        format : {&quot;ogip&quot;, &quot;ogip-sherpa&quot;, &quot;gtpsf&quot;}</span>
 <span class="sd">            Format specification</span>
 
 <span class="sd">        Returns</span>
@@ -2133,7 +2170,13 @@
 <span class="sd">            Table HDU</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_table</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)</span>
-        <span class="n">hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;gtpsf&quot;</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;THETA&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="nb">format</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ogip&quot;</span><span class="p">,</span> <span class="s2">&quot;ogip-sherpa&quot;</span><span class="p">]:</span>
             <span class="n">hdu</span><span class="o">.</span><span class="n">header</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_header</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">))</span>
@@ -2153,7 +2196,7 @@
 <span class="sd">        idx : int</span>
 <span class="sd">            Column index of the axis.</span>
 <span class="sd">        column_prefix : str</span>
-<span class="sd">            Column name prefix of the axis, used for</span>
+<span class="sd">            Column name prefix of the axis, used for creating the axis.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -2232,6 +2275,13 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">edges</span> <span class="o">=</span> <span class="n">edges_from_lo_hi</span><span class="p">(</span><span class="n">edges_lo</span><span class="p">,</span> <span class="n">edges_hi</span><span class="p">)</span>
                 <span class="n">axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_edges</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="n">interp</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;gtpsf&quot;</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">energy</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s2">&quot;Energy&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">MeV</span>
+                <span class="n">axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_nodes</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;energy_true&quot;</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s2">&quot;log&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="n">rad</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="s2">&quot;Theta&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span>
+                <span class="n">axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_nodes</span><span class="p">(</span><span class="n">rad</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;rad&quot;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Format &#39;</span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2">&#39; not supported&quot;</span><span class="p">)</span>
 
@@ -3050,7 +3100,7 @@
     <p>
         &#169; Copyright 2021, The Gammapy developers.
       <span class="lastupdated">
-        Last updated on 10 Jan 2021.
+        Last updated on 15 Jan 2021.
       </span>
 
     </p>

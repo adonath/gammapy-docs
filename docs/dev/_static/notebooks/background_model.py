@@ -85,6 +85,8 @@ print("Number of observations:", len(observations))
 
 
 class BackgroundModelEstimator:
+    """"""
+
     def __init__(self, energy, offset):
         self.counts = self._make_bkg2d(energy, offset, unit="")
         self.exposure = self._make_bkg2d(energy, offset, unit="s MeV sr")
@@ -92,11 +94,7 @@ class BackgroundModelEstimator:
     @staticmethod
     def _make_bkg2d(energy, offset, unit):
         shape = len(energy.center), len(offset.center)
-        return Background2D(
-            energy_axis=energy,
-            offset_axis=offset,
-            data=np.zeros(shape) * u.Unit(unit),
-        )
+        return Background2D(axes=[energy, offset], unit=unit)
 
     def run(self, observations):
         for obs in observations:
@@ -105,28 +103,27 @@ class BackgroundModelEstimator:
 
     def fill_counts(self, obs):
         events = obs.events
-        data = self.counts.data
+        energy_bins = self.counts.axes["energy"].edges
+        offset_bins = self.counts.axes["offset"].edges
+
         counts = np.histogram2d(
             x=events.energy.to("MeV"),
             y=events.offset.to("deg"),
-            bins=(data.axes[0].edges, data.axes[1].edges),
+            bins=(energy_bins, offset_bins),
         )[0]
-        data.data += counts
+        self.counts.data += counts
 
     def fill_exposure(self, obs):
-        data = self.exposure.data
-        energy_width = np.diff(data.axes[0].edges)
-        offset = data.axes[1].center
-        offset_width = np.diff(data.axes[1].edges)
-        solid_angle = 2 * np.pi * offset * offset_width
+        axes = self.exposure.axes
+        offset = axes["offset"].center
         time = obs.observation_time_duration
-        exposure = time * energy_width[:, None] * solid_angle[None, :]
-        data.data += exposure
+        exposure = 2 * np.pi * offset * time * axes.bin_volume()
+        self.exposure.quantity += exposure
 
     @property
     def background_rate(self):
         rate = deepcopy(self.counts)
-        rate.data.data /= self.exposure.data.data
+        rate.quantity /= self.exposure.quantity
         return rate
 
 
@@ -238,11 +235,11 @@ models[2].plot()
 # In[ ]:
 
 
-y = models[0].data.evaluate(energy=energy.center, offset="0.5 deg")
+y = models[0].evaluate(energy=energy.center, offset="0.5 deg")
 plt.plot(energy.center, y, label="0 < zen < 20")
-y = models[1].data.evaluate(energy=energy.center, offset="0.5 deg")
+y = models[1].evaluate(energy=energy.center, offset="0.5 deg")
 plt.plot(energy.center, y, label="20 < zen < 40")
-y = models[2].data.evaluate(energy=energy.center, offset="0.5 deg")
+y = models[2].evaluate(energy=energy.center, offset="0.5 deg")
 plt.plot(energy.center, y, label="40 < zen < 90")
 plt.loglog()
 plt.xlabel("Energy (TeV)")
@@ -338,7 +335,7 @@ obs = ds2.obs(20137)
 
 
 # the events
-obs.events.peek()
+obs.events.select_offset([0, 3] * u.deg).peek()
 
 
 # In[ ]:

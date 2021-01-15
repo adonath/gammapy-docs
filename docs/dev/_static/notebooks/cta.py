@@ -206,7 +206,7 @@ irfs["aeff"].peek()
 
 
 # What is the on-axis effective area at 10 TeV?
-aeff.data.evaluate(energy_true="10 TeV", offset="0 deg").to("km2")
+aeff.evaluate(energy_true="10 TeV", offset="0 deg").to("km2")
 
 
 # ### Energy dispersion
@@ -254,7 +254,7 @@ irfs["bkg"].peek()
 # In[ ]:
 
 
-irfs["bkg"].data.evaluate(energy="3 TeV", fov_lon="1 deg", fov_lat="0 deg")
+irfs["bkg"].evaluate(energy="3 TeV", fov_lon="1 deg", fov_lat="0 deg")
 
 
 # ## Source models
