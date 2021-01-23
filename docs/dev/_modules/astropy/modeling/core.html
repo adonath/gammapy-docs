@@ -3,11 +3,11 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>astropy.modeling.core &mdash; gammapy v0.18.3.dev429+g6f9fa30bd.d20210123</title>
+  <title>astropy.modeling.core &mdash; gammapy v0.18.3.dev437+g004e0b80d</title>
   
 
   
@@ -18,14 +18,18 @@
   <link rel="stylesheet" href="../../../_static/gallery.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/gallery-binder.css" type="text/css" />
   <link rel="stylesheet" href="../../../_static/gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/gallery-rendered-html.css" type="text/css" />
 
   
   
     <link rel="shortcut icon" href="../../../_static/gammapy_logo.ico"/>
   
+
   
   
     <link rel="canonical" href="https://docs.gammapy.org/dev/_modules/astropy/modeling/core.html"/>
+  
+
   
 
   
@@ -44,7 +48,7 @@
         <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
         <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
-        <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+        <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.20.0/dist/embed-amd.js"></script>
     
     <script type="text/javascript" src="../../../_static/js/theme.js"></script>
 
@@ -64,7 +68,7 @@
           
 
           
-            <a href="../../../index.html" class="icon icon-home" alt="Documentation Home"> gammapy
+            <a href="../../../index.html" class="icon icon-home"> gammapy
           
 
           
@@ -74,7 +78,7 @@
             
             
               <div class="version">
-                0.18.3.dev429+g6f9fa30bd.d20210123
+                0.18.3.dev437+g004e0b80d
               </div>
             
           
@@ -487,6 +491,8 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
@@ -529,6 +535,7 @@
 <span class="kn">import</span> <span class="nn">abc</span>
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
 <span class="kn">import</span> <span class="nn">functools</span>
 <span class="kn">import</span> <span class="nn">operator</span>
 <span class="kn">import</span> <span class="nn">types</span>
@@ -1203,6 +1210,11 @@
     <span class="c1"># model inputs. Only has an effect if input_units is defined.</span>
     <span class="n">input_units_equivalencies</span> <span class="o">=</span> <span class="kc">None</span>
 
+    <span class="c1"># Covariance matrix can be set by fitter if available.</span>
+    <span class="c1"># If cov_matrix is availble, then std will set as well</span>
+    <span class="n">_cov_matrix</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_stds</span> <span class="o">=</span> <span class="kc">None</span>
+
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">meta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_default_inputs_outputs</span><span class="p">()</span>
@@ -1798,6 +1810,46 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_user_bounding_box</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">cov_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fitter should set covariance matrix, if available.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cov_matrix</span>
+
+    <span class="nd">@cov_matrix</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">cov_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cov</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cov_matrix</span> <span class="o">=</span> <span class="n">cov</span>
+
+        <span class="n">unfix_untied_params</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_names</span> <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fixed</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">)</span>
+                               <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tied</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">False</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">cov</span><span class="p">)</span> <span class="o">==</span> <span class="nb">list</span><span class="p">:</span>  <span class="c1"># model set</span>
+            <span class="n">param_stds</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cov</span><span class="p">:</span>
+                <span class="n">param_stds</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">cov_matrix</span><span class="p">)])</span>
+            <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">param_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">unfix_untied_params</span><span class="p">):</span>
+                <span class="n">par</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">)</span>
+                <span class="n">par</span><span class="o">.</span><span class="n">std</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">param_stds</span><span class="p">]</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">par</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">param_stds</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">cov</span><span class="o">.</span><span class="n">cov_matrix</span><span class="p">)]</span>
+            <span class="k">for</span> <span class="n">param_name</span> <span class="ow">in</span> <span class="n">unfix_untied_params</span><span class="p">:</span>
+                <span class="n">par</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">)</span>
+                <span class="n">par</span><span class="o">.</span><span class="n">std</span> <span class="o">=</span> <span class="n">param_stds</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="n">par</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">stds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Standard deviation of parameters, if covariance matrix is available.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stds</span>
+
+    <span class="nd">@stds</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">stds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stds</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stds</span> <span class="o">=</span> <span class="n">stds</span>
+
+    <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">separable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; A flag indicating whether a model is separable.&quot;&quot;&quot;</span>
 
@@ -2007,7 +2059,7 @@
                 <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">out</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asanyarray</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asanyarray</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">out</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="n">ndim</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;the array and model must have the same &#39;</span>
                                  <span class="s1">&#39;number of dimensions.&#39;</span><span class="p">)</span>
@@ -3090,10 +3142,124 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">linear</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">eqcons</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ineqcons</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_left_params</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_map_parameters</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">pass</span>
+    <span class="k">def</span> <span class="nf">_get_left_inputs_from_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">args</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">n_inputs</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_get_right_inputs_from_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="n">op</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">op</span>
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;&amp;&#39;</span><span class="p">:</span>
+            <span class="c1"># Args expected to look lik (*left inputs, *right inputs, *left params, *right params)</span>
+            <span class="k">return</span> <span class="n">args</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">n_inputs</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">n_inputs</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="o">.</span><span class="n">n_inputs</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;|&#39;</span> <span class="ow">or</span>  <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;fix_inputs&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">args</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">n_inputs</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_get_left_params_from_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="n">op</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">op</span>
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;&amp;&#39;</span><span class="p">:</span>
+            <span class="c1"># Args expected to look lik (*left inputs, *right inputs, *left params, *right params)</span>
+            <span class="n">n_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">n_inputs</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="o">.</span><span class="n">n_inputs</span>
+            <span class="k">return</span> <span class="n">args</span><span class="p">[</span><span class="n">n_inputs</span><span class="p">:</span> <span class="n">n_inputs</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_left_params</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">args</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">n_inputs</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">n_inputs</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_left_params</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_get_right_params_from_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="n">op</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">op</span>
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;fix_inputs&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;&amp;&#39;</span><span class="p">:</span>
+            <span class="c1"># Args expected to look lik (*left inputs, *right inputs, *left params, *right params)</span>
+            <span class="k">return</span> <span class="n">args</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">n_inputs</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="o">.</span><span class="n">n_inputs</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_left_params</span><span class="p">:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">args</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">n_inputs</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_left_params</span><span class="p">:]</span>
+
+    <span class="k">def</span> <span class="nf">_get_kwarg_model_parameters_as_positional</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># could do it with inserts but rebuilding seems like simpilist way</span>
+
+        <span class="c1">#TODO: Check if any param names are in kwargs maybe as an intersection of sets?</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">op</span> <span class="o">==</span> <span class="s2">&quot;&amp;&quot;</span><span class="p">:</span>
+            <span class="n">new_args</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">n_inputs</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="o">.</span><span class="n">n_inputs</span><span class="p">])</span>
+            <span class="n">args_pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">n_inputs</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="o">.</span><span class="n">n_inputs</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_args</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">n_inputs</span><span class="p">])</span>
+            <span class="n">args_pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">n_inputs</span>
+
+        <span class="k">for</span> <span class="n">param_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_names</span><span class="p">:</span>
+            <span class="n">kw_value</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">kw_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">kw_value</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="n">args_pos</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span><span class="s2">&quot;Missing parameter or input&quot;</span><span class="p">)</span>
+
+                <span class="n">args_pos</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">new_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">new_args</span><span class="p">,</span> <span class="n">kwargs</span>
+
+    <span class="k">def</span> <span class="nf">_apply_operators_to_value_lists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">leftval</span><span class="p">,</span> <span class="n">rightval</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="n">op</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">op</span>
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;+&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">binary_operation</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">add</span><span class="p">,</span> <span class="n">leftval</span><span class="p">,</span> <span class="n">rightval</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;-&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">binary_operation</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">sub</span><span class="p">,</span> <span class="n">leftval</span><span class="p">,</span> <span class="n">rightval</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;*&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">binary_operation</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">mul</span><span class="p">,</span> <span class="n">leftval</span><span class="p">,</span> <span class="n">rightval</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;/&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">binary_operation</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">truediv</span><span class="p">,</span> <span class="n">leftval</span><span class="p">,</span> <span class="n">rightval</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;**&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">binary_operation</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">pow</span><span class="p">,</span> <span class="n">leftval</span><span class="p">,</span> <span class="n">rightval</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;&amp;&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">leftval</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+                <span class="n">leftval</span> <span class="o">=</span> <span class="p">(</span><span class="n">leftval</span><span class="p">,)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rightval</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+                <span class="n">rightval</span> <span class="o">=</span> <span class="p">(</span><span class="n">rightval</span><span class="p">,)</span>
+            <span class="k">return</span> <span class="n">leftval</span> <span class="o">+</span> <span class="n">rightval</span>
+        <span class="k">elif</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">SPECIAL_OPERATORS</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">binary_operation</span><span class="p">(</span><span class="n">SPECIAL_OPERATORS</span><span class="p">[</span><span class="n">op</span><span class="p">],</span> <span class="n">leftval</span><span class="p">,</span> <span class="n">rightval</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ModelDefinitionError</span><span class="p">(</span><span class="s1">&#39;Unrecognized operator </span><span class="si">{op}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="n">op</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">op</span>
+        <span class="n">args</span><span class="p">,</span> <span class="n">kw</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_kwarg_model_parameters_as_positional</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">kw</span><span class="p">)</span>
+        <span class="n">left_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_left_inputs_from_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">left_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_left_params_from_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;fix_inputs&#39;</span><span class="p">:</span>
+            <span class="n">pos_index</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">inputs</span><span class="p">,</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">n_inputs</span><span class="p">)))</span>
+            <span class="n">fixed_inputs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">key</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">pos_index</span><span class="p">[</span><span class="n">key</span><span class="p">]:</span> <span class="n">value</span>
+                <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="p">}</span>
+            <span class="n">left_inputs</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">fixed_inputs</span><span class="p">[</span><span class="n">ind</span><span class="p">]</span> <span class="k">if</span> <span class="n">ind</span> <span class="ow">in</span> <span class="n">fixed_inputs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">else</span> <span class="n">inp</span>
+                <span class="k">for</span> <span class="n">ind</span><span class="p">,</span> <span class="n">inp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">left_inputs</span><span class="p">)</span>
+            <span class="p">]</span>
+
+        <span class="n">leftval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="o">*</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="n">left_inputs</span><span class="p">,</span> <span class="n">left_params</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;fix_inputs&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">leftval</span>
+
+        <span class="n">right_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_right_inputs_from_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">right_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_right_params_from_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s2">&quot;|&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">leftval</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="o">*</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="n">leftval</span><span class="p">,</span> <span class="n">right_params</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">leftval</span><span class="p">,</span> <span class="o">*</span><span class="n">right_params</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rightval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="o">*</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="n">right_inputs</span><span class="p">,</span> <span class="n">right_params</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_apply_operators_to_value_lists</span><span class="p">(</span><span class="n">leftval</span><span class="p">,</span> <span class="n">rightval</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">n_submodels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -3179,36 +3345,22 @@
                 <span class="n">leftval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">op</span> <span class="o">!=</span> <span class="s1">&#39;|&#39;</span><span class="p">:</span>
                     <span class="n">rightval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">rightval</span> <span class="o">=</span> <span class="kc">None</span>
 
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">leftval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">args</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">n_inputs</span><span class="p">]),</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
                 <span class="n">rightval</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">n_inputs</span><span class="p">:]),</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;+&#39;</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">binary_operation</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">add</span><span class="p">,</span> <span class="n">leftval</span><span class="p">,</span> <span class="n">rightval</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;-&#39;</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">binary_operation</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">sub</span><span class="p">,</span> <span class="n">leftval</span><span class="p">,</span> <span class="n">rightval</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;*&#39;</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">binary_operation</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">mul</span><span class="p">,</span> <span class="n">leftval</span><span class="p">,</span> <span class="n">rightval</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;/&#39;</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">binary_operation</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">truediv</span><span class="p">,</span> <span class="n">leftval</span><span class="p">,</span> <span class="n">rightval</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;**&#39;</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">binary_operation</span><span class="p">(</span><span class="n">operator</span><span class="o">.</span><span class="n">pow</span><span class="p">,</span> <span class="n">leftval</span><span class="p">,</span> <span class="n">rightval</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;&amp;&#39;</span><span class="p">:</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">leftval</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
-                    <span class="n">leftval</span> <span class="o">=</span> <span class="p">(</span><span class="n">leftval</span><span class="p">,)</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rightval</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
-                    <span class="n">rightval</span> <span class="o">=</span> <span class="p">(</span><span class="n">rightval</span><span class="p">,)</span>
-                <span class="k">return</span> <span class="n">leftval</span> <span class="o">+</span> <span class="n">rightval</span>
+
+            <span class="k">if</span> <span class="n">op</span> <span class="o">!=</span> <span class="s2">&quot;|&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_apply_operators_to_value_lists</span><span class="p">(</span><span class="n">leftval</span><span class="p">,</span> <span class="n">rightval</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+
             <span class="k">elif</span> <span class="n">op</span> <span class="o">==</span> <span class="s1">&#39;|&#39;</span><span class="p">:</span>
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">leftval</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
                     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">(</span><span class="o">*</span><span class="n">leftval</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">(</span><span class="n">leftval</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">SPECIAL_OPERATORS</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">binary_operation</span><span class="p">(</span><span class="n">SPECIAL_OPERATORS</span><span class="p">[</span><span class="n">op</span><span class="p">],</span> <span class="n">leftval</span><span class="p">,</span> <span class="n">rightval</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
 
-                <span class="k">raise</span> <span class="n">ModelDefinitionError</span><span class="p">(</span><span class="s1">&#39;Unrecognized operator </span><span class="si">{op}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">subs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span>
             <span class="n">newargs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
@@ -3769,7 +3921,7 @@
                 <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">out</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asanyarray</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asanyarray</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">out</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="n">ndim</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;the array and model must have the same &#39;</span>
                                  <span class="s1">&#39;number of dimensions.&#39;</span><span class="p">)</span>
@@ -4579,14 +4731,12 @@
            
           </div>
           <footer>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        
-        &copy; Copyright 2021, The Gammapy developers
+        &#169; Copyright 2021, The Gammapy developers.
       <span class="lastupdated">
         Last updated on 23 Jan 2021.
       </span>
@@ -4596,14 +4746,13 @@
     
     
     
-    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     
-    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     
     provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 
