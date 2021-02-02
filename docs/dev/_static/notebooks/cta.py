@@ -52,6 +52,7 @@ print("gammapy:", gammapy.__version__)
 # In[ ]:
 
 
+from astropy import units as u
 from gammapy.data import DataStore, EventList
 from gammapy.irf import EffectiveAreaTable2D, load_cta_irfs
 
@@ -232,13 +233,7 @@ irfs["psf"].peek()
 
 # This is how for analysis you could slice out the PSF
 # at a given field of view offset
-psf = irfs["psf"].to_energy_dependent_table_psf("1 deg")
-
-
-# In[ ]:
-
-
-psf.plot_containment_vs_energy()
+irfs["psf"].plot_containment_radius_vs_energy(offset=[1] * u.deg, fraction=[0.68, 0.8, 0.95]);
 
 
 # ### Background

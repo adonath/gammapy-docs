@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>gammapy.irf.psf.kernel &mdash; gammapy v0.18.3.dev437+g004e0b80d</title>
+  <title>gammapy.irf.psf.kernel &mdash; gammapy v0.18.3.dev646+gc0d544d96</title>
   
 
   
@@ -78,7 +78,7 @@
             
             
               <div class="version">
-                0.18.3.dev437+g004e0b80d
+                0.18.3.dev646+gc0d544d96
               </div>
             
           
@@ -225,12 +225,14 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../../makers/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../makers/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../makers/index.html#safe-data-range-handling">Safe Data Range Handling</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../makers/index.html#stacking-of-datasets">Stacking of Datasets</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../makers/index.html#combining-data-reduction-steps">Combining Data Reduction Steps</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../../makers/reflected.html">Reflected regions background</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../../makers/ring.html">Ring background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../makers/index.html#background-estimation">Background estimation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../makers/index.html#fov-background">FoV Background</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../makers/index.html#ring-background">Ring Background</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../makers/index.html#reflected-regions-background">Reflected Regions Background</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../makers/index.html#stacking-of-datasets">Stacking of Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../makers/index.html#combining-data-reduction-steps">Combining Data Reduction Steps</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../makers/index.html#using-gammapy-makers">Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.makers</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../makers/index.html#reference-api">Reference/API</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../../makers/index.html#module-gammapy.makers">gammapy.makers Package</a></li>
@@ -520,30 +522,10 @@
 <span></span><span class="c1"># Licensed under a 3-clause BSD style license - see LICENSE.rst</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
-<span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">Angle</span>
-<span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">Map</span><span class="p">,</span> <span class="n">WcsGeom</span>
+<span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">Map</span>
 <span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">PowerLawSpectralModel</span>
-<span class="kn">from</span> <span class="nn">gammapy.utils.gauss</span> <span class="kn">import</span> <span class="n">Gauss2DPDF</span>
-<span class="kn">from</span> <span class="nn">.table</span> <span class="kn">import</span> <span class="n">EnergyDependentTablePSF</span><span class="p">,</span> <span class="n">TablePSF</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PSFKernel&quot;</span><span class="p">]</span>
-
-
-<span class="k">def</span> <span class="nf">_make_kernel_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">max_radius</span><span class="p">):</span>
-    <span class="c1"># Create a new geom object with an odd number of pixel and a maximum size</span>
-    <span class="c1"># This is useful for PSF kernel creation.</span>
-    <span class="n">center</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">center_skydir</span>
-    <span class="n">binsz</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">cdelt</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="s2">&quot;deg&quot;</span><span class="p">)</span>
-    <span class="n">max_radius</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">max_radius</span><span class="p">)</span>
-    <span class="n">npix</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_radius</span><span class="o">.</span><span class="n">deg</span> <span class="o">/</span> <span class="n">binsz</span><span class="o">.</span><span class="n">deg</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
-    <span class="k">return</span> <span class="n">WcsGeom</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
-        <span class="n">skydir</span><span class="o">=</span><span class="n">center</span><span class="p">,</span>
-        <span class="n">binsz</span><span class="o">=</span><span class="n">binsz</span><span class="p">,</span>
-        <span class="n">npix</span><span class="o">=</span><span class="n">npix</span><span class="p">,</span>
-        <span class="n">proj</span><span class="o">=</span><span class="n">geom</span><span class="o">.</span><span class="n">projection</span><span class="p">,</span>
-        <span class="n">frame</span><span class="o">=</span><span class="n">geom</span><span class="o">.</span><span class="n">frame</span><span class="p">,</span>
-        <span class="n">axes</span><span class="o">=</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">,</span>
-    <span class="p">)</span>
 
 
 <div class="viewcode-block" id="PSFKernel"><a class="viewcode-back" href="../../../../api/gammapy.irf.PSFKernel.html#gammapy.irf.PSFKernel">[docs]</a><span class="k">class</span> <span class="nc">PSFKernel</span><span class="p">:</span>
@@ -551,7 +533,7 @@
 
 <span class="sd">    This is a container class to store a PSF kernel</span>
 <span class="sd">    that can be used to convolve `~gammapy.maps.WcsNDMap` objects.</span>
-<span class="sd">    It is usually computed from an `~gammapy.irf.EnergyDependentTablePSF`.</span>
+<span class="sd">    It is usually computed from an `~gammapy.irf.PSFMap`.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -562,31 +544,30 @@
 <span class="sd">    --------</span>
 <span class="sd">    ::</span>
 
-<span class="sd">        import numpy as np</span>
 <span class="sd">        from gammapy.maps import Map, WcsGeom, MapAxis</span>
-<span class="sd">        from gammapy.irf import EnergyDependentMultiGaussPSF, PSFKernel</span>
+<span class="sd">        from gammapy.irf import PSFMap</span>
 <span class="sd">        from astropy import units as u</span>
 
 <span class="sd">        # Define energy axis</span>
-<span class="sd">        energy_axis = MapAxis.from_edges(np.logspace(-1., 1., 4), unit=&#39;TeV&#39;, name=&#39;energy&#39;)</span>
+<span class="sd">        energy_axis_true = MapAxis.from_edges(np.logspace(-1., 1., 4), unit=&quot;TeV&quot;, name=&quot;energy_true&quot;)</span>
 
 <span class="sd">        # Create WcsGeom and map</span>
-<span class="sd">        geom = WcsGeom.create(binsz=0.02*u.deg, width=2.0*u.deg, axes=[energy_axis])</span>
+<span class="sd">        geom = WcsGeom.create(binsz=0.02 * u.deg, width=2.0 * u.deg, axes=[energy_axis_true])</span>
 <span class="sd">        some_map = Map.from_geom(geom)</span>
-<span class="sd">        # Fill map at two positions</span>
-<span class="sd">        some_map.fill_by_coord([[0.2,0.4],[-0.1,0.6],[0.5,3.6]])</span>
 
-<span class="sd">        # Extract EnergyDependentTablePSF from CTA 1DC IRF</span>
-<span class="sd">        filename = &#39;$GAMMAPY_DATA/cta-1dc/caldb/data/cta/1dc/bcf/South_z20_50h/irf_file.fits&#39;</span>
-<span class="sd">        psf = EnergyDependentMultiGaussPSF.read(filename, hdu=&#39;POINT SPREAD FUNCTION&#39;)</span>
-<span class="sd">        table_psf = psf.to_energy_dependent_table_psf(theta=0.5*u.deg)</span>
+<span class="sd">        # Fill map at three positions</span>
+<span class="sd">        some_map.fill_by_coord([[0, 0, 0], [0, 0, 0], [0.3, 1, 3]])</span>
 
-<span class="sd">        psf_kernel = PSFKernel.from_table_psf(table_psf,geom, max_radius=1*u.deg)</span>
+<span class="sd">        psf = PSFMap.from_gauss(</span>
+<span class="sd">            energy_axis_true=energy_axis_true, sigma=[0.3, 0.2, 0.1] * u.deg</span>
+<span class="sd">        )</span>
+
+<span class="sd">        kernel = psf.get_psf_kernel(geom=geom, max_radius=1*u.deg)</span>
 
 <span class="sd">        # Do the convolution</span>
-<span class="sd">        some_map_convolved = some_map.convolve(psf_kernel)</span>
+<span class="sd">        some_map_convolved = some_map.convolve(kernel)</span>
 
-<span class="sd">        some_map_convolved.get_image_by_coord(dict(energy=0.6*u.TeV)).plot()</span>
+<span class="sd">        some_map_convolved.plot_grid();</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">psf_kernel_map</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -623,23 +604,18 @@
         <span class="n">psf_kernel_map</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">psf_kernel_map</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="PSFKernel.from_table_psf"><a class="viewcode-back" href="../../../../api/gammapy.irf.PSFKernel.html#gammapy.irf.PSFKernel.from_table_psf">[docs]</a>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_table_psf</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">table_psf</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">max_radius</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Create a PSF kernel from a TablePSF or an EnergyDependentTablePSF on a given Geom.</span>
-
-<span class="sd">        If the Geom is not an image, the same kernel will be present on all axes.</span>
-
-<span class="sd">        The PSF is estimated by oversampling defined by a given factor.</span>
+<div class="viewcode-block" id="PSFKernel.from_spatial_model"><a class="viewcode-back" href="../../../../api/gammapy.irf.PSFKernel.html#gammapy.irf.PSFKernel.from_spatial_model">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_spatial_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">max_radius</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create PSF kernel from spatial model</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        table_psf : `~gammapy.irf.EnergyDependentTablePSF`</span>
-<span class="sd">            Input table PSF</span>
 <span class="sd">        geom : `~gammapy.maps.WcsGeom`</span>
-<span class="sd">            Target geometry. The PSF kernel will be centered on the central pixel.</span>
-<span class="sd">            The geometry axes should contain an axis with name &quot;energy&quot;</span>
+<span class="sd">            Map geometry</span>
+<span class="sd">        model : `~gammapy.modeling.models.SpatiaModel`</span>
+<span class="sd">            Gaussian width.</span>
 <span class="sd">        max_radius : `~astropy.coordinates.Angle`</span>
-<span class="sd">            Maximum radius of the PSF kernel.</span>
+<span class="sd">            Desired kernel map size.</span>
 <span class="sd">        factor : int</span>
 <span class="sd">            Oversample factor to compute the PSF</span>
 
@@ -648,32 +624,21 @@
 <span class="sd">        kernel : `~gammapy.irf.PSFKernel`</span>
 <span class="sd">            the kernel Map with reduced geometry according to the max_radius</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># TODO : use PSF containment radius if max_radius is None</span>
-        <span class="k">if</span> <span class="n">max_radius</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">geom</span> <span class="o">=</span> <span class="n">_make_kernel_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">max_radius</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">max_radius</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">max_radius</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">evaluation_radius</span>
 
-        <span class="n">geom_upsampled</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">upsample</span><span class="p">(</span><span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">)</span>
-        <span class="n">rad</span> <span class="o">=</span> <span class="n">geom_upsampled</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">geom</span><span class="o">.</span><span class="n">center_skydir</span><span class="p">)</span>
+        <span class="n">geom</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">to_odd_npix</span><span class="p">(</span>
+            <span class="n">max_radius</span><span class="o">=</span><span class="n">max_radius</span>
+        <span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">center_skydir</span>
 
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">table_psf</span><span class="p">,</span> <span class="n">EnergyDependentTablePSF</span><span class="p">):</span>
-            <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy_true&quot;</span><span class="p">]</span>
-            <span class="n">energy</span> <span class="o">=</span> <span class="n">energy_axis</span><span class="o">.</span><span class="n">center</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">table_psf</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">energy_true</span><span class="o">=</span><span class="n">energy</span><span class="p">,</span> <span class="n">rad</span><span class="o">=</span><span class="n">rad</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">nbin</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">nbin</span>
-            <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
-                <span class="n">nbin</span> <span class="o">=</span> <span class="mi">1</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">table_psf</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">rad</span><span class="o">=</span><span class="n">rad</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
-            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">nbin</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
-
-        <span class="n">kernel_map</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span><span class="n">geom</span><span class="o">=</span><span class="n">geom_upsampled</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
-        <span class="n">kernel_map</span> <span class="o">=</span> <span class="n">kernel_map</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">factor</span><span class="p">,</span> <span class="n">preserve_counts</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">kernel_map</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+        <span class="n">geom</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">upsample</span><span class="p">(</span><span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">)</span>
+        <span class="nb">map</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">integrate_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">psf_kernel_map</span><span class="o">=</span><span class="nb">map</span><span class="o">.</span><span class="n">downsample</span><span class="p">(</span><span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="PSFKernel.from_gauss"><a class="viewcode-back" href="../../../../api/gammapy.irf.PSFKernel.html#gammapy.irf.PSFKernel.from_gauss">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_gauss</span><span class="p">(</span>
-        <span class="bp">cls</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">max_radius</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">containment_fraction</span><span class="o">=</span><span class="mf">0.99</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mi">4</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">geom</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">max_radius</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mi">4</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Create Gaussian PSF.</span>
 
@@ -699,26 +664,13 @@
 <span class="sd">        kernel : `~gammapy.irf.PSFKernel`</span>
 <span class="sd">            the kernel Map with reduced geometry according to the max_radius</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">sigma</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span>
+        <span class="kn">from</span> <span class="nn">gammapy.modeling.models</span> <span class="kn">import</span> <span class="n">GaussianSpatialModel</span>
 
-        <span class="k">if</span> <span class="n">max_radius</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">max_radius</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="n">Gauss2DPDF</span><span class="p">(</span><span class="n">sigma</span><span class="o">.</span><span class="n">deg</span><span class="p">)</span><span class="o">.</span><span class="n">containment_radius</span><span class="p">(</span>
-                    <span class="n">containment_fraction</span><span class="o">=</span><span class="n">containment_fraction</span>
-                <span class="p">)</span>
-                <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span>
-            <span class="p">)</span>
+        <span class="n">gauss</span> <span class="o">=</span> <span class="n">GaussianSpatialModel</span><span class="p">(</span><span class="n">sigma</span><span class="o">=</span><span class="n">sigma</span><span class="p">)</span>
 
-        <span class="n">max_radius</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">max_radius</span><span class="p">)</span>
-
-        <span class="c1"># Create a new geom according to given input</span>
-        <span class="n">geom</span> <span class="o">=</span> <span class="n">_make_kernel_geom</span><span class="p">(</span><span class="n">geom</span><span class="p">,</span> <span class="n">max_radius</span><span class="p">)</span>
-
-        <span class="n">rad</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">max_radius</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span> <span class="mi">200</span><span class="p">),</span> <span class="s2">&quot;deg&quot;</span><span class="p">)</span>
-
-        <span class="n">table_psf</span> <span class="o">=</span> <span class="n">TablePSF</span><span class="o">.</span><span class="n">from_shape</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="s2">&quot;gauss&quot;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">sigma</span><span class="p">,</span> <span class="n">rad</span><span class="o">=</span><span class="n">rad</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_table_psf</span><span class="p">(</span><span class="n">table_psf</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="n">geom</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="n">factor</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_spatial_model</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">gauss</span><span class="p">,</span> <span class="n">geom</span><span class="o">=</span><span class="n">geom</span><span class="p">,</span> <span class="n">max_radius</span><span class="o">=</span><span class="n">max_radius</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="n">factor</span>
+        <span class="p">)</span></div>
 
 <div class="viewcode-block" id="PSFKernel.write"><a class="viewcode-back" href="../../../../api/gammapy.irf.PSFKernel.html#gammapy.irf.PSFKernel.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Write the Map object which contains the PSF kernel to file.&quot;&quot;&quot;</span>
@@ -786,7 +738,7 @@
     <p>
         &#169; Copyright 2021, The Gammapy developers.
       <span class="lastupdated">
-        Last updated on 23 Jan 2021.
+        Last updated on 02 Feb 2021.
       </span>
 
     </p>

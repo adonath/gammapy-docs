@@ -92,8 +92,8 @@ dataset.exposure *= containment
 
 # correct background estimation
 on_radii = obs.psf.containment_radius(
-    energy=energy_axis.center, theta=0.5 * u.deg, fraction=containment
-)[0]
+    energy_true=energy_axis.center, offset=0.5 * u.deg, fraction=containment
+)
 factor = (1 - np.cos(on_radii)) / (1 - np.cos(geom.region.radius))
 dataset.background *= factor.value.reshape((-1, 1, 1))
 

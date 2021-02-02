@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>makers - Data reduction &mdash; gammapy v0.18.3.dev437+g004e0b80d</title>
+  <title>makers - Data reduction &mdash; gammapy v0.18.3.dev646+gc0d544d96</title>
   
 
   
@@ -55,7 +55,7 @@
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Reflected regions background" href="reflected.html" />
+    <link rel="next" title="Maker" href="../api/gammapy.makers.Maker.html" />
     <link rel="prev" title="observatory_locations" href="../api/gammapy.data.observatory_locations.html" /> 
 </head>
 
@@ -80,7 +80,7 @@
             
             
               <div class="version">
-                0.18.3.dev437+g004e0b80d
+                0.18.3.dev646+gc0d544d96
               </div>
             
           
@@ -227,12 +227,14 @@
 <li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#safe-data-range-handling">Safe Data Range Handling</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#stacking-of-datasets">Stacking of Datasets</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#combining-data-reduction-steps">Combining Data Reduction Steps</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="reflected.html">Reflected regions background</a></li>
-<li class="toctree-l3"><a class="reference internal" href="ring.html">Ring background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#background-estimation">Background estimation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#fov-background">FoV Background</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ring-background">Ring Background</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#reflected-regions-background">Reflected Regions Background</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#stacking-of-datasets">Stacking of Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#combining-data-reduction-steps">Combining Data Reduction Steps</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#using-gammapy-makers">Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.makers</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#reference-api">Reference/API</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#module-gammapy.makers">gammapy.makers Package</a></li>
@@ -561,26 +563,40 @@ To handle on-off observations Gammapy also features a <code class="xref py py-ob
 stores in addition the <code class="xref py py-obj docutils literal notranslate"><span class="pre">counts_off</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">acceptance</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">acceptance_off</span></code> data.</p>
 <p>A <code class="xref py py-obj docutils literal notranslate"><span class="pre">MapDataset</span></code> can be created from any <code class="xref py py-obj docutils literal notranslate"><span class="pre">WcsGeom</span></code> object. This is illustrated
 in the following example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">MapAxis</span><span class="p">,</span> <span class="n">WcsGeom</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
+<span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">MapAxis</span><span class="p">,</span> <span class="n">WcsGeom</span>
 <span class="kn">from</span> <span class="nn">gammapy.datasets</span> <span class="kn">import</span> <span class="n">MapDataset</span>
 
 <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_bounds</span><span class="p">(</span>
     <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">nbin</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;energy&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;TeV&quot;</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s2">&quot;log&quot;</span>
 <span class="p">)</span>
-<span class="n">geom</span> <span class="o">=</span> <span class="n">WcsGeom</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">energy_axis</span><span class="p">])</span>
+<span class="n">geom</span> <span class="o">=</span> <span class="n">WcsGeom</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+        <span class="n">skydir</span><span class="o">=</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span>
+        <span class="n">frame</span><span class="o">=</span><span class="s1">&#39;galactic&#39;</span><span class="p">,</span>
+        <span class="n">binsz</span><span class="o">=</span><span class="mf">0.05</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
+        <span class="n">width</span><span class="o">=</span><span class="mi">5</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
+        <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">energy_axis</span><span class="p">]</span>
+<span class="p">)</span>
 <span class="n">dataset_empty</span> <span class="o">=</span> <span class="n">MapDataset</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">geom</span><span class="o">=</span><span class="n">geom</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">dataset_empty</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>At this point the created <code class="xref py py-obj docutils literal notranslate"><span class="pre">dataset</span></code> is empty. The <code class="docutils literal notranslate"><span class="pre">.create()</span></code> method has
 additional options, e.g. it is also possible to specify a true energy axis:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">MapAxis</span><span class="p">,</span> <span class="n">WcsGeom</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
+<span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">MapAxis</span><span class="p">,</span> <span class="n">WcsGeom</span>
 <span class="kn">from</span> <span class="nn">gammapy.datasets</span> <span class="kn">import</span> <span class="n">MapDataset</span>
 
 <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_bounds</span><span class="p">(</span>
     <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">nbin</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;energy&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;TeV&quot;</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s2">&quot;log&quot;</span>
 <span class="p">)</span>
-<span class="n">geom</span> <span class="o">=</span> <span class="n">WcsGeom</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">energy_axis</span><span class="p">])</span>
+<span class="n">geom</span> <span class="o">=</span> <span class="n">WcsGeom</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+        <span class="n">skydir</span><span class="o">=</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span>
+        <span class="n">frame</span><span class="o">=</span><span class="s1">&#39;galactic&#39;</span><span class="p">,</span>
+        <span class="n">binsz</span><span class="o">=</span><span class="mf">0.05</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
+        <span class="n">width</span><span class="o">=</span><span class="mi">5</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
+        <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">energy_axis</span><span class="p">]</span>
+<span class="p">)</span>
 
 <span class="n">energy_axis_true</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_bounds</span><span class="p">(</span>
     <span class="mf">0.3</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">nbin</span><span class="o">=</span><span class="mi">31</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;energy&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;TeV&quot;</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s2">&quot;log&quot;</span>
@@ -591,7 +607,8 @@ additional options, e.g. it is also possible to specify a true energy axis:</p>
 </div>
 <p>Once this empty “reference” dataset is defined, it can be filled with observational
 data using the <a class="reference internal" href="../api/gammapy.makers.MapDatasetMaker.html#gammapy.makers.MapDatasetMaker" title="gammapy.makers.MapDatasetMaker"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MapDatasetMaker</span></code></a>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gammapy.datasets</span> <span class="kn">import</span> <span class="n">MapDataset</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
+<span class="kn">from</span> <span class="nn">gammapy.datasets</span> <span class="kn">import</span> <span class="n">MapDataset</span>
 <span class="kn">from</span> <span class="nn">gammapy.makers</span> <span class="kn">import</span> <span class="n">MapDatasetMaker</span>
 <span class="kn">from</span> <span class="nn">gammapy.data</span> <span class="kn">import</span> <span class="n">DataStore</span>
 <span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">MapAxis</span><span class="p">,</span> <span class="n">WcsGeom</span>
@@ -602,7 +619,13 @@ data using the <a class="reference internal" href="../api/gammapy.makers.MapData
 <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_bounds</span><span class="p">(</span>
     <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">nbin</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;energy&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;TeV&quot;</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s2">&quot;log&quot;</span>
 <span class="p">)</span>
-<span class="n">geom</span> <span class="o">=</span> <span class="n">WcsGeom</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">skydir</span><span class="o">=</span><span class="p">(</span><span class="mf">83.63</span><span class="p">,</span> <span class="mf">22.01</span><span class="p">),</span> <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">energy_axis</span><span class="p">],</span> <span class="n">width</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">geom</span> <span class="o">=</span> <span class="n">WcsGeom</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+            <span class="n">skydir</span><span class="o">=</span><span class="p">(</span><span class="mf">83.63</span><span class="p">,</span> <span class="mf">22.01</span><span class="p">),</span>
+            <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">energy_axis</span><span class="p">],</span>
+            <span class="n">width</span><span class="o">=</span><span class="mi">5</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
+            <span class="n">binsz</span><span class="o">=</span><span class="mf">0.05</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
+            <span class="n">frame</span><span class="o">=</span><span class="s1">&#39;icrs&#39;</span>
+<span class="p">)</span>
 <span class="n">dataset_empty</span> <span class="o">=</span> <span class="n">MapDataset</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">geom</span><span class="o">=</span><span class="n">geom</span><span class="p">)</span>
 
 <span class="n">maker</span> <span class="o">=</span> <span class="n">MapDatasetMaker</span><span class="p">()</span>
@@ -625,7 +648,8 @@ includes the pixel, while a value of <a class="reference external" href="https:/
 from the analysis. To compute safe data range masks according to certain
 criteria, Gammapy provides a <a class="reference internal" href="../api/gammapy.makers.SafeMaskMaker.html#gammapy.makers.SafeMaskMaker" title="gammapy.makers.SafeMaskMaker"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SafeMaskMaker</span></code></a> class.</p>
 <p>Here is an example how to use it:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gammapy.datasets</span> <span class="kn">import</span>  <span class="n">MapDataset</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">u</span>
+<span class="kn">from</span> <span class="nn">gammapy.datasets</span> <span class="kn">import</span>  <span class="n">MapDataset</span>
 <span class="kn">from</span> <span class="nn">gammapy.makers</span> <span class="kn">import</span> <span class="n">MapDatasetMaker</span><span class="p">,</span> <span class="n">SafeMaskMaker</span>
 <span class="kn">from</span> <span class="nn">gammapy.data</span> <span class="kn">import</span> <span class="n">DataStore</span>
 <span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">MapAxis</span><span class="p">,</span> <span class="n">WcsGeom</span>
@@ -636,7 +660,13 @@ criteria, Gammapy provides a <a class="reference internal" href="../api/gammapy.
 <span class="n">energy_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_bounds</span><span class="p">(</span>
     <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">nbin</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;energy&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;TeV&quot;</span><span class="p">,</span> <span class="n">interp</span><span class="o">=</span><span class="s2">&quot;log&quot;</span>
 <span class="p">)</span>
-<span class="n">geom</span> <span class="o">=</span> <span class="n">WcsGeom</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">skydir</span><span class="o">=</span><span class="p">(</span><span class="mf">83.63</span><span class="p">,</span> <span class="mf">22.01</span><span class="p">),</span> <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">energy_axis</span><span class="p">],</span> <span class="n">width</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">geom</span> <span class="o">=</span> <span class="n">WcsGeom</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+            <span class="n">skydir</span><span class="o">=</span><span class="p">(</span><span class="mf">83.63</span><span class="p">,</span> <span class="mf">22.01</span><span class="p">),</span>
+            <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">energy_axis</span><span class="p">],</span>
+            <span class="n">width</span><span class="o">=</span><span class="mi">5</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
+            <span class="n">binsz</span><span class="o">=</span><span class="mf">0.05</span><span class="o">*</span><span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span>
+            <span class="n">frame</span><span class="o">=</span><span class="s1">&#39;icrs&#39;</span>
+<span class="p">)</span>
 <span class="n">dataset_empty</span> <span class="o">=</span> <span class="n">MapDataset</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">geom</span><span class="o">=</span><span class="n">geom</span><span class="p">)</span>
 
 <span class="n">maker</span> <span class="o">=</span> <span class="n">MapDatasetMaker</span><span class="p">()</span>
@@ -658,6 +688,41 @@ and stacking and fitting. For a joint-likelihood analysis of multiple
 observations the safe mask is applied to the counts and predicted
 number of counts map during fitting. This correctly accounts for
 contributions (spill-over) by the PSF from outside the field of view.</p>
+</div>
+<div class="section" id="background-estimation">
+<h2>Background estimation<a class="headerlink" href="#background-estimation" title="Permalink to this headline">¶</a></h2>
+<p>The background computed by the <a class="reference internal" href="../api/gammapy.makers.MapDatasetMaker.html#gammapy.makers.MapDatasetMaker" title="gammapy.makers.MapDatasetMaker"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MapDatasetMaker</span></code></a> gives the number of counts predicted
+by the background IRF of the observation. Because its actual normalization, or even its
+spectral shape, might be poorly constrained, it is necessary to correct it with the data
+themselves. This is the role of background estimation Makers.</p>
+<div class="section" id="fov-background">
+<h3>FoV Background<a class="headerlink" href="#fov-background" title="Permalink to this headline">¶</a></h3>
+<p>If the background energy dependent morphology is well reproduced by the background model
+stored in the IRF, it might be that its normalization is incorrect and that some spectral
+corrections are necessary. This is made possible thanks to the <a class="reference internal" href="../api/gammapy.makers.FoVBackgroundMaker.html#gammapy.makers.FoVBackgroundMaker" title="gammapy.makers.FoVBackgroundMaker"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FoVBackgroundMaker</span></code></a>.
+This technique is recommended in most 3D data reductions.</p>
+<p>For more details and usage, see <a class="reference internal" href="fov.html#fov-background"><span class="std std-ref">FoV background</span></a>.</p>
+</div>
+<div class="section" id="ring-background">
+<h3>Ring Background<a class="headerlink" href="#ring-background" title="Permalink to this headline">¶</a></h3>
+<p>If the background model does not reproduce well the morphology, a classical approach consists
+in applying local corrections by smoothing the data with a ring kernel. This allows to build a set
+of OFF counts taking into account the inperfect knowledge of the background. This is implemented
+in the <a class="reference internal" href="../api/gammapy.makers.RingBackgroundMaker.html#gammapy.makers.RingBackgroundMaker" title="gammapy.makers.RingBackgroundMaker"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RingBackgroundMaker</span></code></a> which transforms the Dataset in a <code class="xref py py-obj docutils literal notranslate"><span class="pre">MapDatasetOnOff</span></code>.
+This technique is mostly used for imaging, and should not be applied for 3D modeling and fitting.</p>
+<p>For more details and usage, see <a class="reference internal" href="ring.html#ring-background"><span class="std std-ref">Ring background</span></a>.</p>
+</div>
+<div class="section" id="reflected-regions-background">
+<h3>Reflected Regions Background<a class="headerlink" href="#reflected-regions-background" title="Permalink to this headline">¶</a></h3>
+<p>In the absence of a solid background model, a classical technique in Cherenkov astronomy for 1D
+spectral analysis is to estimate the background in a number of OFF regions. When the background
+can be safely estimated as radially symmetric w.r.t. the pointing direction, one can apply the
+reflected regions background technique.
+This is implemented in the <a class="reference internal" href="../api/gammapy.makers.ReflectedRegionsBackgroundMaker.html#gammapy.makers.ReflectedRegionsBackgroundMaker" title="gammapy.makers.ReflectedRegionsBackgroundMaker"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ReflectedRegionsBackgroundMaker</span></code></a> which transforms a
+<code class="xref py py-obj docutils literal notranslate"><span class="pre">SpectrumDataset</span></code> in a <code class="xref py py-obj docutils literal notranslate"><span class="pre">SpectrumDatasetOnOff</span></code>. This technique is only used for 1D spectral
+analysis.</p>
+<p>For more details and usage, see <a class="reference internal" href="reflected.html#reflected-background"><span class="std std-ref">Reflected regions background</span></a>.</p>
+</div>
 </div>
 <div class="section" id="stacking-of-datasets">
 <h2>Stacking of Datasets<a class="headerlink" href="#stacking-of-datasets" title="Permalink to this headline">¶</a></h2>
@@ -725,12 +790,6 @@ Finally the dataset per observation is stacked into a larger map.</p>
 of the <code class="xref py py-obj docutils literal notranslate"><span class="pre">MapDataset</span></code> as shown above. In case you want to increase the
 offset-cut later, you can also choose a larger width of the cutout
 than <code class="xref py py-obj docutils literal notranslate"><span class="pre">2</span> <span class="pre">*</span> <span class="pre">offset_max</span></code>.</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="reflected.html">Reflected regions background</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ring.html">Ring background</a></li>
-</ul>
-</div>
 </div>
 <div class="section" id="using-gammapy-makers">
 <h2>Using <a class="reference internal" href="#module-gammapy.makers" title="gammapy.makers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.makers</span></code></a><a class="headerlink" href="#using-gammapy-makers" title="Permalink to this headline">¶</a></h2>
@@ -808,7 +867,7 @@ than <code class="xref py py-obj docutils literal notranslate"><span class="pre"
           </div>
           <footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="reflected.html" class="btn btn-neutral float-right" title="Reflected regions background" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../api/gammapy.makers.Maker.html" class="btn btn-neutral float-right" title="Maker" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
         <a href="../api/gammapy.data.observatory_locations.html" class="btn btn-neutral float-left" title="observatory_locations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
@@ -818,7 +877,7 @@ than <code class="xref py py-obj docutils literal notranslate"><span class="pre"
     <p>
         &#169; Copyright 2021, The Gammapy developers.
       <span class="lastupdated">
-        Last updated on 23 Jan 2021.
+        Last updated on 02 Feb 2021.
       </span>
 
     </p>

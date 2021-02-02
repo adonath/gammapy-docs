@@ -50,7 +50,7 @@ from gammapy.modeling.models import (
     PowerLawSpectralModel,
     PointSpatialModel,
 )
-from gammapy.irf import PSFMap, EnergyDependentTablePSF, EDispKernelMap
+from gammapy.irf import PSFMap, EDispKernelMap
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 import numpy as np
@@ -76,10 +76,9 @@ exposure = Map.read(
 # unit is not properly stored on the file. We add it manually
 exposure.unit = "cm2s"
 
-psf = EnergyDependentTablePSF.read(
-    "$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-psf-cube.fits.gz"
+psfmap = PSFMap.read(
+    "$GAMMAPY_DATA/fermi-3fhl-gc/fermi-3fhl-gc-psf-cube.fits.gz", format="gtpsf"
 )
-psfmap = PSFMap.from_energy_dependent_table_psf(psf)
 
 edisp = EDispKernelMap.from_diagonal_response(
     energy_axis=counts.geom.axes["energy"],

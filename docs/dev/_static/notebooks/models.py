@@ -12,9 +12,11 @@
 # 
 # 1. [Spectral Models](#Spectral-Models)
 # 1. [Spatial Models](#Spatial-Models)
+# 1. [Temporal Models](#Temporal-Models)
 # 1. [SkyModel](#SkyModel)
 # 1. [Model Lists and Serialisation](#Model-Lists-and-Serialisation)
 # 1. [Implementing as Custom Model](#Implementing-a-Custom-Model)
+# 1. [Energy dependent models](#Models-with-energy-dependent-morphology)
 # 
 # The models follow a naming scheme which contains the category as a suffix to the class name. An overview of all the available models can be found in the [model gallery](https://docs.gammapy.org/dev/modeling/gallery/index.html#spectral-models).
 # 
@@ -99,7 +101,7 @@ print(dnde)
 
 # The returned quantity is a differential photon flux. 
 # 
-# For spectral models you can computed in addition the integrated and energy flux
+# For spectral models you can additionally compute the integrated and energy flux
 # in a given energy range:
 
 # In[ ]:
@@ -138,6 +140,94 @@ print(energy)
 
 
 pwl.plot(energy_range=[1, 100] * u.TeV)
+
+
+# ### Norm Spectral Models
+
+# Normed spectral models are a special class of Spectral Models, which have a dimension-less normalisation. These spectral models feature a norm parameter instead
+# of amplitude and are named using the ``NormSpectralModel`` suffix. They **must** be used along with another spectral model, as a multiplicative correction factor according to their spectral shape. They can be typically used for adjusting template based models, or adding a EBL correction to some analytic model. 
+
+# In[ ]:
+
+
+# To see the available norm models shipped with gammapy:
+for model in SPECTRAL_MODEL_REGISTRY:
+    if str(model)[-19:-2] == "NormSpectralModel":
+        print(model)
+
+
+# As an example, we see the `PowerLawNormSpectralModel`
+
+# In[ ]:
+
+
+from gammapy.modeling.models import PowerLawNormSpectralModel
+
+
+# In[ ]:
+
+
+pwl_norm = PowerLawNormSpectralModel(tilt=0.1)
+print(pwl_norm)
+
+
+# We can check the correction introduced at each energy 
+
+# In[ ]:
+
+
+energy = [0.3, 1, 3, 10, 30] * u.TeV
+pwl_norm(energy)
+
+
+# In[ ]:
+
+
+# To check if a Norm model
+print(pwl_norm.is_norm_spectral_model)  # this is a norm model
+print(pwl.is_norm_spectral_model)  # this is not a norm model
+
+
+# A typical use case of a norm model would be in applying spectral correction to a `TemplateSpectralModel`. A template model is defined by custom tabular values provided at initialization. 
+
+# In[ ]:
+
+
+from gammapy.modeling.models import TemplateSpectralModel
+
+
+# In[ ]:
+
+
+energy = [0.3, 1, 3, 10, 30] * u.TeV
+values = [40, 30, 20, 10, 1] * u.Unit("TeV-1 s-1 cm-2")
+template = TemplateSpectralModel(energy, values)
+template.plot(energy_range=[0.2, 50] * u.TeV, label="template model")
+normed_template = template * pwl_norm
+normed_template.plot(
+    energy_range=[0.2, 50] * u.TeV, label="normed_template model"
+)
+plt.legend();
+
+
+# ### Compound Spectral Model
+# 
+# A `CompoundSpectralModel` is an arithmetic combination of two spectral models. The model `normed_template` created in the preceeding example is an example of a `CompoundSpectralModel`
+# 
+
+# In[ ]:
+
+
+print(normed_template)
+
+
+# To create an additive model, you can do simply:
+
+# In[ ]:
+
+
+model_add = pwl + template
+print(model_add)
 
 
 # ## Spatial models
@@ -261,17 +351,69 @@ write_ds9(regions, filename, coordsys="galactic", fmt=".4f", radunit="deg")
 get_ipython().system('cat regions.reg')
 
 
+# ## Temporal models
+
+# Temporal models are imported from the same `~gammapy.modeling.models` namespace, let's start with a `GaussianTemporalModel`:
+
+# In[ ]:
+
+
+from gammapy.modeling.models import GaussianTemporalModel
+
+
+# In[ ]:
+
+
+gauss_temp = GaussianTemporalModel(t_ref=59240.0 * u.d, sigma=2.0 * u.d)
+print(gauss_temp)
+
+
+# To check the `TEMPORAL_MODELS` registry to see which models are available:
+
+# In[ ]:
+
+
+from gammapy.modeling.models import TEMPORAL_MODEL_REGISTRY
+
+print(TEMPORAL_MODEL_REGISTRY)
+
+
+# Temporal models can be evaluated on `astropy.time.Time` objects. The returned quantity is a dimensionless number
+
+# In[ ]:
+
+
+from astropy.time import Time
+
+time = Time("2021-01-29 00:00:00.000")
+gauss_temp(time)
+
+
+# As for other models, they can be plotted in a given time range
+
+# In[ ]:
+
+
+time = Time([59233.0, 59250], format="mjd")
+gauss_temp.plot(time)
+
+
 # ## SkyModel
 
-# The `~gammapy.modeling.models.SkyModel` class combines a spectral and a spatial model. It can be created
-# from existing spatial and spectral model components:
+# The `~gammapy.modeling.models.SkyModel` class combines a spectral, and optionally, a spatial model and a temporal. It can be created
+# from existing spectral, spatial and temporal model components:
 
 # In[ ]:
 
 
 from gammapy.modeling.models import SkyModel
 
-model = SkyModel(spectral_model=pwl, spatial_model=gauss, name="my-source")
+model = SkyModel(
+    spectral_model=pwl,
+    spatial_model=gauss,
+    temporal_model=gauss_temp,
+    name="my-source",
+)
 print(model)
 
 
@@ -284,7 +426,7 @@ model_without_name = SkyModel(spectral_model=pwl, spatial_model=gauss)
 print(model_without_name.name)
 
 
-# The spectral and spatial component of the source model can be accessed using `.spectral_model` and `.spatial_model`:
+# The individual components of the source model can be accessed using `.spectral_model`,  `.spatial_model` and `.temporal_model`:
 
 # In[ ]:
 
@@ -298,6 +440,12 @@ model.spectral_model
 model.spatial_model
 
 
+# In[ ]:
+
+
+model.temporal_model
+
+
 # And can be used as you have seen already seen above:
 
 # In[ ]:
@@ -306,7 +454,7 @@ model.spatial_model
 model.spectral_model.plot(energy_range=[1, 10] * u.TeV);
 
 
-# In some cases (e.g. when doing a spectral analysis) there is only a spectral model associated with the source. So the spatial model is optional:
+# Note that the gammapy fitting can interface only with a `SkyModel` and **not** its individual components. So, it is customary to work with `SkyModel` even if you are not doing a 3D fit. Since the amplitude parameter resides on the `SpectralModel`, specifying a spectral component is compulsory. The temporal and spatial components are optional. The temporal model needs to be specified only for timing analysis. In some cases (e.g. when doing a spectral analysis) there is no need for a spatial component either, and only a spectral model is associated with the source. 
 
 # In[ ]:
 
@@ -519,7 +667,7 @@ get_ipython().system('cat my-custom-models.yaml')
 
 # ## Models with energy dependent morphology
 # 
-# A common science case in the study of extended sources is to probe for energy dependent morphology, in Supernova Remnants or Pulsar Wind Nebulae. Traditionally, this has been done by splitting the data into energy bands and doing individual fits of the morphology in these energy bands.
+# A common science case in the study of extended sources is to probe for energy dependent morphology, eg: in Supernova Remnants or Pulsar Wind Nebulae. Traditionally, this has been done by splitting the data into energy bands and doing individual fits of the morphology in these energy bands.
 # 
 # `SkyModel` offers a natural framework to simultaneously model the energy and morphology, e.g. spatial extent described by a parametric model expression with energy dependent parameters.
 # 
@@ -553,6 +701,7 @@ class MyCustomGaussianModel(SpatialModel):
     """
 
     tag = "MyCustomGaussianModel"
+    is_energy_dependent = True
     lon_0 = Parameter("lon_0", "0 deg")
     lat_0 = Parameter("lat_0", "0 deg", min=-90, max=90)
 
@@ -560,34 +709,21 @@ class MyCustomGaussianModel(SpatialModel):
     sigma_10TeV = Parameter("sigma_10TeV", "0.2 deg", min=0)
 
     @staticmethod
-    def get_sigma(energy, sigma_1TeV, sigma_10TeV):
-        """Get the sigma for a particular energy"""
-        sigmas = u.Quantity([sigma_1TeV, sigma_10TeV])
-        energy_nodes = [1, 10] * u.TeV
+    def evaluate(lon, lat, energy, lon_0, lat_0, sigma_1TeV, sigma_10TeV):
 
-        log_s = np.log(sigmas.to("deg").value)
+        sep = angular_separation(lon, lat, lon_0, lat_0)
+
+        # Compute sigma for the given energy using linear interpolation in log energy
+        sigma_nodes = u.Quantity([sigma_1TeV, sigma_10TeV])
+        energy_nodes = [1, 10] * u.TeV
+        log_s = np.log(sigma_nodes.to("deg").value)
         log_en = np.log(energy_nodes.to("TeV").value)
         log_e = np.log(energy.to("TeV").value)
-        return np.exp(np.interp(log_e, log_en, log_s)) * u.deg
-
-    def evaluate(
-        self, lon, lat, energy, lon_0, lat_0, sigma_1TeV, sigma_10TeV
-    ):
-        """Evaluate custom Gaussian model"""
-
-        sigma = self.get_sigma(energy, sigma_1TeV, sigma_10TeV)
-        sep = angular_separation(lon, lat, lon_0, lat_0)
+        sigma = np.exp(np.interp(log_e, log_en, log_s)) * u.deg
 
         exponent = -0.5 * (sep / sigma) ** 2
         norm = 1 / (2 * np.pi * sigma ** 2)
         return norm * np.exp(exponent)
-
-    @property
-    def evaluation_radius(self):
-        """Evaluation radius (`~astropy.coordinates.Angle`)."""
-        return (
-            5 * np.max([self.sigma_1TeV.value, self.sigma_10TeV.value]) * u.deg
-        )
 
 
 # Serialisation of this model can be achieved as explained in the previous section.
@@ -603,6 +739,12 @@ sky_model = SkyModel(
 )
 
 
+# In[ ]:
+
+
+spatial_model.evaluation_radius
+
+
 # To visualise it, we evaluate it on a 3D geom. 
 
 # In[ ]:
@@ -615,4 +757,21 @@ geom = WcsGeom.create(
     skydir=(0, 0), width=5.0 * u.deg, binsz=0.1, axes=[energy_axis]
 )
 spatial_model.plot_grid(geom=geom, add_cbar=True);
+
+
+# For computational purposes, it is useful to specify a `evaluation_radius` for `SpatialModels` - this gives a size on which to compute the model. Though optional, it is highly recommened for Custom Spatial Models. This can be done, for ex, by defining the following function inside the above class:
+
+# In[ ]:
+
+
+@property
+def evaluation_radius(self):
+    """Evaluation radius (`~astropy.coordinates.Angle`)."""
+    return 5 * np.max([self.sigma_1TeV.value, self.sigma_10TeV.value]) * u.deg
+
+
+# In[ ]:
+
+
+
 

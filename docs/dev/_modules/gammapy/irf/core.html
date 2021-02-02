@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>gammapy.irf.core &mdash; gammapy v0.18.3.dev437+g004e0b80d</title>
+  <title>gammapy.irf.core &mdash; gammapy v0.18.3.dev646+gc0d544d96</title>
   
 
   
@@ -78,7 +78,7 @@
             
             
               <div class="version">
-                0.18.3.dev437+g004e0b80d
+                0.18.3.dev646+gc0d544d96
               </div>
             
           
@@ -225,12 +225,14 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#safe-data-range-handling">Safe Data Range Handling</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#stacking-of-datasets">Stacking of Datasets</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#combining-data-reduction-steps">Combining Data Reduction Steps</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../makers/reflected.html">Reflected regions background</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../makers/ring.html">Ring background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#background-estimation">Background estimation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../makers/index.html#fov-background">FoV Background</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../makers/index.html#ring-background">Ring Background</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../makers/index.html#reflected-regions-background">Reflected Regions Background</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#stacking-of-datasets">Stacking of Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#combining-data-reduction-steps">Combining Data Reduction Steps</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#using-gammapy-makers">Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.makers</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#reference-api">Reference/API</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../makers/index.html#module-gammapy.makers">gammapy.makers Package</a></li>
@@ -525,7 +527,7 @@
 <span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
 <span class="kn">from</span> <span class="nn">astropy.utils</span> <span class="kn">import</span> <span class="n">lazyproperty</span>
 <span class="kn">from</span> <span class="nn">astropy.table</span> <span class="kn">import</span> <span class="n">Table</span>
-<span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">Map</span><span class="p">,</span> <span class="n">MapAxes</span>
+<span class="kn">from</span> <span class="nn">gammapy.maps</span> <span class="kn">import</span> <span class="n">Map</span><span class="p">,</span> <span class="n">MapAxes</span><span class="p">,</span> <span class="n">MapAxis</span><span class="p">,</span> <span class="n">RegionGeom</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.interpolation</span> <span class="kn">import</span> <span class="n">ScaledRegularGridInterpolator</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.integrate</span> <span class="kn">import</span> <span class="n">trapz_loglog</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.scripts</span> <span class="kn">import</span> <span class="n">make_path</span>
@@ -535,7 +537,19 @@
 
 
 <span class="k">class</span> <span class="nc">IRF</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;IRF base class for DL3 instrument response functions&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;IRF base class for DL3 instrument response functions</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    -----------</span>
+<span class="sd">    axes : list of `MapAxis` or `MapAxes`</span>
+<span class="sd">        Axes</span>
+<span class="sd">    data : `~numpy.ndarray`</span>
+<span class="sd">        Data</span>
+<span class="sd">    unit : str or `~astropy.units.Unit`</span>
+<span class="sd">        Unit</span>
+<span class="sd">    meta : dict</span>
+<span class="sd">        Meta data</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">default_interp_kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
         <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span>
@@ -595,6 +609,15 @@
         <span class="c1"># reset cached interpolators</span>
         <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;_interpolate&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;_integrate_rad&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">unit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Map unit (`~astropy.units.Unit`)&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unit</span>
+
+    <span class="nd">@unit</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">unit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_unit</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">Unit</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
 
     <span class="nd">@lazyproperty</span>
     <span class="k">def</span> <span class="nf">_interpolate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -722,7 +745,11 @@
         <span class="n">f_integrate</span> <span class="o">=</span> <span class="n">ScaledRegularGridInterpolator</span><span class="p">(</span>
             <span class="n">points</span><span class="o">=</span><span class="n">points</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">coords</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">names</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">coords</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">names</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing coordinate for axis: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">f_integrate</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
@@ -836,6 +863,18 @@
         <span class="n">name</span> <span class="o">=</span> <span class="n">IRF_DL3_HDU_SPECIFICATION</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">tag</span><span class="p">][</span><span class="s2">&quot;extname&quot;</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_table</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
 
+    <span class="k">def</span> <span class="nf">to_hdulist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf-dl3&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
+        <span class="n">hdu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_table_hdu</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">([</span><span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">(),</span> <span class="n">hdu</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Write PSF to FITS file.</span>
+
+<span class="sd">        Calls `~astropy.io.fits.HDUList.writeto`, forwarding all arguments.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">()</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">make_path</span><span class="p">(</span><span class="n">filename</span><span class="p">)),</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
 
 <span class="k">class</span> <span class="nc">IRFMap</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;IRF map base class for DL4 instrument response functions&quot;&quot;&quot;</span>
@@ -862,6 +901,7 @@
         <span class="n">hdu_bands</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">exposure_hdu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">exposure_hdu_bands</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf&quot;</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Create from `~astropy.io.fits.HDUList`.</span>
 
@@ -877,57 +917,128 @@
 <span class="sd">            Name or index of the HDU with the exposure map data.</span>
 <span class="sd">        exposure_hdu_bands : str</span>
 <span class="sd">            Name or index of the HDU with the exposure map BANDS table.</span>
+<span class="sd">        format : {&quot;gadf&quot;, &quot;gtpsf&quot;}</span>
+<span class="sd">            File format</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        irf_map : `IRFMap`</span>
 <span class="sd">            IRF map.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">hdu</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">hdu</span> <span class="o">=</span> <span class="n">IRF_MAP_HDU_SPECIFICATION</span><span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="n">tag</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;gadf&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">hdu</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">hdu</span> <span class="o">=</span> <span class="n">IRF_MAP_HDU_SPECIFICATION</span><span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="n">tag</span><span class="p">]</span>
 
-        <span class="n">irf_map</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="n">hdu</span><span class="p">,</span> <span class="n">hdu_bands</span><span class="o">=</span><span class="n">hdu_bands</span><span class="p">)</span>
+            <span class="n">irf_map</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="n">hdu</span><span class="p">,</span> <span class="n">hdu_bands</span><span class="o">=</span><span class="n">hdu_bands</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">exposure_hdu</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">exposure_hdu</span> <span class="o">=</span> <span class="n">IRF_MAP_HDU_SPECIFICATION</span><span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="n">tag</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;_exposure&quot;</span>
+            <span class="k">if</span> <span class="n">exposure_hdu</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">exposure_hdu</span> <span class="o">=</span> <span class="n">IRF_MAP_HDU_SPECIFICATION</span><span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="n">tag</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;_exposure&quot;</span>
 
-        <span class="k">if</span> <span class="n">exposure_hdu</span> <span class="ow">in</span> <span class="n">hdulist</span><span class="p">:</span>
-            <span class="n">exposure_map</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span>
-                <span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="n">exposure_hdu</span><span class="p">,</span> <span class="n">hdu_bands</span><span class="o">=</span><span class="n">exposure_hdu_bands</span>
+            <span class="k">if</span> <span class="n">exposure_hdu</span> <span class="ow">in</span> <span class="n">hdulist</span><span class="p">:</span>
+                <span class="n">exposure_map</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span>
+                    <span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="n">exposure_hdu</span><span class="p">,</span> <span class="n">hdu_bands</span><span class="o">=</span><span class="n">exposure_hdu_bands</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">exposure_map</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;gtpsf&quot;</span><span class="p">:</span>
+            <span class="n">rad_axis</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_table_hdu</span><span class="p">(</span><span class="n">hdulist</span><span class="p">[</span><span class="s2">&quot;THETA&quot;</span><span class="p">],</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)</span>
+
+            <span class="n">table</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">hdulist</span><span class="p">[</span><span class="s2">&quot;PSF&quot;</span><span class="p">])</span>
+            <span class="n">energy_axis_true</span> <span class="o">=</span> <span class="n">MapAxis</span><span class="o">.</span><span class="n">from_table</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)</span>
+
+            <span class="n">geom_psf</span> <span class="o">=</span> <span class="n">RegionGeom</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+                <span class="n">region</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="p">[</span><span class="n">rad_axis</span><span class="p">,</span> <span class="n">energy_axis_true</span><span class="p">]</span>
             <span class="p">)</span>
+
+            <span class="n">psf_map</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span>
+                <span class="n">geom</span><span class="o">=</span><span class="n">geom_psf</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;Psf&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;sr-1&quot;</span>
+            <span class="p">)</span>
+
+            <span class="n">geom_exposure</span> <span class="o">=</span> <span class="n">geom_psf</span><span class="o">.</span><span class="n">squash</span><span class="p">(</span><span class="s2">&quot;rad&quot;</span><span class="p">)</span>
+            <span class="n">exposure_map</span> <span class="o">=</span> <span class="n">Map</span><span class="o">.</span><span class="n">from_geom</span><span class="p">(</span>
+                <span class="n">geom</span><span class="o">=</span><span class="n">geom_exposure</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">table</span><span class="p">[</span><span class="s2">&quot;Exposure&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;cm2 s&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">psf_map</span><span class="o">=</span><span class="n">psf_map</span><span class="p">,</span> <span class="n">exposure_map</span><span class="o">=</span><span class="n">exposure_map</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">exposure_map</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Format </span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2"> not supported&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">irf_map</span><span class="p">,</span> <span class="n">exposure_map</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Read an IRF_map from file and create corresponding object&quot;&quot;&quot;</span>
-        <span class="k">with</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">memmap</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">hdulist</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="n">hdu</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf&quot;</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Read an IRF_map from file and create corresponding object&quot;</span>
 
-    <span class="k">def</span> <span class="nf">to_hdulist</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filename : str or `Path`</span>
+<span class="sd">            File name</span>
+<span class="sd">        format : {&quot;gadf&quot;, &quot;gtpsf&quot;}</span>
+<span class="sd">            File format</span>
+<span class="sd">        hdu : str or int</span>
+<span class="sd">            HDU location</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        irf_map : `PSFMap`, `EDispMap` or `EDispKernelMap`</span>
+<span class="sd">            IRF map</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">make_path</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">fits</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">memmap</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">hdulist</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_hdulist</span><span class="p">(</span><span class="n">hdulist</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">,</span> <span class="n">hdu</span><span class="o">=</span><span class="n">hdu</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_hdulist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Convert to `~astropy.io.fits.HDUList`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        format : {&quot;gadf&quot;, &quot;gtpsf&quot;}</span>
+<span class="sd">            File format</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        hdu_list : `~astropy.io.fits.HDUList`</span>
 <span class="sd">            HDU list.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">hdu</span> <span class="o">=</span> <span class="n">IRF_MAP_HDU_SPECIFICATION</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">tag</span><span class="p">]</span>
-        <span class="n">hdulist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_irf_map</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">(</span><span class="n">hdu</span><span class="o">=</span><span class="n">hdu</span><span class="p">)</span>
-        <span class="n">exposure_hdu</span> <span class="o">=</span> <span class="n">hdu</span> <span class="o">+</span> <span class="s2">&quot;_exposure&quot;</span>
+        <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;gadf&quot;</span><span class="p">:</span>
+            <span class="n">hdu</span> <span class="o">=</span> <span class="n">IRF_MAP_HDU_SPECIFICATION</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">tag</span><span class="p">]</span>
+            <span class="n">hdulist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_irf_map</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">(</span><span class="n">hdu</span><span class="o">=</span><span class="n">hdu</span><span class="p">)</span>
+            <span class="n">exposure_hdu</span> <span class="o">=</span> <span class="n">hdu</span> <span class="o">+</span> <span class="s2">&quot;_exposure&quot;</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">new_hdulist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">(</span><span class="n">hdu</span><span class="o">=</span><span class="n">exposure_hdu</span><span class="p">)</span>
-            <span class="n">hdulist</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">new_hdulist</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">new_hdulist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">(</span><span class="n">hdu</span><span class="o">=</span><span class="n">exposure_hdu</span><span class="p">)</span>
+                <span class="n">hdulist</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">new_hdulist</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+
+        <span class="k">elif</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;gtpsf&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_irf_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">is_region</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Format &#39;gtpsf&#39; is only supported for region geometries&quot;</span><span class="p">)</span>
+
+            <span class="n">rad_hdu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_irf_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;rad&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_table_hdu</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)</span>
+            <span class="n">psf_table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_irf_map</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="s2">&quot;energy_true&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_table</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)</span>
+
+            <span class="n">psf_table</span><span class="p">[</span><span class="s2">&quot;Exposure&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">exposure_map</span><span class="o">.</span><span class="n">quantity</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;cm^2 s&quot;</span><span class="p">)</span>
+            <span class="n">psf_table</span><span class="p">[</span><span class="s2">&quot;Psf&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_irf_map</span><span class="o">.</span><span class="n">quantity</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;sr^-1&quot;</span><span class="p">)</span>
+            <span class="n">psf_hdu</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">BinTableHDU</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">psf_table</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;PSF&quot;</span><span class="p">)</span>
+            <span class="n">hdulist</span> <span class="o">=</span> <span class="n">fits</span><span class="o">.</span><span class="n">HDUList</span><span class="p">([</span><span class="n">fits</span><span class="o">.</span><span class="n">PrimaryHDU</span><span class="p">(),</span> <span class="n">rad_hdu</span><span class="p">,</span> <span class="n">psf_hdu</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Format </span><span class="si">{</span><span class="nb">format</span><span class="si">}</span><span class="s2"> not supported&quot;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">hdulist</span>
 
-    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Write IRF map to fits&quot;&quot;&quot;</span>
-        <span class="n">hdulist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="n">hdulist</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;gadf&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Write IRF map to fits</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        filename : str or `Path`</span>
+<span class="sd">            Filename to write to</span>
+<span class="sd">        overwrite : bool</span>
+<span class="sd">            Whether to overwrite</span>
+<span class="sd">        format : {&quot;gadf&quot;, &quot;gtpsf&quot;}</span>
+<span class="sd">            File format</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">hdulist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_hdulist</span><span class="p">(</span><span class="nb">format</span><span class="o">=</span><span class="nb">format</span><span class="p">)</span>
+        <span class="n">hdulist</span><span class="o">.</span><span class="n">writeto</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">filename</span><span class="p">),</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Stack IRF map with another one in place.</span>
@@ -1061,7 +1172,7 @@
     <p>
         &#169; Copyright 2021, The Gammapy developers.
       <span class="lastupdated">
-        Last updated on 23 Jan 2021.
+        Last updated on 02 Feb 2021.
       </span>
 
     </p>

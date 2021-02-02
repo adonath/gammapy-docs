@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>gammapy.maps.region &mdash; gammapy v0.18.3.dev437+g004e0b80d</title>
+  <title>gammapy.maps.region &mdash; gammapy v0.18.3.dev646+gc0d544d96</title>
   
 
   
@@ -78,7 +78,7 @@
             
             
               <div class="version">
-                0.18.3.dev437+g004e0b80d
+                0.18.3.dev646+gc0d544d96
               </div>
             
           
@@ -225,12 +225,14 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#introduction">Introduction</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#getting-started">Getting Started</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#safe-data-range-handling">Safe Data Range Handling</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#stacking-of-datasets">Stacking of Datasets</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#combining-data-reduction-steps">Combining Data Reduction Steps</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../../makers/reflected.html">Reflected regions background</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../../makers/ring.html">Ring background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#background-estimation">Background estimation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../makers/index.html#fov-background">FoV Background</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../makers/index.html#ring-background">Ring Background</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../makers/index.html#reflected-regions-background">Reflected Regions Background</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#stacking-of-datasets">Stacking of Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#combining-data-reduction-steps">Combining Data Reduction Steps</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#using-gammapy-makers">Using <code class="xref py py-obj docutils literal notranslate"><span class="pre">gammapy.makers</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../makers/index.html#reference-api">Reference/API</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../makers/index.html#module-gammapy.makers">gammapy.makers Package</a></li>
@@ -518,6 +520,7 @@
             
   <h1>Source code for gammapy.maps.region</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">lru_cache</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">SkyCoord</span>
@@ -581,6 +584,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_wcs</span> <span class="o">=</span> <span class="n">wcs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ndim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_shape</span><span class="p">)</span>
 
+        <span class="c1"># define cached methods</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_wcs_coord_and_weights</span> <span class="o">=</span> <span class="n">lru_cache</span><span class="p">()(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_wcs_coord_and_weights</span><span class="p">)</span>
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">frame</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Coordinate system, either Galactic (&quot;galactic&quot;) or Equatorial</span>
@@ -595,7 +601,7 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">width</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Width of bounding box of the region.</span>
-<span class="sd">        </span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        width : `~astropy.units.Quantity`</span>
@@ -654,6 +660,11 @@
             <span class="n">xp</span><span class="p">,</span> <span class="n">yp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">wcs</span><span class="o">.</span><span class="n">crpix</span>
             <span class="k">return</span> <span class="n">SkyCoord</span><span class="o">.</span><span class="n">from_pixel</span><span class="p">(</span><span class="n">xp</span><span class="o">=</span><span class="n">xp</span><span class="p">,</span> <span class="n">yp</span><span class="o">=</span><span class="n">yp</span><span class="p">,</span> <span class="n">wcs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">wcs</span><span class="p">)</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">npix</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Number of spatial pixels&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
 <div class="viewcode-block" id="RegionGeom.contains"><a class="viewcode-back" href="../../../api/gammapy.maps.RegionGeom.html#gammapy.maps.RegionGeom.contains">[docs]</a>    <span class="k">def</span> <span class="nf">contains</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">coords</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Check if a given map coordinate is contained in the region.</span>
 <span class="sd">        Requires the `.region` attribute to be set.</span>
@@ -699,7 +710,7 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">_shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Number of bins in each dimension.</span>
-<span class="sd">        The spatial dimension is always (1, 1), as a </span>
+<span class="sd">        The spatial dimension is always (1, 1), as a</span>
 <span class="sd">        `RegionGeom` is not pixelized further</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">tuple</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
@@ -754,7 +765,7 @@
 
 <div class="viewcode-block" id="RegionGeom.bin_volume"><a class="viewcode-back" href="../../../api/gammapy.maps.RegionGeom.html#gammapy.maps.RegionGeom.bin_volume">[docs]</a>    <span class="k">def</span> <span class="nf">bin_volume</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;If the RegionGeom has a non-spatial axis, it</span>
-<span class="sd">        returns the volume of the region. If not, it </span>
+<span class="sd">        returns the volume of the region. If not, it</span>
 <span class="sd">        just retuns the solid angle size.</span>
 
 <span class="sd">        Returns</span>
@@ -779,7 +790,7 @@
 <span class="sd">         ----------</span>
 <span class="sd">        width_min : `~astropy.quantity.Quantity`</span>
 <span class="sd">        Minimal width for the resulting geometry.</span>
-<span class="sd">        Can be a single number or two, for </span>
+<span class="sd">        Can be a single number or two, for</span>
 <span class="sd">        different minimum widths in each spatial dimension.</span>
 
 <span class="sd">        Returns</span>
@@ -796,19 +807,40 @@
         <span class="n">wcs_geom</span> <span class="o">=</span> <span class="n">wcs_geom</span><span class="o">.</span><span class="n">to_cube</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">axes</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">wcs_geom</span></div>
 
-<div class="viewcode-block" id="RegionGeom.get_wcs_coord"><a class="viewcode-back" href="../../../api/gammapy.maps.RegionGeom.html#gammapy.maps.RegionGeom.get_wcs_coord">[docs]</a>    <span class="k">def</span> <span class="nf">get_wcs_coord</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Get the array of coordinates that define the region.</span>
+<div class="viewcode-block" id="RegionGeom.get_wcs_coord_and_weights"><a class="viewcode-back" href="../../../api/gammapy.maps.RegionGeom.html#gammapy.maps.RegionGeom.get_wcs_coord_and_weights">[docs]</a>    <span class="k">def</span> <span class="nf">get_wcs_coord_and_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the array of spatial coordinates and corresponding weights</span>
+
+<span class="sd">        The coordinates are the center of a pixel that intersects the region and</span>
+<span class="sd">        the weights that represent which fraction of the pixel is contained</span>
+<span class="sd">        in the region.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        factor : int</span>
+<span class="sd">            Oversampling factor to compute the weights</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        region_coord : `~MapCoord`</span>
 <span class="sd">            MapCoord object with the coordinates inside</span>
 <span class="sd">            the region.</span>
+<span class="sd">        weights : `~np.array`</span>
+<span class="sd">            Weights representing the fraction of each pixel</span>
+<span class="sd">            contained in the region.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">wcs_geom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_wcs_geom</span><span class="p">()</span>
-        <span class="n">common_coord</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">wcs_geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">())</span>
-        <span class="n">region_coord</span> <span class="o">=</span> <span class="n">wcs_geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span><span class="o">.</span><span class="n">apply_mask</span><span class="p">(</span><span class="n">common_coord</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">region_coord</span></div>
+        <span class="n">wcs_geom</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_wcs_geom</span><span class="p">()</span><span class="o">.</span><span class="n">to_image</span><span class="p">()</span>
+
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">wcs_geom</span><span class="o">.</span><span class="n">region_weights</span><span class="p">(</span>
+            <span class="n">regions</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">],</span> <span class="n">oversampling_factor</span><span class="o">=</span><span class="n">factor</span>
+        <span class="p">)</span>
+
+        <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">weights</span><span class="o">.</span><span class="n">data</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+
+        <span class="c1"># Get coordinates</span>
+        <span class="n">region_coord</span> <span class="o">=</span> <span class="n">wcs_geom</span><span class="o">.</span><span class="n">get_coord</span><span class="p">()</span><span class="o">.</span><span class="n">apply_mask</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">region_coord</span><span class="p">,</span> <span class="n">weights</span></div>
 
 <div class="viewcode-block" id="RegionGeom.to_binsz"><a class="viewcode-back" href="../../../api/gammapy.maps.RegionGeom.html#gammapy.maps.RegionGeom.to_binsz">[docs]</a>    <span class="k">def</span> <span class="nf">to_binsz</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">binsz</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns self&quot;&quot;&quot;</span>
@@ -1087,7 +1119,6 @@
         <span class="n">artists</span> <span class="o">=</span> <span class="p">[</span><span class="n">region</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="n">wcs</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">wcs</span><span class="p">)</span><span class="o">.</span><span class="n">as_artist</span><span class="p">()</span> <span class="k">for</span> <span class="n">region</span> <span class="ow">in</span> <span class="n">regions</span><span class="p">]</span>
 
         <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;fc&quot;</span><span class="p">,</span> <span class="s2">&quot;None&quot;</span><span class="p">)</span>
-        <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;ec&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">)</span>
 
         <span class="n">patches</span> <span class="o">=</span> <span class="n">PatchCollection</span><span class="p">(</span><span class="n">artists</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">add_collection</span><span class="p">(</span><span class="n">patches</span><span class="p">)</span>
@@ -1105,7 +1136,7 @@
     <p>
         &#169; Copyright 2021, The Gammapy developers.
       <span class="lastupdated">
-        Last updated on 23 Jan 2021.
+        Last updated on 02 Feb 2021.
       </span>
 
     </p>

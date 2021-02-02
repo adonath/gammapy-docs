@@ -14,7 +14,7 @@
 # 
 # Besides Gammapy, you might want to look at are [Sherpa](http://cxc.harvard.edu/sherpa/) or [3ML](https://threeml.readthedocs.io/). Or just using Python to roll your own analyis using several existing analysis packages. E.g. it it possible to use Fermipy and the Fermi ST to evaluate the likelihood on Fermi-LAT data, and Gammapy to evaluate it e.g. for IACT data, and to do a joint likelihood fit using e.g. [iminuit](http://iminuit.readthedocs.io/) or [emcee](http://dfm.io/emcee).
 # 
-# To use Fermi-LAT data with Gammapy, you first have to use the Fermi ST to prepare an event list (using ``gtselect`` and ``gtmktime``, exposure cube (using ``gtexpcube2`` and PSF (using ``gtpsf``). You can then use `~gammapy.data.EventList`, `~gammapy.maps` and the `~gammapy.irf.EnergyDependentTablePSF` to read the Fermi-LAT maps and PSF, i.e. support for these high-level analysis products from the Fermi ST is built in. To do a 3D map analyis, you can use Fit for Fermi-LAT data in the same way that it's use for IACT data. This is illustrated in this notebook. A 1D region-based spectral analysis is also possible, this will be illustrated in a future tutorial.
+# To use Fermi-LAT data with Gammapy, you first have to use the Fermi ST to prepare an event list (using ``gtselect`` and ``gtmktime``, exposure cube (using ``gtexpcube2`` and PSF (using ``gtpsf``). You can then use `~gammapy.data.EventList`, `~gammapy.maps` and the `~gammapy.irf.PSFMap` to read the Fermi-LAT maps and PSF, i.e. support for these high-level analysis products from the Fermi ST is built in. To do a 3D map analyis, you can use Fit for Fermi-LAT data in the same way that it's use for IACT data. This is illustrated in this notebook. A 1D region-based spectral analysis is also possible, this will be illustrated in a future tutorial.
 # 
 # ## Setup
 # 
@@ -40,12 +40,11 @@ import matplotlib.pyplot as plt
 # In[ ]:
 
 
-import numpy as np
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from gammapy.data import EventList
 from gammapy.datasets import MapDataset
-from gammapy.irf import EnergyDependentTablePSF, PSFMap, EDispMap
+from gammapy.irf import PSFMap, EDispKernelMap
 from gammapy.maps import Map, MapAxis, WcsGeom
 from gammapy.modeling.models import (
     PowerLawSpectralModel,
@@ -133,7 +132,7 @@ counts = Map.create(
 # We put this call into the same Jupyter cell as the Map.create
 # because otherwise we could accidentally fill the counts
 # multiple times when executing the ``fill_by_coord`` multiple times.
-counts.fill_by_coord({"skycoord": events.radec, "energy": events.energy})
+counts.fill_events(events)
 
 
 # In[ ]:
@@ -177,12 +176,16 @@ exposure_hpx.plot();
 
 # For exposure, we choose a geometry with node_type='center',
 # whereas for counts it was node_type='edge'
-axis = MapAxis.from_nodes(
-    counts.geom.axes[0].center, name="energy_true", unit="MeV", interp="log"
-)
+axis = MapAxis.from_energy_bounds("10 GeV", "2 TeV", nbin=10, per_decade=True, name="energy_true",)
 geom = WcsGeom(wcs=counts.geom.wcs, npix=counts.geom.npix, axes=[axis])
 
 exposure = exposure_hpx.interp_to_geom(geom)
+
+
+# In[ ]:
+
+
+counts.geom.axes[0]
 
 
 # In[ ]:
@@ -259,25 +262,10 @@ template_diffuse.map.slice_by_idx({"energy_true": 0}).plot(add_cbar=True);
 # In[ ]:
 
 
-# Exposure varies very little with energy at these high energies
-energy = np.logspace(1, 3, 10) * u.GeV
-dnde = template_diffuse.map.interp_by_coord(
-    {"skycoord": gc_pos, "energy_true": energy},
-    method="linear",
-    fill_value=None,
-)
-plt.plot(energy.value, dnde, "+")
-plt.loglog()
+dnde = template_diffuse.map.to_region_nd_map(region=gc_pos)
+dnde.plot()
 plt.xlabel("Energy (GeV)")
-plt.ylabel("Flux (cm-2 s-1 MeV-1 sr-1)")
-
-
-# In[ ]:
-
-
-# TODO: show how one can fix the extrapolate to high energy
-# by computing and padding an extra plane e.g. at 1e3 TeV
-# that corresponds to a linear extrapolation
+plt.ylabel("Flux (cm-2 s-1 MeV-1 sr-1)");
 
 
 # ## Isotropic diffuse background
@@ -305,15 +293,15 @@ diffuse_iso.spectral_model.plot(energy_range, flux_unit="1 / (cm2 MeV s)");
 
 # ## PSF
 # 
-# Next we will tke a look at the PSF. It was computed using ``gtpsf``, in this case for the Galactic center position. Note that generally for Fermi-LAT, the PSF only varies little within a given regions of the sky, especially at high energies like what we have here. We use the `~gammapy.irf.EnergyDependentTablePSF` class to load the PSF and use some of it's methods to get some information about it.
+# Next we will tke a look at the PSF. It was computed using ``gtpsf``, in this case for the Galactic center position. Note that generally for Fermi-LAT, the PSF only varies little within a given regions of the sky, especially at high energies like what we have here. We use the `~gammapy.irf.PSFMap` class to load the PSF and use some of it's methods to get some information about it.
 
 # In[ ]:
 
 
-psf_table = EnergyDependentTablePSF.read(
-    "$GAMMAPY_DATA/fermi_3fhl/fermi_3fhl_psf_gc.fits.gz"
+psf = PSFMap.read(
+    "$GAMMAPY_DATA/fermi_3fhl/fermi_3fhl_psf_gc.fits.gz", format="gtpsf"
 )
-print(psf_table)
+print(psf)
 
 
 # To get an idea of the size of the PSF we check how the containment radii of the Fermi-LAT PSF vari with energy and different containment fractions:
@@ -322,8 +310,7 @@ print(psf_table)
 
 
 plt.figure(figsize=(8, 5))
-psf_table.plot_containment_vs_energy(linewidth=2, fractions=[0.68, 0.95])
-plt.xlim(50, 2000)
+psf.plot_containment_radius_vs_energy()
 plt.show()
 
 
@@ -334,16 +321,12 @@ plt.show()
 
 plt.figure(figsize=(8, 5))
 
-for energy in [100, 300, 1000] * u.GeV:
-    psf_at_energy = psf_table.table_psf_at_energy(energy)
-    psf_at_energy.plot_psf_vs_rad(label=f"PSF @ {energy:.0f}", lw=2)
+energy = [100, 300, 1000] * u.GeV
+psf.plot_psf_vs_rad(energy_true=energy)
 
-energy_range = [50, 2000] * u.GeV
 spectrum = PowerLawSpectralModel(index=2.3)
-psf_mean = psf_table.table_psf_in_energy_range(
-    energy_range=energy_range, spectrum=spectrum
-)
-psf_mean.plot_psf_vs_rad(label="PSF Mean", lw=4, c="k", ls="--")
+psf_mean = psf.to_image(spectrum=spectrum)
+psf_mean.plot_psf_vs_rad(c="k", ls="--", energy_true=[500] * u.GeV)
 
 plt.xlim(1e-3, 0.3)
 plt.ylim(1e3, 1e6)
@@ -353,17 +336,10 @@ plt.legend();
 # In[ ]:
 
 
-# Let's compute a PSF kernel matching the pixel size of our map
-psf = PSFMap.from_energy_dependent_table_psf(psf_table)
-
-
-# In[ ]:
-
-
 psf_kernel = psf.get_psf_kernel(
     position=geom.center_skydir, geom=geom, max_radius="1 deg"
 )
-psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch="log", add_cbar=True);
+psf_kernel.to_image().psf_kernel_map.plot(stretch="log", add_cbar=True);
 
 
 # ### Energy Dispersion
@@ -373,7 +349,15 @@ psf_kernel.psf_kernel_map.sum_over_axes().plot(stretch="log", add_cbar=True);
 
 
 e_true = exposure.geom.axes["energy_true"]
-edisp = EDispMap.from_diagonal_response(energy_axis_true=e_true)
+edisp = EDispKernelMap.from_diagonal_response(
+    energy_axis_true=e_true, energy_axis=energy_axis
+)
+
+
+# In[ ]:
+
+
+edisp.get_edisp_kernel().plot_matrix()
 
 
 # ## Fit
