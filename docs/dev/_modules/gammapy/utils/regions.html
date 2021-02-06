@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>gammapy.utils.regions &mdash; gammapy v0.18.3.dev646+gc0d544d96</title>
+  <title>gammapy.utils.regions &mdash; gammapy v0.18.3.dev694+gba96af880</title>
   
 
   
@@ -78,7 +78,7 @@
             
             
               <div class="version">
-                0.18.3.dev646+gc0d544d96
+                0.18.3.dev694+gba96af880
               </div>
             
           
@@ -424,9 +424,9 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../development/index.html">Developer documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../development/intro.html">How to contribute to Gammapy?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../development/setup.html">Gammapy project setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../development/howto.html">Developer HOWTO</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../development/release.html">How to make a Gammapy release</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../development/setup.html">Gammapy project setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../development/howto.html">Developer How To</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../development/pigs/index.html">PIGs</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-001.html">PIG 1 - PIG purpose and guidelines</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-002.html">PIG 2 - Organization of low-level analysis code</a></li>
@@ -539,6 +539,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">operator</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">minimize</span>
 <span class="kn">from</span> <span class="nn">astropy</span> <span class="kn">import</span> <span class="n">units</span> <span class="k">as</span> <span class="n">u</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">SkyCoord</span>
 <span class="kn">from</span> <span class="nn">regions</span> <span class="kn">import</span> <span class="p">(</span>
@@ -640,6 +641,43 @@
         <span class="k">return</span> <span class="n">region</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid type: </span><span class="si">{</span><span class="n">region</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">compound_region_center</span><span class="p">(</span><span class="n">compound_region</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Compute center for a CompoundRegion</span>
+
+<span class="sd">    The center of the compound region is defined here as the geometric median</span>
+<span class="sd">    of the individual centers of the regions. The geometric median is defined</span>
+<span class="sd">    as the point the minimises the distance to all other points.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    compound_region : `CompoundRegion`</span>
+<span class="sd">        Compound region</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    center : `SkyCoord`</span>
+<span class="sd">        Geometric median of the positions of the individual regions</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">regions</span> <span class="o">=</span> <span class="n">compound_region_to_list</span><span class="p">(</span><span class="n">compound_region</span><span class="p">)</span>
+    <span class="n">positions</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">([</span><span class="n">region</span><span class="o">.</span><span class="n">center</span> <span class="k">for</span> <span class="n">region</span> <span class="ow">in</span> <span class="n">regions</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">coords</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Function to minimize&quot;&quot;&quot;</span>
+        <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="n">center</span> <span class="o">=</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">lon</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">,</span> <span class="n">lat</span> <span class="o">*</span> <span class="n">u</span><span class="o">.</span><span class="n">deg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">center</span><span class="o">.</span><span class="n">separation</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span><span class="o">.</span><span class="n">deg</span><span class="p">)</span>
+
+    <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-5</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">minimize</span><span class="p">(</span>
+        <span class="n">f</span><span class="p">,</span>
+        <span class="n">x0</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">positions</span><span class="p">,),</span>
+        <span class="n">bounds</span><span class="o">=</span><span class="p">[(</span><span class="o">-</span><span class="mi">180</span> <span class="o">+</span> <span class="n">eps</span><span class="p">,</span> <span class="mi">180</span> <span class="o">-</span> <span class="n">eps</span><span class="p">),</span> <span class="p">(</span><span class="o">-</span><span class="mi">90</span> <span class="o">+</span> <span class="n">eps</span><span class="p">,</span> <span class="mi">90</span> <span class="o">-</span> <span class="n">eps</span><span class="p">)],</span>
+        <span class="n">method</span><span class="o">=</span><span class="s2">&quot;L-BFGS-B&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">SkyCoord</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">result</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">frame</span><span class="o">=</span><span class="s2">&quot;icrs&quot;</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;deg&quot;</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="compound_region_to_list"><a class="viewcode-back" href="../../../api/gammapy.utils.regions.compound_region_to_list.html#gammapy.utils.regions.compound_region_to_list">[docs]</a><span class="k">def</span> <span class="nf">compound_region_to_list</span><span class="p">(</span><span class="n">region</span><span class="p">):</span>
@@ -797,7 +835,7 @@
     <p>
         &#169; Copyright 2021, The Gammapy developers.
       <span class="lastupdated">
-        Last updated on 02 Feb 2021.
+        Last updated on 06 Feb 2021.
       </span>
 
     </p>

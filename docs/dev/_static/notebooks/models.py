@@ -146,13 +146,15 @@ pwl.plot(energy_range=[1, 100] * u.TeV)
 
 # Normed spectral models are a special class of Spectral Models, which have a dimension-less normalisation. These spectral models feature a norm parameter instead
 # of amplitude and are named using the ``NormSpectralModel`` suffix. They **must** be used along with another spectral model, as a multiplicative correction factor according to their spectral shape. They can be typically used for adjusting template based models, or adding a EBL correction to some analytic model. 
+# 
+# To check if a given `SpectralModel` is a norm model, you can simply look at the `is_norm_spectral_model` property
 
 # In[ ]:
 
 
 # To see the available norm models shipped with gammapy:
 for model in SPECTRAL_MODEL_REGISTRY:
-    if str(model)[-19:-2] == "NormSpectralModel":
+    if model.is_norm_spectral_model:
         print(model)
 
 
@@ -178,14 +180,6 @@ print(pwl_norm)
 
 energy = [0.3, 1, 3, 10, 30] * u.TeV
 pwl_norm(energy)
-
-
-# In[ ]:
-
-
-# To check if a Norm model
-print(pwl_norm.is_norm_spectral_model)  # this is a norm model
-print(pwl.is_norm_spectral_model)  # this is not a norm model
 
 
 # A typical use case of a norm model would be in applying spectral correction to a `TemplateSpectralModel`. A template model is defined by custom tabular values provided at initialization. 
@@ -768,10 +762,4 @@ spatial_model.plot_grid(geom=geom, add_cbar=True);
 def evaluation_radius(self):
     """Evaluation radius (`~astropy.coordinates.Angle`)."""
     return 5 * np.max([self.sigma_1TeV.value, self.sigma_10TeV.value]) * u.deg
-
-
-# In[ ]:
-
-
-
 

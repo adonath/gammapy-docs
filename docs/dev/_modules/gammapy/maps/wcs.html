@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>gammapy.maps.wcs &mdash; gammapy v0.18.3.dev646+gc0d544d96</title>
+  <title>gammapy.maps.wcs &mdash; gammapy v0.18.3.dev694+gba96af880</title>
   
 
   
@@ -78,7 +78,7 @@
             
             
               <div class="version">
-                0.18.3.dev646+gc0d544d96
+                0.18.3.dev694+gba96af880
               </div>
             
           
@@ -424,9 +424,9 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../development/index.html">Developer documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../development/intro.html">How to contribute to Gammapy?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../development/setup.html">Gammapy project setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../development/howto.html">Developer HOWTO</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../development/release.html">How to make a Gammapy release</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../development/setup.html">Gammapy project setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../development/howto.html">Developer How To</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../development/pigs/index.html">PIGs</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-001.html">PIG 1 - PIG purpose and guidelines</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-002.html">PIG 2 - Organization of low-level analysis code</a></li>
@@ -565,6 +565,21 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
 
+<span class="k">def</span> <span class="nf">_check_binsz</span><span class="p">(</span><span class="n">binsz</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Check and normalise bin size argument.</span>
+
+<span class="sd">    Always returns an object with the same shape</span>
+<span class="sd">    as the input where the spatial coordinates</span>
+<span class="sd">    are a float in degrees.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">binsz</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="n">lon_sz</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">binsz</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;deg&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">deg</span>
+        <span class="n">lat_sz</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">binsz</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;deg&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">deg</span>
+        <span class="k">return</span> <span class="n">lon_sz</span><span class="p">,</span> <span class="n">lat_sz</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">binsz</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="n">binsz</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">Angle</span><span class="p">(</span><span class="n">binsz</span><span class="p">[:</span><span class="mi">2</span><span class="p">],</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;deg&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">deg</span>
+        <span class="k">return</span> <span class="n">binsz</span>
+    <span class="k">return</span> <span class="n">Angle</span><span class="p">(</span><span class="n">binsz</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;deg&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">deg</span>
 
 <span class="k">def</span> <span class="nf">cast_to_shape</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Cast a tuple of parameter arrays to a given shape.&quot;&quot;&quot;</span>
@@ -843,7 +858,7 @@
 <span class="sd">            non-spatial dimensions, list input can be used to define a</span>
 <span class="sd">            different map width in each image plane.  This option</span>
 <span class="sd">            supersedes width.</span>
-<span class="sd">        width : float or tuple or list</span>
+<span class="sd">        width : float or tuple or list or string</span>
 <span class="sd">            Width of the map in degrees.  A tuple will be interpreted</span>
 <span class="sd">            as parameters for longitude and latitude axes.  For maps</span>
 <span class="sd">            with non-spatial dimensions, list input can be used to</span>
@@ -878,7 +893,9 @@
 <span class="sd">        &gt;&gt;&gt; from gammapy.maps import MapAxis</span>
 <span class="sd">        &gt;&gt;&gt; axis = MapAxis.from_bounds(0,1,2)</span>
 <span class="sd">        &gt;&gt;&gt; geom = WcsGeom.create(npix=(100,100), binsz=0.1)</span>
+<span class="sd">        &gt;&gt;&gt; geom = WcsGeom.create(npix=(100,100), binsz=&quot;0.1deg&quot;)</span>
 <span class="sd">        &gt;&gt;&gt; geom = WcsGeom.create(npix=[100,200], binsz=[0.1,0.05], axes=[axis])</span>
+<span class="sd">        &gt;&gt;&gt; geom = WcsGeom.create(npix=[100,200], binsz=[&quot;0.1deg&quot;,&quot;0.05deg&quot;], axes=[axis])</span>
 <span class="sd">        &gt;&gt;&gt; geom = WcsGeom.create(width=[5.0,8.0], binsz=[0.1,0.05], axes=[axis])</span>
 <span class="sd">        &gt;&gt;&gt; geom = WcsGeom.create(npix=([100,200],[100,200]), binsz=0.1, axes=[axis])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -894,6 +911,8 @@
 
         <span class="k">if</span> <span class="n">width</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">width</span> <span class="o">=</span> <span class="n">_check_width</span><span class="p">(</span><span class="n">width</span><span class="p">)</span>
+
+        <span class="n">binsz</span> <span class="o">=</span> <span class="n">_check_binsz</span><span class="p">(</span><span class="n">binsz</span><span class="p">)</span>
 
         <span class="n">shape</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">get_shape</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">[</span><span class="n">npix</span><span class="p">,</span> <span class="n">binsz</span><span class="p">,</span> <span class="n">width</span><span class="p">]])</span>
         <span class="n">binsz</span> <span class="o">=</span> <span class="n">cast_to_shape</span><span class="p">(</span><span class="n">binsz</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
@@ -1438,7 +1457,7 @@
 
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">regions</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
             <span class="n">regions</span> <span class="o">=</span> <span class="p">[</span><span class="n">regions</span><span class="p">]</span>
-    
+
         <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_idx</span><span class="p">()</span>
         <span class="n">pixcoord</span> <span class="o">=</span> <span class="n">PixCoord</span><span class="p">(</span><span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">idx</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 
@@ -1629,7 +1648,7 @@
     <p>
         &#169; Copyright 2021, The Gammapy developers.
       <span class="lastupdated">
-        Last updated on 02 Feb 2021.
+        Last updated on 06 Feb 2021.
       </span>
 
     </p>

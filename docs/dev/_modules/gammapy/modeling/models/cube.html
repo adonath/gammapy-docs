@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>gammapy.modeling.models.cube &mdash; gammapy v0.18.3.dev646+gc0d544d96</title>
+  <title>gammapy.modeling.models.cube &mdash; gammapy v0.18.3.dev694+gba96af880</title>
   
 
   
@@ -78,7 +78,7 @@
             
             
               <div class="version">
-                0.18.3.dev646+gc0d544d96
+                0.18.3.dev694+gba96af880
               </div>
             
           
@@ -424,9 +424,9 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../../development/index.html">Developer documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../../development/intro.html">How to contribute to Gammapy?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../development/setup.html">Gammapy project setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../../development/howto.html">Developer HOWTO</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../development/release.html">How to make a Gammapy release</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../development/setup.html">Gammapy project setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../development/howto.html">Developer How To</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../../development/pigs/index.html">PIGs</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../../development/pigs/pig-001.html">PIG 1 - PIG purpose and guidelines</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../../development/pigs/pig-002.html">PIG 2 - Organization of low-level analysis code</a></li>
@@ -712,6 +712,11 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span><span class="o">.</span><span class="n">evaluation_radius</span>
 
     <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">evaluation_region</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;`~astropy.coordinates.Angle`&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span><span class="o">.</span><span class="n">evaluation_region</span>
+
+    <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">frame</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span><span class="o">.</span><span class="n">frame</span>
 
@@ -744,11 +749,9 @@
 <span class="sd">        ----------</span>
 <span class="sd">        mask : `~gammapy.maps.WcsNDMap` of boolean type</span>
 <span class="sd">            Map containing a boolean mask</span>
-
-<span class="sd">        marign : `~astropy.coordinates.Angle`</span>
+<span class="sd">        margin : `~astropy.coordinates.Angle`</span>
 <span class="sd">            Add a margin in degree to the source evaluation radius.</span>
 <span class="sd">            The default is None. Used to take into account PSF width.</span>
-
 <span class="sd">        use_evaluation_region : bool</span>
 <span class="sd">            Account for the extension of the model or not. The default is True.   </span>
 
@@ -757,36 +760,28 @@
 <span class="sd">        models : `DatasetModels`</span>
 <span class="sd">            Selected models contributing inside the region where mask==True</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: there is a lot of computation done here maybe simplify</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">mask</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">is_image</span><span class="p">:</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">reduce_over_axes</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">)</span>
 
-        <span class="n">mask_shape</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">mask</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">mask_shape</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">sum_over_axes</span><span class="p">()</span>
-            <span class="n">mask</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">mask_shape</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">True</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">mask</span><span class="o">.</span><span class="n">data</span><span class="p">):</span>
-            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">mask</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">is_region</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">mask</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">region</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+
+            <span class="n">geom</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">to_wcs_geom</span><span class="p">()</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">region_mask</span><span class="p">([</span><span class="n">mask</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">region</span><span class="p">])</span>
+
         <span class="k">if</span> <span class="n">margin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">binary_dilate</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="n">margin</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;full&quot;</span><span class="p">)</span>
 
         <span class="c1"># check center only first (faster)</span>
-        <span class="n">ind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="n">mask</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">wcs</span><span class="p">)</span>
-        <span class="n">ind</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">idx</span><span class="o">.</span><span class="n">item</span><span class="p">()))</span> <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">ind</span><span class="p">])</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">contributes</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()[</span><span class="n">ind</span><span class="p">]</span>
-        <span class="k">except</span> <span class="p">(</span><span class="ne">IndexError</span><span class="p">):</span>  <span class="c1"># if outside geom</span>
-            <span class="n">contributes</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="c1"># account for extension or not</span>
-        <span class="k">if</span> <span class="p">(</span>
-            <span class="ow">not</span> <span class="n">contributes</span>
-            <span class="ow">and</span> <span class="n">use_evaluation_region</span>
-            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span><span class="o">.</span><span class="n">evaluation_region</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-        <span class="p">):</span>
-            <span class="n">contributes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span>
-                <span class="n">mask</span><span class="o">.</span><span class="n">mask_contains_region</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">spatial_model</span><span class="o">.</span><span class="n">evaluation_region</span><span class="p">)</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="n">contributes</span></div>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="n">mask</span><span class="o">.</span><span class="n">get_by_coord</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">position</span><span class="p">)[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="n">use_evaluation_region</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">mask</span><span class="o">.</span><span class="n">mask_contains_region</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">evaluation_region</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">False</span></div>
 
 <div class="viewcode-block" id="SkyModel.evaluate"><a class="viewcode-back" href="../../../../api/gammapy.modeling.models.SkyModel.html#gammapy.modeling.models.SkyModel.evaluate">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">,</span> <span class="n">energy</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Evaluate the model at given points.</span>
@@ -1081,6 +1076,10 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_spectral_model</span> <span class="o">=</span> <span class="n">spectral_model</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">contributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;FoV background models always contribute&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">spectral_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1450,7 +1449,7 @@
     <p>
         &#169; Copyright 2021, The Gammapy developers.
       <span class="lastupdated">
-        Last updated on 02 Feb 2021.
+        Last updated on 06 Feb 2021.
       </span>
 
     </p>

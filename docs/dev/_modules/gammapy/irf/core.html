@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>gammapy.irf.core &mdash; gammapy v0.18.3.dev646+gc0d544d96</title>
+  <title>gammapy.irf.core &mdash; gammapy v0.18.3.dev694+gba96af880</title>
   
 
   
@@ -78,7 +78,7 @@
             
             
               <div class="version">
-                0.18.3.dev646+gc0d544d96
+                0.18.3.dev694+gba96af880
               </div>
             
           
@@ -424,9 +424,9 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../development/index.html">Developer documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../development/intro.html">How to contribute to Gammapy?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../development/setup.html">Gammapy project setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../development/howto.html">Developer HOWTO</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../development/release.html">How to make a Gammapy release</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../development/setup.html">Gammapy project setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../development/howto.html">Developer How To</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../development/pigs/index.html">PIGs</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-001.html">PIG 1 - PIG purpose and guidelines</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-002.html">PIG 2 - Organization of low-level analysis code</a></li>
@@ -893,6 +893,26 @@
     <span class="k">def</span> <span class="nf">required_axes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">pass</span>
 
+    <span class="c1"># TODO: add mask safe to IRFMap as a regular attribute and don&#39;t derive it from the data</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">mask_safe_image</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Mask safe for the map&quot;&quot;&quot;</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_irf_map</span> <span class="o">&gt;</span> <span class="p">(</span><span class="mi">0</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_irf_map</span><span class="o">.</span><span class="n">unit</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">mask</span><span class="o">.</span><span class="n">reduce_over_axes</span><span class="p">(</span><span class="n">func</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_nearest_valid_position</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">position</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get nearest valid position&quot;&quot;&quot;</span>
+        <span class="n">is_valid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_safe_image</span><span class="o">.</span><span class="n">get_by_coord</span><span class="p">(</span><span class="n">position</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_valid</span><span class="p">:</span>
+            <span class="n">position</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_safe_image</span><span class="o">.</span><span class="n">mask_nearest_position</span><span class="p">(</span><span class="n">position</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Position </span><span class="si">{</span><span class="n">position</span><span class="si">}</span><span class="s2"> is outside &quot;</span>
+                <span class="s2">&quot;valid IRF map range, using nearest IRF defined within&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">position</span>
+
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_hdulist</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
@@ -1172,7 +1192,7 @@
     <p>
         &#169; Copyright 2021, The Gammapy developers.
       <span class="lastupdated">
-        Last updated on 02 Feb 2021.
+        Last updated on 06 Feb 2021.
       </span>
 
     </p>

@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>gammapy.maps.wcsnd &mdash; gammapy v0.18.3.dev646+gc0d544d96</title>
+  <title>gammapy.maps.wcsnd &mdash; gammapy v0.18.3.dev694+gba96af880</title>
   
 
   
@@ -78,7 +78,7 @@
             
             
               <div class="version">
-                0.18.3.dev646+gc0d544d96
+                0.18.3.dev694+gba96af880
               </div>
             
           
@@ -424,9 +424,9 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../development/index.html">Developer documentation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../../development/intro.html">How to contribute to Gammapy?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../development/setup.html">Gammapy project setup</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../../development/howto.html">Developer HOWTO</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../development/release.html">How to make a Gammapy release</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../development/setup.html">Gammapy project setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../development/howto.html">Developer How To</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../development/pigs/index.html">PIGs</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-001.html">PIG 1 - PIG purpose and guidelines</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../development/pigs/pig-002.html">PIG 2 - Organization of low-level analysis code</a></li>
@@ -531,7 +531,7 @@
 <span class="kn">from</span> <span class="nn">astropy.convolution</span> <span class="kn">import</span> <span class="n">Tophat2DKernel</span>
 <span class="kn">from</span> <span class="nn">astropy.coordinates</span> <span class="kn">import</span> <span class="n">SkyCoord</span>
 <span class="kn">from</span> <span class="nn">astropy.io</span> <span class="kn">import</span> <span class="n">fits</span>
-<span class="kn">from</span> <span class="nn">regions</span> <span class="kn">import</span> <span class="n">PointSkyRegion</span><span class="p">,</span> <span class="n">RectangleSkyRegion</span><span class="p">,</span> <span class="n">SkyRegion</span><span class="p">,</span> <span class="n">PixCoord</span>
+<span class="kn">from</span> <span class="nn">regions</span> <span class="kn">import</span> <span class="n">PointSkyRegion</span><span class="p">,</span> <span class="n">RectangleSkyRegion</span><span class="p">,</span> <span class="n">SkyRegion</span><span class="p">,</span> <span class="n">PixCoord</span><span class="p">,</span> <span class="n">PointPixelRegion</span>
 <span class="kn">from</span> <span class="nn">gammapy.extern.skimage</span> <span class="kn">import</span> <span class="n">block_reduce</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.interpolation</span> <span class="kn">import</span> <span class="n">ScaledRegularGridInterpolator</span>
 <span class="kn">from</span> <span class="nn">gammapy.utils.random</span> <span class="kn">import</span> <span class="n">InverseCDFSampler</span><span class="p">,</span> <span class="n">get_random_state</span>
@@ -1101,33 +1101,36 @@
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_region_nd_map</span><span class="p">(</span><span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">,</span> <span class="n">func</span><span class="o">=</span><span class="n">func</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="n">weights</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="WcsNDMap.mask_contains_region"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.mask_contains_region">[docs]</a>    <span class="k">def</span> <span class="nf">mask_contains_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">regions</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Check if input regions are overlaping with a boolean mask map.</span>
+<div class="viewcode-block" id="WcsNDMap.mask_contains_region"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.mask_contains_region">[docs]</a>    <span class="k">def</span> <span class="nf">mask_contains_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">region</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check if input region is contained in a boolean mask map.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        regions: `~regions.Region`</span>
+<span class="sd">        region: `~regions.SkyRegion` or `~regions.PixRegion`</span>
 <span class="sd">             Region or list of Regions (pixel or sky regions accepted).</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        overlap : `numpy.array`</span>
-<span class="sd">            Boolean array of same length than regions</span>
+<span class="sd">        contained : bool</span>
+<span class="sd">            Whether region is contained in the mask</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_mask</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;mask_contains_region is only supported for boolean masks&quot;</span><span class="p">)</span>
 
-        <span class="n">pixcoords</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_idx</span><span class="p">()</span>
-        <span class="n">pixcoords</span> <span class="o">=</span> <span class="n">PixCoord</span><span class="p">(</span><span class="n">pixcoords</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">],</span> <span class="n">pixcoords</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">])</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">regions</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-            <span class="n">regions</span> <span class="o">=</span> <span class="p">[</span><span class="n">regions</span><span class="p">]</span>
-        <span class="n">overlap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">regions</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">region</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">regions</span><span class="p">):</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="n">SkyRegion</span><span class="p">):</span>
-                <span class="n">region</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">wcs</span><span class="p">)</span>
-            <span class="n">overlap</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">region</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">pixcoords</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">overlap</span></div>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">is_image</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Method only supported for 2D images&quot;</span><span class="p">)</span>
+
+        <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">get_idx</span><span class="p">()</span>
+        <span class="n">coords_pix</span> <span class="o">=</span> <span class="n">PixCoord</span><span class="p">(</span><span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">],</span> <span class="n">idx</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="n">SkyRegion</span><span class="p">):</span>
+            <span class="n">region</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">to_pixel</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geom</span><span class="o">.</span><span class="n">wcs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="n">PointPixelRegion</span><span class="p">):</span>
+            <span class="n">lon</span><span class="p">,</span> <span class="n">lat</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">center</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">region</span><span class="o">.</span><span class="n">center</span><span class="o">.</span><span class="n">y</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_by_pix</span><span class="p">((</span><span class="n">lon</span><span class="p">,</span> <span class="n">lat</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">region</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">coords_pix</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="WcsNDMap.binary_erode"><a class="viewcode-back" href="../../../api/gammapy.maps.WcsNDMap.html#gammapy.maps.WcsNDMap.binary_erode">[docs]</a>    <span class="k">def</span> <span class="nf">binary_erode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">width</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Binary erosion of boolean mask removing a given margin</span>
@@ -1365,7 +1368,7 @@
     <p>
         &#169; Copyright 2021, The Gammapy developers.
       <span class="lastupdated">
-        Last updated on 02 Feb 2021.
+        Last updated on 06 Feb 2021.
       </span>
 
     </p>
